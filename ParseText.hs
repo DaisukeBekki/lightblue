@@ -17,7 +17,7 @@ main = do
   sentence <- T.getLine
   chart    <- CP.parse beam sentence
   let topbox = CP.topBox chart
-  stop <- Time.getCurrentTime    
+  stop <- Time.getCurrentTime
   let time = Time.diffUTCTime stop start
   mapM_ (action chart topbox time) args
   where action chart topbox time op
@@ -26,4 +26,4 @@ main = do
           | op == "-xml"  = XML.render S.stderr topbox 
           | op == "-debug" = CP.printNodes S.stdout 30 $ topbox
           | op == "-time" = S.hPutStrLn S.stderr $ "Total Execution Time: " ++ show time
-          | otherwise = return ()                  
+          | otherwise = return ()

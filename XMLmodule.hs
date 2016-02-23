@@ -30,7 +30,7 @@ toXML node@(CCG.Node _ _ _ _ _ _ _) =
                               (M.fromList [
                                 ("pf", T.toStrict $ CCG.pf node),          
                                 ("cat", T.toStrict $ CCG.toText $ CCG.cat node),
-                                ("dts", T.toStrict $ D.toText $ CCG.sem node),
+                                ("dts", T.toStrict $ D.toTextWithVN [] $ CCG.sem node),
                                 ("score", T.toStrict $ T.pack $ show ((fromRational $ CCG.score node)::F.Fixed F.E2)),
                                 ("source", T.toStrict $ CCG.memo node)
                                 ]) 
@@ -40,7 +40,7 @@ toXML node@(CCG.Node _ _ _ _ _ _ _) =
                                 (M.fromList [
                                 --("pf", T.toStrict $ CCG.pf (node)),          
                                  ("cat", T.toStrict $ CCG.toText $ CCG.cat node),
-                                 ("dts", T.toStrict $ D.toText $ CCG.sem node),
+                                 ("dts", T.toStrict $ D.toTextWithVN [] $ CCG.sem node),
                                  ("score", T.toStrict $ T.pack $ show ((fromRational $ CCG.score node)::F.Fixed F.E2))
                                  ]) 
                                 (map toXML dtrs)

@@ -38,35 +38,35 @@ callJuman sentence = do
 jumanNouns2nodes :: [JumanCompNoun] -> [CCG.Node]
 jumanNouns2nodes jumancompnouns = case jumancompnouns of
   [] -> []
-  ((JumanCompNP j):js) -> (lexicalitem (T.concat $ reverse j) "(JC)" (92 R.% 100) (CCG.NP [CCG.Nc]) (Con (T.intercalate ":" $ reverse j))):(jumanNouns2nodes js)
-  ((JumanCompCN j):js) -> (lexicalitem (T.concat $ reverse j) "(JC)" (92 R.% 100) (CCG.N) (Lam (App (Con (T.intercalate ":" $ reverse j)) (Var 0)))):(jumanNouns2nodes js)
+  ((JumanCompNP j):js) -> (lexicalitem (T.concat $ reverse j) "(JC)" (92 R.% 100) (CCG.NP [CCG.Nc]) (Con (T.intercalate ";" $ reverse j))):(jumanNouns2nodes js)
+  ((JumanCompCN j):js) -> (lexicalitem (T.concat $ reverse j) "(JC)" (92 R.% 100) (CCG.N) (Lam (App (Con (T.intercalate ";" $ reverse j)) (Var 0)))):(jumanNouns2nodes js)
   where lexicalitem word m r c s = CCG.Node CCG.LEX word c s [] r m
 
 -- | usage: findCompNouns jumanPairs [] 
 -- |   returns the list of pair (hyoso, predname)  
 findCompNouns :: [JumanCompNoun] -> [JumanPair] -> [JumanCompNoun]
-findCompNouns compNouns jumanPairs = case jumanPairs of
-  [] -> compNouns
-  (j1,j2,j3):js -> if j2 == "名詞" || j3 == "名詞接頭辞" || j3 == "名詞性名詞接尾辞"
-                  then accepted1Noun compNouns js j1
-                  else if j2 == "未定義語"
-                       then processingCompNoun compNouns js [j1] j3    
-                       else findCompNouns compNouns js
-               
+findCompNouns compNouns jumanPairs =
+  case jumanPairs of
+    [] -> compNouns
+    (j1,j2,j3):js -> case () of
+                       _ | (j2 == "名詞" || j3 == "名詞接頭辞" || j3 == "名詞性名詞接尾辞") -> accepted1Noun compNouns js j1
+                         | (j2 == "未定義語") -> processingCompNoun compNouns js [j1] j3
+                         | otherwise -> findCompNouns compNouns js
+
 accepted1Noun :: [JumanCompNoun] -> [JumanPair] -> T.Text -> [JumanCompNoun]
 accepted1Noun compNouns jumanPairs oneNoun = case jumanPairs of           
   [] -> compNouns
   (j1,j2,j3):js -> if j2 == "名詞" || j3 == "名詞接頭辞" || j3 == "名詞性名詞接尾辞" || j2 == "未定義語"
                    then processingCompNoun compNouns js [j1,oneNoun] j3
                    else findCompNouns compNouns js
-               
+
 processingCompNoun :: [JumanCompNoun] -> [JumanPair] -> [T.Text] -> T.Text -> [JumanCompNoun]
-processingCompNoun compNouns jumanPairs compNoun compNounHead = case jumanPairs of 
-  [] -> if "普通名詞" `T.isPrefixOf` compNounHead || "名詞性" `T.isPrefixOf` compNounHead
-        then (JumanCompCN compNoun):compNouns
-        else (JumanCompNP compNoun):compNouns
+processingCompNoun compNouns jumanPairs compNoun compNounHead = 
+  let newCompNoun = if "普通名詞" `T.isPrefixOf` compNounHead || "名詞性" `T.isPrefixOf` compNounHead
+                    then (JumanCompCN compNoun)
+                    else (JumanCompNP compNoun) in
+  case jumanPairs of 
+  [] -> newCompNoun:compNouns
   (j1,j2,j3):js -> if j2 == "名詞" || j3 == "名詞接頭辞" || j3 == "名詞性名詞接尾辞" || j2 == "未定義語"
-                   then processingCompNoun compNouns js (j1:compNoun) j3
-                   else if "普通名詞" `T.isPrefixOf` compNounHead || "名詞性" `T.isPrefixOf` compNounHead
-                        then findCompNouns ((JumanCompCN compNoun):compNouns) js
-                        else findCompNouns ((JumanCompNP compNoun):compNouns) js
+                   then processingCompNoun (newCompNoun:compNouns) js (j1:compNoun) j3
+                   else findCompNouns (newCompNoun:compNouns) js

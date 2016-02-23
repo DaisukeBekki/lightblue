@@ -50,10 +50,11 @@ parse beam sentence = do
 parseMain :: Int -> L.Lexicon -> T.Text -> Chart
 parseMain beam lexicon text
   | text == T.empty = M.empty -- foldl returns a runtime error when t is empty
-  | otherwise       = let (chart,_,_) = T.foldl' (chartAccumulator beam lexicon) (M.empty, 0, T.empty) (purifyText text) 
+  | otherwise       = let (chart,_,_) = T.foldl' (chartAccumulator beam lexicon) (M.empty, 0, T.empty) (purifyText text)
                       in chart
   where --purifyText :: T.Text -> T.Text
-    purifyText = T.filter (\c -> not (isSpace c) || c /= '、' || c /= '。' || c /= '，' || c /= '．') 
+    purifyText = T.filter (\c -> not $ isSpace c || c `elem` ['、','。','，','．','！','？','!','?'])
+                 --(\c -> not (isSpace c) && c /= '、' && c /= '。' && c /= '，' && c /= '．' && c /= '！' && c /= '？' && c /= '!' && c /= '?')
 
 -- | The 'lookupChart' function looks up a chart with the key (i,j) 
 --   and returns the value of type [Node]
@@ -83,10 +84,12 @@ boxAccumulator beam lexicon partialbox c =
   let list0 = L.lookupLexicon newword lexicon in
   let list1 = checkUnaryRules list0 in
   let list2 = checkBinaryRules i j chart list1 in
-  let list3 = checkTrinaryRules i j chart list2 in
-  let list4 = checkEmptyCategories list3 in 
+  let list3 = checkCoordinationRule i j chart list2 in
+  let list4 = checkParenthesisRule i j chart list3 in
+  let list5 = checkEmptyCategories list4 in 
 --  let list5 = checkEmptyCategories list4 in 
-  ((M.insert (i,j) (take beam $ reverse $ sort list4) chart), newword, i-1, j)
+  let listn = if length list5 <= beam then sort list5 else take beam $ sort list5 in
+  ((M.insert (i,j) listn chart), newword, i-1, j)
 
 checkUnaryRules :: [G.Node] -> [G.Node]
 checkUnaryRules prevlist = 
@@ -102,27 +105,37 @@ checkBinaryRules i j chart prevlist =
          prevlist
          (take (j-i-1) [i+1..]) -- [k | i<k<j]
 
-checkTrinaryRules :: Int -> Int -> Chart -> [G.Node] -> [G.Node]
-checkTrinaryRules i j chart prevlist =
-  foldl' (\acck k -> foldl' (\accc cnode -> foldl' (\accl lnode -> foldl' (\accr rnode -> G.trinaryRules lnode cnode rnode accr)
+checkCoordinationRule :: Int -> Int -> Chart -> [G.Node] -> [G.Node]
+checkCoordinationRule i j chart prevlist =
+  foldl' (\acck k -> foldl' (\accc cnode -> foldl' (\accl lnode -> foldl' (\accr rnode -> G.coordinationRule lnode cnode rnode accr)
                                                                           accl
                                                                           (lookupChart (k+1) j chart))
                                                    accc
                                                    (lookupChart i k chart))
                             acck
-                            (filter (\n -> G.isCONJ (G.cat n)) (lookupChart k (k+1) chart)))
+                            (filter (\n -> (G.cat n)==G.CONJ) (lookupChart k (k+1) chart)))
          prevlist
          (take (j-i-2) [i+1..]) -- [k | i<k<j-1]  i-k k-k+1 k+1-j
+
+checkParenthesisRule :: Int -> Int -> Chart -> [G.Node] -> [G.Node]
+checkParenthesisRule i j chart prevlist 
+  | i+3 <= j = foldl' (\accl lnode -> foldl' (\accr rnode -> foldl' (\accc cnode -> G.parenthesisRule lnode cnode rnode accc)
+                                                                    accr 
+                                                                    (lookupChart (i+1) (j-1) chart))
+                                             accl
+                                             (filter (\n -> (G.cat n)==G.RPAREN) (lookupChart (j-1) j chart)))
+                      prevlist
+                      (filter (\n -> (G.cat n)==G.LPAREN) (lookupChart i (i+1) chart))
+  | otherwise = prevlist
 
 checkEmptyCategories :: [G.Node] -> [G.Node]
 checkEmptyCategories prevlist =
   foldr (\p -> (G.binaryRules (fst p) (snd p)) . (G.binaryRules (snd p) (fst p))) prevlist [(x,y) | x <- prevlist, y <- L.emptyCategories]
 
 -- | The function "topBox" picks up the nodes in the "top" box in the chart.
---
 topBox :: Chart -> [G.Node]
 topBox chart = let ((_,k),_) = M.findMax chart in
                  case M.lookup (0,k) chart of 
-                   Just nodes -> reverse $ sort nodes
+                   Just nodes -> nodes
                    Nothing    -> []
 
