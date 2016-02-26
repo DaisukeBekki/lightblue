@@ -1,7 +1,7 @@
 {-# OPTIONS -Wall #-}
 {-# LANGUAGE OverloadedStrings, DeriveGeneric, DefaultSignatures #-}
 
-module JumanLexicon (
+module JapaneseLexicon (
   --Node(..),
   Lexicon,
   --isCONJ,
@@ -11,9 +11,9 @@ module JumanLexicon (
   ) where
 
 import Prelude hiding (id)
-import qualified Data.Text.Lazy as T
-import qualified Data.Text.Lazy.IO as T
-import Data.Ratio as R
+import qualified Data.Text.Lazy as T    --text
+import qualified Data.Text.Lazy.IO as T --text
+import Data.Ratio as R                  --base
 --import qualified Data.Maybe as M
 import qualified CallJuman as JU
 import qualified MyLexicon as LEX
@@ -46,9 +46,6 @@ parseJumanLine jumanline =
     _ -> []
 
 {- Some Marcos for CCG categories/features and DTS -}
-id :: Preterm
-id = Lam (Var 0)
-
 verb :: [CatPos]
 verb = [V5k, V5s, V5t, V5n, V5m, V5r, V5w, V5g, V5z, V5b, V5IKU, V5YUK, V5ARU, V5NAS, V5TOW, V1, VK, VS, VZ, VURU]
 
@@ -56,7 +53,7 @@ adjective :: [CatPos]
 adjective = [Aauo, Ai, ANAS, ATII, ABES]
 
 nomPred :: [CatPos]
-nomPred = [Nda, Nna, Nno, Nni, Nemp, Ntar]
+nomPred = [Nda, Nna, Nno, Ntar, Nni, Nemp, Nto]
 
 anyPos :: [CatPos]
 anyPos = verb ++ adjective ++ nomPred ++ [Exp]
@@ -86,10 +83,10 @@ lexicalitem word m r c s = Node {rs=LEX, pf=word, cat=c, sem=s, daughters=[], sc
 -- | Main function 1 "jumanPos2Cat" that converts Juman entries to lexical items
 jumanPos2Cat :: T.Text -> T.Text -> T.Text -> [(Cat,Preterm)]
 jumanPos2Cat daihyo ct caseframe 
-  | T.isPrefixOf "名詞:普通名詞" ct    = [(N, Lam (App (Con daihyo) (Var 0)))]  
-  | T.isPrefixOf "名詞:人名"    ct    = [((T 1 anySExStem `SL` (T 1 anySExStem `BS` NP [Nc])), (Lam (App (Var 0) (Con daihyo))))]
-  | T.isPrefixOf "名詞:地名"    ct    = [((T 1 anySExStem `SL` (T 1 anySExStem `BS` NP [Nc])), (Lam (App (Var 0) (Con daihyo))))]
-  | T.isPrefixOf "名詞:組織名"  ct    = [((T 1 anySExStem `SL` (T 1 anySExStem `BS` NP [Nc])), (Lam (App (Var 0) (Con daihyo))))]
+  | T.isPrefixOf "名詞:普通名詞" ct    = [(N, (Con daihyo))]
+  | T.isPrefixOf "名詞:人名"    ct    = constructProperName daihyo
+  | T.isPrefixOf "名詞:地名"    ct    = constructProperName daihyo
+  | T.isPrefixOf "名詞:組織名"  ct    = constructProperName daihyo
   | T.isPrefixOf "名詞:副詞的名詞" ct  = [(((T 1 anySExStem) `SL` (T 1 anySExStem)) `BS` (S anyPos [Attr]), (Lam (Var 0)))]
   | T.isPrefixOf "名詞:時相名詞" ct      = constructPredicate daihyo [Nda,Nna,Nno]
   | T.isPrefixOf "動詞:子音動詞カ行"  ct  = constructVerb daihyo caseframe [V5k]
@@ -103,16 +100,16 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "動詞:子音動詞バ行"  ct  = constructVerb daihyo caseframe [V5b]
   | T.isPrefixOf "動詞:母音動詞"     ct  = constructVerb daihyo caseframe [V1]
   | T.isPrefixOf "動詞:カ変動詞"     ct  = constructVerb daihyo caseframe [VK]
-  | T.isPrefixOf "名詞:サ変名詞"     ct  = constructVerb daihyo caseframe [VS]
+  | T.isPrefixOf "名詞:サ変名詞"     ct  = [(N, (Con daihyo))] ++ (constructVerb daihyo caseframe [VS])
   | T.isPrefixOf "動詞:サ変動詞"     ct  = constructVerb daihyo caseframe [VS]
   | T.isPrefixOf "動詞:ザ変動詞"     ct  = constructVerb daihyo caseframe [VZ]
   | T.isPrefixOf "形容詞:イ形容詞アウオ段" ct = constructPredicate daihyo [Aauo]
   | T.isPrefixOf "形容詞:イ形容詞イ段"    ct = constructPredicate daihyo [Ai]
   | T.isPrefixOf "形容詞:ナ形容詞"       ct = constructPredicate daihyo [Nda,Nna,Nni]
   | T.isPrefixOf "形容詞:ナノ形容詞"     ct = constructPredicate daihyo [Nda,Nna,Nno]
-  | T.isPrefixOf "副詞"  ct  = [((anySExStem `SL` anySExStem), (Lam (App (Con daihyo) (Var 0))))]
+  | T.isPrefixOf "副詞"  ct  = constructPredicate daihyo [Nda,Nna,Nno,Nni,Nemp]
   | T.isPrefixOf "連体詞" ct  = [(N `SL` N, (Lam (Lam (Sigma (App (Var 1) (Var 0)) (App (Con daihyo) (Var 0))))))]
-  | T.isPrefixOf "接続詞" ct = [((T 1 anySExStem `SL` T 1 anySExStem), id)]
+  | T.isPrefixOf "接続詞" ct = [(((T 1 (S anyPos [Term,Pre,Imper]) `SL` T 1 (S anyPos [Term,Pre,Imper])) `BS` S anyPos [Term]), (Lam (Lam (Sigma (Var 1) (Var 0)))))]
   | T.isPrefixOf "接頭辞:イ形容詞" ct   = [((S [Aauo] [Stem] `BS` NP [Ga]) `SL` (S [Aauo] [Stem] `BS` NP [Ga]), id)]
   | T.isPrefixOf "接頭辞:ナ形容詞" ct   = [((S [Nda] [Stem] `BS` NP [Ga]) `SL` (S [Nda] [Stem] `BS` NP [Ga]), id)]
   -- T.isPrefixOf "接頭辞:名詞" ct   = [(N `SL` N, (Lam (Lam (Sigma (App (Var 1) (Var 0)) (App (Con daihyo) (Var 1))))))]
@@ -120,30 +117,26 @@ jumanPos2Cat daihyo ct caseframe
   -- T.isPrefixOf "感動詞" t   = [(S [Exp] [Term], id)]
   | otherwise      = [(S [Error] [Term], (Con $ T.concat [T.pack "Juman Error: ", ct]))]
 
+constructProperName :: T.Text -> [(Cat,Preterm)]
+constructProperName daihyo = [((T 1 anySExStem `SL` (T 1 anySExStem `BS` NP [Nc])), (Lam (App (Var 0) (Con daihyo))))]
+
 constructPredicate :: T.Text -> [CatPos] -> [(Cat,Preterm)]
-constructPredicate daihyo cpos =
-  [(S cpos [Stem] `BS` NP [Ga], (Lam (App (Con daihyo) (Var 0))))]
+constructPredicate daihyo cpos = [(S cpos [Stem] `BS` NP [Ga], predSR daihyo)]
 
 constructVerb :: T.Text -> T.Text -> [CatPos] -> [(Cat, Preterm)]
 constructVerb daihyo caseframe cpos =
   if caseframe == T.empty
-    then [((S cpos [Stem] `BS` NP [Ga]) `BS` NP [Ni,O], (Lam (Lam (App (App (Con daihyo) (Var 0)) (Var 1)))))] 
+    then [((S cpos [Stem] `BS` NP [Ga]) `BS` NP [Ni,O], verbSR 2 daihyo)]
     else let caseframelist = map (T.split (==',')) $ T.split (=='#') caseframe in
-         [(f cf (S cpos [Stem]), g daihyo (length cf)) | cf <- caseframelist]
+         [(verbCat cf (S cpos [Stem]), (verbSR (length cf) daihyo)) | cf <- caseframelist]
 
-f :: [T.Text] -> Cat -> Cat
-f cf ct = case cf of
+verbCat :: [T.Text] -> Cat -> Cat
+verbCat cf ct = case cf of
   [] -> ct
-  (c:cs) | c == "ガ格" -> (f cs ct) `BS` NP [Ga]
-         | c == "ヲ格" -> (f cs ct) `BS` NP [O]
-         | c == "ニ格" -> (f cs ct) `BS` NP [Ni]
-         | c == "ト格" -> (f cs ct) `BS` NP [To]
-         | c == "によって" -> (f cs ct) `BS` NP [Niyotte]
-         | otherwise -> (f cs ct)
+  (c:cs) | c == "ガ格" -> (verbCat cs ct) `BS` NP [Ga]
+         | c == "ヲ格" -> (verbCat cs ct) `BS` NP [O]
+         | c == "ニ格" -> (verbCat cs ct) `BS` NP [Ni]
+         | c == "ト格" -> (verbCat cs ct) `BS` NP [To]
+         | c == "によって" -> (verbCat cs ct) `BS` NP [Niyotte]
+         | otherwise -> (verbCat cs ct)
 
-g :: T.Text -> Int -> Preterm
-g daihyo i | i == 1 = (Lam (App (Con daihyo) (Var 0)))
-           | i == 2 = (Lam (Lam (App (App (Con daihyo) (Var 0)) (Var 1))))
-           | i == 3 = (Lam (Lam (Lam (App (App (App (Con daihyo) (Var 0)) (Var 1)) (Var 2)))))
-           --  i == 4 = (Lam (Lam (Lam (Lam (App (App (App (App (Con daihyo) (Var 0)) (Var 1)) (Var 2)) (Var 3))))))
-           | otherwise = Con $ T.concat ["Error: verb ",daihyo," of ", T.pack (show i), " arguments"]
