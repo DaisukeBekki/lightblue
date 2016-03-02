@@ -1,19 +1,28 @@
 {-# OPTIONS -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
 
--- | compile: ghc -package text-1.2.1.1 XMLmodule
+{-|
+Description : XML interface
+Copyright   : (c) Daisuke Bekki, 2016
+Licence     : All right reserved
+Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
+Stability   : alpha
+
+To compile:
+
+> ghc -package text-1.2.1.1 XMLmodulem
+-}
 module XMLmodule (
   render
   ) where
 
 import qualified CombinatoryCategorialGrammar as CCG
 import qualified DependentTypes as D
-import qualified Data.Text.Lazy as T
---import qualified Data.Text.Lazy.IO as T
-import qualified Data.Map as M
-import qualified Text.XML as X
-import qualified Data.Fixed as F
-import qualified System.IO as S
+import qualified Data.Text.Lazy as T   --text
+import qualified Data.Map as M         --container
+import qualified Text.XML as X         --xml-conduit
+import qualified Data.Fixed as F       --base
+import qualified System.IO as S        --base
 
 --class XMLable a where
 --  toXML :: a -> X.Node

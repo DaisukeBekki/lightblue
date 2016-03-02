@@ -4,14 +4,14 @@
 -- | usage: ./ParseFile <text file> 
 -- | 
 --import Prelude hiding (readFile, writeFile)
-import qualified Data.Text.Lazy as T
-import qualified Data.Text.Lazy.IO as T
+import qualified Data.Text.Lazy as T                 --text
+import qualified Data.Text.Lazy.IO as T              --text
 import qualified CombinatoryCategorialGrammar as CCG
 import qualified DependentTypes as DTS
 import qualified ChartParser as CP
-import qualified Data.Time as Time
-import qualified System.IO as S
-import qualified System.Environment as S
+import qualified Data.Time as Time                   --time
+import qualified System.IO as S                      --base
+import qualified System.Environment as S             --base
 
 main :: IO()
 main = do

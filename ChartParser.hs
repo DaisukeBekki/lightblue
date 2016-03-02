@@ -1,43 +1,94 @@
 {-# OPTIONS -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+{-|
+Module      : ChartParser
+Description : A left-corner CKY-parser for lexical grammars
+Copyright   : (c) Daisuke Bekki, 2016
+Licence     : All right reserved
+Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
+Stability   : alpha
+-}
 module ChartParser (
+  -- * Main parser
   parse,
+  -- * Printing functions
   printChart,
-  topBox,
+  printChartInSimpleText,
+  printChartInTeX,
   printNodes,
-  printChartInSimpleText
+  posTagger,
+  -- * Utilities to filter the parsing results
+  topBox,
+  bestOnly
   ) where
 
-import qualified System.IO as S
 import Data.List
-import qualified Data.Text.Lazy as T
-import qualified Data.Map as M
---import qualified Data.Time as Time
---import qualified System.IO as S
-import qualified CombinatoryCategorialGrammar as G --(Node, unaryRules, binaryRules, trinaryRules, isCONJ, cat, SimpleText)
-import qualified JumanLexicon as L (Lexicon, lookupLexicon, setupLexicon, emptyCategories)
-import Data.Char
+import Data.Char                       --base
+import Data.Fixed                      --base
+import qualified System.IO as S        --base
+import qualified Data.Text.Lazy as T   --text
+import qualified Data.Map as M         --container
+import qualified CombinatoryCategorialGrammar as CCG --(Node, unaryRules, binaryRules, trinaryRules, isCONJ, cat, SimpleText)
+import qualified JapaneseLexicon as L (Lexicon, lookupLexicon, setupLexicon, emptyCategories)
+import qualified TeXmodule as TEX
 
 -- | The type 'Chart' is a type for CYK-charts. 
-type Chart = M.Map (Int,Int) [G.Node]
+type Chart = M.Map (Int,Int) [CCG.Node]
 
--- | The 'printChart' function displays the CYK chart
+{- Come functions for pretty printing Chart/Nodes -}
+
+-- | 'printChart' prints every box in the (parsed) CYK chart as a TeX source code.
 printChart :: S.Handle -> Chart -> IO()
 printChart handle chart = mapM_ printList $ M.toList $ M.filter (/= []) chart
   where printList (key,nodes) = do -- list化したChartを画面表示する。
           S.hPutStr handle $ "\\subsubsection*{" ++ show key ++ ": ノード数 " ++ (show $ length nodes) ++ "}"
-          mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-4em\\scalebox{.3}{" ++ T.unpack (G.toTeX node) ++ "\\\\}\\par\\medskip") nodes
--- | 
-printNodes :: S.Handle -> Int -> [G.Node] -> IO()
-printNodes handle n nodes = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-2em\\scalebox{.3}{" ++ T.unpack (G.toTeX node) ++ "\\\\}\\par\\medskip") $ take n $ nodes
+          mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-4em\\scalebox{.3}{" ++ T.unpack (TEX.toTeX node) ++ "\\\\}\\par\\medskip") nodes
 
--- |
-printChartInSimpleText :: S.Handle -> [G.Node] -> IO()
-printChartInSimpleText handle nodes = mapM_ (\node -> S.hPutStr handle $ (T.unpack $ G.toText node) ++ "\n") $ reverse nodes
+-- | `printNodes` prints n-nodes from given list of CCG nodes (=a parsing result) as a TeX source code.
+printNodes :: S.Handle -> Int -> [CCG.Node] -> IO()
+printNodes handle n nodes = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-2em\\scalebox{.3}{" ++ T.unpack (TEX.toTeX node) ++ "\\\\}\\par\\medskip") $ take n $ nodes
+
+-- | `printChartInTeX` prints CCG nodes (=a parsing result) as a TeX source code.
+printChartInTeX :: S.Handle -> [CCG.Node] -> IO()
+printChartInTeX handle = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-4em\\scalebox{.3}{" ++ T.unpack (TEX.toTeX node) ++ "\\\\}\\par\\medskip")
+
+-- | `printChartInSimpleText` prints CCG nodes (=a parsing result) as a plain text.
+printChartInSimpleText :: S.Handle -> [CCG.Node] -> IO()
+printChartInSimpleText handle = mapM_ (\node -> S.hPutStr handle $ (T.unpack $ CCG.toText node) ++ "\n") 
+
+-- | `posTagger` prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style
+posTagger :: S.Handle -> [CCG.Node] -> IO()
+posTagger handle nodes = 
+  case nodes of
+    [] -> S.hPutStrLn handle "No results."
+    (n:_) -> mapM_ ((S.hPutStrLn handle) . T.unpack) $ node2PosTags n
+
+node2PosTags :: CCG.Node -> [T.Text]
+node2PosTags node@(CCG.Node _ _ _ _ _ _ _) =
+  case CCG.daughters node of
+    [] -> [T.concat [CCG.pf node, "\t", CCG.toText (CCG.cat node), " \t", CCG.toText (CCG.sem node), "\t", CCG.memo node, "\t[", T.pack (show ((fromRational $ CCG.score node)::Fixed E2)), "]"]]
+    dtrs -> [t | dtr <- dtrs, t <- node2PosTags dtr]
+
+-- | `topBox` picks up the nodes in the "top" box in the chart.
+topBox :: Chart -> [CCG.Node]
+topBox chart = let ((_,k),_) = M.findMax chart in
+                 case M.lookup (0,k) chart of 
+                   Just nodes -> sort nodes
+                   Nothing    -> []
+
+-- | `bestOnly` takes only the nodes with the best score.
+bestOnly :: [CCG.Node] -> [CCG.Node]
+bestOnly nodes = case nodes of
+  [] -> []
+  (firstnode:ns) -> firstnode:(takeWhile (\node -> CCG.score(node) >= CCG.score(firstnode)) ns)
+
+{- Main functions -}
 
 -- | Main parsing function
-parse :: Int -> T.Text -> IO(Chart)
+parse :: Int         -- ^ The beam width
+         -> T.Text   -- ^ The input text to parse
+         -> IO(Chart)
 parse beam sentence = do
   --start <- Time.getCurrentTime
   lexicon <- L.setupLexicon sentence
@@ -58,7 +109,7 @@ parseMain beam lexicon text
 
 -- | The 'lookupChart' function looks up a chart with the key (i,j) 
 --   and returns the value of type [Node]
-lookupChart :: Int -> Int -> Chart -> [G.Node]
+lookupChart :: Int -> Int -> Chart -> [CCG.Node]
 lookupChart i j chart = 
   case (M.lookup (i,j) chart) of Just list -> list
                                  Nothing   -> []
@@ -91,13 +142,13 @@ boxAccumulator beam lexicon partialbox c =
   let listn = if length list5 <= beam then sort list5 else take beam $ sort list5 in
   ((M.insert (i,j) listn chart), newword, i-1, j)
 
-checkUnaryRules :: [G.Node] -> [G.Node]
+checkUnaryRules :: [CCG.Node] -> [CCG.Node]
 checkUnaryRules prevlist = 
-  foldl' (\acc node -> G.unaryRules node acc) prevlist prevlist
+  foldl' (\acc node -> CCG.unaryRules node acc) prevlist prevlist
                       
-checkBinaryRules :: Int -> Int -> Chart -> [G.Node] -> [G.Node]
+checkBinaryRules :: Int -> Int -> Chart -> [CCG.Node] -> [CCG.Node]
 checkBinaryRules i j chart prevlist = 
-  foldl' (\acck k -> foldl' (\accl lnode -> foldl' (\accr rnode -> G.binaryRules lnode rnode accr) 
+  foldl' (\acck k -> foldl' (\accl lnode -> foldl' (\accr rnode -> CCG.binaryRules lnode rnode accr) 
                                                    accl  
                                                    (lookupChart k j chart)) 
                             acck 
@@ -105,37 +156,30 @@ checkBinaryRules i j chart prevlist =
          prevlist
          (take (j-i-1) [i+1..]) -- [k | i<k<j]
 
-checkCoordinationRule :: Int -> Int -> Chart -> [G.Node] -> [G.Node]
+checkCoordinationRule :: Int -> Int -> Chart -> [CCG.Node] -> [CCG.Node]
 checkCoordinationRule i j chart prevlist =
-  foldl' (\acck k -> foldl' (\accc cnode -> foldl' (\accl lnode -> foldl' (\accr rnode -> G.coordinationRule lnode cnode rnode accr)
+  foldl' (\acck k -> foldl' (\accc cnode -> foldl' (\accl lnode -> foldl' (\accr rnode -> CCG.coordinationRule lnode cnode rnode accr)
                                                                           accl
                                                                           (lookupChart (k+1) j chart))
                                                    accc
                                                    (lookupChart i k chart))
                             acck
-                            (filter (\n -> (G.cat n)==G.CONJ) (lookupChart k (k+1) chart)))
+                            (filter (\n -> (CCG.cat n)==CCG.CONJ) (lookupChart k (k+1) chart)))
          prevlist
          (take (j-i-2) [i+1..]) -- [k | i<k<j-1]  i-k k-k+1 k+1-j
 
-checkParenthesisRule :: Int -> Int -> Chart -> [G.Node] -> [G.Node]
+checkParenthesisRule :: Int -> Int -> Chart -> [CCG.Node] -> [CCG.Node]
 checkParenthesisRule i j chart prevlist 
-  | i+3 <= j = foldl' (\accl lnode -> foldl' (\accr rnode -> foldl' (\accc cnode -> G.parenthesisRule lnode cnode rnode accc)
+  | i+3 <= j = foldl' (\accl lnode -> foldl' (\accr rnode -> foldl' (\accc cnode -> CCG.parenthesisRule lnode cnode rnode accc)
                                                                     accr 
                                                                     (lookupChart (i+1) (j-1) chart))
                                              accl
-                                             (filter (\n -> (G.cat n)==G.RPAREN) (lookupChart (j-1) j chart)))
+                                             (filter (\n -> (CCG.cat n)==CCG.RPAREN) (lookupChart (j-1) j chart)))
                       prevlist
-                      (filter (\n -> (G.cat n)==G.LPAREN) (lookupChart i (i+1) chart))
+                      (filter (\n -> (CCG.cat n)==CCG.LPAREN) (lookupChart i (i+1) chart))
   | otherwise = prevlist
 
-checkEmptyCategories :: [G.Node] -> [G.Node]
+checkEmptyCategories :: [CCG.Node] -> [CCG.Node]
 checkEmptyCategories prevlist =
-  foldr (\p -> (G.binaryRules (fst p) (snd p)) . (G.binaryRules (snd p) (fst p))) prevlist [(x,y) | x <- prevlist, y <- L.emptyCategories]
-
--- | The function "topBox" picks up the nodes in the "top" box in the chart.
-topBox :: Chart -> [G.Node]
-topBox chart = let ((_,k),_) = M.findMax chart in
-                 case M.lookup (0,k) chart of 
-                   Just nodes -> nodes
-                   Nothing    -> []
+  foldr (\p -> (CCG.binaryRules (fst p) (snd p)) . (CCG.binaryRules (snd p) (fst p))) prevlist [(x,y) | x <- prevlist, y <- L.emptyCategories]
 

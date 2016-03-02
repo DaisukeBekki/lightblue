@@ -1,154 +1,83 @@
 {-# OPTIONS -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Dependent Types (with de Bruijn index)
+{-|
+Description : Underspecified Dependent Type Theory (in de Bruijn index)
+Copyright   : Copyright (c) Daisuke Bekki, 2016
+Licence     : All right reserved
+Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
+Stability   : beta
+
+Implementation of Underspecified Dependent Type Theory (Bekki forthcoming).
+How to install lightblue:
+
+Lightblue requries @juman@ and @nkf@ to be installed.  
+
+> cabal configure
+> cabal build
+> cabal install
+> cabal haddock
+
+-}
 module DependentTypes (
+  -- * Types
   Preterm(..),
   Selector(..),
-  --
-  Typeset(..),
-  toTeXWithVN,
-  --
+  -- * Classes
   SimpleText(..),
   toTextWithVN,
-  --
+  -- * Syntactic Operations
   subst,
+  addLambda,
+  deleteLambda,
+  -- * Computations
   betaReduce,
-  --
   add,
   multiply
   ) where
 
 import qualified Data.Text.Lazy as T
 
-class Typeset a where
-  toTeX :: a -> T.Text
-
+-- | Preterms of Underspecified Dependent Type Theory
 data Preterm =
-  Var Int |
-  Con T.Text |
-  Type |
-  Kind |
-  Pi Preterm Preterm |
-  Not Preterm |
-  Lam Preterm |
-  App Preterm Preterm |
-  Sigma Preterm Preterm |
-  Pair Preterm Preterm |
-  Proj Selector Preterm |
-  Lamvec Preterm |
-  Appvec Int Preterm |
-  Unit |
-  Top |
-  Bot |
-  Asp Int Preterm |
-  Nat | Zero | Succ Preterm | Natrec Preterm Preterm Preterm |
-  Eq Preterm Preterm Preterm | Refl Preterm Preterm | Idpeel Preterm Preterm 
+  Var Int |               -- ^ Variable
+  Con T.Text |            -- ^ Constant symbol
+  Type |                  -- ^ The sort \"type\"
+  Kind |                  -- ^ The sort \"kind\"
+  Pi Preterm Preterm |    -- ^ Dependent function type (or Pi type)
+  Not Preterm |           -- ^ Negation
+  Lam Preterm |           -- ^ Lambda abstraction
+  App Preterm Preterm |   -- ^ Function Application
+  Sigma Preterm Preterm | -- ^ Dependent product type (or Sigma type)
+  Pair Preterm Preterm |  -- ^ Pair
+  Proj Selector Preterm | -- ^ (First and second) Projections
+  Lamvec Preterm |        -- ^ Variable-length lambda abstraction
+  Appvec Int Preterm |    -- ^ Variable-length function application
+  Unit |                  -- ^ The unit term (of type Top)
+  Top |                   -- ^ The top type
+  Bot |                   -- ^ The bottom type
+  Asp Int Preterm |       -- ^ The asperand term (or Underspesified term)
+  Nat |                   -- ^ The natural number type (Nat)
+  Zero |                  -- ^ 0 (of type Nat)
+  Succ Preterm |          -- ^ The successor function
+  Natrec Preterm Preterm Preterm | -- ^ natrec
+  Eq Preterm Preterm Preterm |     -- ^ Intensional equality type
+  Refl Preterm Preterm |           -- ^ refl
+  Idpeel Preterm Preterm           -- ^ idpeel
     deriving (Eq, Show)
 
+-- | `Selector` is an index i of Proj i m
 data Selector = Fst | Snd
   deriving (Eq, Show)
-
-instance Typeset Selector where
-  toTeX Fst = "1"
-  toTeX Snd = "2"
-
-instance Typeset Preterm where
-  toTeX preterm = toTeXWithVN [] preterm
-{-  
-  toTeX preterm = case preterm of
-    Var i -> T.pack (show i)
-    Con c -> T.concat["\\pred{", c, "}"]
-    Type  -> "\\type{type}"
-    Kind  -> "\\type{kind}"
-    Pi a b -> T.concat["\\dPi[", (T.pack ""), "]{", (toTeX a), "}{", (toTeX b), "}"]
-    Not m  -> T.concat["\\neg ", toTeXEmbedded m]
-    Lam m  -> T.concat["\\LAM[", (T.pack ""), "]", (toTeX m)]
-    App m n -> case n of
-                 (Var _) -> T.concat ["\\APP{", (toTeXEmbedded m), "}{(", toTeX n, ")}"]
-                 (Con _) -> T.concat ["\\APP{", (toTeXEmbedded m), "}{(", toTeX n, ")}"]
-                 (Asp _ _) -> T.concat ["\\APP{", (toTeXEmbedded m), "}{\\left(", toTeX n ,"\\right)}"]
-                 _ -> T.concat["\\APP{", toTeXEmbedded m, "}{", toTeXEmbedded n, "}"]
-    Lamvec m   -> T.concat ["\\vec{\\lambda}", toTeX m]
-    Appvec i m -> T.concat ["\\APP{", (toTeXEmbedded m), "}{\\vec{", T.pack (show i), "}}"]
-    Sigma a b -> T.concat["\\dSigma[", (T.pack ""), "]{", toTeX a, "}{", toTeX b, "}"]
-    Pair m n  -> T.concat["\\left(", toTeX m, ",", toTeX n, "\\right)"]
-    Proj s m  -> T.concat["\\pi_", toTeX s, "\\left(", toTeX m, "\\right)"] 
-    Unit      -> "()"
-    Top       -> "\\top"
-    Bot       -> "\\bot"
-    Asp i m   -> T.concat["@_{", T.pack (show i), "}:", (toTeX m)]
-    
-toTeXEmbedded :: Preterm -> T.Text  
-toTeXEmbedded preterm = case preterm of
-  Lam m -> T.concat["\\left(\\LAM[]", toTeX m, "\\right)"]
-  App m n -> T.concat["\\left(\\APP{", toTeXEmbedded m, "}{", toTeXEmbedded n, "}\\right)"]
-  Lamvec m -> T.concat ["\\left(\\vec{\\lambda}.", toTeX m, "\\right)"]
-  Appvec i m -> T.concat ["\\left(\\APP{", toTeXEmbedded m, "}{\\vec{x}_", T.pack (show i), "}\\right)"]
-  m          -> toTeX m
--}
-
-toTeXWithVN :: [T.Text] -> Preterm -> T.Text
-toTeXWithVN varlist preterm = toTeXWithVNLoop varlist preterm 0
--- | toTeXWithVNLoop context preterm index
---
-toTeXWithVNLoop :: [T.Text] -> Preterm -> Int -> T.Text
-toTeXWithVNLoop vlist preterm i = case preterm of
-    Var j -> if j < (length vlist)
-             then vlist!!j
-             else T.concat ["error:", T.pack (show j), " in ", T.pack (show vlist)]
-    Con c -> T.concat["\\pred{", c, "}"]
-    Type  -> "\\type{type}"
-    Kind  -> "\\type{kind}"
-    Pi a b -> let varname = T.concat ["x_{", T.pack (show i), "}"] in 
-              T.concat["\\dPi[", varname , "]{", (toTeXWithVNLoop vlist a (i+1)), "}{", (toTeXWithVNLoop (varname:vlist) b (i+1)), "}"]
-    Not a  -> T.concat["\\neg ", toTeXWithVNEmbedded vlist a i]
-    Lam m  -> let varname = T.concat ["x_{", T.pack (show i), "}"] in
-              T.concat["\\LAM[", varname, "]", (toTeXWithVNLoop (varname:vlist) m (i+1))]
-    (App (App (Con c) y) x) -> T.concat ["\\APP{", toTeXWithVNEmbedded vlist (Con c) i, "}{\\left(", toTeXWithVNLoop vlist x i, ",", toTeXWithVNLoop vlist y i, "\\right)}" ]
-    (App (App (App (Con c) z) y) x) -> T.concat ["\\APP{", toTeXWithVNEmbedded vlist (Con c) i, "}{\\left(", toTeXWithVNLoop vlist x i, ",", toTeXWithVNLoop vlist y i, ",", toTeXWithVNLoop vlist z i, "\\right)}" ]
-    App m n -> case n of
-                 (Var _) -> T.concat ["\\APP{", (toTeXWithVNEmbedded vlist m i), "}{(", toTeXWithVNLoop vlist n i, ")}"]
-                 (Con _) -> T.concat ["\\APP{", (toTeXWithVNEmbedded vlist m i), "}{(", toTeXWithVNLoop vlist n i, ")}"]
-                 (Proj _ _) -> T.concat ["\\APP{", (toTeXWithVNEmbedded vlist m i), "}{\\left(", toTeXWithVNLoop vlist n i, "\\right)}"]
-                 (Asp _ _) -> T.concat ["\\APP{", (toTeXWithVNEmbedded vlist m i), "}{\\left(", toTeXWithVNLoop vlist n i,"\\right)}"]
-                 _ -> T.concat["\\APP{", toTeXWithVNEmbedded vlist m i, "}{", toTeXWithVNEmbedded vlist n i, "}"]
-    Sigma a b -> let varname = T.concat ["x_{", T.pack (show i), "}"] in 
-                 T.concat["\\dSigma[", varname, "]{", toTeXWithVNLoop vlist a (i+1), "}{", toTeXWithVNLoop (varname:vlist) b (i+1), "}"]
-    Pair m n  -> T.concat["\\left(", toTeXWithVNLoop vlist m i, ",", toTeXWithVNLoop vlist n i, "\\right)"]
-    Proj s m  -> T.concat["\\pi_", toTeX s, "\\left(", toTeXWithVNLoop vlist m i, "\\right)"] 
-    Lamvec m   -> let varname = T.concat ["x_{", T.pack (show i), "}"] in
-                  T.concat ["\\lambda\\vec{", varname, "}.", toTeXWithVNLoop (varname:vlist) m (i+1)]
-    Appvec j m -> if j < (length vlist)
-                  then T.concat ["\\APP{", (toTeXWithVNEmbedded vlist m i), "}{\\vec{", vlist!!j, "}}"]
-                  else T.concat ["\\APP{", (toTeXWithVNEmbedded vlist m i), "}{\\vec{error:", T.pack (show j), " in ", T.pack (show vlist), "}}"]
-    Unit      -> "()"
-    Top       -> "\\top"
-    Bot       -> "\\bot"
-    Asp j m   -> T.concat ["@_{", T.pack (show j), "}:", (toTeXWithVNLoop vlist m i)]
-    Nat       -> "\\Set{N}"
-    Zero      -> "0"
-    Succ n    -> T.concat ["\\type{s}", (toTeXWithVNLoop vlist n i)]
-    Natrec n e f -> T.concat ["\\type{natrec}\\left(", (toTeXWithVNLoop vlist n i), ",", (toTeXWithVNLoop vlist e i), ",", (toTeXWithVNLoop vlist f i), "\\right)"]
-    Eq a m n  -> T.concat [(toTeXWithVNLoop vlist m i),"=_{",(toTeXWithVNLoop vlist a i),"}",(toTeXWithVNLoop vlist n i)]
-    Refl a m  -> T.concat ["\\type{refl}_{",(toTeXWithVNLoop vlist a i),"}\\left(",(toTeXWithVNLoop vlist m i),"\\right)"]
-    Idpeel m n -> T.concat ["\\type{idpeel}\\left(", (toTeXWithVNLoop vlist m i), ",", (toTeXWithVNLoop vlist n i), "\\right)"]
-
-toTeXWithVNEmbedded :: [T.Text] -> Preterm -> Int -> T.Text  
-toTeXWithVNEmbedded vlist preterm i = case preterm of
-  Lam m -> let varname = T.concat ["x_{", T.pack (show i), "}"] in
-           T.concat["\\left(\\LAM[", varname, "]", toTeXWithVNLoop (varname:vlist) m (i+1), "\\right)"]
-  App m n -> T.concat["\\left(\\APP{", toTeXWithVNEmbedded vlist m i, "}{", toTeXWithVNEmbedded vlist n i, "}\\right)"]
-  Lamvec m -> let varname = T.concat ["x_{", T.pack (show i), "}"] in
-              T.concat ["\\left(\\lambda\\vec{", varname, "}.", toTeXWithVNLoop (varname:vlist) m (i+1), "\\right)"]
---  Appvec j m -> T.concat ["\\left(\\APP{", toTeXWithVNEmbedded vlist m i, "}{\\vec{x}_", T.pack (show j), "}\\right)"]
-  m          -> toTeXWithVNLoop vlist m i
 
 class SimpleText a where
   toText :: a -> T.Text
 
+instance SimpleText Selector where
+  toText Fst = "1"  -- `Proj` `Fst` m is the first projection of m
+  toText Snd = "2" -- `Proj` `Snd` m is the second projection of m
+
 -- | convert a term to a simple notation text
---
 instance SimpleText Preterm where
   toText preterm = case preterm of
     Var i   -> T.pack (show i)
@@ -161,7 +90,7 @@ instance SimpleText Preterm where
     App m n -> T.concat["(", toText m, " ", toText n, ")"]
     Sigma a b  -> T.concat["(Σ ", toText a, ")", toText b]
     Pair m n   -> T.concat["(", toText m, ",", toText n, ")"]
-    Proj s m   -> T.concat["π", toTeX s, "(", toText m, ")"] 
+    Proj s m   -> T.concat["π", toText s, "(", toText m, ")"] 
     Lamvec m   -> T.concat ["λ+.", toText m]
     Appvec i m -> T.concat ["(", toText m, " ", T.pack (show i), "+)"]
     Unit  -> "()"
@@ -178,8 +107,7 @@ instance SimpleText Preterm where
 
 -- | "toText" with variable names: convert a term to a non-de-Bruijn notation
 toTextWithVN :: [T.Text] -> Preterm -> T.Text
-toTextWithVN varlist term = 
-  toTextWithVNLoop varlist term 0
+toTextWithVN varlist term = toTextWithVNLoop varlist term 0
 
 toTextWithVNLoop :: [T.Text] -> Preterm -> Int -> T.Text
 toTextWithVNLoop vlist preterm i = case preterm of
@@ -189,18 +117,50 @@ toTextWithVNLoop vlist preterm i = case preterm of
   Con c -> c
   Type  -> "type"
   Kind  -> "kind"
-  Pi a b  -> let varname = T.concat ["x", T.pack (show i)] in 
+  Pi a b  -> let varname = case a of
+                             Con "entity" -> T.concat ["x", T.pack (show i)] 
+                             Con "event" -> T.concat ["e", T.pack (show i)] 
+                             Con "state" -> T.concat ["s", T.pack (show i)] 
+                             App _ _ -> T.concat ["u", T.pack (show i)] 
+                             Sigma _ _ -> T.concat ["u", T.pack (show i)] 
+                             Pi _ _ -> T.concat ["u", T.pack (show i)] 
+                             Not _  -> T.concat ["u", T.pack (show i)] 
+                             Appvec _ _ -> T.concat ["u", T.pack (show i)] 
+                             Type -> T.concat ["p", T.pack (show i)] 
+                             Kind -> T.concat ["p", T.pack (show i)] 
+                             Eq _ _ _ -> T.concat ["s", T.pack (show i)] 
+                             Nat -> T.concat ["k", T.pack (show i)] 
+                             _ -> T.concat ["x", T.pack (show i)] in
              T.concat ["(", varname, ":", toTextWithVNLoop vlist a (i+1), ")→ ", toTextWithVNLoop (varname:vlist) b (i+1)]
   Not a   -> T.concat["¬", toTextWithVNLoop vlist a i]
-  Lam m   -> let varname = T.concat ["x", T.pack (show i)] in
+  Lam m   -> let varname = case m of
+                              Sigma _ _ -> T.concat ["c", T.pack (show i)] 
+                              Pi _ _ -> T.concat ["c", T.pack (show i)] 
+                              _ -> T.concat ["x", T.pack (show i)] in
              T.concat ["λ", varname, ".", toTextWithVNLoop (varname:vlist) m (i+1)]
   (App (App (Con c) y) x) -> T.concat [c, "(", toTextWithVNLoop vlist x i, ",", toTextWithVNLoop vlist y i,")"]
   (App (App (App (Con c) z) y) x) -> T.concat [c, "(", toTextWithVNLoop vlist x i, ",", toTextWithVNLoop vlist y i,",",toTextWithVNLoop vlist z i,")"]
+  (App (App (App (App (Con c) u) z) y) x) -> T.concat [c, "(", toTextWithVNLoop vlist x i, ",", toTextWithVNLoop vlist y i,",",toTextWithVNLoop vlist z i,",", toTextWithVNLoop vlist u i, ")"]
   App m n -> T.concat [toTextWithVNLoop vlist m i, "(", toTextWithVNLoop vlist n i, ")"]
-  Sigma a b -> let varname = T.concat ["x", T.pack (show i)] in 
-               T.concat ["(", varname, ":", toTextWithVNLoop vlist a (i+1), ")× ", toTextWithVNLoop (varname:vlist) b (i+1)]
+  Sigma a b -> let varname = case a of
+                               Con "entity" -> T.concat ["x", T.pack (show i)] 
+                               Con "event" -> T.concat ["e", T.pack (show i)] 
+                               Con "state" -> T.concat ["s", T.pack (show i)] 
+                               App _ _ -> T.concat ["u", T.pack (show i)] 
+                               Sigma _ _ -> T.concat ["u", T.pack (show i)] 
+                               Pi _ _ -> T.concat ["u", T.pack (show i)] 
+                               Not _  -> T.concat ["u", T.pack (show i)] 
+                               Appvec _ _ -> T.concat ["u", T.pack (show i)] 
+                               Type -> T.concat ["p", T.pack (show i)] 
+                               Kind -> T.concat ["p", T.pack (show i)] 
+                               Eq _ _ _ -> T.concat ["s", T.pack (show i)] 
+                               Nat -> T.concat ["k", T.pack (show i)] 
+                               _ -> T.concat ["x", T.pack (show i)] in
+               case b of 
+                 Top -> T.concat ["(", toTextWithVNLoop vlist a (i+1), ")"]
+                 _   -> T.concat ["(", varname, ":", toTextWithVNLoop vlist a (i+1), ")× ", toTextWithVNLoop (varname:vlist) b (i+1)]
   Pair m n  -> T.concat ["(", toTextWithVNLoop vlist m i, ",", toTextWithVNLoop vlist n i, ")"]
-  Proj s m  -> T.concat ["π", toTeX s, "(", toTextWithVNLoop vlist m i, ")"]
+  Proj s m  -> T.concat ["π", toText s, "(", toTextWithVNLoop vlist m i, ")"]
   Lamvec m  -> let varname = T.concat ["x", T.pack (show i)] in
                T.concat ["λ", varname, "+.", toTextWithVNLoop (varname:vlist) m (i+1)]
   Appvec j m -> if j < (length vlist)
@@ -250,7 +210,7 @@ subst preterm l i = case preterm of
   Idpeel m n -> Idpeel (subst m l i) (subst n l i)
 
 -- | shiftIndices m d i
---   mの中のi以上のindexに+d (d-place shift)
+--   add d to all the indices more than i within m (=d-place shift)
 shiftIndices :: Preterm -> Int -> Int -> Preterm
 shiftIndices preterm d i = case preterm of
   Var j      -> if j >= i 
@@ -319,3 +279,53 @@ add m n = Natrec m n (Lam (Lam (Succ (Var 0))))
 
 multiply :: Preterm -> Preterm -> Preterm
 multiply m n = Natrec m Zero (Lam (Lam (add n (Var 0))))
+
+-- | addLambda i preterm: the first subroutine for 'transvec' function.
+-- this function takes an index and a preterm, transforms the latter in a way that the Var/Appvec with an index j that is equal or greater than i 
+-- Ex.
+-- addLambda 1 (Appvec 0 m) = Appvec 1 (addLambda 1 m)
+-- addLambda 0 (Appvec 0 m) = Appvec 0 (App () (Var 1))
+addLambda :: Int -> Preterm -> Preterm
+addLambda i preterm = case preterm of
+  Var j      -> case () of
+                  _ | j > i     -> Var (j+1)
+                    | j < i     -> Var j
+                    | otherwise -> Con $ T.concat [" Error: var ", T.pack (show j)]
+  Pi a b     -> Pi (addLambda i a) (addLambda (i+1) b)
+  Not a      -> Not (addLambda (i+1) a)
+  Lam m      -> Lam (addLambda (i+1) m)
+  App m n    -> App (addLambda i m) (addLambda i n)
+  Sigma a b  -> Sigma (addLambda i a) (addLambda (i+1) b)
+  Pair m n   -> Pair (addLambda i m) (addLambda i n)
+  Proj s m   -> Proj s (addLambda i m)
+  Lamvec m   -> Lamvec (addLambda (i+1) m)
+  Appvec j m -> case () of
+                  _ | j > i      -> Appvec (j+1) (addLambda i m)
+                    | j < i      -> Appvec j (addLambda i m)
+                    | otherwise  -> Appvec j (App (addLambda i m) (Var (j+1)))
+  Asp j m    -> Asp j (addLambda i m)
+  t -> t
+
+-- | deleteLambda i preterm: the second subroutine for 'transvec' function.
+-- this function takes an index and a preterm, transforms the latter in a way that the Var/Appvec with an index j 
+deleteLambda :: Int -> Preterm -> Preterm
+deleteLambda i preterm = case preterm of
+  Var j      -> case () of
+                  _ | j > i     -> Var (j-1)
+                    | j < i     -> Var j
+                    | otherwise -> Con $ T.concat ["Error: var ", T.pack (show j)]
+  Pi a b     -> Pi (deleteLambda i a) (deleteLambda (i+1) b)
+  Not a      -> Not (deleteLambda (i+1) a)
+  Lam m      -> Lam (deleteLambda (i+1) m)
+  App m n    -> App (deleteLambda i m) (deleteLambda i n)
+  Sigma a b  -> Sigma (deleteLambda i a) (deleteLambda (i+1) b)
+  Pair m n   -> Pair (deleteLambda i m) (deleteLambda i n)
+  Proj s m   -> Proj s (deleteLambda i m)
+  Lamvec m   -> Lamvec (deleteLambda (i+1) m)
+  Appvec j m -> case () of
+                  _ | j > i     -> Appvec (j-1) (deleteLambda i m)
+                    | j < i     -> Appvec j (deleteLambda i m)
+                    | otherwise -> deleteLambda i m
+  Asp j m    -> Asp j (deleteLambda i m)
+  t -> t
+
