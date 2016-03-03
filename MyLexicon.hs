@@ -365,7 +365,7 @@ myLexicon = concat $ [
   -- 6.1.1 形式述語 
   mylex ["居","い"] "(381)" (S [V1] [Stem] `BS` S verb [TeForm,NiForm]) (eventModifier "MCN:テイル"),
   mylex ["有","あ"] "(381)" (S [V5ARU] [Stem] `BS` S adjective [Cont]) (eventModifier "MCN:テアル"),
-  mylex ["有","あ"] "(381)" (S [V5ARU] [Stem] `BS` S [Nda] [TeForm]) (eventModifier "MCN:テアル"),
+  mylex ["有","あ"] "(381)" (S [V5ARU] [Stem] `BS` S [Nda] [TeForm]) id,
   mylex ["な"] "(383)" ((S [ANAS] [Stem] `BS` NP [Ga]) `BS` (S adjective [Cont]) `BS` NP [Ga]) negOperator,
   mylex ["な"] "(383)" ((S [ANAS] [Stem] `BS` NP [Ga]) `BS` (S [Nda] [TeForm] `BS` NP [Ga])) negOperator,
   mylex ["な"] "(384)" ((S [V5r] [Stem] `BS` NP [Ga]) `BS` (S adjective [Cont] `BS` NP [Ga])) (intensionalVerb 1 "成る"),
@@ -504,9 +504,9 @@ myLexicon = concat $ [
   mylex ["れ"] "(666)" (S [V1] [VoE] `BS` S [V1] [Stem])
         id,
   mylex ["来れ","これ"] "(667)" (S [VK] [VoE] `BS` S [VK] [Stem]) id,
-  mylex ["出来","でき"] "new" ((S [V1] [Term,Attr] `BS` NP [Ga]) `BS` (S [V1] [Stem] `BS` NP [Ga]))
+  mylex ["でき","出来"] "new" ((S [V1] [Term,Attr] `BS` NP [Ga]) `BS` (S [V1] [Stem] `BS` NP [Ga]))
         (Lam (Lam (Lam (App (Con "可能") (Pair (Var 1) (App (App (Var 2) (Var 1)) (Var 0))))))),
-  mylex ["出来","でき"] "new" (((S [V1] [Term,Attr] `BS` NP [Ga,Ni]) `BS` NP [Ga]) `BS` ((S [VS] [Stem] `BS` NP [Ga]) `BS` NP [Ni,O]))
+  mylex ["でき","出来"] "new" (((S [V1] [Term,Attr] `BS` NP [Ga,Ni]) `BS` NP [Ga]) `BS` ((S [VS] [Stem] `BS` NP [Ga]) `BS` NP [Ni,O]))
         (Lam (Lam (Lam (Lam (App (Con "可能") (Pair (Var 1) (App (App (App (Var 3) (Var 2)) (Var 1)) (Var 0)))))))),
   -- 複文
   mylex ["が"] "(711)" ((T True 1 anySExStem `SL` T True 1 anySExStem) `BS` S anyPos [Term]) (Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 1) (Var 0)))))),

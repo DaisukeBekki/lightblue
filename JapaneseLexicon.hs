@@ -76,7 +76,7 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "動詞:子音動詞バ行"  ct  = constructVerb daihyo caseframe [V5b]
   | T.isPrefixOf "動詞:母音動詞"     ct  = constructVerb daihyo caseframe [V1]
   | T.isPrefixOf "動詞:カ変動詞"     ct  = constructVerb daihyo caseframe [VK]
-  | T.isPrefixOf "名詞:サ変名詞"     ct  = [(N, (Con daihyo))] ++ (constructVerb daihyo caseframe [VS])
+  | T.isPrefixOf "名詞:サ変名詞"     ct  = [(N, commonNounSR daihyo)] ++ (constructVerb daihyo caseframe [VS])
   | T.isPrefixOf "動詞:サ変動詞"     ct  = constructVerb daihyo caseframe [VS]
   | T.isPrefixOf "動詞:ザ変動詞"     ct  = constructVerb daihyo caseframe [VZ]
   | T.isPrefixOf "形容詞:イ形容詞アウオ段" ct = constructPredicate daihyo [Aauo]
@@ -88,6 +88,10 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "接続詞" ct = [(((S anyPos [Term,Pre,Imper] `SL` S anyPos [Term,Pre,Imper]) `BS` S anyPos [Term]), (Lam (Lam (Sigma (Var 1) (Var 0)))))]
   | T.isPrefixOf "接頭辞:イ形容詞" ct   = [((S [Aauo] [Stem] `BS` NP [Ga]) `SL` (S [Aauo] [Stem] `BS` NP [Ga]), id)]
   | T.isPrefixOf "接頭辞:ナ形容詞" ct   = [((S [Nda] [Stem] `BS` NP [Ga]) `SL` (S [Nda] [Stem] `BS` NP [Ga]), id)]
+  | T.isPrefixOf "名詞性名詞助数辞" ct  = [(N,id)]
+  | T.isPrefixOf "名詞性特殊接尾辞" ct  = [(N,id)]
+  | T.isPrefixOf "名詞性名詞接尾辞" ct  = [(N,id)]
+  | T.isPrefixOf "数詞"           ct = [(Nat,id)]
   -- T.isPrefixOf "接頭辞:名詞" ct   = [(N `SL` N, (Lam (Lam (Sigma (App (Var 1) (Var 0)) (App (Con daihyo) (Var 1))))))]
   -- T.isPrefixOf "接尾辞" t   = [(BS (T True 1 anySExStem) (T True 1 anySExStem), id)]
   -- T.isPrefixOf "感動詞" t   = [(S [Exp] [Term], id)]

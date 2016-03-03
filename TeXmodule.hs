@@ -36,7 +36,7 @@ toTeXWithVN vlist i preterm = case preterm of
     Var j -> if j < (length vlist)
              then vlist!!j
              else T.concat ["error:", T.pack (show j), " in ", T.pack (show vlist)]
-    Con c -> T.concat["\\pred{", c, "}"]
+    Con c -> T.concat["\\pred{", T.replace "~" "\\~{}" c, "}"]
     Type  -> "\\type{type}"
     Kind  -> "\\type{kind}"
     Pi a b -> let varname = case a of

@@ -134,8 +134,8 @@ toTextWithVNLoop vlist preterm i = case preterm of
              T.concat ["(", varname, ":", toTextWithVNLoop vlist a (i+1), ")→ ", toTextWithVNLoop (varname:vlist) b (i+1)]
   Not a   -> T.concat["¬", toTextWithVNLoop vlist a i]
   Lam m   -> let varname = case m of
-                              Sigma _ _ -> T.concat ["c", T.pack (show i)] 
-                              Pi _ _ -> T.concat ["c", T.pack (show i)] 
+                              Sigma _ _ -> T.concat ["x", T.pack (show i)] 
+                              Pi _ _ -> T.concat ["x", T.pack (show i)] 
                               _ -> T.concat ["x", T.pack (show i)] in
              T.concat ["λ", varname, ".", toTextWithVNLoop (varname:vlist) m (i+1)]
   (App (App (Con c) y) x) -> T.concat [c, "(", toTextWithVNLoop vlist x i, ",", toTextWithVNLoop vlist y i,")"]

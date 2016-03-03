@@ -106,7 +106,7 @@ instance Eq Cat where
   RPAREN == RPAREN = True
   SL x1 x2 == SL y1 y2 = (x1 == y1) && (x2 == y2)
   BS x1 x2 == BS y1 y2 = (x1 == y1) && (x2 == y2)
-  T f1 i x == T f2 j y = (i == j) && (x == y) && (f1 == f2)
+  T f1 i x == T f2 j y = (f1 == f2) && (i == j) && (x == y)
   _ == _ = False
 
 -- | `toText` method is invoked.
@@ -133,7 +133,6 @@ data CatCase = Nc | Ga | O | Ni | To | Niyotte | No
                deriving (Eq)
 
 instance Show CatPos where
-  --show AnyPos = ""
   show V5k = "v:5:k"
   show V5s = "v:5:s"
   show V5t = "v:5:t"
@@ -170,19 +169,18 @@ instance Show CatPos where
   show Error = "error"
 
 instance Show CatConj where
-  --show AnyConj = "" 
   show Stem = "stem"
   show UStem = "ustem"
-  show Neg = "neg" 
-  show Cont = "cont"  
-  show Term = "term"  
-  show Attr = "attr"  
-  show Hyp = "hyp"  
-  show Imper = "imp"  
-  show Pre = "pre" 
+  show Neg = "neg"
+  show Cont = "cont"
+  show Term = "term"
+  show Attr = "attr"
+  show Hyp = "hyp"
+  show Imper = "imp"
+  show Pre = "pre"
   show NegL = "neg+l"
-  show EuphT = "euph:t" 
-  show EuphD = "euph:d" 
+  show EuphT = "euph:t"
+  show EuphD = "euph:d"
   show ModU = "mod:u"
   show ModD = "mod:d"
   show ModS = "mod:s"
@@ -227,11 +225,13 @@ instance SimpleText Cat where
     T True i _     -> T.concat ["T", (T.pack $ show i)]
     T False i c     -> T.concat [toText c, "[", (T.pack $ show i), "]"]
 
+-- | A bracketed version of `toText'` function.
 toText' :: Cat -> T.Text
 toText' c = if isBaseCategory c
-            then toText c   
-            else T.concat ["(", toText c, ")"]     
+            then toText c
+            else T.concat ["(", toText c, ")"]
 
+-- | A test to check if a given category is a base category (i.e. not a functional category nor a category variable).
 isBaseCategory :: Cat -> Bool
 isBaseCategory c = case c of
   S _ _ -> True
@@ -247,13 +247,30 @@ isBaseCategory c = case c of
 --isCONJ :: Cat -> Bool
 --isCONJ c = c == CONJ
 
-isNoncaseNP :: Cat -> Bool -- Check if T\NPnc
+-- | A test to check if a given category is T\NPnc.
+isNoncaseNP :: Cat -> Bool
 isNoncaseNP c = case c of
   (T _ _ _) `BS` (NP cas) -> if cas == [Nc] then True else False
   _ -> False
 
-data RuleSymbol = LEX | FFA | BFA | FFC1 | BFC1 | FFC2 | BFC2 | FFC3 | BFC3 | FFCx1 | FFCx2 | COORD | PAREN deriving (Eq, Show)
+-- | The name of the CCG rule to derive the node.
+data RuleSymbol = 
+  LEX    -- ^ A lexical item
+  | FFA  -- ^ Forward function application rule.
+  | BFA  -- ^ Backward function application rule
+  | FFC1 -- ^ Forward function composition rule 1
+  | BFC1 -- ^ Backward function composition rule 1
+  | FFC2 -- ^ Forward function composition rule 2
+  | BFC2 -- ^ Backward function composition rule 2
+  | FFC3 -- ^ Forward function composition rule 3
+  | BFC3 -- ^ Backward function composition rule 3
+  | FFCx1 -- ^ Forward function crossed composition rule 1
+  | FFCx2 -- ^ Forward function crossed composition rule 2
+  | COORD -- ^ Coordination rule
+  | PAREN -- ^ Parenthesis rule
+  deriving (Eq, Show)
 
+-- | The simple-text representation of the rule symbols.
 instance SimpleText RuleSymbol where
   toText rulesymbol = case rulesymbol of 
     LEX -> "LEX"
@@ -271,7 +288,9 @@ instance SimpleText RuleSymbol where
     PAREN -> "PAREN"
     -- CNP -> "CNP"
 
--- | Classes of Combinatory Rules
+{- Classes of Combinatory Rules -}
+
+-- | The function to apply all the unaryRules to a CCG node.
 unaryRules :: Node -> [Node] -> [Node]
 unaryRules _ prevlist = prevlist
 --unaryRules = sseriesRule
@@ -291,6 +310,7 @@ sseriesRule node@(Node {rs=LEX, cat=((S [VS] [Stem] `BS` NP [Ga]) `BS` NP [O]), 
 sseriesRule _ prevlist = prevlist
 -}
 
+-- | The function to apply all the binary rules to a given pair of CCG nodes.
 binaryRules :: Node -> Node -> [Node] -> [Node]
 binaryRules lnode rnode = 
   --compoundNPRule lnode rnode
@@ -305,13 +325,16 @@ binaryRules lnode rnode =
   . forwardFunctionApplicationRule lnode rnode
 
 {-
+-- | The function to apply all the trinary rules to a given triple of CCG nodes.
 trinaryRules :: Node -> Node -> Node -> [Node] -> [Node]
 trinaryRules lnode cnode rnode =
   parenthesisRule lnode cnode rnode
   . coordinationRule lnode cnode rnode
 -}
 
--- | Combinatory Rules
+{- Combinatory Rules -}
+
+-- | Forward function application rule.
 forwardFunctionApplicationRule :: Node -> Node -> [Node] -> [Node]
 forwardFunctionApplicationRule lnode@(Node {rs=r, cat=SL x y1, sem=f}) rnode@(Node {cat=y2, sem=a}) prevlist =
   -- [>] x/y1  y2  ==>  x
@@ -335,6 +358,7 @@ forwardFunctionApplicationRule lnode@(Node {rs=r, cat=SL x y1, sem=f}) rnode@(No
                         }:prevlist
 forwardFunctionApplicationRule _ _ prevlist = prevlist
 
+-- | Backward function application rule.
 backwardFunctionApplicationRule :: Node -> Node -> [Node] -> [Node]
 backwardFunctionApplicationRule lnode@(Node {cat=y1, sem=a}) rnode@(Node {rs=r, cat=(BS x y2), sem=f}) prevlist =
   -- [<] y1  x\y2  ==> x
@@ -356,6 +380,7 @@ backwardFunctionApplicationRule lnode@(Node {cat=y1, sem=a}) rnode@(Node {rs=r, 
                         }:prevlist
 backwardFunctionApplicationRule _ _ prevlist = prevlist
 
+-- | Forward function composition rule.
 forwardFunctionComposition1Rule :: Node -> Node -> [Node] -> [Node]
 forwardFunctionComposition1Rule lnode@(Node {rs=r,cat=SL x y1, sem=f}) rnode@(Node {cat=SL y2 z, sem=g}) prevlist =
   -- [>B] x/y1  y2/z  ==> x/z
@@ -381,6 +406,7 @@ forwardFunctionComposition1Rule lnode@(Node {rs=r,cat=SL x y1, sem=f}) rnode@(No
                }:prevlist
 forwardFunctionComposition1Rule _ _ prevlist = prevlist
 
+-- | Backward function composition rule.
 backwardFunctionComposition1Rule :: Node -> Node -> [Node] -> [Node]
 backwardFunctionComposition1Rule lnode@(Node {cat=BS y1 z, sem=g}) rnode@(Node {rs=r,cat=(BS x y2), sem=f}) prevlist =
   -- [>B] y1\z:g  x\y2:f  ==> x\z
@@ -402,6 +428,7 @@ backwardFunctionComposition1Rule lnode@(Node {cat=BS y1 z, sem=g}) rnode@(Node {
                         }:prevlist
 backwardFunctionComposition1Rule _ _ prevlist = prevlist
 
+-- | Forward function composition rule 2.
 forwardFunctionComposition2Rule :: Node -> Node -> [Node] -> [Node]
 forwardFunctionComposition2Rule lnode@(Node {rs=r,cat=(x `SL` y1), sem=f}) rnode@(Node {cat=(y2 `SL` z1) `SL` z2, sem=g}) prevlist =
   -- [>B2] x/y1:f  y2/z1/z2:g  ==> x/z1/z2
@@ -427,6 +454,7 @@ forwardFunctionComposition2Rule lnode@(Node {rs=r,cat=(x `SL` y1), sem=f}) rnode
                         }:prevlist
 forwardFunctionComposition2Rule _ _ prevlist = prevlist
 
+-- | Backward function composition rule 2.
 backwardFunctionComposition2Rule :: Node -> Node -> [Node] -> [Node]
 backwardFunctionComposition2Rule lnode@(Node {cat=(y1 `BS` z1) `BS` z2, sem=g}) rnode@(Node {rs=r,cat=(x `BS` y2), sem=f}) prevlist =
   -- [<B2] y1\z1\z2  x\y2  ==> x\z1\z2
@@ -448,6 +476,7 @@ backwardFunctionComposition2Rule lnode@(Node {cat=(y1 `BS` z1) `BS` z2, sem=g}) 
                         }:prevlist
 backwardFunctionComposition2Rule _ _ prevlist = prevlist
 
+-- | Backward function composition rule 3.
 backwardFunctionComposition3Rule :: Node -> Node -> [Node] -> [Node]
 backwardFunctionComposition3Rule lnode@(Node {cat=((y1 `BS` z1) `BS` z2) `BS` z3, sem=g}) rnode@(Node {rs=r,cat=(x `BS` y2), sem=f}) prevlist =
   -- [<B3] y1\z1\z2\z3  x\y2  ==> x\z1\z2\z3
@@ -469,6 +498,7 @@ backwardFunctionComposition3Rule lnode@(Node {cat=((y1 `BS` z1) `BS` z2) `BS` z3
                         }:prevlist
 backwardFunctionComposition3Rule _ _ prevlist = prevlist
 
+-- | Forward function crossed composition rule.
 forwardFunctionCrossedComposition1Rule :: Node -> Node -> [Node] -> [Node]
 forwardFunctionCrossedComposition1Rule lnode@(Node {rs=r,cat=SL x y1, sem=f}) rnode@(Node {cat=BS y2 z, sem=g}) prevlist =
   -- [>Bx] x/y1  y2\z  ==> x\z
@@ -495,6 +525,7 @@ forwardFunctionCrossedComposition1Rule lnode@(Node {rs=r,cat=SL x y1, sem=f}) rn
                }:prevlist
 forwardFunctionCrossedComposition1Rule _ _ prevlist = prevlist
 
+-- | Forward function crossed composition rule 2.
 forwardFunctionCrossedComposition2Rule :: Node -> Node -> [Node] -> [Node]
 forwardFunctionCrossedComposition2Rule lnode@(Node {rs=r,cat=(x `SL` y1), sem=f}) rnode@(Node {cat=(y2 `BS` z1) `BS` z2, sem=g}) prevlist =
   -- [>Bx2] x/y1:f  y2\z1\z2:g  ==> x\z1\z2
@@ -520,6 +551,7 @@ forwardFunctionCrossedComposition2Rule lnode@(Node {rs=r,cat=(x `SL` y1), sem=f}
                         }:prevlist
 forwardFunctionCrossedComposition2Rule _ _ prevlist = prevlist
 
+-- | Coordination rule.
 coordinationRule :: Node -> Node -> Node -> [Node] -> [Node]
 coordinationRule lnode@(Node {cat=x1, sem=f1}) cnode@(Node {cat=c, sem=conj}) rnode@(Node {cat=x2, sem=f2}) prevlist =
   -- [<Phi>] x1:f1  CONJ  x2:f2  ==>  x:\lambda\vec{x} (conj f1\vec{x}) f2\vec{x}
@@ -542,6 +574,7 @@ coordinationRule lnode@(Node {cat=x1, sem=f1}) cnode@(Node {cat=c, sem=conj}) rn
         }:prevlist
     _ -> prevlist
 
+-- | Parenthesis rule.
 parenthesisRule :: Node -> Node -> Node -> [Node] -> [Node]
 parenthesisRule lnode@(Node {cat=LPAREN}) cnode rnode@(Node {cat=RPAREN}) prevlist =
   Node {
@@ -612,15 +645,18 @@ compoundNPRule lnode@(Node {rs=r, cat=x}) rnode@(Node {cat=y}) prevlist =
                         }:prevlist
 -}
 
--- | 
+{- Implementation of CCG Unification -}
+
+-- | `numberOfArguments` returns the number of arguments of a given syntactic category.  
+-- For a category variable, `numberOfArguments` simply returns 0.
 numberOfArguments :: Cat -> Int
 numberOfArguments c = case c of
   SL c1 _ -> 1 + numberOfArguments c1
   BS c1 _ -> 1 + numberOfArguments c1
   _ -> 0
 
--- | Implementation of CCG Unification:
---   Usage: maximumIndex T(1)/T(3) = 3
+-- | `maximumIndex` returns a maximum index of category variables contained in a given category.
+-- >>> maximumIndex T(1)/T(3) == 3
 maximumIndex :: Cat -> Int
 maximumIndex c = case c of
   T _ i _ -> i
@@ -628,6 +664,7 @@ maximumIndex c = case c of
   BS c1 c2 -> max (maximumIndex c1) (maximumIndex c2)
   _ -> 0
 
+-- | `incrementIndex` returns 
 incrementIndex :: Cat -> Int -> Cat
 incrementIndex c i = case c of
   T f j u -> T f (i+j) u
