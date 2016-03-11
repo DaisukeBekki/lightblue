@@ -17,8 +17,8 @@ import Prelude as P
 import qualified Data.Text.Lazy as T                 --text
 import qualified Data.Text.Lazy.IO as T              --text
 import qualified System.Process as S                 --process
---import Data.Ratio                                    --base
 import CombinatoryCategorialGrammar
+
 --import qualified Data.List as L
 --import qualified System.IO as S
 

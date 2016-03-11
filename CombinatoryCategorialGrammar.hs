@@ -15,9 +15,12 @@ module CombinatoryCategorialGrammar (
   Node(..),
   RuleSymbol(..),
   Cat(..),
-  CatPos(..),
-  CatConj(..),
-  CatCase(..),
+  -- * Syntactic Features
+  PosFeature(..),
+  ConjFeature(..),
+  PMFeature(..),
+  CaseFeature(..),
+  SbarFeature(..),
   -- * Classes
   Feature(..),
   SimpleText(..),
@@ -30,16 +33,17 @@ module CombinatoryCategorialGrammar (
   -- trinaryRules  
   coordinationRule,
   parenthesisRule,
-  -- * Macros for syntactic features
+  -- * Macros for lexical items
+  lexicalitem,
+  -- * Macros for CCG syntactic features
+  defS,
   verb,
   adjective,
   nomPred,
   nonStem,
   anySExStem,
   anyPos,
-  -- * Macros for lexical items
-  lexicalitem,
-  -- * Templates for semantic representations
+  -- * Templates for DTS representations
   id,
   verbSR,
   predSR,
@@ -57,8 +61,10 @@ module CombinatoryCategorialGrammar (
 import Prelude hiding (id)
 import qualified Data.Text.Lazy as T --text
 import qualified Data.List as L      --base
+import qualified Data.Maybe as Maybe --base
 import Data.Fixed                    --base
 import Data.Ratio                    --base
+import Control.Monad                 --base
 --import Text.Printf -- for 'printf'
 import DependentTypes
 
@@ -87,9 +93,10 @@ instance SimpleText Node where
               dtrs -> T.concat $ [(T.pack indent), toText (rs node), " ", toText (cat node), " ", toTextWithVN [] (sem node), " [", T.pack (show ((fromRational $ score node)::Fixed E2)), "]\n"] ++ (map (\d -> toTextLoop (indent++"  ") d) dtrs)
 
 data Cat = 
-  S [CatPos] [CatConj] -- ^ S
-  | NP [CatCase]       -- ^ NP
+  S [PosFeature] [ConjFeature] PMFeatures -- ^ S
+  | NP [CaseFeature]   -- ^ NP
   | N                  -- ^ N
+  | Sbar [SbarFeature] -- ^ S bar
   | CONJ               -- ^ CON
   | LPAREN             -- ^ A category for left parentheses
   | RPAREN             -- ^ A category for right parentheses
@@ -98,9 +105,14 @@ data Cat =
   | T Bool Int Cat     -- ^ Category variables, where Int is an index, Cat is a restriction for its head. 
 
 instance Eq Cat where
-  S x1 x2 == S y1 y2 = (L.intersect x1 y1 /= []) && (L.intersect x2 y2) /=[]
+  S x1 x2 x3  == S y1 y2 y3 = (L.intersect x1 y1 /= [])
+                              && (L.intersect x2 y2) /=[]
+                              && (case unifyFeatures [] x3 y3 of
+                                     Just _ -> True
+                                     Nothing -> False)
   NP x == NP y = L.intersect x y /= []
   N == N = True
+  Sbar x == Sbar y = L.intersect x y /= []
   CONJ == CONJ = True
   LPAREN == LPAREN = True
   RPAREN == RPAREN = True
@@ -113,7 +125,7 @@ instance Eq Cat where
 instance Show Cat where
   show = T.unpack . toText
 
-data CatPos = V5k | V5s | V5t | V5n | V5m | V5r | V5w | V5g | V5z | V5b |
+data PosFeature = V5k | V5s | V5t | V5n | V5m | V5r | V5w | V5g | V5z | V5b |
               V5IKU | V5YUK | V5ARU | V5NAS | V5TOW |
               V1 | VK | VS | VZ | VURU |
               Aauo | Ai | ANAS | ATII | ABES |
@@ -121,18 +133,22 @@ data CatPos = V5k | V5s | V5t | V5n | V5m | V5r | V5w | V5g | V5z | V5b |
               Exp | Error
               deriving (Eq)
 
-data CatConj = Stem | UStem | Neg | Cont | Term | Attr | Hyp | Imper | Pre | 
-               NegL | TeForm | NiForm | 
-               EuphT | EuphD | 
-               ModU | ModD | ModS | 
-               VoR | VoS | VoE | 
-               Yooni
+data ConjFeature = Stem | UStem | Neg | Cont | Term | Attr | Hyp | Imper | Pre |
+               NegL | TeForm | NiForm |
+               EuphT | EuphD |
+               ModU | ModD | ModS |
+               VoR | VoS | VoE 
                deriving (Eq)
 
-data CatCase = Nc | Ga | O | Ni | To | Niyotte | No
-               deriving (Eq)
+data PMFeature = P | M | PM | F Int PMFeature deriving (Eq, Show)
 
-instance Show CatPos where
+type PMFeatures = [PMFeature]
+
+data CaseFeature = Nc | Ga | O | Ni | To | Niyotte | No deriving (Eq)
+
+data SbarFeature = ToCL | YooniCL deriving (Eq)
+
+instance Show PosFeature where
   show V5k = "v:5:k"
   show V5s = "v:5:s"
   show V5t = "v:5:t"
@@ -168,7 +184,7 @@ instance Show CatPos where
   show Exp = "exp"
   show Error = "error"
 
-instance Show CatConj where
+instance Show ConjFeature where
   show Stem = "stem"
   show UStem = "ustem"
   show Neg = "neg"
@@ -189,10 +205,12 @@ instance Show CatConj where
   show VoE = "vo:e"
   show TeForm = "te"
   show NiForm = "ni"
-  show Yooni = "yooni"
 
-instance Show CatCase where
-  --show AnyCase = ""
+instance Show SbarFeature where
+  show ToCL = "to"
+  show YooniCL = "yooni"
+
+instance Show CaseFeature where
   show Nc = "nc"
   show Ga = "ga"
   show O = "o"
@@ -208,14 +226,24 @@ class (Show a) => Feature a where
   printF [pos1,pos2] = T.pack $ (show pos1) ++ "|" ++ (show pos2)
   printF (pos1:(pos2:_)) = T.pack $ (show pos1) ++ "|" ++ (show pos2) ++ "|+"
 
-instance Feature CatPos
-instance Feature CatConj
-instance Feature CatCase
+instance Feature PosFeature
+instance Feature ConjFeature
+instance Feature CaseFeature
+instance Feature SbarFeature
 
 instance SimpleText Cat where
   toText category = case category of
-    S pos conj  -> T.concat ["S[", printF pos, "][", printF conj, "]"]
+    S pos conj pm -> T.concat [
+                       "S[",
+                       printF pos,
+                       "][",
+                       printF conj,
+                       "][",
+                       pmFeatures2Text pm,
+                       "]"
+                       ]
     NP cas      -> T.concat ["NP[", printF cas, "]"]
+    Sbar x      -> T.concat ["Sbar[", printF x, "]"]
     N           -> "N"
     CONJ        -> "CONJ"
     LPAREN      -> "LPAREN"
@@ -224,24 +252,50 @@ instance SimpleText Cat where
     BS x y      -> T.concat [toText x, "\\", toText' y]
     T True i _     -> T.concat ["T", (T.pack $ show i)]
     T False i c     -> T.concat [toText c, "[", (T.pack $ show i), "]"]
+    where -- A bracketed version of `toText'` function
+    toText' c = if isBaseCategory c
+                  then toText c
+                  else T.concat ["(", toText c, ")"]
 
--- | A bracketed version of `toText'` function.
-toText' :: Cat -> T.Text
-toText' c = if isBaseCategory c
-            then toText c
-            else T.concat ["(", toText c, ")"]
+pmFeature2Text :: Bool -> T.Text -> PMFeature -> Maybe T.Text
+pmFeature2Text _ label pmf = case (label,pmf) of
+    (l,P)     -> Just $ T.concat ["+", l]
+    (_,M)     -> Nothing -- if shared then Just $ T.concat ["-", l] else Nothing
+    (l,PM)    -> Just $ T.concat ["±", l]
+    (l,F i f) -> do
+                 x <- pmFeature2Text True l f
+                 return $ T.concat [x,"<",T.pack (show i),">"]
+
+pmFeatures2Text :: [PMFeature] -> T.Text
+pmFeatures2Text pmfs = T.intercalate "," $ Maybe.catMaybes $ pmFeatures2TextLoop ["t","p","n","N","T"] pmfs
+
+pmFeatures2TextLoop :: [T.Text] -> [PMFeature] -> [Maybe T.Text]
+pmFeatures2TextLoop labels pmfs = case (labels,pmfs) of
+  ([],[])         -> []
+  ((l:ls),(p:ps)) -> (pmFeature2Text False l p):(pmFeatures2TextLoop ls ps)
+  _ -> [Just $ T.concat ["Error: mismatch in ", T.pack (show labels), " and ", T.pack (show pmfs)]]
 
 -- | A test to check if a given category is a base category (i.e. not a functional category nor a category variable).
 isBaseCategory :: Cat -> Bool
 isBaseCategory c = case c of
-  S _ _ -> True
+  S _ _ _ -> True
   NP _ -> True
+  T False _ c2 -> isBaseCategory c2
+  T True _ _ -> True
   N -> True 
+  Sbar _ -> True
   CONJ -> True
   LPAREN -> True
   RPAREN -> True
-  T False _ c2 -> isBaseCategory c2
-  T True _ _ -> True
+  _ -> False
+
+isArgumentCategory :: Cat -> Bool
+isArgumentCategory c = case c of
+  NP f -> case f of
+            [Nc] -> False
+            _ -> True
+  -- N -> False
+  Sbar _ -> True
   _ -> False
 
 --isCONJ :: Cat -> Bool
@@ -334,28 +388,38 @@ trinaryRules lnode cnode rnode =
 
 {- Combinatory Rules -}
 
+{-
+x :: Cat
+x = T True 1 (S anyPos anyConj [M,M,M,M,M])
+y1 :: Cat
+y1 =  T True 1 (S anyPos anyConj [M,M,M,M,M]) `BS` NP [Nc]
+y2 :: Cat
+y2 = (T False 1 (S anyPos anyConj [(F 1 PM),(F 2 PM),(F 3 PM),M,M]) `SL` T False 1 (S anyPos anyConj [(F 1 PM),(F 2 PM),(F 3 PM),M,M])) `BS` NP [Nc]
+-}
+
 -- | Forward function application rule.
 forwardFunctionApplicationRule :: Node -> Node -> [Node] -> [Node]
 forwardFunctionApplicationRule lnode@(Node {rs=r, cat=SL x y1, sem=f}) rnode@(Node {cat=y2, sem=a}) prevlist =
   -- [>] x/y1  y2  ==>  x
   if r == FFC1 || r == FFC2 || r == FFC3 -- Non-normal forms
   then prevlist
-  else 
+  else
     case y1 of
-      T _ _ _ -> prevlist -- Ad-hoc rule
-      _ -> let inc = maximumIndex y2 in
-           case unifyCategory y2 (incrementIndex y1 inc) [] of
+      T True _ _ -> prevlist -- Ad-hoc rule
+      _ -> let inc = maximumIndexC y2 in
+           case unifyCategory [] [] y2 (incrementIndexC y1 inc) of
              Nothing -> prevlist -- Unification failure
-             Just (_,sub) -> let newcat = simulSubstituteCV (incrementIndex x inc) sub in
-                      Node {
-                        rs = FFA,
-                        pf = pf(lnode) `T.append` pf(rnode),
-                        cat = newcat,
-                        sem = betaReduce $ transvec newcat $ betaReduce $ App f a,
-                        daughters = [lnode,rnode],
-                        score = score(lnode)*score(rnode),
-                        memo = "" --T.concat $ map (\(i,c)-> T.concat [T.pack (show i)," \\mapsto ",toTeX c,", "]) sub
-                        }:prevlist
+             Just (_,csub,fsub) ->
+               let newcat = simulSubstituteCV csub fsub (incrementIndexC x inc) in
+                 Node {
+                   rs = FFA,
+                   pf = pf(lnode) `T.append` pf(rnode),
+                   cat = newcat,
+                   sem = betaReduce $ transvec newcat $ betaReduce $ App f a,
+                   daughters = [lnode,rnode],
+                   score = score(lnode)*score(rnode),
+                   memo = "" --T.concat $ map (\(i,c)-> T.concat [T.pack (show i)," \\mapsto ",toTeX c,", "]) sub
+                   }:prevlist
 forwardFunctionApplicationRule _ _ prevlist = prevlist
 
 -- | Backward function application rule.
@@ -365,10 +429,10 @@ backwardFunctionApplicationRule lnode@(Node {cat=y1, sem=a}) rnode@(Node {rs=r, 
   if r == BFC1 || r == BFC2 || r == BFC3 -- Non-normal forms
   then prevlist
   else     
-    let inc = maximumIndex y1 in
-    case unifyCategory y1 (incrementIndex y2 inc) [] of
+    let inc = maximumIndexC y1 in
+    case unifyCategory [] [] y1 (incrementIndexC y2 inc) of
       Nothing -> prevlist -- Unification failure
-      Just (_,sub) -> let newcat = simulSubstituteCV (incrementIndex x inc) sub in
+      Just (_,csub,fsub) -> let newcat = simulSubstituteCV csub fsub (incrementIndexC x inc) in
                       Node {
                         rs = BFA,
                         pf = pf(lnode) `T.append` pf(rnode),
@@ -387,14 +451,14 @@ forwardFunctionComposition1Rule lnode@(Node {rs=r,cat=SL x y1, sem=f}) rnode@(No
   if r == FFC1 || r == FFC2 || r == FFC3 || (isNoncaseNP y1) -- Non-normal forms (+ Ad-hoc rule 1)
   then prevlist
   else  
-    let inc = maximumIndex (cat rnode) in
-    case unifyCategory y2 (incrementIndex y1 inc) [] of          
+    let inc = maximumIndexC (cat rnode) in
+    case unifyCategory [] [] y2 (incrementIndexC y1 inc) of
       Nothing -> prevlist -- Unification failure
-      Just (_,sub) -> 
-        let z' = simulSubstituteCV z sub in
+      Just (_,csub,fsub) -> 
+        let z' = simulSubstituteCV csub fsub z in
         if numberOfArguments z' > 3  -- Ad-hoc rule 2
-        then prevlist   
-        else let newcat = (simulSubstituteCV (incrementIndex x inc) sub) `SL` z' in
+        then prevlist
+        else let newcat = (simulSubstituteCV csub fsub (incrementIndexC x inc)) `SL` z' in
              Node {
                rs = FFC1,
                pf = pf(lnode) `T.append` pf(rnode),
@@ -409,14 +473,14 @@ forwardFunctionComposition1Rule _ _ prevlist = prevlist
 -- | Backward function composition rule.
 backwardFunctionComposition1Rule :: Node -> Node -> [Node] -> [Node]
 backwardFunctionComposition1Rule lnode@(Node {cat=BS y1 z, sem=g}) rnode@(Node {rs=r,cat=(BS x y2), sem=f}) prevlist =
-  -- [>B] y1\z:g  x\y2:f  ==> x\z
+  -- [<B] y1\z:g  x\y2:f  ==> x\z
   if r == BFC1 || r == BFC2 || r == BFC3 -- Non-normal forms
   then prevlist
-  else     
-    let inc = maximumIndex (cat lnode) in
-    case unifyCategory y1 (incrementIndex y2 inc) [] of
+  else
+    let inc = maximumIndexC (cat lnode) in
+    case unifyCategory [] [] y1 (incrementIndexC y2 inc) of
       Nothing -> prevlist -- Unification failure
-      Just (_,sub) -> let newcat = simulSubstituteCV ((incrementIndex x inc) `BS` z) sub in
+      Just (_,csub,fsub) -> let newcat = simulSubstituteCV csub fsub ((incrementIndexC x inc) `BS` z) in
                       Node {
                         rs = BFC1,
                         pf = pf(lnode) `T.append` pf(rnode),
@@ -435,14 +499,14 @@ forwardFunctionComposition2Rule lnode@(Node {rs=r,cat=(x `SL` y1), sem=f}) rnode
   if r == FFC1 || r == FFC2 || r == FFC3 || (isNoncaseNP y1) -- Non-normal forms
   then prevlist
   else     
-    let inc = maximumIndex (cat rnode) in
-    case unifyCategory (incrementIndex y1 inc) y2 [] of
+    let inc = maximumIndexC (cat rnode) in
+    case unifyCategory [] [] (incrementIndexC y1 inc) y2 of
       Nothing -> prevlist -- Unification failure
-      Just (_,sub) -> 
-        let z1' = simulSubstituteCV z1 sub in
+      Just (_,csub,fsub) -> 
+        let z1' = simulSubstituteCV csub fsub z1 in
         if numberOfArguments z1' > 2  -- Ad-hoc rule 2
-        then prevlist   
-        else let newcat = simulSubstituteCV (((incrementIndex x inc) `SL` z1') `SL` z2) sub in
+        then prevlist
+        else let newcat = simulSubstituteCV csub fsub (((incrementIndexC x inc) `SL` z1') `SL` z2) in
                       Node {
                         rs = FFC2,
                         pf = pf(lnode) `T.append` pf(rnode),
@@ -460,11 +524,11 @@ backwardFunctionComposition2Rule lnode@(Node {cat=(y1 `BS` z1) `BS` z2, sem=g}) 
   -- [<B2] y1\z1\z2  x\y2  ==> x\z1\z2
   if r == BFC1 || r ==BFC2 || r == BFC3 -- Non-normal forms
   then prevlist
-  else  
-    let inc = maximumIndex (cat lnode) in
-    case unifyCategory (incrementIndex y2 inc) y1 [] of
+  else
+    let inc = maximumIndexC (cat lnode) in
+    case unifyCategory [] [] (incrementIndexC y2 inc) y1 of
       Nothing -> prevlist -- Unification failure
-      Just (_,sub) -> let newcat = simulSubstituteCV (((incrementIndex x inc) `BS` z1) `BS` z2) sub in
+      Just (_,csub,fsub) -> let newcat = simulSubstituteCV csub fsub (((incrementIndexC x inc) `BS` z1) `BS` z2) in
                       Node {
                         rs = BFC2,
                         pf = pf(lnode) `T.append` pf(rnode),
@@ -483,10 +547,10 @@ backwardFunctionComposition3Rule lnode@(Node {cat=((y1 `BS` z1) `BS` z2) `BS` z3
   if r == BFC1 || r ==BFC2 || r == BFC3 -- Non-normal forms
   then prevlist
   else  
-    let inc = maximumIndex (cat lnode) in
-    case unifyCategory (incrementIndex y2 inc) y1 [] of
+    let inc = maximumIndexC (cat lnode) in
+    case unifyCategory [] [] (incrementIndexC y2 inc) y1 of
       Nothing -> prevlist -- Unification failure
-      Just (_,sub) -> let newcat = simulSubstituteCV ((((incrementIndex x inc) `BS` z1) `BS` z2) `BS` z3) sub in
+      Just (_,csub,fsub) -> let newcat = simulSubstituteCV csub fsub ((((incrementIndexC x inc) `BS` z1) `BS` z2) `BS` z3) in
                       Node {
                         rs = BFC3,
                         pf = pf(lnode) `T.append` pf(rnode),
@@ -502,44 +566,44 @@ backwardFunctionComposition3Rule _ _ prevlist = prevlist
 forwardFunctionCrossedComposition1Rule :: Node -> Node -> [Node] -> [Node]
 forwardFunctionCrossedComposition1Rule lnode@(Node {rs=r,cat=SL x y1, sem=f}) rnode@(Node {cat=BS y2 z, sem=g}) prevlist =
   -- [>Bx] x/y1  y2\z  ==> x\z
-  if r == FFC1 || r == FFC2 || r == FFC3 || (isNoncaseNP y1) -- Non-normal forms (+ Add-hoc rule 1)
+  if r == FFC1 || r == FFC2 || r == FFC3 || (isNoncaseNP y1) || not (isArgumentCategory z) -- Non-normal forms (+ Add-hoc rule 1)
   then prevlist
-  else  
-    let inc = maximumIndex (cat rnode) in
-    case unifyCategory y2 (incrementIndex y1 inc) [] of          
+  else 
+    let inc = maximumIndexC (cat rnode) in
+    case unifyCategory [] [] y2 (incrementIndexC y1 inc) of
       Nothing -> prevlist -- Unification failure
-      Just (_,sub) -> 
-        let z' = simulSubstituteCV z sub in
+      Just (_,csub,fsub) -> 
+        let z' = simulSubstituteCV csub fsub z in
         --if numberOfArguments z' > 3  -- Ad-hoc rule 2
-        --then prevlist   
+        --then prevlist
         --else 
-        let newcat = (simulSubstituteCV (incrementIndex x inc) sub) `BS` z' in
-             Node {
-               rs = FFCx1,
-               pf = pf(lnode) `T.append` pf(rnode),
-               cat = newcat,
-               sem = betaReduce $ transvec newcat $ betaReduce $ (Lam (App f (App g (Var 0)))),
-               daughters = [lnode,rnode],
-               score = score(lnode)*score(rnode)*(99 % 100), -- degrade the score when this rule is used.
-               memo = ""
-               }:prevlist
+        let newcat = (simulSubstituteCV csub fsub (incrementIndexC x inc)) `BS` z' in
+          Node {
+            rs = FFCx1,
+            pf = pf(lnode) `T.append` pf(rnode),
+            cat = newcat,
+            sem = betaReduce $ transvec newcat $ betaReduce $ (Lam (App f (App g (Var 0)))),
+            daughters = [lnode,rnode],
+            score = score(lnode)*score(rnode)*(99 % 100), -- degrade the score when this rule is used.
+            memo = ""
+            }:prevlist
 forwardFunctionCrossedComposition1Rule _ _ prevlist = prevlist
 
 -- | Forward function crossed composition rule 2.
 forwardFunctionCrossedComposition2Rule :: Node -> Node -> [Node] -> [Node]
 forwardFunctionCrossedComposition2Rule lnode@(Node {rs=r,cat=(x `SL` y1), sem=f}) rnode@(Node {cat=(y2 `BS` z1) `BS` z2, sem=g}) prevlist =
   -- [>Bx2] x/y1:f  y2\z1\z2:g  ==> x\z1\z2
-  if r == FFC1 || r == FFC2 || r == FFC3 || (isNoncaseNP y1) -- Non-normal forms
+  if r == FFC1 || r == FFC2 || r == FFC3 || (isNoncaseNP y1) || not (isArgumentCategory z2) || not (isArgumentCategory z1) -- Non-normal forms + Ad-hoc rule
   then prevlist
-  else     
-    let inc = maximumIndex (cat rnode) in
-    case unifyCategory (incrementIndex y1 inc) y2 [] of
+  else
+    let inc = maximumIndexC (cat rnode) in
+    case unifyCategory [] [] (incrementIndexC y1 inc) y2 of
       Nothing -> prevlist -- Unification failure
-      Just (_,sub) -> 
-        let z1' = simulSubstituteCV z1 sub in
+      Just (_,csub,fsub) ->
+        let z1' = simulSubstituteCV csub fsub z1 in
         if numberOfArguments z1' > 2  -- Ad-hoc rule 2
-        then prevlist   
-        else let newcat = simulSubstituteCV (((incrementIndex x inc) `BS` z1') `BS` z2) sub in
+        then prevlist
+        else let newcat = simulSubstituteCV csub fsub (((incrementIndexC x inc) `BS` z1') `BS` z2) in
                       Node {
                         rs = FFCx2,
                         pf = pf(lnode) `T.append` pf(rnode),
@@ -553,25 +617,27 @@ forwardFunctionCrossedComposition2Rule _ _ prevlist = prevlist
 
 -- | Coordination rule.
 coordinationRule :: Node -> Node -> Node -> [Node] -> [Node]
-coordinationRule lnode@(Node {cat=x1, sem=f1}) cnode@(Node {cat=c, sem=conj}) rnode@(Node {cat=x2, sem=f2}) prevlist =
+coordinationRule lnode@(Node {cat=x1, sem=s1}) cnode@(Node {cat=c, sem=conj}) rnode@(Node {cat=x2, sem=s2}) prevlist =
   -- [<Phi>] x1:f1  CONJ  x2:f2  ==>  x:\lambda\vec{x} (conj f1\vec{x}) f2\vec{x}
   case (x1,c,x2) of
-    ((T True i (S _ conj1) `SL` (T True j (S _ conj2) `BS` NP [Nc])),CONJ,(T True _ (S p1 conj3) `SL` (T True _ (S p2 conj4) `BS` NP [Nc]))) -> 
-      let conj5 = L.intersect conj1 conj3 in
-      let conj6 = L.intersect conj2 conj4 in
-      -- let inc = max (maximumIndex x1) (maximumIndex x2) in
-      if conj5 == [] || conj6 == []
-      then prevlist   
-      else let newcat = (T True i (S p1 conj5) `SL` (T True j (S p2 conj6) `BS` NP [Nc])) in
-      Node {
-        rs = COORD,
-        pf = T.concat [pf(lnode),pf(cnode),pf(rnode)],
-        cat = newcat,
-        sem = betaReduce $ transvec newcat $ betaReduce $ Lamvec (App (App conj (Appvec 0 f1)) (Appvec 0 f2)),
-        daughters = [lnode,cnode,rnode],
-        score = score(lnode)*score(rnode),
-        memo = ""
-        }:prevlist
+    ((T True i (S _ a2 a3) `SL` (T True j (S _ b2 b3) `BS` NP [Nc])),CONJ,(T True _ (S c1 c2 c3) `SL` (T True _ (S d1 d2 d3) `BS` NP [Nc]))) -> 
+      let e2 = L.intersect a2 c2; f2 = L.intersect b2 d2 in
+      -- let inc = max (maximumIndexC x1) (maximumIndexC x2) in
+      if e2==[] || f2==[]
+      then prevlist
+      else 
+        case do; (e3,fsub) <- unifyFeatures [] a3 c3; (f3,_) <- unifyFeatures fsub b3 d3; return (e3,f3) of
+          Nothing -> prevlist
+          Just (e3,f3) -> let newcat = (T True i (S c1 e2 e3) `SL` (T True j (S d1 f2 f3) `BS` NP [Nc])) in
+            Node {
+              rs = COORD,
+              pf = T.concat [pf(lnode),pf(cnode),pf(rnode)],
+              cat = newcat,
+              sem = betaReduce $ transvec newcat $ betaReduce $ Lamvec (App (App conj (Appvec 0 s1)) (Appvec 0 s2)),
+              daughters = [lnode,cnode,rnode],
+              score = score(lnode)*score(rnode),
+              memo = ""
+              }:prevlist
     _ -> prevlist
 
 -- | Parenthesis rule.
@@ -592,16 +658,16 @@ parenthesisRule _ _ _ prevlist = prevlist
 if c /= CONJ   
   then prevlist   
   else     
-    let inc = maximumIndex x1 in
-    case unifyCategory x1 (incrementIndex x2 inc) [] of
+    let inc = maximumIndexC x1 in
+    case unifyCategory [] [] x1 (incrementIndexC x2 inc) of
       Nothing -> prevlist
-      Just (x3,sub) -> case unifyWithHead (S anyPos nonStem) x3 of
+      Just (x3,csub,fsub) -> case unifyWithHead (S anyPos nonStem) x3 of
                          Nothing -> prevlist   
-                         _ -> let inc2 = maximumIndex (incrementIndex x2 inc) in
+                         _ -> let inc2 = maximumIndexC (incrementIndexC x2 inc) in
                               Node {
                                 rs = COORD,
                                 pf = T.concat [pf(lnode),pf(cnode),pf(rnode)],
-                                cat = simulSubstituteCV x3 sub,
+                                cat = simulSubstituteCV csub fsub x3,
                                 sem = DependentTypes.id, 
                                       --betaReduce $ transvec (Lamvec (inc2+1) (App (App conj (Appvec (inc2+1) f1)) (Appvec (inc2+1) (incrementVec f2 inc)))) sub sub,
                                 daughters = [lnode,cnode,rnode],
@@ -616,8 +682,8 @@ test :: IO()
 test = do
   let t1 = (SL (T 1 anyS) (BS (T 1 anyS) (NP [Nc])))
   let t2 = (SL (T 1 anyS) (BS (T 1 anyS) (NP [Nc])))
-  let inc = maximumIndex t1
-  case unifyCategory t1 (incrementIndex t2 inc) [] of
+  let inc = maximumIndexC t1
+  case unifyCategory [] [] t1 (incrementIndexC t2 inc) of
     Nothing -> putStrLn "nothing"
     Just (t3,sub) -> putStrLn $ T.unpack $ toTeX $ betaReduce $ transvec (Lamvec 1 (App (App (Lam "p" (Lam "q" (Sigma "u" (Var "p") (Var "q")))) (Appvec 1 (Lam "p" (App (Var "p") (Con "t1"))))) (Appvec 1 (Lam "p" (App (Var "p") (Con "t2")))))) sub sub
 -}
@@ -655,88 +721,155 @@ numberOfArguments c = case c of
   BS c1 _ -> 1 + numberOfArguments c1
   _ -> 0
 
--- | `maximumIndex` returns a maximum index of category variables contained in a given category.
+-- | `maximumIndexC` returns a maximum index of category variables contained in a given category.
 -- >>> maximumIndex T(1)/T(3) == 3
-maximumIndex :: Cat -> Int
-maximumIndex c = case c of
-  T _ i _ -> i
-  SL c1 c2 -> max (maximumIndex c1) (maximumIndex c2)
-  BS c1 c2 -> max (maximumIndex c1) (maximumIndex c2)
-  _ -> 0
+maximumIndexC :: Cat -> (Int,Int)
+maximumIndexC c = case c of
+  T _ i c2 -> let (a,b) = maximumIndexC c2 in 
+             (max a i, b)
+  SL c1 c2 -> let (x,y) = maximumIndexC c1; (u,v) = maximumIndexC c2 in 
+              (max x u, max y v)
+  BS c1 c2 -> let (x,y) = maximumIndexC c1; (u,v) = maximumIndexC c2 in 
+              (max x u, max y v)
+  S _ _ f -> (0, maximumIndexF f)
+  _ -> (0,0)
+
+maximumIndexF :: [PMFeature] -> Int
+maximumIndexF fs = case fs of
+  [] -> 0
+  ((F i _):fs2) -> max i (maximumIndexF fs2)
+  (_:fs2) -> maximumIndexF fs2
 
 -- | `incrementIndex` returns 
-incrementIndex :: Cat -> Int -> Cat
-incrementIndex c i = case c of
-  T f j u -> T f (i+j) u
-  SL c1 c2 -> SL (incrementIndex c1 i) (incrementIndex c2 i)
-  BS c1 c2 -> BS (incrementIndex c1 i) (incrementIndex c2 i)
-  cc@_ -> cc
+incrementIndexC :: Cat -> (Int,Int) -> Cat
+incrementIndexC c i = case c of
+  T f j u -> T f ((fst i)+j) u
+  SL c1 c2 -> SL (incrementIndexC c1 i) (incrementIndexC c2 i)
+  BS c1 c2 -> BS (incrementIndexC c1 i) (incrementIndexC c2 i)
+  S x1 x2 x3 -> S x1 x2 (incrementIndexF x3 (snd i))
+  cc -> cc
+
+incrementIndexF :: [PMFeature] -> Int -> [PMFeature]
+incrementIndexF fs i = case fs of
+  [] -> []
+  ((F j f2):fs2) -> (F (i+j) f2):(incrementIndexF fs2 i)
+  (fh:ft) -> fh:(incrementIndexF ft i)
 
 -- | substituteCateogoryVariable T1 [1->X/Y] ==> X/Y
-substituteCV :: Cat -> (Int,Cat) -> Cat
-substituteCV c1 (i,c2) = case c1 of
-  T _ j _ -> if i==j then c2 else c1
-  SL ca cb -> SL (substituteCV ca (i,c2)) (substituteCV cb (i,c2))
-  BS ca cb -> BS (substituteCV ca (i,c2)) (substituteCV cb (i,c2))
-  _ -> c1
+simulSubstituteCV :: [(Int,Cat)] -> [(Int,PMFeature)] -> Cat -> Cat
+simulSubstituteCV csub fsub c = case c of
+    T f j c3 -> case L.lookup j csub of
+                  Just c4 -> simulSubstituteCV csub fsub c4
+                  Nothing -> T f j (simulSubstituteCV csub fsub c3)
+    SL ca cb -> SL (simulSubstituteCV csub fsub ca) (simulSubstituteCV csub fsub cb)
+    BS ca cb -> BS (simulSubstituteCV csub fsub ca) (simulSubstituteCV csub fsub cb)
+    S x1 x2 x3 -> S x1 x2 (simulSubstituteFV x3 fsub)
+    _ -> c
 
-simulSubstituteCV :: Cat -> [(Int,Cat)] -> Cat
-simulSubstituteCV c = L.foldl' substituteCV c
+-- | substituteFeatureVariable F 1 f [1->PM] ==> f[PM/1]
+substituteFV :: [PMFeature] -> (Int,PMFeature) -> [PMFeature]
+substituteFV f1 (i,f2) = case f1 of
+  [] -> []
+  ((F j _):ft)
+    | i == j -> f2:(substituteFV ft (i,f2))
+  (fh:ft) -> fh:(substituteFV ft (i,f2)) -- No substitution
 
-unifyCategory :: Cat -> Cat -> [(Int,Cat)] -> Maybe (Cat, [(Int,Cat)])
-unifyCategory c1 c2 sub = case (c1,c2) of
+simulSubstituteFV :: [PMFeature] -> [(Int,PMFeature)] -> [PMFeature]
+simulSubstituteFV = L.foldl' substituteFV
+-- foldl' 
+-- ([PMFeature] -> (Int,PMFeature) -> [PMFeature])
+-- -> [PMFeature]
+-- -> [(Int,PMFeature)]
+-- -> [PMFeature]
+
+unifyCategory :: [(Int,Cat)] -> [(Int,PMFeature)] -> Cat -> Cat -> Maybe (Cat, [(Int,Cat)], [(Int,PMFeature)])
+unifyCategory csub fsub c1 c2 = case (c1,c2) of
+  (T f1 i c3, T f2 j c4) -> do
+                            (c5,csub2,fsub2) <- unifyCategory csub fsub c3 c4
+                            return $ case () of
+                                       _ | i <= j    -> (T (f1 && f2) j c5, (i,(T (f1 && f2) j c5)):csub2, fsub2)
+                                         | otherwise -> (T (f1 && f2) i c5, (j,(T (f1 && f2) i c5)):csub2, fsub2)
+  (T f i c3, c4) -> do --- c4 is not T
+                    (c5,csub2,fsub2) <- if f == True 
+                                    then unifyWithHead csub fsub c3 c4
+                                    else unifyCategory csub fsub c3 c4
+                    return (c5,(i,c5):csub2,fsub2)
   (NP x, NP y) -> let z = L.intersect x y in
                   if z == []
                   then Nothing
-                  else Just (NP z, sub)
-  (S x1 x2, S y1 y2) -> let x3 = L.intersect x1 y1 in
-                        if x3 == []
-                        then Nothing
-                        else let y3 = L.intersect x2 y2 in
-                             if y3 == []
-                             then Nothing
-                             else Just ((S x3 y3), sub)
-  (N, N)           -> Just (N, sub)
-  (CONJ, CONJ)     -> Just (CONJ, sub)
-  (LPAREN, LPAREN) -> Just (LPAREN, sub)
-  (RPAREN, RPAREN) -> Just (RPAREN, sub)
+                  else Just (NP z, csub, fsub)
+  (S x1 x2 x3, S y1 y2 y3) -> do
+                              let z1 = L.intersect x1 y1
+                              guard (z1 /= [])
+                              let z2 = L.intersect x2 y2
+                              guard (z2 /= [])
+                              (z3,fsub2) <- unifyFeatures fsub x3 y3
+                              return ((S z1 z2 z3), csub, fsub2)
   (SL c3 c4, SL c5 c6) -> do
-                          (c7,sub2) <- unifyCategory c4 c6 sub
-                          (c8,sub3) <- unifyCategory c3 c5 sub2
-                          return (SL c8 c7, sub3)
+                          (c7,csub2,fsub2) <- unifyCategory csub fsub c4 c6
+                          (c8,csub3,fsub3) <- unifyCategory csub2 fsub2 c3 c5
+                          return (SL c8 c7,csub3,fsub3)
   (BS c3 c4, BS c5 c6) -> do
-                          (c7,sub2) <- unifyCategory c4 c6 sub
-                          (c8,sub3) <- unifyCategory c3 c5 sub2
-                          return (BS c8 c7, sub3)
-  (T f1 i c3, T f2 j c4) -> do
-                            (c5, sub2) <- unifyCategory c3 c4 sub
-                            return $ case () of
-                                       _ | i == j    -> (T (f1 && f2) j c5, (i,c5):sub2)
-                                         | i <= j    -> (T (f1 && f2) j c5, (i,(T (f1 && f2) j c5)):sub2)
-                                         | otherwise -> (T (f1 && f2) i c5, (j,(T (f1 && f2) i c5)):sub2)
-  (_, T _ _ _) -> unifyCategory c2 c1 sub
-  (T f i c3, c4) -> do --- c4 is not T
-                    (c5,sub2) <- if f == True 
-                                    then unifyWithHead c3 c4 sub
-                                    else unifyCategory c3 c4 sub
-                    return (c5,(i,c5):sub2)
+                          (c7,csub2,fsub2) <- unifyCategory csub fsub c4 c6
+                          (c8,csub3,fsub3) <- unifyCategory csub2 fsub2 c3 c5
+                          return (BS c8 c7, csub3, fsub3)
+  (N, N)           -> Just (N, csub, fsub)
+  (CONJ, CONJ)     -> Just (CONJ, csub, fsub)
+  (Sbar x, Sbar y) -> let z = L.intersect x y in
+                      if z == []
+                         then Nothing
+                         else Just (Sbar z, csub, fsub)
+  (LPAREN, LPAREN) -> Just (LPAREN, csub, fsub)
+  (RPAREN, RPAREN) -> Just (RPAREN, csub, fsub)
+  (_, T _ _ _) -> unifyCategory csub fsub c2 c1
   _ -> Nothing
 
 -- | Unify c1 with the head of c2
-unifyWithHead :: Cat -> Cat -> [(Int,Cat)] -> Maybe (Cat, [(Int,Cat)])
-unifyWithHead c1 c2 sub = case c2 of
+unifyWithHead :: [(Int,Cat)] -> [(Int,PMFeature)] -> Cat -> Cat -> Maybe (Cat, [(Int,Cat)], [(Int,PMFeature)])
+unifyWithHead csub fsub c1 c2 = case c2 of
   SL x y -> do
-            (x',sub2) <- unifyWithHead c1 x sub
-            return $ (SL x' y, sub2)
+            (x',csub2,fsub2) <- unifyWithHead csub fsub c1 x
+            return $ (SL x' y, csub2, fsub2)
   BS x y -> do
-            (x',sub2) <- unifyWithHead c1 x sub
-            return $ (BS x' y, sub2)
+            (x',csub2,fsub2) <- unifyWithHead csub fsub c1 x
+            return $ (BS x' y, csub2, fsub2)
   T f i u -> do
-           (x',sub2) <- unifyCategory c1 u sub
-           return $ (T f i x', sub2)
+           (x',csub2,fsub2) <- unifyCategory csub fsub c1 u
+           return $ (T f i x', csub2, fsub2)
   bc -> do
-        (x',sub2) <- unifyCategory c1 bc sub
-        return (x', sub2)
+        (x',csub2,fsub2) <- unifyCategory csub fsub c1 bc
+        return (x', csub2, fsub2)
+
+-- | unifyFeature
+unifyFeature :: [(Int,PMFeature)] -> PMFeature -> PMFeature -> Maybe (PMFeature, [(Int,PMFeature)])
+unifyFeature sub f1 f2 = case (f1,f2) of
+--  (F i f3, F j f4) -> do
+--                      (f5,sub2) <- unifyFeature sub f3 f4
+--                      return $ case () of
+--                                 _ | i <= j    -> (F j f5, (i, F i f5):((j, F j f5):sub2))
+--                                   | otherwise -> (F i f5, (i, F i f5):((j, F j f5):sub2))
+  (F i f3, f4) -> do
+                  (f5,sub2) <- unifyFeature sub f3 f4
+                  return (F i f5, (i,F i f5):sub2)
+  (P,P)       -> Just (P, sub)
+  (P,M)       -> Nothing
+  (P,PM)      -> Just (P, sub)
+  (M,P)       -> Nothing
+  (M,M)       -> Just (M, sub)
+  (M,PM)      -> Just (M, sub)
+  (PM,P)      -> Just (P, sub)
+  (PM,M)      -> Just (M, sub)
+  (PM,PM)     -> Just (PM, sub)
+  (_, F _ _)  -> unifyFeature sub f2 f1
+
+unifyFeatures :: [(Int,PMFeature)] -> [PMFeature] -> [PMFeature] -> Maybe ([PMFeature], [(Int,PMFeature)])
+unifyFeatures sub f1 f2 = case (f1,f2) of
+  ([],[]) -> Just ([],sub)
+  ((f1h:f1t),(f2h:f2t)) -> do
+                           (f3h,sub2) <- unifyFeature sub f1h f2h
+                           (f3t,sub3t) <- unifyFeatures sub2 f1t f2t
+                           return ((f3h:f3t), sub3t)
+  _ -> Nothing
 
 -- | Lamvec, Appvec: 
 -- "transvec" function transforms the first argument (of type Preterm)
@@ -753,14 +886,14 @@ transvec c preterm = case c of
               Lamvec m -> Lam (transvec x (Lamvec (addLambda 0 m)))
               m        -> m -- Var, Con, App, Proj, Asp, Appvec
                      -- Error: Type, Kind, Pi, Not, Sigma, Pair, Unit, Top, bot
-  NP _ -> case preterm of
+  NP _   -> case preterm of
               Lamvec m -> deleteLambda 0 m
               m        -> m
-  S _ _ -> case preterm of
-              Lam (Lamvec m) -> Lam (deleteLambda 0 m)
-              Lamvec (Lam m) -> deleteLambda 0 (Lam m)
-              Lamvec m -> Lam (deleteLambda 0 (addLambda 0 m))
-              m        -> m
+  S _ _ _ -> case preterm of
+               Lam (Lamvec m) -> Lam (deleteLambda 0 m)
+               Lamvec (Lam m) -> deleteLambda 0 (Lam m)
+               Lamvec m -> Lam (deleteLambda 0 (addLambda 0 m))
+               m        -> m
   N -> case preterm of
               Lam (Lamvec m) -> Lam (deleteLambda 0 m)
               Lamvec (Lam m) -> deleteLambda 0 (Lam m)
@@ -768,34 +901,39 @@ transvec c preterm = case c of
               m        -> m
   _ -> preterm
 
-{- Some Macros for adding lexical items to lexicon -}
+{- Some Macros for defining lexical items -}
 
 lexicalitem :: T.Text -> T.Text -> Integer -> Cat -> Preterm -> Node
 lexicalitem word source r c s = Node {rs=LEX, pf=word, cat=c, sem=s, daughters=[], score=(r % 100), memo=source}
 
 {- Some Marcos for CCG categories/features -}
 
-verb :: [CatPos]
+-- | Category S with the default feature setting
+defS :: [PosFeature] -> [ConjFeature] -> Cat
+defS p c = S p c [M,M,M,M,M]
+
+verb :: [PosFeature]
 verb = [V5k, V5s, V5t, V5n, V5m, V5r, V5w, V5g, V5z, V5b, V5IKU, V5YUK, V5ARU, V5NAS, V5TOW, V1, VK, VS, VZ, VURU]
 
-adjective :: [CatPos]
+adjective :: [PosFeature]
 adjective = [Aauo, Ai, ANAS, ATII, ABES]
 
-nomPred :: [CatPos]
+nomPred :: [PosFeature]
 nomPred = [Nda, Nna, Nno, Nni, Nemp, Ntar]
 
-anyPos :: [CatPos]
+anyPos :: [PosFeature]
 anyPos = verb ++ adjective ++ nomPred ++ [Exp]
 
-nonStem :: [CatConj]
+nonStem :: [ConjFeature]
 nonStem = [Neg, Cont, Term, Attr, Hyp, Imper, Pre, ModU, ModS, VoR, VoS, VoE, NegL, TeForm]
 
 anySExStem :: Cat
-anySExStem = S anyPos nonStem
+anySExStem = S anyPos nonStem [F 1 PM,F 2 PM,F 3 PM,M,M]
 
---anyConj :: [CatConj]
+--anyConj :: [ConjFeature]
 --anyConj = [Stem, UStem, Neg, Cont, Term, Attr, Hyp, Imper, Pre, EuphT, EuphD, ModU, ModS, VoR, VoS, VoE, TeForm, NiForm, Yooni]
---anyCase :: [CatCase] 
+
+--anyCase :: [CaseFeature] 
 --anyCase = [Nc, Ga, O, Ni, To, Niyotte, No]
 
 {- Templates for Semantic Representation -}
@@ -855,7 +993,7 @@ argumentCM = (Lam (Lam (App (Var 0) (Var 1))))
 
 -- | T/T\NP[nc]: \x.\p.\v.\c.p (\e.op(e,x) X ce)
 adjunctCM :: T.Text -> Preterm 
-adjunctCM c = (Lam (Lam (Lamvec (Lam (App (Appvec 1 (Var 2)) (Lam (Sigma (App (App (Con c) (Var 4)) (Var 0)) (App (Var 2) (Var 1)))))))))
+adjunctCM c = (Lam (Lam (Lam (App (Var 1) (Lam (Sigma (App (App (Con c) (Var 3)) (Var 0)) (App (Var 2) (Var 1))))))))
 
 {-
 data PartialCategory = PS | PNP | PN | PC | PT | PArrow PartialCategory PartialCategory
