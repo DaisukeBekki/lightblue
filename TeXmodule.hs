@@ -178,7 +178,7 @@ instance Typeset Cat where
     SL x y      -> T.concat [toTeX x, "/", toTeX' y]
     BS x y      -> T.concat [toTeX x, "{\\bs}", toTeX' y]
     T True i u  -> T.concat ["\\vT^{\\sq{",(T.pack $ show i),"}}_{",toTeX u,"}"]
-    T False i u -> T.concat [toTeX u, "^{\\sq{",(T.pack $ show i),"}}"]
+    T False i u -> T.concat [toTeX' u, "^{\\sq{",(T.pack $ show i),"}}"]
 
 toTeX' :: Cat -> T.Text
 toTeX' c = if isBaseCategory c 

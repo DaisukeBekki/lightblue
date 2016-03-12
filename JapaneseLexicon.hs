@@ -15,7 +15,8 @@ module JapaneseLexicon (
   --isCONJ,
   lookupLexicon,
   setupLexicon,
-  LEX.emptyCategories
+  LEX.emptyCategories,
+  LEX.myLexicon
   ) where
 
 import Prelude hiding (id)
@@ -36,13 +37,14 @@ lookupLexicon :: T.Text -> Lexicon -> [Node]
 lookupLexicon word lexicon = filter (\l -> (pf l) == word) lexicon
 
 -- | This function takes a sentence and returns a numeration needed to parse that sentence, i.e., a union of 
-setupLexicon :: T.Text -> IO(Lexicon)
-setupLexicon sentence = do
+setupLexicon :: Lexicon -> T.Text -> IO(Lexicon)
+setupLexicon mylexicon sentence = do
   jumandic <- T.readFile "Juman.dic"
   jumanCN <- JU.jumanCompoundNouns sentence
-  return $ (concat $ (map parseJumanLine $ filter (\l -> (head l) `T.isInfixOf` sentence) $ map (T.split (=='\t')) (T.lines jumandic)))
-           ++ (filter (\l -> T.isInfixOf (pf l) sentence) LEX.myLexicon)
-           ++ jumanCN
+  let numeration = (concat $ (map parseJumanLine $ filter (\l -> (head l) `T.isInfixOf` sentence) $ map (T.split (=='\t')) (T.lines jumandic)))
+                   ++ (filter (\l -> T.isInfixOf (pf l) sentence) mylexicon)
+                   ++ jumanCN
+  return $ numeration `seq` numeration
 
 -- | Read each line in "Juman.dic" and convert it to a CCG lexical item
 parseJumanLine :: [T.Text] -> [Node]

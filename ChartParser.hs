@@ -20,7 +20,10 @@ module ChartParser (
   posTagger,
   -- * Utilities to filter the parsing results
   topBox,
-  bestOnly
+  bestOnly,
+  sOnly,
+  -- * 
+  L.myLexicon
   ) where
 
 import Data.List
@@ -30,7 +33,7 @@ import qualified System.IO as S        --base
 import qualified Data.Text.Lazy as T   --text
 import qualified Data.Map as M         --container
 import qualified CombinatoryCategorialGrammar as CCG --(Node, unaryRules, binaryRules, trinaryRules, isCONJ, cat, SimpleText)
-import qualified JapaneseLexicon as L (Lexicon, lookupLexicon, setupLexicon, emptyCategories)
+import qualified JapaneseLexicon as L (Lexicon, lookupLexicon, setupLexicon, emptyCategories, myLexicon)
 import qualified TeXmodule as TEX
 
 -- | The type 'Chart' is a type for CYK-charts. 
@@ -83,15 +86,24 @@ bestOnly nodes = case nodes of
   [] -> []
   (firstnode:ns) -> firstnode:(takeWhile (\node -> CCG.score(node) >= CCG.score(firstnode)) ns)
 
+-- | `sOnly` 
+sOnly :: [CCG.Node] -> [CCG.Node]
+sOnly = filter isS
+  where isS node = 
+          case CCG.cat node of
+            CCG.S _ _ _ -> True
+            _ -> False
+
 {- Main functions -}
 
 -- | Main parsing function
 parse :: Int         -- ^ The beam width
+         -> [CCG.Node]   -- ^ User-defined lexicon
          -> T.Text   -- ^ The input text to parse
          -> IO(Chart)
-parse beam sentence = do
+parse beam mylexicon sentence = do
   --start <- Time.getCurrentTime
-  lexicon <- L.setupLexicon sentence
+  lexicon <- L.setupLexicon mylexicon sentence
   --stop <- Time.getCurrentTime    
   --S.hPutStrLn S.stderr $ "Setting up numeration: " ++ show (Time.diffUTCTime stop start)
   return $ parseMain beam lexicon sentence

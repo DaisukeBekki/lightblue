@@ -15,7 +15,7 @@ main = do
   start    <- Time.getCurrentTime
   args     <- S.getArgs
   sentence <- T.getLine
-  chart    <- CP.parse beam sentence
+  chart    <- CP.parse beam CP.myLexicon sentence
   let topbox = CP.topBox chart
   stop     <- Time.getCurrentTime
   let time = Time.diffUTCTime stop start
