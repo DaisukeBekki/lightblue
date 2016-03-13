@@ -7,7 +7,7 @@ Description : A user-defined lexicon of Japanese
 Copyright   : (c) Daisuke Bekki, 2016
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
-Stability   : alpha
+Stability   : beta
 -}
 module MyLexicon (
   emptyCategories,
@@ -105,18 +105,18 @@ emptyCategories = [
               (T False 1 anySExStem `SL` (T False 1 anySExStem `BS` NP [Ga,O,Ni,To,No]))
               (Lam (App (Var 0) (Asp 1 (Con "entity")))),
   -}
-  -- pro3
-  lexicalitem "$pro_1$" "(597)" 96
+  -- pro1
+  lexicalitem "$pro_1$" "(597)" 95
               (T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Ga,O,Ni,To,No]))
               (Lam (App (Var 0) (Asp 1 (Con "entity")))),
   -- pro2
-  lexicalitem "$pro_2$" "(597)" 94
+  lexicalitem "$pro_2$" "(597)" 90
               (T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Ga,O,Ni,To,No]))
               (Lam (App (Var 0) (Asp 2 (Con "entity")))),
-  -- pro1
-  lexicalitem "$pro_3$" "(597)" 92
-              (T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Ga,O,Ni,To,No]))
-              (Lam (App (Var 0) (Asp 3 (Con "entity")))),
+  -- pro3
+  --lexicalitem "$pro_3$" "(597)" 80
+  --            (T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Ga,O,Ni,To,No]))
+  --            (Lam (App (Var 0) (Asp 3 (Con "entity")))),
   -- 関係節化演算子(relativizer)
   lexicalitem "rel" "(670)" 99
               ((N `SL` N) `BS` (S anyPos [Attr] [PM,PM,PM,M,M] `BS` NP [Ga,O,Ni,To]))
@@ -239,6 +239,15 @@ myLexicon = concat $ [
   conjSuffix "ん" "(79)-" [V5n,V5m,V5b] [EuphD],  
   conjSuffix "う" "(128)" [V5TOW] [EuphT],
   conjSuffix "い" "(123)" [V5NAS] [Cont,Imper],
+  -- ナサル型活用動詞
+  mylex ["なさ"] "(122)" (defS [V5NAS] [Stem] `BS` defS verb [Cont]) id,
+  mylex ["なさ"] "(122)" (defS [V5NAS] [Stem] `BS` defS [VS] [Stem]) id,
+  mylex ["いらっしゃ"] "(122)" (defS [V5NAS] [Stem] `BS` NP [Ga]) (verbSR 1 "来る"),
+  mylex ["いらっしゃ"] "(122)" (defS [V5NAS] [Stem] `BS` defS anyPos [TeForm]) (eventModifier "来る"),
+  mylex ["仰","おっしゃ"] "(122)" ((defS [V5NAS] [Stem] `BS` NP [Ga]) `BS` Sbar [ToCL]) (verbSR 2 "言う"),
+  mylex ["下さ","くださ"] "(122)" (((defS [V5NAS] [Stem] `BS` NP [Ga]) `BS` NP [Ni]) `BS` NP [O]) (verbSR 3 "クレル"),
+  mylex ["下さ","くださ"] "(122)" (defS [V5NAS] [Stem] `BS` defS anyPos [TeForm]) (eventModifier "クレル"),
+  mylex ["ござ","御座"] "(122)" (defS [V5NAS] [Stem] `BS` defS anyPos [Cont]) id,
   -- 例外的な命令形
   mylex ["くれ"] "(149)" (((defS [V1] [Imper] `BS` NP [Ga]) `BS` NP [Ni]) `BS` NP [O]) (verbSR 3 "くれる"),
   mylex ["くれ"] "(150)" (defS [V1] [Imper] `BS` S verb [TeForm] [M,M,PM,M,M]) id,
@@ -553,11 +562,15 @@ myLexicon = concat $ [
   mylex ["でき","出来"] "new" (((defS [V1] [Term,Attr] `BS` NP [Ga,Ni]) `BS` NP [Ga]) `BS` ((defS [VS] [Stem] `BS` NP [Ga]) `BS` NP [Ni,O]))
         (Lam (Lam (Lam (Lam (App (Con "可能") (Pair (Var 1) (App (App (App (Var 3) (Var 2)) (Var 1)) (Var 0)))))))),
   -- 複文
-  mylex ["が"] "(711)" ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` defS anyPos [Term]) (Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 1) (Var 0)))))),
-  mylex ["し"] "(713)" ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` defS anyPos [Term]) (Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 1) (Var 0)))))),
+  mylex ["が"] "(711)" ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` defS anyPos [Term]) 
+        (Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 1) (Var 0)))))),
+  mylex ["し"] "(713)" ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` defS anyPos [Term]) 
+        (Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 1) (Var 0)))))),
   -- 状詞の副詞用法
-  mylex ["に"] "(728)" ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` (defS [Nni] [Stem] `BS` NP [Ga])) (Lam (Lam (Lamvec (Lam (App (Appvec 1 (Var 2)) (Lam (Sigma (App (App (Var 4) (Var 0)) (Lam Top)) (App (Var 2) (Var 1))))))))),
-  mylex ["と"] "(731)" ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` (defS [Nto] [Stem] `BS` NP [Ga])) (Lam (Lam (Lamvec (Lam (App (Appvec 1 (Var 2)) (Lam (Sigma (App (App (Var 4) (Var 0)) (Lam Top)) (App (Var 2) (Var 1))))))))),
+  mylex ["に"] "(728)" ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` (defS [Nni] [Stem] `BS` NP [Ga])) 
+        (Lam (Lam (Lam (App (Var 1) (Lam (Sigma (App (App (Var 3) (Var 0)) (Lam Top)) (App (Var 2) (Var 1)))))))),
+  mylex ["と"] "(731)" ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` (defS [Nto] [Stem] `BS` NP [Ga])) 
+        (Lam (Lam (Lam (App (Var 1) (Lam (Sigma (App (App (Var 3) (Var 0)) (Lam Top)) (App (Var 2) (Var 1)))))))),
   --mylex ["が"] "(711)" ((T True 1 anySExStem `SL` T True 1 anySExStem) `BS` defS anyPos [Term]) 
   --      (Lam (Lam (Lamvec (Lamvec (Sigma (Appvec 0 (Var 3)) (Appvec 1 (Appvec 2 (Var 3)))))))),
   -- Wh句

@@ -584,7 +584,7 @@ forwardFunctionCrossedComposition1Rule lnode@(Node {rs=r,cat=SL x y1, sem=f}) rn
             cat = newcat,
             sem = betaReduce $ transvec newcat $ betaReduce $ (Lam (App f (App g (Var 0)))),
             daughters = [lnode,rnode],
-            score = score(lnode)*score(rnode)*(99 % 100), -- degrade the score when this rule is used.
+            score = score(lnode)*score(rnode)*(100 % 100), -- degrade the score when this rule is used.
             memo = ""
             }:prevlist
 forwardFunctionCrossedComposition1Rule _ _ prevlist = prevlist
@@ -610,7 +610,7 @@ forwardFunctionCrossedComposition2Rule lnode@(Node {rs=r,cat=(x `SL` y1), sem=f}
                         cat = newcat,
                         sem = betaReduce $ transvec newcat $ betaReduce $ Lam (Lam (App f (App (App g (Var 1)) (Var 0)))),
                         daughters = [lnode,rnode],
-                        score = score(lnode)*score(rnode)*(98 % 100), -- degrade the score more when this rule is used.
+                        score = score(lnode)*score(rnode)*(99 % 100), -- degrade the score more when this rule is used.
                         memo = ""
                         }:prevlist
 forwardFunctionCrossedComposition2Rule _ _ prevlist = prevlist

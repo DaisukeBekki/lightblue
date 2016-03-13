@@ -11,20 +11,31 @@ import qualified XMLmodule as XML
 
 main :: IO()
 main = do
-  let beam = 100
   start    <- Time.getCurrentTime
   args     <- S.getArgs
   sentence <- T.getLine
-  chart    <- CP.parse beam CP.myLexicon sentence
+  let mylexicon = CP.myLexicon
+  chart    <- CP.parse 64 mylexicon sentence
   let topbox = CP.topBox chart
-  stop     <- Time.getCurrentTime
-  let time = Time.diffUTCTime stop start
-  mapM_ (action chart topbox time) args
-  where action chart topbox time op
-          | op == "-tex" = CP.printChartInTeX S.stdout $ CP.bestOnly $ topbox
-          | op == "-text" = CP.printChartInSimpleText S.stderr $ CP.bestOnly $ topbox
-          | op == "-xml"  = XML.render S.stderr $ CP.bestOnly $ topbox
-          | op == "-postag"  = CP.posTagger S.stdout $ CP.bestOnly $ topbox
-          | op == "-debug" = do; CP.printNodes S.stdout 30 $ topbox; CP.printChart S.stdout chart
+  if (topbox /= [])
+    then
+      do
+      stop     <- Time.getCurrentTime
+      let time = Time.diffUTCTime stop start
+      mapM_ (action chart topbox time) args
+    else
+      do
+      T.putStrLn $ "Re-parsing with the beam-width 256..."
+      chart2 <- CP.parse 512 mylexicon sentence
+      let topbox2 = CP.topBox chart2
+      stop     <- Time.getCurrentTime
+      let time = Time.diffUTCTime stop start
+      mapM_ (action chart2 topbox2 time) args
+  where action chart ns time op
+          | op == "-tex" = CP.printChartInTeX S.stdout $ CP.bestOnly $ ns
+          | op == "-text" = CP.printChartInSimpleText S.stderr $ CP.bestOnly $ ns          
+          | op == "-xml"  = XML.render S.stderr $ CP.bestOnly $ ns
+          | op == "-postag"  = CP.posTagger S.stdout $ CP.bestOnly $ ns          
+          | op == "-debug" = CP.printChart S.stdout chart -- do; CP.printNodes S.stdout 30 $ ns; CP.printChart S.stdout chart
           | op == "-time" = S.hPutStrLn S.stderr $ "Total Execution Time: " ++ show time
           | otherwise = return ()
