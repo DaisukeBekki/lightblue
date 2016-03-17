@@ -33,12 +33,12 @@ f :: [CCG.Node] -> IO(Int,Int) -> T.Text -> IO(Int,Int)
 f mylexicon score s =
   do
   (i,j) <- score
-  chart <- CP.parse 20 mylexicon s
+  chart <- CP.parse 32 mylexicon s
   let nodes = CP.sOnly $ CP.topBox chart
   if (nodes == [])
     then do
-         T.putStrLn $ "Re-parsing with the beam width 100..."
-         chart100 <- CP.parse 100 mylexicon s
+         T.putStrLn $ "Re-parsing with the beam width 256..."
+         chart100 <- CP.parse 256 mylexicon s
          let nodes100 = CP.sOnly $ CP.topBox chart100
          if (nodes100 == [])   
            then do

@@ -39,7 +39,7 @@ lookupLexicon word lexicon = filter (\l -> (pf l) == word) lexicon
 -- | This function takes a sentence and returns a numeration needed to parse that sentence, i.e., a union of 
 setupLexicon :: Lexicon -> T.Text -> IO(Lexicon)
 setupLexicon mylexicon sentence = do
-  jumandic <- T.readFile "Juman.dic"
+  jumandic <- T.readFile "/home/bekki/dropbox/MyProgram/Haskell/CCG04/Juman.dic"
   jumanCN <- JU.jumanCompoundNouns sentence
   let numeration = (concat $ (map parseJumanLine $ filter (\l -> (head l) `T.isInfixOf` sentence) $ map (T.split (=='\t')) (T.lines jumandic)))
                    ++ (filter (\l -> T.isInfixOf (pf l) sentence) mylexicon)
@@ -80,7 +80,7 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "動詞:子音動詞バ行"  ct  = constructVerb daihyo caseframe [V5b] [Stem]
   | T.isPrefixOf "動詞:母音動詞"     ct  = constructVerb daihyo caseframe [V1] [Stem,Neg,Cont,NegL,EuphT]
   | T.isPrefixOf "動詞:カ変動詞"     ct  = constructVerb daihyo caseframe [VK] [Stem]
-  | T.isPrefixOf "名詞:サ変名詞"     ct  = (constructCommonNoun daihyo) ++ (constructVerb daihyo caseframe [VS] [Stem])
+  | T.isPrefixOf "名詞:サ変名詞"     ct  = (constructCommonNoun daihyo) ++ (constructVerb daihyo caseframe [VSN] [Stem])
   | T.isPrefixOf "動詞:サ変動詞"     ct  = constructVerb daihyo caseframe [VS] [Stem]
   | T.isPrefixOf "動詞:ザ変動詞"     ct  = constructVerb daihyo caseframe [VZ] [Stem]
   | T.isPrefixOf "動詞:動詞性接尾辞ます型" ct = constructVerb daihyo caseframe [V5NAS] [Stem]

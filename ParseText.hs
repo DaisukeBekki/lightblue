@@ -25,8 +25,8 @@ main = do
       mapM_ (action chart topbox time) args
     else
       do
-      T.putStrLn $ "Re-parsing with the beam-width 256..."
-      chart2 <- CP.parse 512 mylexicon sentence
+      S.hPutStrLn S.stderr "Re-parsing with the beam-width 256..."
+      chart2 <- CP.parse 256 mylexicon sentence
       let topbox2 = CP.topBox chart2
       stop     <- Time.getCurrentTime
       let time = Time.diffUTCTime stop start

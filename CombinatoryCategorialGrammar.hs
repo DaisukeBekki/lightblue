@@ -127,7 +127,7 @@ instance Show Cat where
 
 data PosFeature = V5k | V5s | V5t | V5n | V5m | V5r | V5w | V5g | V5z | V5b |
               V5IKU | V5YUK | V5ARU | V5NAS | V5TOW |
-              V1 | VK | VS | VZ | VURU |
+              V1 | VK | VS | VSN | VZ | VURU |
               Aauo | Ai | ANAS | ATII | ABES |
               Nda | Nna | Nno | Ntar | Nni | Nemp | Nto |
               Exp | Error
@@ -167,6 +167,7 @@ instance Show PosFeature where
   show V1 = "v:1"
   show VK = "v:K"
   show VS = "v:S"
+  show VSN = "v:SN"
   show VZ = "v:Z"
   show VURU = "v:URU"
   show Aauo = "a:i:auo"
@@ -713,7 +714,7 @@ compoundNPRule lnode@(Node {rs=r, cat=x}) rnode@(Node {cat=y}) prevlist =
 
 {- Implementation of CCG Unification -}
 
--- | `numberOfArguments` returns the number of arguments of a given syntactic category.  
+-- | returns the number of arguments of a given syntactic category.  
 -- For a category variable, `numberOfArguments` simply returns 0.
 numberOfArguments :: Cat -> Int
 numberOfArguments c = case c of
@@ -721,7 +722,8 @@ numberOfArguments c = case c of
   BS c1 _ -> 1 + numberOfArguments c1
   _ -> 0
 
--- | `maximumIndexC` returns a maximum index of category variables contained in a given category.
+-- | returns a maximum index of category variables contained in a given category.
+--
 -- >>> maximumIndex T(1)/T(3) == 3
 maximumIndexC :: Cat -> (Int,Int)
 maximumIndexC c = case c of
@@ -740,7 +742,7 @@ maximumIndexF fs = case fs of
   ((F i _):fs2) -> max i (maximumIndexF fs2)
   (_:fs2) -> maximumIndexF fs2
 
--- | `incrementIndex` returns 
+-- | returns 
 incrementIndexC :: Cat -> (Int,Int) -> Cat
 incrementIndexC c i = case c of
   T f j u -> T f ((fst i)+j) u
@@ -755,7 +757,9 @@ incrementIndexF fs i = case fs of
   ((F j f2):fs2) -> (F (i+j) f2):(incrementIndexF fs2 i)
   (fh:ft) -> fh:(incrementIndexF ft i)
 
--- | substituteCateogoryVariable T1 [1->X/Y] ==> X/Y
+-- | substituteCateogoryVariable 
+--
+-- >>> T1 [1->X/Y] ==> X/Y
 simulSubstituteCV :: [(Int,Cat)] -> [(Int,PMFeature)] -> Cat -> Cat
 simulSubstituteCV csub fsub c = case c of
     T f j c3 -> case L.lookup j csub of
@@ -766,7 +770,9 @@ simulSubstituteCV csub fsub c = case c of
     S x1 x2 x3 -> S x1 x2 (simulSubstituteFV x3 fsub)
     _ -> c
 
--- | substituteFeatureVariable F 1 f [1->PM] ==> f[PM/1]
+-- | substituteFeatureVariable
+--
+-- >>> F 1 f [1->PM] ==> f[PM/1]
 substituteFV :: [PMFeature] -> (Int,PMFeature) -> [PMFeature]
 substituteFV f1 (i,f2) = case f1 of
   [] -> []
@@ -913,7 +919,7 @@ defS :: [PosFeature] -> [ConjFeature] -> Cat
 defS p c = S p c [M,M,M,M,M]
 
 verb :: [PosFeature]
-verb = [V5k, V5s, V5t, V5n, V5m, V5r, V5w, V5g, V5z, V5b, V5IKU, V5YUK, V5ARU, V5NAS, V5TOW, V1, VK, VS, VZ, VURU]
+verb = [V5k, V5s, V5t, V5n, V5m, V5r, V5w, V5g, V5z, V5b, V5IKU, V5YUK, V5ARU, V5NAS, V5TOW, V1, VK, VS, VSN, VZ, VURU]
 
 adjective :: [PosFeature]
 adjective = [Aauo, Ai, ANAS, ATII, ABES]
@@ -968,11 +974,12 @@ commonNounSR op = (Lam (Lam (Sigma (Con "state") (Sigma (App (App (Con op) (Var 
 modal :: T.Text -> Preterm 
 modal op = (Lam (Lam (App (Con op) (App (Var 1) (Var 0)))))
 
--- | S\NP\(S\NP):    \p.\x.\c.op(x,\z.(pz)c)
---   S\NP\NP\(S\NP): \p.\y.\x.\c.op(x,\z.((py)z)c)
+-- | 
+-- >>> S\NP\(S\NP):    \p.\x.\c.op(x,\z.(pz)c)
+-- >>> S\NP\NP\(S\NP): \p.\y.\x.\c.op(x,\z.((py)z)c)
 intensionalVerb :: Int -> T.Text -> Preterm 
 intensionalVerb i op | i == 1 = (Lam (Lam (Lam (App (App (Con op) (Lam (App (App (Var 3) (Var 0)) (Var 1)))) (Var 1)))))
-                     | i == 2 = (Lam (Lam (Lam (Lam (App (App (Con op) (Lam (App (App (App (Var 4) (Var 3)) (Var 0)) (Var 1)))) (Var 2))))))
+                     | i == 2 = (Lam (Lam (Lam (Lam (App (App (Con op) (Lam (App (App (Var 4) (Var 3)) (Var 1)))) (Var 1))))))
                      | otherwise = Con $ T.concat ["intensionalVerb: verb ",op," of ", T.pack (show i), " arguments"]
 
 -- | T/T: \p.\v.\c.pv(\e.(op e) X ce)

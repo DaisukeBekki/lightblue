@@ -11,7 +11,7 @@ Stability   : beta
 Implementation of Underspecified Dependent Type Theory (Bekki forthcoming).
 How to install lightblue:
 
-Lightblue requries @juman@ and @nkf@ to be installed.  
+Lightblue requries @juman@ and @nkf@ to be installed in advance.
 
 > cabal configure
 > cabal build
@@ -38,7 +38,7 @@ module DependentTypes (
 
 import qualified Data.Text.Lazy as T
 
--- | Preterms of Underspecified Dependent Type Theory
+-- | Preterms of Underspecified Dependent Type Theory (UDTT).
 data Preterm =
   Var Int |               -- ^ Variable
   Con T.Text |            -- ^ Constant symbol
@@ -66,18 +66,20 @@ data Preterm =
   Idpeel Preterm Preterm           -- ^ idpeel
     deriving (Eq, Show)
 
--- | `Selector` is an index i of Proj i m
+-- | 'Proj' 'Fst' m is the first projection of m, while 'Proj' 'Snd' m is the second projection of m.
 data Selector = Fst | Snd
   deriving (Eq, Show)
 
+-- | A class 'SimpleText' has a method 'toText' that translates a SimpleText term into a simple text notation.
 class SimpleText a where
   toText :: a -> T.Text
 
+-- | translates a selector into either 1 or 2.
 instance SimpleText Selector where
   toText Fst = "1"  -- `Proj` `Fst` m is the first projection of m
   toText Snd = "2" -- `Proj` `Snd` m is the second projection of m
 
--- | convert a term to a simple notation text
+-- | translates a term into a simple text notation.
 instance SimpleText Preterm where
   toText preterm = case preterm of
     Var i   -> T.pack (show i)
@@ -105,10 +107,11 @@ instance SimpleText Preterm where
     Refl a m -> T.concat ["refl", toText a, "(", toText m, ")"]
     Idpeel m n -> T.concat ["idpeel(", toText m, ",", toText n, ")"]
 
--- | "toText" with variable names: convert a term to a non-de-Bruijn notation
+-- | translates a term, given a context (=a list of variable names), into a non-de-Bruijn notation (i.e. each variable is printed with a variable name).
 toTextWithVN :: [T.Text] -> Preterm -> T.Text
 toTextWithVN varlist term = toTextWithVNLoop varlist term 0
 
+-- | 
 toTextWithVNLoop :: [T.Text] -> Preterm -> Int -> T.Text
 toTextWithVNLoop vlist preterm i = case preterm of
   Var j -> if j < (length vlist)

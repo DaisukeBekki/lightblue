@@ -28,8 +28,8 @@ emptyCategories = [
   --            id,
   -- カ行変格活用動詞語幹
   lexicalitem "\\emp" "(154)" 100
-              (defS [VK] [Stem] `BS` NP [Ga])
-              (verbSR 1 "来る"),
+              ((defS [VK] [Stem] `BS` NP [Ga]) `BS` NP [Ni])
+              (verbSR 2 "来る"),
   -- サ行変格活用動詞語幹 -- とりあえずガヲ、ガヲトのパターンのみ。
   lexicalitem "\\emp" "(156)" 100
               ((defS [VS] [Stem] `BS` NP [Ga]) `BS` NP [O])
@@ -50,7 +50,7 @@ emptyCategories = [
               (Lam (Lam (Lam (Sigma (Eq (Con "entity") (Var 1) (Var 2)) (App (Var 1) (Var 0)))))),
   -- サ変語幹→状詞語幹
   lexicalitem "\\emp" "(262)" 99
-              (defS [Nda,Nno] [Stem] `BS` defS [VS] [Stem])
+              (defS [Nda,Nno] [Stem] `BS` defS [VSN] [Stem])
               id,
   -- サ変語幹→名詞
   lexicalitem "\\emp" "ss" 99
@@ -58,10 +58,10 @@ emptyCategories = [
               (Lam (Lam (Lam (Lam (Lamvec (App (App (App (Var 4) (Var 3)) (Var 2)) (Lam (Appvec 1 (App (Var 2) (Var 0)))))))))),
   -- 形式述語スル
   lexicalitem "\\emp" "(380a)" 100
-              (defS [VS] [Stem] `BS` S verb [Cont] [M,M,M,M,P])
+              (defS [VS,VSN] [Stem] `BS` S verb [Cont] [M,M,M,M,P])
               id,
   lexicalitem "\\emp" "(380b)" 100
-              (defS [VS] [Stem] `BS` S verb [Cont] [P,PM,PM,M,PM])
+              (defS [VS,VSN] [Stem] `BS` S verb [Cont] [P,PM,PM,M,PM])
               id,
   -- 補助動詞「くる」
   lexicalitem "\\emp" "(416)" 100
@@ -241,7 +241,7 @@ myLexicon = concat $ [
   conjSuffix "い" "(123)" [V5NAS] [Cont,Imper],
   -- ナサル型活用動詞
   mylex ["なさ"] "(122)" (defS [V5NAS] [Stem] `BS` defS verb [Cont]) id,
-  mylex ["なさ"] "(122)" (defS [V5NAS] [Stem] `BS` defS [VS] [Stem]) id,
+  mylex ["なさ"] "(122)" (defS [V5NAS] [Stem] `BS` defS [VSN] [Stem]) id,
   mylex ["いらっしゃ"] "(122)" (defS [V5NAS] [Stem] `BS` NP [Ga]) (verbSR 1 "来る"),
   mylex ["いらっしゃ"] "(122)" (defS [V5NAS] [Stem] `BS` defS anyPos [TeForm]) (eventModifier "来る"),
   mylex ["仰","おっしゃ"] "(122)" ((defS [V5NAS] [Stem] `BS` NP [Ga]) `BS` Sbar [ToCL]) (verbSR 2 "言う"),
@@ -272,17 +272,17 @@ myLexicon = concat $ [
   conjSuffix "こよ" "(155)" [VK] [ModU],
   mylex ["来ん","くん"] "(155)" (S [VK] [Term,Attr] [M,M,M,P,M] `BS` defS [VK] [Stem]) id,
   --- サ変動詞
-  conjSuffix "さ" "(157)" [VS] [VoR,VoS],
-  conjSuffix "し" "(157)" [VS] [Neg,Cont,EuphT],
-  conjSuffix "する" "(157)" [VS] [Term,Attr],
-  conjSuffix "すれ" "(157)" [VS] [Hyp],
-  conjSuffix "しろ" "(157)" [VS] [Imper],
-  conjSuffix "しよ" "(157)" [VS] [ModU],
-  conjSuffix "せ" "(157)" [VS] [NegL],
-  conjSuffix "す" "(157)" [VS] [Term],
-  conjSuffix "せよ" "(157)" [VS] [Imper],
-  conjSuffix "せい" "(157)" [VS] [Imper],
-  mylex ["すん"] "(157)" (S [VS] [Term,Attr] [M,M,M,P,M] `BS` defS [VS] [Stem]) id,
+  conjSuffix "さ" "(157)" [VS,VSN] [VoR,VoS],
+  conjSuffix "し" "(157)" [VS,VSN] [Neg,Cont,EuphT],
+  conjSuffix "する" "(157)" [VS,VSN] [Term,Attr],
+  conjSuffix "すれ" "(157)" [VS,VSN] [Hyp],
+  conjSuffix "しろ" "(157)" [VS,VSN] [Imper],
+  conjSuffix "しよ" "(157)" [VS,VSN] [ModU],
+  conjSuffix "せ" "(157)" [VS,VSN] [NegL],
+  conjSuffix "す" "(157)" [VS,VSN] [Term],
+  conjSuffix "せよ" "(157)" [VS,VSN] [Imper],
+  conjSuffix "せい" "(157)" [VS,VSN] [Imper],
+  mylex ["すん"] "(157)" (S [VS,VSN] [Term,Attr] [M,M,M,P,M] `BS` defS [VS,VSN] [Stem]) id,
   --- ザ変動詞
   conjSuffix "じ" "(164)" [VZ] [Neg,NegL,Cont,EuphT],
   conjSuffix "ずる" "(164)" [VZ] [Term,Attr],
@@ -387,9 +387,9 @@ myLexicon = concat $ [
                        (modal "ダロウ[MCN]"),
   mylex ["まい"] "(359a)" (S verb [Pre] [M,(F 1 PM),P,M,M] `BS` S verb [Term] [M,(F 1 PM),M,M,M])
                          (Lam (Lam (App (Con "ダロウ[MCN]") (Not (App (Var 1) (Var 0)))))),
-  mylex ["まい"] "(359b)" (S verb [Pre] [M,(F 1 PM),P,M,M] `BS` S [V1,VK,VS,VZ] [Neg] [M,(F 1 PM),M,M,M])
+  mylex ["まい"] "(359b)" (S verb [Pre] [M,(F 1 PM),P,M,M] `BS` S [V1,VK,VS,VSN,VZ] [Neg] [M,(F 1 PM),M,M,M])
                          (Lam (Lam (App (Con "ダロウ[MCN]") (Not (App (Var 1) (Var 0)))))),
-  mylex ["まい"] "(359c)" (S verb [Pre] [M,(F 1 PM),P,M,M] `BS` S [VS,VZ] [Term] [M,(F 1 PM),M,M,M])
+  mylex ["まい"] "(359c)" (S verb [Pre] [M,(F 1 PM),P,M,M] `BS` S [VS,VSN,VZ] [Term] [M,(F 1 PM),M,M,M])
                          (Lam (Lam (App (Con "ダロウ[MCN]") (Not (App (Var 1) (Var 0)))))),
   -- 動詞テ形
   mylex ["て"] "(369)" (S verb [TeForm] [M,(F 1 PM),M,M,M] `BS` S verb [EuphT] [M,(F 1 PM),M,M,M]) id,
@@ -557,10 +557,9 @@ myLexicon = concat $ [
   mylex ["れ"] "(666)" (defS [V1] [VoE] `BS` defS [V1] [Stem])
         id,
   mylex ["来れ","これ"] "(667)" (defS [VK] [VoE] `BS` defS [VK] [Stem]) id,
-  mylex ["でき","出来"] "new" ((defS [V1] [Term,Attr] `BS` NP [Ga]) `BS` (defS [V1] [Stem] `BS` NP [Ga]))
-        (Lam (Lam (Lam (App (Con "可能") (Pair (Var 1) (App (App (Var 2) (Var 1)) (Var 0))))))),
-  mylex ["でき","出来"] "new" (((defS [V1] [Term,Attr] `BS` NP [Ga,Ni]) `BS` NP [Ga]) `BS` ((defS [VS] [Stem] `BS` NP [Ga]) `BS` NP [Ni,O]))
-        (Lam (Lam (Lam (Lam (App (Con "可能") (Pair (Var 1) (App (App (App (Var 3) (Var 2)) (Var 1)) (Var 0)))))))),
+  mylex ["でき","出来"] "new" ((defS [V1] [Stem] `BS` NP [Ga,Ni]) `BS` (defS [VSN] [Stem] `BS` NP [Ga]))
+        (Lam (Lam (Lam (App (Con "可能") (Pair (Var 1) (Lam (App (App (Var 3) (Var 0)) (Var 1)))))))),
+  --mylex ["でき","出来"] "new" (defS [V1] [Term,Att
   -- 複文
   mylex ["が"] "(711)" ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` defS anyPos [Term]) 
         (Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 1) (Var 0)))))),
@@ -602,7 +601,7 @@ myLexicon = concat $ [
   mylex ["一人の","或る","ある","何人かの","数人の"] "(534)" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Nc])) `SL` N) 
         (Lam (Lam (Lamvec (Sigma (Sigma (Con "entity") (App (App (Var 3) (Var 0)) (Lam Top))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),
   -- 量化表現：N-no Q
-  mylex ["の一人一人","のそれぞれ","のすべて","の全員"] "(535)" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Nc])) `BS` N) 
+  mylex ["の一人一人","のそれぞれ","のすべて","の全員","の誰も"] "(535)" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Nc])) `BS` N) 
         (Lam (Lam (Lamvec (Pi (Sigma (Con "entity") (App (App (Var 3) (Var 0)) (Lam Top))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),
   mylex ["の一人","の何人か","の数人","の誰か"] "(535)" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Nc])) `BS` N) 
         (Lam (Lam (Lamvec (Sigma (Sigma (Con "entity") (App (App (Var 3) (Var 0)) (Lam Top))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),
