@@ -139,8 +139,8 @@ type PartialChart = (Chart,Int,T.Text)
 -- | The 'chartAccumulator' function
 chartAccumulator :: Int -> L.Lexicon -> PartialChart -> Char -> PartialChart
 chartAccumulator beam lexicon (chart,i,stack) c
-  | c == '、' = ((M.insert (0,i+1) (lookupChart 0 i chart) M.empty), i+1, (T.cons c stack))
-  | otherwise =
+  -- | c == '、' = ((M.insert (0,i+1) (lookupChart 0 i chart) M.empty), i+1, (T.cons c stack))
+  -- | otherwise =
       let newstack = (T.cons c stack);
           (newchart,_,_,to) = T.foldl' (boxAccumulator beam lexicon) (chart,T.empty,i,i+1) newstack in
       (newchart,to,newstack)
