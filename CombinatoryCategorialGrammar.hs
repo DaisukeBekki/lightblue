@@ -49,7 +49,8 @@ module CombinatoryCategorialGrammar (
   predSR,
   properNameSR,
   commonNounSR,
-  intensionalVerb,
+  intensionalEvent,
+  intensionalState,
   modal,
   mannerAdverb,
   eventModifier,
@@ -959,8 +960,10 @@ verbSR i op | i == 1 = (Lam (Lam (Sigma (Con "event") (Sigma (App (App (Con op) 
             | otherwise = Con $ T.concat ["verbSR: verb ",op," of ", T.pack (show i), " arguments"]
 
 -- | S\NP: \x.\c.(s:state)Xop(s,x)X(ce)
-predSR :: T.Text -> Preterm
-predSR op = (Lam (Lam (Sigma (Con "state") (Sigma (App (App (Con op) (Var 2)) (Var 0)) (App (Var 2) (Var 1))))))
+predSR :: Int -> T.Text -> Preterm
+predSR i op | i == 1 = (Lam (Lam (Sigma (Con "state") (Sigma (App (App (Con op) (Var 2)) (Var 0)) (App (Var 2) (Var 1))))))
+            | i == 2 = (Lam (Lam (Lam (Sigma (Con "state") (Sigma (App (App (App (Con op) (Var 3)) (Var 2)) (Var 0)) (App (Var 2) (Var 1)))))))
+            | otherwise = Con $ T.concat ["predSR: pred ",op," of ", T.pack (show i), " arguments"]
 
 -- | NP: 
 properNameSR :: T.Text -> Preterm
@@ -977,10 +980,15 @@ modal op = (Lam (Lam (App (Con op) (App (Var 1) (Var 0)))))
 -- | 
 -- >>> S\NP\(S\NP):    \p.\x.\c.op(x,\z.(pz)c)
 -- >>> S\NP\NP\(S\NP): \p.\y.\x.\c.op(x,\z.((py)z)c)
-intensionalVerb :: Int -> T.Text -> Preterm 
-intensionalVerb i op | i == 1 = (Lam (Lam (Lam (App (App (Con op) (Lam (App (App (Var 3) (Var 0)) (Var 1)))) (Var 1)))))
+intensionalEvent :: Int -> T.Text -> Preterm 
+intensionalEvent i op | i == 1 = (Lam (Lam (Lam (Sigma (Con "event") (Sigma (App (App (App (Con op) (Lam (App (App (Var 4) (Var 0)) (Lam Top)))) (Var 2)) (Var 0)) (App (Var 2) (Var 1)))))))
                      | i == 2 = (Lam (Lam (Lam (Lam (App (App (Con op) (Lam (App (App (Var 4) (Var 3)) (Var 1)))) (Var 1))))))
-                     | otherwise = Con $ T.concat ["intensionalVerb: verb ",op," of ", T.pack (show i), " arguments"]
+                     | otherwise = Con $ T.concat ["intensionalEvent: verb ",op," of ", T.pack (show i), " arguments"]
+
+intensionalState :: Int -> T.Text -> Preterm 
+intensionalState i op | i == 1 = (Lam (Lam (Lam (Sigma (Con "state") (Sigma (App (App (App (Con op) (Lam (App (App (Var 4) (Var 0)) (Lam Top)))) (Var 2)) (Var 0)) (App (Var 2) (Var 1)))))))
+                     | i == 2 = (Lam (Lam (Lam (Lam (App (App (Con op) (Lam (App (App (Var 4) (Var 3)) (Var 1)))) (Var 1))))))
+                     | otherwise = Con $ T.concat ["intensionalState: verb ",op," of ", T.pack (show i), " arguments"]
 
 -- | T/T: \p.\v.\c.pv(\e.(op e) X ce)
 mannerAdverb :: T.Text -> Preterm 

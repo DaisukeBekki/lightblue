@@ -7,7 +7,7 @@ Description : A left-corner CKY-parser for lexical grammars
 Copyright   : (c) Daisuke Bekki, 2016
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
-Stability   : alpha
+Stability   : beta
 -}
 
 module ChartParser (
@@ -59,7 +59,10 @@ printChartInTeX handle = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-
 
 -- | prints CCG nodes (=a parsing result) as a plain text.
 printChartInSimpleText :: S.Handle -> [CCG.Node] -> IO()
-printChartInSimpleText handle = mapM_ (\node -> S.hPutStr handle $ (T.unpack $ CCG.toText node) ++ "\n") 
+printChartInSimpleText handle nodes = 
+  do
+  mapM_ (\node -> S.hPutStr handle $ (T.unpack $ CCG.toText node) ++ "\n") nodes
+  S.hPutStrLn handle $ "Number of nodes: " ++ show (length nodes)
 
 -- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style
 posTagger :: S.Handle -> [CCG.Node] -> IO()
@@ -118,7 +121,7 @@ parseMain beam lexicon text
 
 -- | removes occurrences of some letters from an input text.
 purifyText :: T.Text -> T.Text
-purifyText = T.filter (\c -> not $ isSpace c || c `elem` ['、','。','，','．','！','？','!','?'])
+purifyText = T.filter (\c -> not $ isSpace c || c `elem` ['。','，','．','！','？','!','?'])
              --(\c -> not (isSpace c) && c /= '、' && c /= '。' && c /= '，' && c /= '．' && c /= '！' && c /= '？' && c /= '!' && c /= '?')
 
 -- | looks up a chart with the key (i,j) and returns the value of type [Node]
@@ -127,32 +130,36 @@ lookupChart i j chart =
   case (M.lookup (i,j) chart) of Just list -> list
                                  Nothing   -> []
 
--- | triples representing a state during parsing: a chart (=parsed result) of the left of the pivot, the pivot, the unparsed subsentence on the right of the pivot.
+-- | triples representing a state during parsing:
+-- the parsed result (=chart) of the left of the pivot,
+-- the pivot (=the current parsing position),
+-- the unparsed subsentence on the right of the pivot.
 type PartialChart = (Chart,Int,T.Text)
 
 -- | The 'chartAccumulator' function
 chartAccumulator :: Int -> L.Lexicon -> PartialChart -> Char -> PartialChart
-chartAccumulator beam lexicon partialchart c = 
-  let (chart,i,stack) = partialchart in
-  let newstack = (T.cons c stack) in
-  let (newchart,_,_,to) = T.foldl' (boxAccumulator beam lexicon) (chart,T.empty,i,i+1) newstack in
-  (newchart,to,newstack)
+chartAccumulator beam lexicon (chart,i,stack) c
+  | c == '、' = ((M.insert (0,i+1) (lookupChart 0 i chart) M.empty), i+1, (T.cons c stack))
+  | otherwise =
+      let newstack = (T.cons c stack);
+          (newchart,_,_,to) = T.foldl' (boxAccumulator beam lexicon) (chart,T.empty,i,i+1) newstack in
+      (newchart,to,newstack)
 
 type PartialBox = (Chart,T.Text,Int,Int)
 
 -- | The 'boxAccumulator' function
 boxAccumulator :: Int -> L.Lexicon -> PartialBox -> Char -> PartialBox
-boxAccumulator beam lexicon partialbox c = 
-  let (chart,word,i,j) = partialbox in
-  let newword = T.cons c word in 
-  let list0 = L.lookupLexicon newword lexicon in
-  let list1 = checkUnaryRules list0 in
-  let list2 = checkBinaryRules i j chart list1 in
-  let list3 = checkCoordinationRule i j chart list2 in
-  let list4 = checkParenthesisRule i j chart list3 in
-  let list5 = checkEmptyCategories list4 in 
---  let list5 = checkEmptyCategories list4 in 
-  let listn = if length list5 <= beam then sort list5 else take beam $ sort list5 in
+boxAccumulator beam lexicon partialbox c =
+  let (chart,word,i,j) = partialbox;
+      newword = T.cons c word;
+      list0 = L.lookupLexicon newword lexicon;
+      list1 = checkUnaryRules list0;
+      list2 = checkBinaryRules i j chart list1;
+      list3 = checkCoordinationRule i j chart list2;
+      list4 = checkParenthesisRule i j chart list3;
+      list5 = checkEmptyCategories list4;
+--      list5 = checkEmptyCategories list4;
+      listn = if length list5 <= beam then sort list5 else take beam $ sort list5 in
   ((M.insert (i,j) listn chart), newword, i-1, j)
 
 checkUnaryRules :: [CCG.Node] -> [CCG.Node]
@@ -194,5 +201,5 @@ checkParenthesisRule i j chart prevlist
 
 checkEmptyCategories :: [CCG.Node] -> [CCG.Node]
 checkEmptyCategories prevlist =
-  --foldr (\p -> (CCG.binaryRules (fst p) (snd p)) . (CCG.binaryRules (snd p) (fst p))) prevlist [(x,y) | x <- prevlist, y <- L.emptyCategories]
   foldl' (\p ec -> foldl' (\list node -> (CCG.binaryRules node ec) $ (CCG.binaryRules ec node) list) p p) prevlist L.emptyCategories
+  --foldr (\p -> (CCG.binaryRules (fst p) (snd p)) . (CCG.binaryRules (snd p) (fst p))) prevlist [(x,y) | x <- prevlist, y <- L.emptyCategories]

@@ -34,6 +34,7 @@ f mylexicon score s =
   do
   (i,j) <- score
   chart <- CP.parse 32 mylexicon s
+  S.putStr $ "[" ++ show (j+1) ++ "]"
   let nodes = CP.sOnly $ CP.topBox chart
   if (nodes == [])
     then do

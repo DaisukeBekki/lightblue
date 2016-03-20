@@ -93,7 +93,7 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "形容詞:タル形容詞"     ct = constructPredicate daihyo [Ntar,Nto]
   | T.isPrefixOf "副詞"   ct  = constructPredicate daihyo [Nda,Nna,Nno,Nni,Nemp]
   | T.isPrefixOf "連体詞" ct  = [(N `SL` N, (Lam (Lam (Lam (Sigma (App (App (Var 2) (Var 1)) (Var 0)) (App (Con daihyo) (Var 0)))))))]
-  | T.isPrefixOf "接続詞" ct = [(((defS anyPos [Term,Pre,Imper] `SL` defS anyPos [Term,Pre,Imper]) `BS` defS anyPos [Term]), (Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))))]
+  | T.isPrefixOf "接続詞" ct = [((T False 1 (S anyPos [Term,Pre,Imper] [F 1 PM,F 2 PM,F 3 PM,M,M]) `SL` T False 1 (S anyPos [Term,Pre,Imper] [F 1 PM,F 2 PM,F 3 PM,M,M])), id)]
   -- T.isPrefixOf "接頭辞:名詞接頭辞" ct   = [(N `SL` N, (Lam (Lam (Sigma (App (Var 1) (Var 0)) (App (Con daihyo) (Var 1))))))]
   -- T.isPrefixOf "接頭辞:動詞接頭辞" ct   = [(N `SL` N, (Lam (Lam (Sigma (App (Var 1) (Var 0)) (App (Con daihyo) (Var 1))))))]
   | T.isPrefixOf "接頭辞:イ形容詞接頭辞"  ct   = [((defS [Aauo] [Stem] `BS` NP [Ga]) `SL` (defS [Aauo] [Stem] `BS` NP [Ga]), id)]
@@ -110,7 +110,7 @@ constructProperName :: T.Text -> [(Cat,Preterm)]
 constructProperName daihyo = [((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Nc])), properNameSR daihyo)]
 
 constructPredicate :: T.Text -> [PosFeature] -> [(Cat,Preterm)]
-constructPredicate daihyo cpos = [(defS cpos [Stem] `BS` NP [Ga], predSR daihyo)]
+constructPredicate daihyo cpos = [(defS cpos [Stem] `BS` NP [Ga], predSR 1 daihyo)]
 
 constructCommonNoun :: T.Text -> [(Cat,Preterm)]
 constructCommonNoun daihyo = [(N, commonNounSR daihyo)]

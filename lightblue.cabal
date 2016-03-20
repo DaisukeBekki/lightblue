@@ -4,13 +4,13 @@
 name:                lightblue
 version:             0.1.0.0
 synopsis:            A CCG parser for Japanese with DTS-representation
---description:         
+--description:
 license:             AllRightsReserved
 license-file:        LICENSE
 copyright:           Copyright: (c) Daisuke Bekki
 author:              Daisuke Bekki
 maintainer:          Daisuke Bekki
-stability:           alpha
+stability:           beta
 homepage:            https://bitbucket.org/DaisukeBekki/lightblue
 data-files:          Juman.dic
 category:            Parser
@@ -20,7 +20,7 @@ cabal-version:       >=1.8
 library
   build-depends:     base == 4.*, process >= 1.2 && < 1.5, containers == 0.4.*, time == 1.4.*, text == 1.2.1.*, xml-conduit == 1.3.*
   exposed-modules:   DependentTypes, CombinatoryCategorialGrammar, JapaneseLexicon, ChartParser, TeXmodule, XMLmodule, CallJuman, MyLexicon
-  --other-modules:     
+  --other-modules:
 
 executable lightblue
   main-is:           ParseText.hs

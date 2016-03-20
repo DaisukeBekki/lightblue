@@ -33,7 +33,7 @@ main = do
       mapM_ (action chart2 topbox2 time) args
   where action chart ns time op
           | op == "-tex" = CP.printChartInTeX S.stdout $ CP.bestOnly $ ns
-          | op == "-text" = CP.printChartInSimpleText S.stderr $ CP.bestOnly $ ns          
+          | op == "-text" = CP.printChartInSimpleText S.stderr $ CP.sOnly $ CP.bestOnly $ ns          
           | op == "-xml"  = XML.render S.stderr $ CP.bestOnly $ ns
           | op == "-postag"  = CP.posTagger S.stdout $ CP.bestOnly $ ns          
           | op == "-debug" = CP.printChart S.stdout chart -- do; CP.printNodes S.stdout 30 $ ns; CP.printChart S.stdout chart

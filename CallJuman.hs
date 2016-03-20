@@ -7,7 +7,7 @@ Description : A module for compound nouns in Japanese
 Copyright   : (c) Daisuke Bekki, 2016
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
-Stability   : alpha
+Stability   : beta
 -}
 module CallJuman (
   jumanCompoundNouns

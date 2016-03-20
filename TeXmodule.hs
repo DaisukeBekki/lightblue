@@ -6,7 +6,7 @@ Description : TeX interface
 Copyright   : (c) Daisuke Bekki, 2016
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
-Stability   : alpha
+Stability   : beta
 -}
 module TeXmodule (
   Typeset(..),
@@ -109,7 +109,7 @@ toTeXWithVNEmbedded :: [T.Text] -> Int -> Preterm -> T.Text
 toTeXWithVNEmbedded vlist i preterm = case preterm of
   Lam m -> let varname = T.concat ["x_{", T.pack (show i), "}"] in
            T.concat["\\left(\\LAM[", varname, "]", toTeXWithVN (varname:vlist) (i+1) m, "\\right)"]
-  App m n -> T.concat["\\left(\\APP{", toTeXWithVNEmbedded vlist i m, "}{", toTeXWithVNEmbedded vlist i n, "}\\right)"]
+  --App m n -> T.concat["\\left(\\APP{", toTeXWithVNEmbedded vlist i m, "}{", toTeXWithVNEmbedded vlist i n, "}\\right)"]
   Lamvec m -> let varname = T.concat ["x_{", T.pack (show i), "}"] in
               T.concat ["\\left(\\lambda\\vec{", varname, "}.", toTeXWithVN (varname:vlist) (i+1) m, "\\right)"]
 --  Appvec j m -> T.concat ["\\left(\\APP{", toTeXWithVNEmbedded vlist i m, "}{\\vec{x}_", T.pack (show j), "}\\right)"]

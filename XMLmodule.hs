@@ -6,10 +6,9 @@ Description : XML interface
 Copyright   : (c) Daisuke Bekki, 2016
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
-Stability   : alpha
+Stability   : beta
 
 To compile:
-
 > ghc -package text-1.2.1.1 XMLmodulem
 -}
 module XMLmodule (
