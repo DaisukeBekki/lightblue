@@ -152,7 +152,7 @@ boxAccumulator :: Int           -- ^ beam width
 boxAccumulator beam lexicon partialbox c =
   let (chart,word,i,j) = partialbox;
       newword = T.cons c word;
-      list0 = if (T.length newword) <= 15 -- Does not execute lookup for a word whose length is more than 15
+      list0 = if (T.length newword) <= 22 -- Does not execute lookup for a word whose length is more than 22
                 then L.lookupLexicon newword lexicon
                 else [];
       list1 = checkUnaryRules list0;

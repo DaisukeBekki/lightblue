@@ -22,6 +22,7 @@ module JapaneseLexicon (
 import Prelude hiding (id)
 import qualified Data.Text.Lazy as T    --text
 import qualified Data.Text.Lazy.IO as T --text
+--import qualified Control.Parallel.Strategies as P  --parallel
 --import Data.Ratio as R                  --base
 --import qualified Data.Maybe as M
 import qualified CallJuman as JU
@@ -40,10 +41,10 @@ lookupLexicon word lexicon = filter (\l -> (pf l) == word) lexicon
 setupLexicon :: Lexicon -> T.Text -> IO(Lexicon)
 setupLexicon mylexicon sentence = do
   jumandic <- T.readFile "/home/bekki/dropbox/MyProgram/Haskell/CCG04/Juman.dic"
+  let jumandicFiltered = concat $ map parseJumanLine $ filter (\l -> (head l) `T.isInfixOf` sentence) $ map (T.split (=='\t')) (T.lines jumandic)
+  let mylexiconFiltered = filter (\l -> T.isInfixOf (pf l) sentence) mylexicon
   jumanCN <- JU.jumanCompoundNouns sentence
-  let numeration = (concat $ (map parseJumanLine $ filter (\l -> (head l) `T.isInfixOf` sentence) $ map (T.split (=='\t')) (T.lines jumandic)))
-                   ++ (filter (\l -> T.isInfixOf (pf l) sentence) mylexicon)
-                   ++ jumanCN
+  let numeration = jumandicFiltered ++ mylexiconFiltered ++ jumanCN
   return $ numeration `seq` numeration
 
 -- | Read each line in "Juman.dic" and convert it to a CCG lexical item
