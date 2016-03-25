@@ -18,6 +18,10 @@ import Prelude hiding (id)
 import qualified Data.Text.Lazy as T
 import CombinatoryCategorialGrammar
 import DependentTypes
+import Data.Ratio
+
+ec :: T.Text -> T.Text -> Integer -> Cat -> Preterm -> Node
+ec word source r c s = Node {rs=EC, pf=word, cat=c, sem=s, daughters=[], score=(r % 100), memo=source}
 
 -- | A list of empty categories (i.e. lexical items whose PF is empty).
 emptyCategories :: [Node]
@@ -27,76 +31,76 @@ emptyCategories = [
   --            ((defS [V1] [Neg,Cont,NegL,EuphT]) `BS` (defS [V1] [Stem]))
   --            id,
   -- カ行変格活用動詞語幹
-  lexicalitem "\\emp" "(154)" 100
+  ec "\\emp" "(154)" 100
               ((defS [VK] [Stem] `BS` NP [Ga]) `BS` NP [Ni])
               (verbSR 2 "来る"),
   -- サ行変格活用動詞語幹 -- とりあえずガヲ、ガヲトのパターンのみ。
-  lexicalitem "\\emp" "(156)" 100
+  ec "\\emp" "(156)" 100
               ((defS [VS] [Stem] `BS` NP [Ga]) `BS` NP [O])
               (verbSR 2 "する"),
   --lexicalitem "\\emp" "(156)" (100%100)
   --            (((defS [VS] [Stem] `BS` NP [Ga]) `BS` NP [O]) `BS` defS [To])
   --            (Lam (Lam (App (Con "する") (Pair (Var 0) (Var 1))))),
   -- イ形容詞終止形活用語彙
-  lexicalitem "\\emp" "(175)" 100
+  ec "\\emp" "(175)" 100
               (S [Ai] [Term] [M,M,F 1 PM,M,M] `BS` S [Ai] [Stem] [M,M,F 1 PM,M,M])
               id,
   -- 判定詞語幹
-  lexicalitem "\\emp" "(235a)" 100
+  ec "\\emp" "(235a)" 100
               ((defS [Nda,Nno,Ntar] [Stem] `BS` NP [Ga]) `BS` N)
               id,
-  lexicalitem "\\emp" "(235b)" 100
-              ((defS [Nda,Nno,Ntar] [Stem] `BS` NP [Ga]) `BS` NP [Nc])
+  ec "\\emp" "(235b)" 100
+              ((defS [Nda] [Stem] `BS` NP [Ga]) `BS` NP [Nc])
               (Lam (Lam (Lam (Sigma (Eq (Con "entity") (Var 1) (Var 2)) (App (Var 1) (Var 0)))))),
   -- サ変語幹→状詞語幹
-  lexicalitem "\\emp" "(262)" 99
+  ec "\\emp" "(262)" 99
               (defS [Nda,Nno] [Stem] `BS` defS [VSN] [Stem])
               id,
   -- サ変語幹→名詞
-  lexicalitem "\\emp" "ss" 99
+  ec "\\emp" "ss" 99
               ((((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Nc])) `BS` NP [No]) `BS` NP [No]) `BS` ((defS [VS] [Stem] `BS` NP [Ga]) `BS` NP [O]))
               (Lam (Lam (Lam (Lam (Lamvec (App (App (App (Var 4) (Var 3)) (Var 2)) (Lam (Appvec 1 (App (Var 2) (Var 0)))))))))),
   -- 形式述語スル
-  lexicalitem "\\emp" "(380a)" 100
+  ec "\\emp" "(380a)" 100
               (defS [VS,VSN] [Stem] `BS` S verb [Cont] [M,M,M,M,P])
               id,
-  lexicalitem "\\emp" "(380b)" 100
+  ec "\\emp" "(380b)" 100
               (defS [VS,VSN] [Stem] `BS` S verb [Cont] [P,PM,PM,M,PM])
               id,
   -- 補助動詞「くる」
-  lexicalitem "\\emp" "(416)" 100
+  ec "\\emp" "(416)" 100
               (defS [VK] [Stem] `BS` defS verb [TeForm])
               (eventModifier "来る"),
               --(Lam (App (Con "来る") (Var 0))),
   -- 推量のウ
-  lexicalitem "\\emp" "(349)" 99
+  ec "\\emp" "(349)" 99
               (S anyPos [Pre] [(F 1 PM),(F 2 PM),(F 3 PM),M,M] `BS` S anyPos [ModU] [(F 1 PM),(F 2 PM),(F 3 PM),M,M])
               (modal "ウ[MCN]"),
   -- 可能態
-  lexicalitem "\\emp" "(652a)" 99
+  ec "\\emp" "(652a)" 99
               ((defS [V1] [Stem,Neg,Cont,NegL,EuphT] `BS` NP [Ga]) `BS` (defS anyPos [VoE] `BS` NP [Ga]))
               (Lam (Lam (Lam (App (Con "可能") (Pair (Var 1) (Lam (App (App (Var 3) (Var 0)) (Var 1)))))))),
-  lexicalitem "\\emp" "(652b)" 99
+  ec "\\emp" "(652b)" 99
               (((defS [V1] [Stem,Neg,Cont,NegL,EuphT] `BS` NP [Ni,Ga]) `BS` NP [Ga]) `BS` ((defS anyPos [VoE] `BS` NP [Ga]) `BS` NP [O]))
               (Lam (Lam (Lam (Lam (App (Con "可能") (Pair (Var 1) (Lam (App (App (App (Var 4) (Var 3)) (Var 0)) (Var 1))))))))),
   -- 状詞の副詞用法: \p.\q.\v.\c.qv(\e.pe ∧ ce)
-  lexicalitem "\\emp" "(730)" 99
+  ec "\\emp" "(730)" 99
               ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` (defS [Nemp] [Stem] `BS` NP [Ga]))
               (Lam (Lam (Lam (App (Var 1) (Lam (App (App (Var 3) (Var 0)) (Lam (App (Var 2) (Var 1))))))))),
   -- 空冠詞（存在量化）
-  lexicalitem "$\\exists$" "(544)" 99
+  ec "∃" "(544)" 99
               ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Nc])) `SL` N)
               (Lam (Lam (Lamvec (Sigma (Sigma (Con "entity") (App (App (Var 3) (Var 0)) (Lam Top))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),
   -- 空助詞
-  lexicalitem "cm" "(515)" 50
+  ec "cm" "(515)" 50
               (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ga,O,Ni]))) `BS` (NP [Nc]))
               argumentCM,
   -- pro1
-  lexicalitem "$pro_1$" "(597)" 95
+  ec "pro" "(597)" 95
               (T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Ga,O,Ni,To,No]))
               (Lam (App (Var 0) (Asp 1 (Con "entity")))),
   -- pro2
-  lexicalitem "$pro_2$" "(597)" 90
+  ec "pro" "(597)" 90
               (T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Ga,O,Ni,To,No]))
               (Lam (App (Var 0) (Asp 2 (Con "entity")))),
   -- pro3
@@ -104,17 +108,17 @@ emptyCategories = [
   --            (T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Ga,O,Ni,To,No]))
   --            (Lam (App (Var 0) (Asp 3 (Con "entity")))),
   -- 関係節化演算子(relativizer)
-  lexicalitem "rel" "(670)" 99
+  ec "rel" "(670)" 99
               ((N `SL` N) `BS` (S anyPos [Attr] [PM,PM,PM,M,M] `BS` NP [Ga,O,Ni,To]))
               (Lam (Lam (Lam (Lam (Sigma (App (App (Var 3) (Var 1)) (Lam Top)) (App (App (Var 3) (Var 2)) (Var 1))))))),
-  lexicalitem "rel-ext" "(670)+" 96
+  ec "rel-ext" "(670)+" 96
               ((N `SL` N) `BS` (S anyPos [Attr] [PM,PM,PM,M,M]))
               (Lam (Lam (Lam (Lam (Sigma (App (App (Var 2) (Var 1)) (Var 0)) (Sigma (App (Var 4) (Lam Top)) (Sigma (Pi (Con "event") (Pi (Con "entity") Type)) (App (App (Var 0) (Var 1)) (Var 4))))))))),
   -- 連用節、テ節
-  lexicalitem "\\emp" "new" 99
+  ec "\\emp" "new" 99
               ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` (S anyPos [Cont] [M,PM,PM,M,M]))
               (Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),
-  lexicalitem "\\emp" "new" 99
+  ec "\\emp" "new" 99
               ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` (S anyPos [TeForm] [M,PM,PM,M,M]))
               (Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 2) (Var 1))))))
   -- ダロウ接続形を派生する空範疇
@@ -291,7 +295,7 @@ myLexicon = concat $ [
   -- 形容詞活用語尾
   --adverb = [Aauo, Ai, ANAS, ABES]
   mylex ["く"]  "(174)" (S [Aauo,Ai,ANAS,ATII,ABES] [Cont] [M,M,F 1 PM,M,M] `BS` S [Aauo,Ai,ANAS,ATII,ABES] [Stem] [M,M,F 1 PM,M,M]) id,
-  mylex ["い"]  "(174)" (S [Aauo,Ai,ANAS,ATII] [Term,Attr] [M,M,F 1 PM,M,M] `BS` S [Aauo,Ai,ANAS,ATII,ABES] [Stem] [M,M,F 1 PM,M,M]) id,
+  mylex ["い","し"]  "(174)" (S [Aauo,Ai,ANAS,ATII] [Term,Attr] [M,M,F 1 PM,M,M] `BS` S [Aauo,Ai,ANAS,ATII,ABES] [Stem] [M,M,F 1 PM,M,M]) id, --- 「し」
   mylex ["けれ"] "(174)" (S [Aauo,Ai,ANAS,ATII] [Hyp] [M,M,F 1 PM,M,M] `BS` S [Aauo,Ai,ANAS,ATII,ABES] [Stem] [M,M,F 1 PM,M,M]) id,
   mylex ["かろ"] "(174)" (S [Aauo,Ai,ANAS,ATII] [ModU] [M,M,F 1 PM,M,M] `BS` S [Aauo,Ai,ANAS,ATII,ABES] [Stem] [M,M,F 1 PM,M,M]) id,
   mylex ["かっ"] "(174)" (S [Aauo,Ai,ANAS,ATII] [EuphT] [M,M,F 1 PM,M,M] `BS` S [Aauo,Ai,ANAS,ATII,ABES] [Stem] [M,M,F 1 PM,M,M]) id,
@@ -315,6 +319,8 @@ myLexicon = concat $ [
   mylex ["如","ごと"] "(199)" ((defS [ABES] [Stem] `BS` NP [Ga]) `BS` NP [Ga,No]) (verbSR 2 "如し"),
   mylex ["如","ごと"] "(199)" (defS [ABES] [Stem] `BS` defS anyPos [Attr]) (verbSR 2 "如し"),
   mylex ["べ"] "(200)" (defS [ABES] [Stem] `BS` defS verb [Term]) (modal "べし"),
+  -- 形容詞派生形
+  mylex ["さ","み"] "new" (N `BS` (defS adjective [Stem] `BS` NP [Ga])) id,
   -- 状詞語幹
   conjSuffix "だ" "(218)" [Nda] [Term],
   conjSuffix "だっ" "(218)" [Nda] [EuphT],
@@ -415,6 +421,7 @@ myLexicon = concat $ [
   --mylex ["は"] "(385)" (S anyPos nonStem [M,M,M,M,P] `BS` defS anyPos nonStem) (Lam (Lam 
   mylex ["は"] "(550)" (((T True 1 teidaiS) `SL` ((T True 1 teidaiS) `BS` (NP [Ga,O]))) `BS` (NP [Nc])) argumentCM,
   mylex ["には"] "(550)" (((T True 1 teidaiS) `SL` ((T True 1 teidaiS) `BS` (NP [Ni]))) `BS` (NP [Nc])) argumentCM,
+  mylex ["とは"] "new" (((T True 1 teidaiS) `SL` ((T True 1 teidaiS) `BS` (NP [To]))) `BS` (NP [Nc])) argumentCM,
   mylex ["も"] "(385)" (((T True 1 teidaiS) `SL` ((T True 1 teidaiS) `BS` (NP [Ga,O]))) `BS` (NP [Nc])) argumentCM,
   mylex ["にも"] "(385)" (((T True 1 teidaiS) `SL` ((T True 1 teidaiS) `BS` (NP [Ni]))) `BS` (NP [Nc])) argumentCM,
   mylex ["って"] "new" (((T True 1 teidaiS) `SL` ((T True 1 teidaiS) `BS` (NP [Ga]))) `BS` (NP [Nc])) argumentCM,
@@ -555,9 +562,10 @@ myLexicon = concat $ [
   mylex ["れ"] "(666)" (defS [V1] [VoE] `BS` defS [V1] [Stem])
         id,
   mylex ["来れ","これ"] "(667)" (defS [VK] [VoE] `BS` defS [VK] [Stem]) id,
-  mylex ["でき","出来"] "new" ((defS [V1] [Stem] `BS` NP [Ga,Ni]) `BS` (defS [VSN] [Stem] `BS` NP [Ga]))
+  mylex ["でき","出来"] "new" ((defS [V1] [Stem,Neg,Cont,NegL,EuphT] `BS` NP [Ga,Ni]) `BS` (defS [VSN] [Stem] `BS` NP [Ga]))
         (Lam (Lam (Lam (App (Con "可能") (Pair (Var 1) (Lam (App (App (Var 3) (Var 0)) (Var 1)))))))),
-  --mylex ["でき","出来"] "new" (defS [V1] [Term,Att
+  mylex ["でき","出来"] "new" ((defS [V1] [Stem,Neg,Cont,NegL,EuphT] `BS` NP [Ga,Ni]) `BS` NP [Ga])
+        (Lam (Lam (Lam (App (App (Con "可能") (Var 2)) (Var 1))))),
   -- 接続詞
   mylex ["が"] "(711)" ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` S anyPos [Term] [PM,PM,PM,M,M]) 
         (Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),
@@ -575,10 +583,12 @@ myLexicon = concat $ [
   mylex ["何","なに"] "new" (NP [Nc]) (Con "何"),
   mylex ["何処","どこ"] "new" (NP [Nc]) (Con "どこ"),
   -- 従属節導入表現
-  mylex ["と"] "new" (Sbar [ToCL] `BS` S anyPos [Term,Imper] [PM,PM,PM,M,M]) id,
-  mylex ["ように"] "new" (Sbar [YooniCL] `BS` S anyPos [Attr] [PM,PM,PM,M,M]) id,
+  mylex ["と","とは","とも"] "new" (Sbar [ToCL] `BS` S anyPos [Term,Imper] [PM,PM,PM,M,M]) id,
+  mylex ["ように","ようには","ようにも"] "new" (Sbar [YooniCL] `BS` S anyPos [Attr] [PM,PM,PM,M,M]) id,
   mylex ["という"] "new" ((N `SL` N) `BS` S anyPos [Term] [PM,PM,PM,M,M]) 
   (Lam (Lam (Lam (Lam (Sigma (App (Var 3) (Lam Top)) (App (App (Var 3) (Var 2)) (Lam (Sigma (App (App (Con "content") (Var 1)) (Var 3)) (App (Var 3) (Var 1)))))))))),
+  --- とする
+  mylex ["と"] "new" ((defS [VS] [Stem]) `BS` (S anyPos [Pre] [PM,PM,PM,M,M])) (modal "トスル[MCN]"),
   -- 連用節
   --mylex ["に"] "new" ((T True 1 anySExStem `SL` T True 1 anySExStem) `BS` (defS [Nni] [Stem])) (Lam (Lam (Sigma (Var 1) (Var 1)))),
   -- 条件節
@@ -594,6 +604,9 @@ myLexicon = concat $ [
   -- 括弧
   mylex ["「","（","(","『","《","〈","【","［","[","−","-"] "new" LPAREN Unit,
   mylex ["」","）",")","』","》","〉","】","］","]","−","-"] "new" RPAREN Unit,
+  -- 形式名詞
+  mylex ["こと","事"] "new" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Nc])) `BS` (S anyPos [Attr] [PM,PM,PM,M,M])) (Lam (Lam (Lamvec (Sigma (Con "entity") (Sigma (Sigma (Con "state") (App (App (Con "こと") (Var 1 )) (Var 0))) (Sigma (App (App (Con "content") (App (Var 4) (Lam Top))) (Var 1)) (Appvec 3 (App (Var 4) (Var 2))))))))),
+  mylex ["の"] "new" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Nc])) `BS` (S anyPos [Attr] [PM,PM,PM,M,M])) (Lam (Lam (Lamvec (Sigma (Con "entity") (Sigma (Sigma (Con "state") (App (App (Con "の") (Var 1 )) (Var 0))) (Sigma (App (App (Con "content") (App (Var 4) (Lam Top))) (Var 1)) (Appvec 3 (App (Var 4) (Var 2))))))))),
   -- 量化表現：Q-no N
   mylex ["すべての","あらゆる","一人一人の","各","各々の","それぞれの"] "(534)" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Nc])) `SL` N) 
         (Lam (Lam (Lamvec (Pi (Sigma (Con "entity") (App (App (Var 3) (Var 0)) (Lam Top))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),
@@ -621,5 +634,7 @@ myLexicon = concat $ [
   -- JSeM語彙
   mylex ["世界最高"] "new" (defS [Nda,Nno,Nni,Ntar] [Stem] `BS` NP [Ga]) (predSR 1 "世界最高"),
   -- BCCWJ語彙
-  mylex ["死","し"] "new" ((defS [V5s] [Stem] `BS` NP [Ga]) `BS` NP [Ni]) (verbSR 2 "死す")
+  mylex ["死","し"] "BCCWJ" ((defS [V5s] [Stem] `BS` NP [Ga]) `BS` NP [Ni]) (verbSR 2 "死す"),
+  mylex ["ユーカㇻ"] "BCCWJ" (NP [Nc]) (Con "ユーカラ"),
+  mylex ["則ち"] "BCCWJ" (defS [Nemp] [Stem] `BS` NP [Ga]) (predSR 1 "すなわち")
   ]

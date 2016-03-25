@@ -10,12 +10,15 @@ Stability   : beta
 -}
 module TeXmodule (
   Typeset(..),
+  printNNodesInTeX,
+  printNodesInTeX
   ) where
 
 import qualified Data.Text.Lazy as T
 import qualified Data.Maybe as Maybe
+import qualified System.IO as S        --base
 import DependentTypes
-import CombinatoryCategorialGrammar
+import CombinatoryCategorialGrammar as CCG
 
 -- | `Typeset` is a class of types whose terms can be translated into a TeX source (in Data.Text.Lazy). 
 class Typeset a where
@@ -206,6 +209,7 @@ pmFeatures2TeXLoop labels pmfs = case (labels,pmfs) of
 instance Typeset RuleSymbol where
   toTeX rulesymbol = case rulesymbol of 
     LEX -> "lex"
+    EC  -> "ec"
     FFA -> ">"
     BFA -> "<"
     FFC1 -> ">B"
@@ -216,7 +220,16 @@ instance Typeset RuleSymbol where
     BFC3 -> "<B^3"
     FFCx1 -> ">B_{\\times}"
     FFCx2 -> ">B_{\\times}^2"
+    FFSx  -> ">S_{\\times}"
     COORD -> "\\langle\\Phi\\rangle"
     PAREN -> "PAREN"
     -- CNP -> "CNP"
+
+-- | prints n-nodes from given list of CCG nodes (=a parsing result) as a TeX source code.
+printNNodesInTeX :: S.Handle -> Int -> [CCG.Node] -> IO()
+printNNodesInTeX handle n nodes = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-2em\\scalebox{.2}{" ++ T.unpack (toTeX node) ++ "\\\\}\\par\\medskip") $ take n nodes
+
+-- | prints CCG nodes (=a parsing result) as a TeX source code.
+printNodesInTeX :: S.Handle -> [CCG.Node] -> IO()
+printNodesInTeX handle = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-2em\\scalebox{.2}{" ++ T.unpack (toTeX node) ++ "\\\\}\\par\\medskip")
 

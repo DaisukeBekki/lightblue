@@ -94,8 +94,8 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "副詞"   ct  = constructPredicate daihyo [Nda,Nna,Nno,Nni,Nemp]
   | T.isPrefixOf "連体詞" ct  = [(N `SL` N, (Lam (Lam (Lam (Sigma (App (App (Var 2) (Var 1)) (Var 0)) (App (Con daihyo) (Var 0)))))))]
   | T.isPrefixOf "接続詞" ct = [((T False 1 (S anyPos [Term,Pre,Imper] [F 1 PM,F 2 PM,F 3 PM,M,M]) `SL` T False 1 (S anyPos [Term,Pre,Imper] [F 1 PM,F 2 PM,F 3 PM,M,M])), id)]
-  -- T.isPrefixOf "接頭辞:名詞接頭辞" ct   = [(N `SL` N, (Lam (Lam (Sigma (App (Var 1) (Var 0)) (App (Con daihyo) (Var 1))))))]
-  -- T.isPrefixOf "接頭辞:動詞接頭辞" ct   = [(N `SL` N, (Lam (Lam (Sigma (App (Var 1) (Var 0)) (App (Con daihyo) (Var 1))))))]
+  | T.isPrefixOf "接頭辞:名詞接頭辞" ct   = [(N `SL` N, (Lam (Lam (Lam (App (App (Var 2) (Var 1)) (Lam (Sigma (App (Con daihyo) (Var 0)) (App (Var 2) (Var 1)))))))))]
+  | T.isPrefixOf "接頭辞:動詞接頭辞" ct   = [((T False 1 (defS verb [Stem]) `SL` (T False 1 (defS verb [Stem]))), (Lam (Lam (App (Var 1) (Lam (Sigma (App (Con daihyo) (Var 0)) (App (Var 2) (Var 1))))))))]
   | T.isPrefixOf "接頭辞:イ形容詞接頭辞"  ct   = [((defS [Aauo] [Stem] `BS` NP [Ga]) `SL` (defS [Aauo] [Stem] `BS` NP [Ga]), id)]
   | T.isPrefixOf "接頭辞:ナ形容詞接頭辞"  ct   = [((defS [Nda] [Stem] `BS` NP [Ga]) `SL` (defS [Nda] [Stem] `BS` NP [Ga]), id)]
   | T.isPrefixOf "接尾辞:名詞性名詞助数辞" ct  = constructCommonNoun daihyo

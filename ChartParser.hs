@@ -13,26 +13,27 @@ Stability   : beta
 module ChartParser (
   -- * Main parser
   parse,
-  -- * Printing functions
+  parseMain,
+  -- * Printing (in Text) functions
   printChart,
+  TEX.printNodesInTeX,
   printChartInSimpleText,
-  printChartInTeX,
-  printNodes,
   posTagger,
   -- * Utilities to filter the parsing results
   topBox,
   bestOnly,
   sOnly,
   -- * 
-  L.myLexicon
+  L.myLexicon,
+  L.setupLexicon
   ) where
 
 import Data.List
 import Data.Char                       --base
 import Data.Fixed                      --base
-import qualified System.IO as S        --base
 import qualified Data.Text.Lazy as T   --text
 import qualified Data.Map as M         --container
+import qualified System.IO as S        --base
 import qualified CombinatoryCategorialGrammar as CCG --(Node, unaryRules, binaryRules, trinaryRules, isCONJ, cat, SimpleText)
 import qualified JapaneseLexicon as L (Lexicon, lookupLexicon, setupLexicon, emptyCategories, myLexicon)
 import qualified TeXmodule as TEX
@@ -47,15 +48,7 @@ printChart :: S.Handle -> Chart -> IO()
 printChart handle chart = mapM_ printList $ M.toList $ M.filter (/= []) chart
   where printList (key,nodes) = do -- list化したChartを画面表示する。
           S.hPutStr handle $ "\\subsubsection*{" ++ show key ++ ": ノード数 " ++ (show $ length nodes) ++ "}"
-          mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-4em\\scalebox{.3}{" ++ T.unpack (TEX.toTeX node) ++ "\\\\}\\par\\medskip") nodes
-
--- | prints n-nodes from given list of CCG nodes (=a parsing result) as a TeX source code.
-printNodes :: S.Handle -> Int -> [CCG.Node] -> IO()
-printNodes handle n nodes = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-2em\\scalebox{.3}{" ++ T.unpack (TEX.toTeX node) ++ "\\\\}\\par\\medskip") $ take n $ nodes
-
--- | prints CCG nodes (=a parsing result) as a TeX source code.
-printChartInTeX :: S.Handle -> [CCG.Node] -> IO()
-printChartInTeX handle = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-4em\\scalebox{.3}{" ++ T.unpack (TEX.toTeX node) ++ "\\\\}\\par\\medskip")
+          TEX.printNodesInTeX handle nodes
 
 -- | prints CCG nodes (=a parsing result) as a plain text.
 printChartInSimpleText :: S.Handle -> [CCG.Node] -> IO()
@@ -102,11 +95,10 @@ sOnly = filter isS
 
 -- | Main parsing function, showing the standard use of the `parseMain` function.
 parse :: Int           -- ^ The beam width
-         -> [CCG.Node] -- ^ User-defined lexicon
          -> T.Text     -- ^ A sentence to be parsed
          -> IO(Chart)
-parse beam mylexicon sentence = do
-  lexicon <- L.setupLexicon mylexicon sentence
+parse beam sentence = do
+  lexicon <- L.setupLexicon L.myLexicon sentence
   return $ parseMain beam lexicon sentence
 
 -- | parses a (Japanees) sentence and generates a CYK-chart.
@@ -114,14 +106,14 @@ parseMain :: Int          -- ^ The beam width
              -> L.Lexicon -- ^ A lexicon to be used for parsing
              -> T.Text    -- ^ A sentence to be parsed
              -> Chart
-parseMain beam lexicon text
-  | text == T.empty = M.empty -- foldl returns a runtime error when t is empty
-  | otherwise       = let (chart,_,_) = T.foldl' (chartAccumulator beam lexicon) (M.empty, 0, T.empty) (purifyText text)
+parseMain beam lexicon sentence
+  | sentence == T.empty = M.empty -- foldl returns a runtime error when text is empty
+  | otherwise       = let (chart,_,_) = T.foldl' (chartAccumulator beam lexicon) (M.empty, 0, T.empty) (purifyText sentence)
                       in chart
 
 -- | removes occurrences of some letters from an input text.
 purifyText :: T.Text -> T.Text
-purifyText = T.filter (\c -> not $ isSpace c || c `elem` ['。','，','．','！','？','!','?'])
+purifyText = T.filter (\c -> not $ isSpace c || c `elem` ['、','。','，','．','！','？','!','?','　'])
              --(\c -> not (isSpace c) && c /= '、' && c /= '。' && c /= '，' && c /= '．' && c /= '！' && c /= '？' && c /= '!' && c /= '?')
 
 -- | looks up a chart with the key (i,j) and returns the value of type [Node]
@@ -133,12 +125,16 @@ lookupChart i j chart =
 -- | triples representing a state during parsing:
 -- the parsed result (=chart) of the left of the pivot,
 -- the pivot (=the current parsing position),
--- the unparsed subsentence on the right of the pivot.
+-- the revsersed list of chars that has been parsed
 type PartialChart = (Chart,Int,T.Text)
 
 -- | The 'chartAccumulator' function
-chartAccumulator :: Int -> L.Lexicon -> PartialChart -> Char -> PartialChart
-chartAccumulator beam lexicon (chart,i,stack) c
+chartAccumulator :: Int             -- ^ beam width
+                    -> L.Lexicon    -- ^ my lexicon
+                    -> PartialChart -- ^ accumulated result (Chart, Int, Text)
+                    -> Char         -- ^ next char of a unparsed text
+                    -> PartialChart
+chartAccumulator beam lexicon (chart,i,stack) c =
   -- | c == '、' = ((M.insert (0,i+1) (lookupChart 0 i chart) M.empty), i+1, (T.cons c stack))
   -- | otherwise =
       let newstack = (T.cons c stack);
@@ -148,17 +144,22 @@ chartAccumulator beam lexicon (chart,i,stack) c
 type PartialBox = (Chart,T.Text,Int,Int)
 
 -- | The 'boxAccumulator' function
-boxAccumulator :: Int -> L.Lexicon -> PartialBox -> Char -> PartialBox
+boxAccumulator :: Int           -- ^ beam width
+                  -> L.Lexicon  -- ^ my lexicon
+                  -> PartialBox -- ^ accumulated result (Chart, Text, Int, Int)
+                  -> Char       -- ^ 
+                  -> PartialBox
 boxAccumulator beam lexicon partialbox c =
   let (chart,word,i,j) = partialbox;
       newword = T.cons c word;
-      list0 = L.lookupLexicon newword lexicon;
+      list0 = if (T.length newword) <= 15 -- Does not execute lookup for a word whose length is more than 15
+                then L.lookupLexicon newword lexicon
+                else [];
       list1 = checkUnaryRules list0;
       list2 = checkBinaryRules i j chart list1;
       list3 = checkCoordinationRule i j chart list2;
       list4 = checkParenthesisRule i j chart list3;
       list5 = checkEmptyCategories list4;
---      list5 = checkEmptyCategories list4;
       listn = if length list5 <= beam then sort list5 else take beam $ sort list5 in
   ((M.insert (i,j) listn chart), newword, i-1, j)
 

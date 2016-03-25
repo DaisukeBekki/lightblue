@@ -25,6 +25,7 @@ module DependentTypes (
   Selector(..),
   -- * Classes
   SimpleText(..),
+  toTextDeBruijn,
   toTextWithVN,
   -- * Syntactic Operations
   subst,
@@ -81,7 +82,10 @@ instance SimpleText Selector where
 
 -- | translates a term into a simple text notation.
 instance SimpleText Preterm where
-  toText preterm = case preterm of
+  toText = toTextWithVN []
+
+toTextDeBruijn :: Preterm -> T.Text
+toTextDeBruijn preterm = case preterm of
     Var i   -> T.pack (show i)
     Con c   -> c
     Type    -> "type"
