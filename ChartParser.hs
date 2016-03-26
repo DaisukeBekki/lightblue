@@ -110,13 +110,8 @@ parseMain :: Int          -- ^ The beam width
 parseMain beam lexicon sentence
   | sentence == T.empty = (M.empty,[]) -- foldl returns a runtime error when text is empty
   | otherwise =
-      let (chart,_,_,_,nodes) = T.foldl' (chartAccumulator beam lexicon) (M.empty, [0], 0, T.empty, []) $ purifyText sentence in
+      let (chart,_,_,_,nodes) = T.foldl' (chartAccumulator beam lexicon) (M.empty,[0],0,T.empty,[]) sentence in
       (chart,nodes)
-
--- | removes occurrences of some letters from an input text.
-purifyText :: T.Text -> T.Text
-purifyText = T.filter (\c -> not $ isSpace c || c `elem` ['。','．','！','？','!','?'])
-             --(\c -> not (isSpace c) && c /= '、' && c /= '。' && c /= '，' && c /= '．' && c /= '！' && c /= '？' && c /= '!' && c /= '?')
 
 -- | triples representing a state during parsing:
 -- the parsed result (=chart) of the left of the pivot,
@@ -135,9 +130,13 @@ chartAccumulator :: Int             -- ^ beam width
 chartAccumulator beam lexicon (chart,seplist,i,stack,parsed) c =
   let newstack = (T.cons c stack);
       (sep:seps) = seplist in
-  if c `elem` ['、','，',',','-','―','−']
-    then let top = lookupChart sep i chart in
-         (M.insert (sep,i+1) top chart, ((i+1):seps), (i+1), newstack, (top:parsed))
+  if c `elem` ['、','，',',','-','―','−','。','．','！','？','!','?'] || isSpace c -- Each seperator is an end of a phase
+    then let top = lookupChart sep i chart;
+             newchart1 = M.insert (sep,i+1) top $ M.fromList $ filter (\p -> fst (fst p) < sep && snd (fst p) <= sep) $ M.toList chart;
+             (s1,s2) = T.splitAt (fromIntegral (i+1-sep)) newstack;
+             (newchart2,_,_,_) = T.foldl' (boxAccumulator beam lexicon) (newchart1,(T.reverse s1),sep-1,i+1) s2
+         in
+         (newchart2, ((i+1):seps), (i+1), newstack, (top:parsed))
     else let (newchart,_,_,_) = T.foldl' (boxAccumulator beam lexicon) (chart,T.empty,i,i+1) newstack;
              newseps | c `elem` ['「','『'] = (i+1:seplist)
                      | c `elem` ['」','』'] = seps

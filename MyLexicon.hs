@@ -31,7 +31,7 @@ emptyCategories = [
   --            ((defS [V1] [Neg,Cont,NegL,EuphT]) `BS` (defS [V1] [Stem]))
   --            id,
   -- カ行変格活用動詞語幹
-  ec "\\emp" "(154)" 100
+  ec "come" "(154)" 100
               ((defS [VK] [Stem] `BS` NP [Ga]) `BS` NP [Ni])
               (verbSR 2 "来る"),
   -- サ行変格活用動詞語幹 -- とりあえずガヲ、ガヲトのパターンのみ。
@@ -46,10 +46,10 @@ emptyCategories = [
               (S [Ai] [Term] [M,M,F 1 PM,M,M] `BS` S [Ai] [Stem] [M,M,F 1 PM,M,M])
               id,
   -- 判定詞語幹
-  ec "\\emp" "(235a)" 100
+  ec "be" "(235a)" 100
               ((defS [Nda,Nno,Ntar] [Stem] `BS` NP [Ga]) `BS` N)
               id,
-  ec "\\emp" "(235b)" 100
+  ec "be" "(235b)" 100
               ((defS [Nda] [Stem] `BS` NP [Ga]) `BS` NP [Nc])
               (Lam (Lam (Lam (Sigma (Eq (Con "entity") (Var 1) (Var 2)) (App (Var 1) (Var 0)))))),
   -- サ変語幹→状詞語幹
@@ -61,14 +61,14 @@ emptyCategories = [
               ((((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Nc])) `BS` NP [No]) `BS` NP [No]) `BS` ((defS [VS] [Stem] `BS` NP [Ga]) `BS` NP [O]))
               (Lam (Lam (Lam (Lam (Lamvec (App (App (App (Var 4) (Var 3)) (Var 2)) (Lam (Appvec 1 (App (Var 2) (Var 0)))))))))),
   -- 形式述語スル
-  ec "\\emp" "(380a)" 100
+  ec "do" "(380a)" 100
               (defS [VS,VSN] [Stem] `BS` S verb [Cont] [M,M,M,M,P])
               id,
-  ec "\\emp" "(380b)" 100
+  ec "do" "(380b)" 100
               (defS [VS,VSN] [Stem] `BS` S verb [Cont] [P,PM,PM,M,PM])
               id,
   -- 補助動詞「くる」
-  ec "\\emp" "(416)" 100
+  ec "come" "(416)" 100
               (defS [VK] [Stem] `BS` defS verb [TeForm])
               (eventModifier "来る"),
               --(Lam (App (Con "来る") (Var 0))),
@@ -88,7 +88,7 @@ emptyCategories = [
               ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` (defS [Nemp] [Stem] `BS` NP [Ga]))
               (Lam (Lam (Lam (App (Var 1) (Lam (App (App (Var 3) (Var 0)) (Lam (App (Var 2) (Var 1))))))))),
   -- 空冠詞（存在量化）
-  ec "∃" "(544)" 99
+  ec "∃ " "(544)" 99
               ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Nc])) `SL` N)
               (Lam (Lam (Lamvec (Sigma (Sigma (Con "entity") (App (App (Var 3) (Var 0)) (Lam Top))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),
   -- 空助詞
@@ -438,19 +438,24 @@ myLexicon = concat $ [
   --
   mylex ["も"] "(385)" (((T True 1 teidaiS) `SL` ((T True 1 teidaiS) `BS` (NP [Ga,O]))) `BS` (NP [Nc])) argumentCM,
   mylex ["にも"] "(385)" (((T True 1 teidaiS) `SL` ((T True 1 teidaiS) `BS` (NP [Ni]))) `BS` (NP [Nc])) argumentCM,
+  mylex ["とも"] "(385)" (((T True 1 teidaiS) `SL` ((T True 1 teidaiS) `BS` (NP [To]))) `BS` (NP [Nc])) argumentCM,
   --
   mylex ["こそ"] "new" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ga,O]))) `BS` (NP [Nc])) argumentCM,
   mylex ["にこそ"] "new" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ni]))) `BS` (NP [Nc])) argumentCM,
   --
   mylex ["さえ"] "(387)" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ga,O]))) `BS` (NP [Nc])) argumentCM,
   mylex ["にさえ","さえに"] "(387)" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ni]))) `BS` (NP [Nc])) argumentCM,
+  mylex ["とさえ","さえと"] "(387)" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [To]))) `BS` (NP [Nc])) argumentCM,
   --
   mylex ["だけ"] "new" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ga,O]))) `BS` (NP [Nc])) argumentCM,
   mylex ["にだけ","だけに"] "new" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ni]))) `BS` (NP [Nc])) argumentCM,
+  mylex ["とだけ","だけと"] "new" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [To]))) `BS` (NP [Nc])) argumentCM,
   --
   mylex ["ばかり","ばっかり","ばっか"] "new" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ga,O]))) `BS` (NP [Nc])) argumentCM,
   mylex ["にばかり","にばっかり","にばっか"] "new" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ni]))) `BS` (NP [Nc])) argumentCM,
   mylex ["ばかりに","ばっかりに","ばっかに"] "new" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ni]))) `BS` (NP [Nc])) argumentCM,
+  mylex ["とばかり","とばっかり","とばっか"] "new" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [To]))) `BS` (NP [Nc])) argumentCM,
+  mylex ["ばかりと","ばっかりと","ばっかと"] "new" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [To]))) `BS` (NP [Nc])) argumentCM,
   --
   mylex ["のみ"] "new" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ga,O]))) `BS` (NP [Nc])) argumentCM,
   mylex ["にのみ","のみに"] "new" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ni]))) `BS` (NP [Nc])) argumentCM,
