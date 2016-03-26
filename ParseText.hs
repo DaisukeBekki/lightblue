@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 --import Prelude hiding (readFile, writeFile)
+import qualified Data.Text.Lazy as T     --text
 import qualified Data.Text.Lazy.IO as T  --text
 import qualified Data.Time as Time       --time
 import qualified System.IO as S          --base
@@ -14,19 +15,19 @@ main = do
   start    <- Time.getCurrentTime
   args     <- S.getArgs
   sentence <- T.getLine
-  lexicon <- CP.setupLexicon CP.myLexicon sentence
-  let chart = CP.parseMain 64 lexicon sentence
-  let topbox = CP.topBox chart
-  if (topbox /= [])
+  lexicon <- CP.setupLexicon CP.myLexicon (T.replace "―" "。" sentence)
+  let (chart1,_) = CP.parseMain 16 lexicon sentence
+  let topbox1 = CP.topBox chart1
+  if topbox1 /= []
     then
       do
       stop     <- Time.getCurrentTime
       let time = Time.diffUTCTime stop start
-      mapM_ (action chart topbox time) args
+      mapM_ (action chart1 topbox1 time) args
     else
       do
-      S.hPutStrLn S.stderr "Re-parsing with the beam-width 256..."
-      let chart2 = CP.parseMain 256 lexicon sentence
+      S.hPutStrLn S.stderr "Re-parsing with the beam-width 128..."
+      let (chart2,_) = CP.parseMain 128 lexicon sentence
       let topbox2 = CP.topBox chart2
       stop     <- Time.getCurrentTime
       let time = Time.diffUTCTime stop start

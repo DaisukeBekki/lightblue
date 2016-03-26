@@ -103,6 +103,10 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "接尾辞:名詞性特殊接尾辞" ct  = constructCommonNoun daihyo
   | T.isPrefixOf "接尾辞:名詞性名詞接尾辞" ct  = constructCommonNoun daihyo
   | T.isPrefixOf "接尾辞:名詞性述語接尾辞" ct  = constructCommonNoun daihyo
+  --  T.isPrefixOf "特殊:句点" ct = 
+  --  T.isPrefixOf "特殊:読点" ct = 
+  | T.isPrefixOf "特殊:括弧始" ct = [(LPAREN, Unit)]
+  | T.isPrefixOf "特殊:括弧終" ct = [(RPAREN, Unit)]
   -- T.isPrefixOf "数詞"           ct = [(N,id)]
   | T.isPrefixOf "感動詞"               ct  = [(defS [Exp] [Term], id)]
   | otherwise                              = [(defS [Error] [Term], (Con $ T.concat [T.pack "Juman Error: ", ct]))]

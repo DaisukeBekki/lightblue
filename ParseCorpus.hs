@@ -21,7 +21,8 @@ main = do
     args <- S.getArgs
     sentences <- T.readFile $ head args
     let mylexicon = CP.myLexicon
-    (i,j) <- L.foldl' (f mylexicon) (return (0,0)) $ filter (/= T.empty) $ concat $ map (T.split (`elem` ['、','―','，','。','．','「','」'])) $ T.lines sentences
+    -- (i,j) <- L.foldl' (f mylexicon) (return (0,0)) $ filter (/= T.empty) $ concat $ map (T.split (`elem` ['、','―','，','。','．','「','」'])) $ T.lines sentences
+    (i,j) <- L.foldl' (f mylexicon) (return (0,0)) $ filter (/= T.empty) $ T.lines sentences
     stop <- Time.getCurrentTime
     let totaltime = Time.diffUTCTime stop start
     --CP.printChartInSimpleText $ topbox
@@ -35,28 +36,34 @@ f :: [CCG.Node]
 f mylexicon score s =
   do
   (i,j) <- score
-  lexicon <- CP.setupLexicon mylexicon s
-  let chart64 = CP.parseMain 64 lexicon s
-  S.putStr $ "[" ++ show (j+1) ++ "]\t"
+  lexicon <- CP.setupLexicon mylexicon (T.replace "―" "、" s)
+  S.putStr $ "[" ++ show (j+1) ++ "] "
   T.putStrLn s
-  let nodes = CP.bestOnly $ CP.topBox chart64
-  if (nodes == [])
-    then do
-         T.putStrLn $ "Re-parsing with the beam width being 256..."
-         let chart100 = CP.parseMain 256 lexicon s
-         let nodes256 = CP.bestOnly $ CP.topBox chart100
-         if (nodes256 == [])
-           then do
-                T.putStrLn $ T.concat ["no\n"]
-                return (i,j+1)
-           else do
-                let h = head nodes256
-                T.putStrLn $ T.concat ["yes\t", CCG.toText $ CCG.cat h, "\n\t", CCG.toText $ CCG.sem h, "\n"]
-                return (i+1,j+1)
-    else do
-         let h = head nodes
-         T.putStrLn $ T.concat ["yes\t", CCG.toText $ CCG.cat h, "\n\t", CCG.toText $ CCG.sem h, "\n"]
-         return (i+1,j+1)
+  T.putStrLn $ "Beam width = 16:"
+  let (chart0,_) = CP.parseMain 16 lexicon s
+  if CP.topBox chart0 /= []
+    then
+      do
+      T.putStrLn $ T.concat ["Succeeded (", T.pack (show $ i+1), " out of ", T.pack (show $ j+1),"):\n"]
+      T.putStrLn $ CCG.toText $ head $ CP.bestOnly $ CP.topBox chart0
+      -- T.putStrLn $ T.concat ["yes\t", CCG.toText $ CCG.cat h, "\n\t", CCG.toText $ CCG.sem h, "\n"]
+      return (i+1,j+1)
+    else
+      do
+      T.putStrLn $ "Beam width = 128:"
+      let (chart1,nodes1) = CP.parseMain 128 lexicon s
+      if CP.topBox chart1 /= []
+        then
+          do
+          T.putStrLn $ T.concat ["Succeeded (", T.pack (show $ i+1), " out of ", T.pack (show $ j+1),"):\n"]
+          T.putStrLn $ CCG.toText $ head $ CP.bestOnly $ CP.topBox chart1
+          -- T.putStrLn $ T.concat ["yes\t", CCG.toText $ CCG.cat h, "\n\t", CCG.toText $ CCG.sem h, "\n"]
+          return (i+1,j+1)
+        else
+          do
+          T.putStrLn $ T.concat ["Failed (", T.pack (show $ i), " out of ", T.pack (show $ j+1), "), showing the partial derivations:\n"]
+          mapM_ (T.putStrLn . (\l -> if l==[] then T.empty else CCG.toText $ head l) . CP.bestOnly) (reverse nodes1)
+          return (i,j+1)
 
 {-
 main :: IO()

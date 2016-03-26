@@ -73,7 +73,7 @@ node2PosTags node@(CCG.Node _ _ _ _ _ _ _) =
 -- | picks up the nodes in the "top" box in the chart.
 topBox :: Chart -> [CCG.Node]
 topBox chart = let ((_,k),_) = M.findMax chart in
-                 case M.lookup (0,k) chart of 
+                 case M.lookup (0,k) chart of
                    Just nodes -> sort nodes
                    Nothing    -> []
 
@@ -99,34 +99,32 @@ parse :: Int           -- ^ The beam width
          -> IO(Chart)
 parse beam sentence = do
   lexicon <- L.setupLexicon L.myLexicon sentence
-  return $ parseMain beam lexicon sentence
+  let (chart,_) = parseMain beam lexicon sentence
+  return chart
 
 -- | parses a (Japanees) sentence and generates a CYK-chart.
 parseMain :: Int          -- ^ The beam width
              -> L.Lexicon -- ^ A lexicon to be used for parsing
              -> T.Text    -- ^ A sentence to be parsed
-             -> Chart
+             -> (Chart, [[CCG.Node]])
 parseMain beam lexicon sentence
-  | sentence == T.empty = M.empty -- foldl returns a runtime error when text is empty
-  | otherwise       = let (chart,_,_) = T.foldl' (chartAccumulator beam lexicon) (M.empty, 0, T.empty) (purifyText sentence)
-                      in chart
+  | sentence == T.empty = (M.empty,[]) -- foldl returns a runtime error when text is empty
+  | otherwise =
+      let (chart,_,_,_,nodes) = T.foldl' (chartAccumulator beam lexicon) (M.empty, [0], 0, T.empty, []) $ purifyText sentence in
+      (chart,nodes)
 
 -- | removes occurrences of some letters from an input text.
 purifyText :: T.Text -> T.Text
-purifyText = T.filter (\c -> not $ isSpace c || c `elem` ['、','。','，','．','！','？','!','?','　'])
+purifyText = T.filter (\c -> not $ isSpace c || c `elem` ['。','．','！','？','!','?'])
              --(\c -> not (isSpace c) && c /= '、' && c /= '。' && c /= '，' && c /= '．' && c /= '！' && c /= '？' && c /= '!' && c /= '?')
-
--- | looks up a chart with the key (i,j) and returns the value of type [Node]
-lookupChart :: Int -> Int -> Chart -> [CCG.Node]
-lookupChart i j chart = 
-  case (M.lookup (i,j) chart) of Just list -> list
-                                 Nothing   -> []
 
 -- | triples representing a state during parsing:
 -- the parsed result (=chart) of the left of the pivot,
+-- the stack of positions of the previous 'separators' (i.e. '、','，',etc)
 -- the pivot (=the current parsing position),
 -- the revsersed list of chars that has been parsed
-type PartialChart = (Chart,Int,T.Text)
+-- the list of partial parse results
+type PartialChart = (Chart,[Int],Int,T.Text,[[CCG.Node]])
 
 -- | The 'chartAccumulator' function
 chartAccumulator :: Int             -- ^ beam width
@@ -134,12 +132,18 @@ chartAccumulator :: Int             -- ^ beam width
                     -> PartialChart -- ^ accumulated result (Chart, Int, Text)
                     -> Char         -- ^ next char of a unparsed text
                     -> PartialChart
-chartAccumulator beam lexicon (chart,i,stack) c =
-  -- | c == '、' = ((M.insert (0,i+1) (lookupChart 0 i chart) M.empty), i+1, (T.cons c stack))
-  -- | otherwise =
-      let newstack = (T.cons c stack);
-          (newchart,_,_,to) = T.foldl' (boxAccumulator beam lexicon) (chart,T.empty,i,i+1) newstack in
-      (newchart,to,newstack)
+chartAccumulator beam lexicon (chart,seplist,i,stack,parsed) c =
+  let newstack = (T.cons c stack);
+      (sep:seps) = seplist in
+  if c `elem` ['、','，',',','-','―','−']
+    then let top = lookupChart sep i chart in
+         (M.insert (sep,i+1) top chart, ((i+1):seps), (i+1), newstack, (top:parsed))
+    else let (newchart,_,_,_) = T.foldl' (boxAccumulator beam lexicon) (chart,T.empty,i,i+1) newstack;
+             newseps | c `elem` ['「','『'] = (i+1:seplist)
+                     | c `elem` ['」','』'] = seps
+                     | otherwise = seplist
+             in
+         (newchart,newseps,(i+1),newstack,parsed)
 
 type PartialBox = (Chart,T.Text,Int,Int)
 
@@ -149,20 +153,27 @@ boxAccumulator :: Int           -- ^ beam width
                   -> PartialBox -- ^ accumulated result (Chart, Text, Int, Int)
                   -> Char       -- ^ 
                   -> PartialBox
-boxAccumulator beam lexicon partialbox c =
-  let (chart,word,i,j) = partialbox;
-      newword = T.cons c word;
-      list0 = if (T.length newword) <= 22 -- Does not execute lookup for a word whose length is more than 22
+boxAccumulator beam lexicon (chart,word,i,j) c =
+  let newword = T.cons c word;
+      list0 = if (T.compareLength newword 20) == LT -- Does not execute lookup for a long word (run "LongestWord" to check it (23))
                 then L.lookupLexicon newword lexicon
                 else [];
       list1 = checkUnaryRules list0;
       list2 = checkBinaryRules i j chart list1;
       list3 = checkCoordinationRule i j chart list2;
       list4 = checkParenthesisRule i j chart list3;
-      list5 = checkEmptyCategories list4;
-      listn = if length list5 <= beam then sort list5 else take beam $ sort list5 in
-  ((M.insert (i,j) listn chart), newword, i-1, j)
+      list5 = checkEmptyCategories list4 in
+  ((M.insert (i,j) (cutoff beam list5) chart), newword, i-1, j)
 
+-- | take `beam` nodes from the top of `ndoes`.
+cutoff :: Int -> [CCG.Node] -> [CCG.Node]
+cutoff beam nodes = if length nodes <= beam then nodes else take beam $ sort nodes
+
+-- | looks up a chart with the key (i,j) and returns the value of type [Node]
+lookupChart :: Int -> Int -> Chart -> [CCG.Node]
+lookupChart i j chart = 
+  case (M.lookup (i,j) chart) of Just list -> list
+                                 Nothing   -> []
 checkUnaryRules :: [CCG.Node] -> [CCG.Node]
 checkUnaryRules prevlist = 
   foldl' (\acc node -> CCG.unaryRules node acc) prevlist prevlist
@@ -204,3 +215,4 @@ checkEmptyCategories :: [CCG.Node] -> [CCG.Node]
 checkEmptyCategories prevlist =
   foldl' (\p ec -> foldl' (\list node -> (CCG.binaryRules node ec) $ (CCG.binaryRules ec node) list) p p) prevlist L.emptyCategories
   --foldr (\p -> (CCG.binaryRules (fst p) (snd p)) . (CCG.binaryRules (snd p) (fst p))) prevlist [(x,y) | x <- prevlist, y <- L.emptyCategories]
+

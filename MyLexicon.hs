@@ -146,25 +146,38 @@ myLexicon :: [Node]
 myLexicon = concat $ [
   -- 格助詞
   -- argument:
-  mylex ["が"] "(524)" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Ga])) `BS` NP [Nc]) argumentCM,
+  --mylex ["が"] "(524)" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Ga])) `BS` NP [Nc]) argumentCM,
   mylex ["を"] "(524)" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [O])) `BS` NP [Nc]) argumentCM,
   mylex ["に"] "(524)" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Ni])) `BS` NP [Nc]) argumentCM,
   mylex ["と"] "(524)" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [To])) `BS` NP [Nc]) argumentCM,
   mylex ["によって"] "(524)" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Niyotte])) `BS` NP [Nc]) argumentCM,
-  mylex ["の","が"] "(531)?" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [No])) `BS` NP [Nc]) argumentCM,
+  mylex ["が","の"] "(531)?" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Ga,No])) `BS` NP [Nc]) argumentCM,
   -- adjunct:
   mylex ["へ","へは"] "(516)" ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` NP [Nc]) (adjunctCM "終点"), 
   mylex ["で","では"] "(516)" ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` NP [Nc]) (adjunctCM "場所"), 
   mylex ["から","からは"] "(516)" ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` NP [Nc]) (adjunctCM "始点"), 
   mylex ["まで","までは"] "(516)" ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` NP [Nc]) (adjunctCM "終点"), 
+  mylex ["より","よりは"] "(516)" ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` NP [Nc]) (adjunctCM "起点"), 
   mylex ["にて"] "(516)" ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` NP [Nc]) (adjunctCM "場所"), 
   -- 格助詞（の）
   mylex ["の"] "(531)+" ((N `SL` N) `BS` NP [Nc]) -- これだとダメ
                (Lam (Lam (Lam (Lam (Sigma (App (App (Con "の[MCN]") (Var 1)) (Var 3)) (App (App (Var 2) (Var 1)) (Var 0))))))),
-  -- 等位接続
+  -- 等位接続（連言）
   mylex ["と"] "new" CONJ (Lam (Lam (Sigma (Var 1) (Var 1)))),
   mylex ["や"] "new" CONJ (Lam (Lam (Sigma (Var 1) (Var 1)))),
+  mylex ["そして"] "new" CONJ (Lam (Lam (Sigma (Var 1) (Var 1)))),
+  mylex ["および"] "new" CONJ (Lam (Lam (Sigma (Var 1) (Var 1)))),
+  mylex ["ならびに","並びに"] "new" CONJ (Lam (Lam (Sigma (Var 1) (Var 1)))),
+  mylex ["やら"] "new" CONJ (Lam (Lam (Sigma (Var 1) (Var 1)))),
+  mylex ["だの"] "new" CONJ (Lam (Lam (Sigma (Var 1) (Var 1)))),
+  mylex ["に"] "new" CONJ (Lam (Lam (Sigma (Var 1) (Var 1)))),
+  mylex ["なり"] "new" CONJ (Lam (Lam (Sigma (Var 1) (Var 1)))),
+  -- 等位接続（選言）
   mylex ["か"] "new" CONJ (Lam (Lam (Pi (Not (Var 1)) (Var 1)))),
+  mylex ["または","又は"] "new" CONJ (Lam (Lam (Pi (Not (Var 1)) (Var 1)))),
+  mylex ["もしくは"] "new" CONJ (Lam (Lam (Pi (Not (Var 1)) (Var 1)))),
+  mylex ["あるいは"] "new" CONJ (Lam (Lam (Pi (Not (Var 1)) (Var 1)))),
+  mylex ["ないしは","ないし"] "new" CONJ (Lam (Lam (Pi (Not (Var 1)) (Var 1)))),
   -- 動詞活用語尾
   conjSuffix "か" "(112)" [V5k,V5IKU,V5YUK] [Neg,VoR,VoS,NegL],
   conjSuffix "き" "(112)" [V5k,V5IKU,V5YUK] [Cont],
@@ -364,7 +377,7 @@ myLexicon = concat $ [
   mylex ["ね"]      "(325)" (S anyPos [Hyp] [M,M,P,M,M] `BS` defS anyPos [NegL])       negOperator,
   mylex ["ざら"]     "(330)" (S anyPos [NegL] [M,M,P,M,M] `BS` defS anyPos [NegL])     negOperator,
   mylex ["ずに"]     "(330)" (S anyPos [NiForm] [M,M,P,M,M] `BS` defS anyPos [NegL])   negOperator,
-  mylex ["ず"]      "(330)" (S anyPos [Term] [M,M,P,M,M] `BS` defS anyPos [NegL])     negOperator,
+  mylex ["ず"]      "(330)" (S anyPos [Term,NiForm] [M,M,P,M,M] `BS` defS anyPos [NegL])     negOperator, -- NiFormを加えた
   mylex ["ざる"]    "(330)" (S anyPos [Attr] [M,M,P,M,M] `BS` defS anyPos [NegL])      negOperator,
   mylex ["ざれ"]    "(330)" (S anyPos [Hyp,Imper] [M,M,P,M,M] `BS` defS anyPos [NegL])                  negOperator,
   mylex ["ないで"]  "(335)" (S verb [TeForm] [M,M,P,M,M] `BS` S verb [Neg] [M,M,PM,PM,M])               negOperator,
@@ -417,24 +430,53 @@ myLexicon = concat $ [
   mylex ["な"] "(384)" ((defS [V5r] [Stem] `BS` NP [Ga]) `BS` (defS [Nda] [NiForm] `BS` NP [Ga])) (intensionalEvent 1 "成る"),
   -- い省略
   mylex ["て"] "(403)" (defS [V1] [Stem,Neg,Cont,NegL,EuphT] `BS` defS verb [EuphT]) (eventModifier "テイル[ASP]"),
-  -- 取り立て
+  -- 取り立て（副助詞）
   --mylex ["は"] "(385)" (S anyPos nonStem [M,M,M,M,P] `BS` defS anyPos nonStem) (Lam (Lam 
   mylex ["は"] "(550)" (((T True 1 teidaiS) `SL` ((T True 1 teidaiS) `BS` (NP [Ga,O]))) `BS` (NP [Nc])) argumentCM,
   mylex ["には"] "(550)" (((T True 1 teidaiS) `SL` ((T True 1 teidaiS) `BS` (NP [Ni]))) `BS` (NP [Nc])) argumentCM,
   mylex ["とは"] "new" (((T True 1 teidaiS) `SL` ((T True 1 teidaiS) `BS` (NP [To]))) `BS` (NP [Nc])) argumentCM,
+  --
   mylex ["も"] "(385)" (((T True 1 teidaiS) `SL` ((T True 1 teidaiS) `BS` (NP [Ga,O]))) `BS` (NP [Nc])) argumentCM,
   mylex ["にも"] "(385)" (((T True 1 teidaiS) `SL` ((T True 1 teidaiS) `BS` (NP [Ni]))) `BS` (NP [Nc])) argumentCM,
-  mylex ["って"] "new" (((T True 1 teidaiS) `SL` ((T True 1 teidaiS) `BS` (NP [Ga]))) `BS` (NP [Nc])) argumentCM,
+  --
   mylex ["こそ"] "new" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ga,O]))) `BS` (NP [Nc])) argumentCM,
   mylex ["にこそ"] "new" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ni]))) `BS` (NP [Nc])) argumentCM,
+  --
   mylex ["さえ"] "(387)" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ga,O]))) `BS` (NP [Nc])) argumentCM,
   mylex ["にさえ","さえに"] "(387)" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ni]))) `BS` (NP [Nc])) argumentCM,
+  --
   mylex ["だけ"] "new" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ga,O]))) `BS` (NP [Nc])) argumentCM,
   mylex ["にだけ","だけに"] "new" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ni]))) `BS` (NP [Nc])) argumentCM,
-  mylex ["ばかり"] "new" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ga,O]))) `BS` (NP [Nc])) argumentCM,
-  mylex ["にばかり","ばかりに"] "new" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ni]))) `BS` (NP [Nc])) argumentCM,
+  --
+  mylex ["ばかり","ばっかり","ばっか"] "new" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ga,O]))) `BS` (NP [Nc])) argumentCM,
+  mylex ["にばかり","にばっかり","にばっか"] "new" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ni]))) `BS` (NP [Nc])) argumentCM,
+  mylex ["ばかりに","ばっかりに","ばっかに"] "new" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ni]))) `BS` (NP [Nc])) argumentCM,
+  --
   mylex ["のみ"] "new" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ga,O]))) `BS` (NP [Nc])) argumentCM,
   mylex ["にのみ","のみに"] "new" (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [Ni]))) `BS` (NP [Nc])) argumentCM,
+  --
+  --mylex ["しか"]
+  --mylex ["にしか"]
+  --
+  --mylex ["こそ"]
+  --mylex ["こそが"]
+  --mylex ["こそを"]
+  --mylex ["にこそ"]
+  --mylex ["なら"]
+  mylex ["って"] "new" (((T True 1 teidaiS) `SL` ((T True 1 teidaiS) `BS` (NP [Ga]))) `BS` (NP [Nc])) argumentCM,
+  --mylex ["ったら"]
+  --mylex ["では","じゃ","じゃあ"]
+  --mylex ["でも"]
+  --mylex ["でさえ"]
+  --mylex ["すら"]
+  --mylex ["まで"] -- 〜してまで
+  --mylex ["など"] -- 太郎をなど、太郎になど
+  --mylex ["なんか"] -- 太郎になんか
+  --mylex ["なんて"]
+  --mylex ["なんぞ"]
+  --mylex ["くらい"]
+  --mylex ["どころ"]
+  --mylex ["とて"]
   -- 6.1.3 補助動詞（連用形接続）
   mylex ["始め","はじめ"] "(412)" (defS [V1] [Stem,Neg,Cont,NegL,EuphT] `BS` defS verb [Cont]) (eventModifier "始める"),
   mylex ["込","こ"] "(412)" (defS [V5m] [Stem] `BS` defS verb [Cont])     (eventModifier "込む"),
@@ -503,10 +545,15 @@ myLexicon = concat $ [
   mylex ["的","てき"] "(508)" ((defS [Nda,Nna,Nni] [Stem] `BS` NP [Ga]) `BS` N) (Lam (Lam (App (Var 1) (Var 0)))),-- ??
   mylex ["気味","ぎみ"] "(509)" ((defS [Nda,Nna,Nno,Nni] [Stem] `BS` NP [Ga]) `BS` N) (Lam (Lam (App (Var 1) (Var 0)))),-- ??
   mylex ["なの"] "(510)" (defS [Nda] [Stem] `BS` defS [Nda] [Stem])          (modal "ナノダ[MCN]"),
-  mylex ["の"] "(511)" (defS [Nda] [Stem] `BS` S anyPos [Attr] [M,M,M,PM,M])           (modal "ノダ[MCN]"),
+  mylex ["の","ん"] "(511)" (defS [Nda] [Stem] `BS` S anyPos [Attr] [M,M,M,PM,M])           (modal "ノダ[MCN]"),
   mylex ["筈","はず","ハズ"] "(511)" (defS [Nda] [Stem] `BS` defS anyPos [Attr]) (modal "ハズダ[MCN]"),
   mylex ["訳","わけ","ワケ"] "(511)" (defS [Nda] [Stem] `BS` defS anyPos [Attr]) (modal "ワケダ[MCN]"),
-  mylex ["もの"] "(511)" (defS [Nda] [Stem] `BS` defS anyPos [Attr])            (modal "モノダ[MCN]"),
+  mylex ["つもり"] "new" (defS [Nda] [Stem] `BS` defS anyPos [Attr]) (modal "ツモリ[MCN]"),
+  mylex ["もの","もん"] "(511)" (defS [Nda] [Stem] `BS` defS anyPos [Attr])            (modal "モノダ[MCN]"),
+  -- べきだ
+  -- ふうだ
+  -- ことだ
+  -- ばかりだ、ばっかりだ、ばっかだ、
   -- 照応
   mylex ["これ","それ","あれ"] "new" (T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Nc])) 
         (Lam (App (Var 0) (Asp 1 (Proj Fst (Sigma (Con "entity") (Not (App (Con "有生") (Var 0)))))))),
@@ -571,6 +618,21 @@ myLexicon = concat $ [
         (Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),
   mylex ["し"] "(713)" ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` S anyPos [Term] [PM,PM,PM,M,M]) 
         (Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),
+  -- そして
+  -- それとも
+  -- それに
+  -- けど,けども,けれど,けれども
+  -- から、ので
+  -- まで
+  -- より
+  -- まま
+  -- きり,っきり
+  -- つつ
+  -- ながら
+  -- がてら
+  -- やいなや
+  -- ど,ども
+  -- きや
   -- 状詞の副詞用法
   mylex ["に"] "(728)" ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` (defS [Nni] [Stem] `BS` NP [Ga])) 
         (Lam (Lam (Lam (App (Var 1) (Lam (Sigma (App (App (Var 3) (Var 0)) (Lam Top)) (App (Var 2) (Var 1)))))))),
@@ -595,15 +657,28 @@ myLexicon = concat $ [
   mylex ["ば"] "new" ((anySExStem `SL` anySExStem) `BS` (defS anyPos [Neg,Hyp])) (Lam (Lam (Pi (Var 1) (Var 1)))),
   -- 終助詞
   mylex ["か"] "new" (S anyPos [Term] [PM,PM,PM,M,M] `BS` S anyPos [Term] [PM,PM,PM,M,M]) id,
-  mylex ["ね"] "new" (defS anyPos [Term] `BS` defS anyPos [Term]) id,
-  mylex ["よ"] "new" (defS anyPos [Term] `BS` defS anyPos [Term]) id,
-  mylex ["さ"] "new" (defS anyPos [Term] `BS` defS anyPos [Term]) id,
+  mylex ["ね","ねえ","ねー","ネ"] "new" (defS anyPos [Term] `BS` defS anyPos [Term]) id,
+  mylex ["よ","ヨ"] "new" (defS anyPos [Term] `BS` defS anyPos [Term]) id,
+  mylex ["さ","さあ","さー","サ"] "new" (defS anyPos [Term] `BS` defS anyPos [Term]) id,
+  -- かしら
+  -- やろ
+  -- ぞ
+  -- ぜ
+  -- で
+  -- なあ
+  -- わ
+  -- ねん
+  -- っけ
+  -- や
+  -- かい
   -- 句読点
   -- mylex "。"  "" (anyS `BS` anyS) id,
   -- mylex "、"  "" (anyS `BS` anyS) id,
   -- 括弧
-  mylex ["「","（","(","『","《","〈","【","［","[","−","-"] "new" LPAREN Unit,
-  mylex ["」","）",")","』","》","〉","】","］","]","−","-"] "new" RPAREN Unit,
+  --mylex ["「","（","(","『","《","〈","【","［","[","−","-"] "new" LPAREN Unit,
+  --mylex ["」","）",")","』","》","〉","】","］","]","−","-"] "new" RPAREN Unit,
+  mylex ["(","[","−","-"] "new" LPAREN Unit,
+  mylex [")","]","−","-"] "new" RPAREN Unit,
   -- 形式名詞
   mylex ["こと","事"] "new" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Nc])) `BS` (S anyPos [Attr] [PM,PM,PM,M,M])) (Lam (Lam (Lamvec (Sigma (Con "entity") (Sigma (Sigma (Con "state") (App (App (Con "こと") (Var 1 )) (Var 0))) (Sigma (App (App (Con "content") (App (Var 4) (Lam Top))) (Var 1)) (Appvec 3 (App (Var 4) (Var 2))))))))),
   mylex ["の"] "new" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Nc])) `BS` (S anyPos [Attr] [PM,PM,PM,M,M])) (Lam (Lam (Lamvec (Sigma (Con "entity") (Sigma (Sigma (Con "state") (App (App (Con "の") (Var 1 )) (Var 0))) (Sigma (App (App (Con "content") (App (Var 4) (Lam Top))) (Var 1)) (Appvec 3 (App (Var 4) (Var 2))))))))),
