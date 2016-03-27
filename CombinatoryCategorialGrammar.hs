@@ -76,7 +76,7 @@ data Node = Node {
   sem :: Preterm,      -- ^ The semantic representation (in DTS)
   daughters :: [Node], -- ^ The daughter nodes
   score :: Rational,   -- ^ The score (between 0.00 to 1.00, larger the better)
-  memo :: T.Text       -- ^ The source of the lexical entry
+  source :: T.Text       -- ^ The source of the lexical entry
   } deriving (Eq, Show)
 
 instance Ord Node where
@@ -90,7 +90,7 @@ instance SimpleText Node where
   toText n@(Node _ _ _ _ _ _ _) = toTextLoop "" n
     where toTextLoop indent node =
             case daughters node of 
-              [] -> T.concat [(T.pack indent), toText (rs node), " ", pf node, " ", toText (cat node), " ", toTextWithVN [] (sem node), " ", memo node, " [", T.pack (show ((fromRational $ score node)::Fixed E2)), "]\n"]
+              [] -> T.concat [(T.pack indent), toText (rs node), " ", pf node, " ", toText (cat node), " ", toTextWithVN [] (sem node), " ", source node, " [", T.pack (show ((fromRational $ score node)::Fixed E2)), "]\n"]
               dtrs -> T.concat $ [(T.pack indent), toText (rs node), " ", toText (cat node), " ", toTextWithVN [] (sem node), " [", T.pack (show ((fromRational $ score node)::Fixed E2)), "]\n"] ++ (map (\d -> toTextLoop (indent++"  ") d) dtrs)
 
 data Cat = 
@@ -365,7 +365,7 @@ sseriesRule node@(Node {rs=LEX, cat=((S [VS] [Stem] `BS` NP [Ga]) `BS` NP [O]), 
     sem = (Lam (Lam (Lam (Lamvec (Sigma (App (App f (Var 3)) (Var 2)) (Appvec 1 (App (Var 2) (Var 0)))))))),
     daughters = [node],
     score = score(node),
-    memo = ""
+    source = ""
     }: prevlist
 sseriesRule _ prevlist = prevlist
 -}
@@ -425,7 +425,7 @@ forwardFunctionApplicationRule lnode@(Node {rs=r, cat=SL x y1, sem=f}) rnode@(No
                    sem = betaReduce $ transvec newcat $ betaReduce $ App f a,
                    daughters = [lnode,rnode],
                    score = score(lnode)*score(rnode),
-                   memo = "" --T.concat $ map (\(i,c)-> T.concat [T.pack (show i)," \\mapsto ",toTeX c,", "]) sub
+                   source = "" --T.concat $ map (\(i,c)-> T.concat [T.pack (show i)," \\mapsto ",toTeX c,", "]) sub
                    }:prevlist
 forwardFunctionApplicationRule _ _ prevlist = prevlist
 
@@ -447,7 +447,7 @@ backwardFunctionApplicationRule lnode@(Node {cat=y1, sem=a}) rnode@(Node {rs=r, 
                         sem = betaReduce $ transvec newcat $ betaReduce $ App f a,
                         daughters = [lnode,rnode],
                         score = score(lnode)*score(rnode),
-                        memo = "" -- pf(lnode) `T.append` pf(rnode)
+                        source = "" -- pf(lnode) `T.append` pf(rnode)
                         }:prevlist
 backwardFunctionApplicationRule _ _ prevlist = prevlist
 
@@ -473,7 +473,7 @@ forwardFunctionComposition1Rule lnode@(Node {rs=r,cat=SL x y1, sem=f}) rnode@(No
                sem = betaReduce $ transvec newcat $ betaReduce $ (Lam (App f (App g (Var 0)))),
                daughters = [lnode,rnode],
                score = score(lnode)*score(rnode),
-               memo = ""
+               source = ""
                }:prevlist
 forwardFunctionComposition1Rule _ _ prevlist = prevlist
 
@@ -495,7 +495,7 @@ backwardFunctionComposition1Rule lnode@(Node {cat=BS y1 z, sem=g}) rnode@(Node {
                         sem = betaReduce $ transvec newcat $ betaReduce $ Lam (App f (App g (Var 0))),
                         daughters = [lnode,rnode],
                         score = score(lnode)*score(rnode),
-                        memo = ""
+                        source = ""
                         }:prevlist
 backwardFunctionComposition1Rule _ _ prevlist = prevlist
 
@@ -521,7 +521,7 @@ forwardFunctionComposition2Rule lnode@(Node {rs=r,cat=(x `SL` y1), sem=f}) rnode
                         sem = betaReduce $ transvec newcat $ betaReduce $ Lam (Lam (App f (App (App g (Var 1)) (Var 0)))),
                         daughters = [lnode,rnode],
                         score = score(lnode)*score(rnode),
-                        memo = ""
+                        source = ""
                         }:prevlist
 forwardFunctionComposition2Rule _ _ prevlist = prevlist
 
@@ -543,7 +543,7 @@ backwardFunctionComposition2Rule lnode@(Node {cat=(y1 `BS` z1) `BS` z2, sem=g}) 
                         sem = betaReduce $ transvec newcat $ betaReduce $ Lam (Lam (App f (App (App g (Var 1)) (Var 0)))),
                         daughters = [lnode,rnode],
                         score = score(lnode)*score(rnode),
-                        memo = ""
+                        source = ""
                         }:prevlist
 backwardFunctionComposition2Rule _ _ prevlist = prevlist
 
@@ -565,7 +565,7 @@ backwardFunctionComposition3Rule lnode@(Node {cat=((y1 `BS` z1) `BS` z2) `BS` z3
                         sem = betaReduce $ transvec newcat $ betaReduce $ Lam (Lam (Lam (App f (App (App (App g (Var 2)) (Var 1)) (Var 0))))),
                         daughters = [lnode,rnode],
                         score = score(lnode)*score(rnode),
-                        memo = ""
+                        source = ""
                         }:prevlist
 backwardFunctionComposition3Rule _ _ prevlist = prevlist
 
@@ -592,7 +592,7 @@ forwardFunctionCrossedComposition1Rule lnode@(Node {rs=r,cat=SL x y1, sem=f}) rn
             sem = betaReduce $ transvec newcat $ betaReduce $ (Lam (App f (App g (Var 0)))),
             daughters = [lnode,rnode],
             score = score(lnode)*score(rnode)*(100 % 100), -- degrade the score when this rule is used.
-            memo = ""
+            source = ""
             }:prevlist
 forwardFunctionCrossedComposition1Rule _ _ prevlist = prevlist
 
@@ -618,7 +618,7 @@ forwardFunctionCrossedComposition2Rule lnode@(Node {rs=r,cat=(x `SL` y1), sem=f}
                         sem = betaReduce $ transvec newcat $ betaReduce $ Lam (Lam (App f (App (App g (Var 1)) (Var 0)))),
                         daughters = [lnode,rnode],
                         score = score(lnode)*score(rnode)*(99 % 100), -- degrade the score more when this rule is used.
-                        memo = ""
+                        source = ""
                         }:prevlist
 forwardFunctionCrossedComposition2Rule _ _ prevlist = prevlist
 
@@ -644,7 +644,7 @@ forwardFunctionCrossedSubstitutionRule lnode@(Node {rs=r,cat=((x `SL` y1) `BS` z
                         sem = betaReduce $ transvec newcat $ betaReduce $ Lam (App (App f (Var 0)) (App g (Var 0))),
                         daughters = [lnode,rnode],
                         score = score(lnode)*score(rnode)*(100 % 100),
-                        memo = ""
+                        source = ""
                         }:prevlist
 forwardFunctionCrossedSubstitutionRule _ _ prevlist = prevlist
 
@@ -669,7 +669,7 @@ coordinationRule lnode@(Node {cat=x1, sem=s1}) cnode@(Node {cat=c, sem=conj}) rn
               sem = betaReduce $ transvec newcat $ betaReduce $ Lamvec (App (App conj (Appvec 0 s1)) (Appvec 0 s2)),
               daughters = [lnode,cnode,rnode],
               score = score(lnode)*score(rnode),
-              memo = ""
+              source = ""
               }:prevlist
     _ -> prevlist
 
@@ -683,7 +683,7 @@ parenthesisRule lnode@(Node {cat=LPAREN}) cnode rnode@(Node {cat=RPAREN}) prevli
     sem = sem(cnode),
     daughters = [lnode,cnode,rnode],
     score = score(cnode),
-    memo = ""
+    source = ""
     }:prevlist
 parenthesisRule _ _ _ prevlist = prevlist
 
@@ -705,7 +705,7 @@ if c /= CONJ
                                       --betaReduce $ transvec (Lamvec (inc2+1) (App (App conj (Appvec (inc2+1) f1)) (Appvec (inc2+1) (incrementVec f2 inc)))) sub sub,
                                 daughters = [lnode,cnode,rnode],
                                 score = score(lnode)*score(rnode),
-                                memo = ""
+                                source = ""
                                 }:prevlist
 coordinationRule _ _ _ prevlist = prevlist
 -}
@@ -740,7 +740,7 @@ compoundNPRule lnode@(Node {rs=r, cat=x}) rnode@(Node {cat=y}) prevlist =
                         sem = sr,
                         daughters = [lnode,rnode],
                         score = score(lnode)*score(rnode)*(9 % 10),
-                        memo = "" 
+                        source = "" 
                         }:prevlist
 -}
 
@@ -942,7 +942,7 @@ transvec c preterm = case c of
 {- Some Macros for defining lexical items -}
 
 lexicalitem :: T.Text -> T.Text -> Integer -> Cat -> Preterm -> Node
-lexicalitem word source r c s = Node {rs=LEX, pf=word, cat=c, sem=s, daughters=[], score=(r % 100), memo=source}
+lexicalitem word num r c s = Node {rs=LEX, pf=word, cat=c, sem=s, daughters=[], score=(r % 100), source=num}
 
 {- Some Marcos for CCG categories/features -}
 

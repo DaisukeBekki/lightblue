@@ -40,7 +40,7 @@ toXML node@(CCG.Node _ _ _ _ _ _ _) =
                                 ("cat", T.toStrict $ CCG.toText $ CCG.cat node),
                                 ("dts", T.toStrict $ D.toTextWithVN [] $ CCG.sem node),
                                 ("score", T.toStrict $ T.pack $ show ((fromRational $ CCG.score node)::F.Fixed F.E2)),
-                                ("source", T.toStrict $ CCG.memo node)
+                                ("source", T.toStrict $ CCG.source node)
                                 ]) 
                               []
       dtrs -> X.NodeElement $ X.Element 
@@ -71,3 +71,8 @@ render handle nodes = do
 
 --renderSettings :: X.RenderSettings
 --renderSettings = X.RenderSettings True [] (X.orderAttrs [("LEX",["pf","cat","dts","soruce","score"])]) (\c -> False)
+
+{-
+render2 :: S.Handle -> CCG.Node -> IO()
+render2 handle node = do
+-}

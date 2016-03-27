@@ -14,6 +14,7 @@ import qualified System.IO as S                      --base
 import qualified System.Environment as S             --base
 import qualified CombinatoryCategorialGrammar as CCG
 import qualified ChartParser as CP
+--import qualified XMLmodule as X
 
 main :: IO()
 main = do

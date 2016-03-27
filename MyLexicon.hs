@@ -21,7 +21,7 @@ import DependentTypes
 import Data.Ratio
 
 ec :: T.Text -> T.Text -> Integer -> Cat -> Preterm -> Node
-ec word source r c s = Node {rs=EC, pf=word, cat=c, sem=s, daughters=[], score=(r % 100), memo=source}
+ec word num r c s = Node {rs=EC, pf=word, cat=c, sem=s, daughters=[], score=(r % 100), source=num}
 
 -- | A list of empty categories (i.e. lexical items whose PF is empty).
 emptyCategories :: [Node]
@@ -133,10 +133,10 @@ emptyCategories = [
 {- Some Macros for adding lexical items to lexicon -}
 
 mylex :: [T.Text] -> T.Text -> Cat -> Preterm -> [Node]
-mylex wds source cat' sem' = [(lexicalitem wd source 100 cat' sem') | wd <- wds ]
+mylex wds num cat' sem' = [(lexicalitem wd num 100 cat' sem') | wd <- wds ]
 
 conjSuffix :: T.Text -> T.Text -> [PosFeature] -> [ConjFeature] -> [Node]
-conjSuffix wd source catpos catconj = [lexicalitem wd source 100 ((defS catpos catconj) `BS` (defS catpos [Stem])) id]
+conjSuffix wd num catpos catconj = [lexicalitem wd num 100 ((defS catpos catconj) `BS` (defS catpos [Stem])) id]
 
 teidaiS :: Cat
 teidaiS = S anyPos [Term,Imper,Pre,TeForm] [PM,PM,PM,M,M]
