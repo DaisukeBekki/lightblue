@@ -43,10 +43,12 @@ callJuman sentence = do
 -- | Transforming juman pos-tags obtained from the given sentence 
 -- | into a list of (possible) compound nouns
 jumanNouns2nodes :: [JumanCompNoun] -> [Node]
-jumanNouns2nodes jumancompnouns = case jumancompnouns of
-  [] -> []
-  ((JumanCompNP j):js) -> (lexicalitem (T.concat $ reverse j) "(CompN)" 95 (T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Nc])) (properNameSR $ T.intercalate "~" $ reverse j):(jumanNouns2nodes js))
-  ((JumanCompCN j):js) -> (lexicalitem (T.concat $ reverse j) "(CompN)" 95 (N) (commonNounSR $ T.intercalate "~" $ reverse j):(jumanNouns2nodes js))
+jumanNouns2nodes jumancompnouns = 
+  let name = \j -> T.intercalate "~" $ reverse j in
+  case jumancompnouns of
+    [] -> []
+    ((JumanCompNP j):js) -> (lexicalitem (T.concat $ reverse j) "(CompN)" 95 (T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Nc])) (properNameSR (name j)) [((name j),nPlacePredType 1)]):(jumanNouns2nodes js)
+    ((JumanCompCN j):js) -> (lexicalitem (T.concat $ reverse j) "(CompN)" 95 (N) (commonNounSR (name j)) [((name j),nPlacePredType 1)]):(jumanNouns2nodes js)
 
 -- | usage: findCompNouns jumanPairs [] 
 -- |   returns the list of pair (hyoso, predname)  

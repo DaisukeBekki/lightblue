@@ -31,7 +31,7 @@ myname t = X.Name (T.toStrict t) Nothing Nothing
 
 --instance XMLable CCG.Node where
 toXML :: CCG.Node -> X.Node
-toXML node@(CCG.Node _ _ _ _ _ _ _) = 
+toXML node@(CCG.Node _ _ _ _ _ _ _ _) = 
     case CCG.daughters node of 
       [] -> X.NodeElement $ X.Element 
                               (myname $ T.pack $ show $ CCG.rs node)

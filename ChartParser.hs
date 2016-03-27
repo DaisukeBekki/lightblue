@@ -65,7 +65,7 @@ posTagger handle nodes =
     (n:_) -> mapM_ ((S.hPutStrLn handle) . T.unpack) $ node2PosTags n
 
 node2PosTags :: CCG.Node -> [T.Text]
-node2PosTags node@(CCG.Node _ _ _ _ _ _ _) =
+node2PosTags node@(CCG.Node _ _ _ _ _ _ _ _) =
   case CCG.daughters node of
     [] -> [T.concat [CCG.pf node, "\t", CCG.toText (CCG.cat node), " \t", CCG.toText (CCG.sem node), "\t", CCG.source node, "\t[", T.pack (show ((fromRational $ CCG.score node)::Fixed E2)), "]"]]
     dtrs -> [t | dtr <- dtrs, t <- node2PosTags dtr]
@@ -138,7 +138,7 @@ chartAccumulator beam lexicon (chart,seplist,i,stack,parsed) c =
              --(s1,s2) = T.splitAt (fromIntegral (i+1-sep)) newstack;
              --(newchart2,_,_,_) = T.foldl' (boxAccumulator beam lexicon) (newchart1,(T.reverse s1),sep-1,i+1) s2
              newchart = M.fromList $ foldl' (punctFilter sep i) [] $ M.toList chart
-         in (newchart, ((i+1):seps), (i+1), newstack, ((lookupChart sep (i+1) newchart):parsed))
+         in (newchart, ((i+1):seps), (i+1), newstack, (take 1 (sort (lookupChart sep (i+1) newchart)):parsed))
     else let (newchart,_,_,_) = T.foldl' (boxAccumulator beam lexicon) (chart,T.empty,i,i+1) newstack;
              newseps | c `elem` ['「','『'] = (i+1:seplist)
                      | c `elem` ['」','』'] = seps

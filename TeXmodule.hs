@@ -152,7 +152,7 @@ toTeXEmbedded preterm = case preterm of
 -}
 
 instance Typeset Node where
-  toTeX node@(Node _ _ _ _ _ _ _) = 
+  toTeX node@(Node _ _ _ _ _ _ _ _) =
     case daughters node of 
       [] -> T.concat ["\\vvlex[", (source node), "]{", (pf node), "}{", toTeX (cat node), "}{", toTeX (sem node), "}"] --, "\\ensuremath{", (source node), "}"]
       _ -> T.concat ["\\nd[", toTeX (rs node), "]{\\vvcat{", toTeX (cat node), "}{", toTeX (sem node), "}}{", daughtersTeX, "}"] --, "\\ensuremath{", (source node), "}"]

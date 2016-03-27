@@ -67,6 +67,11 @@ f mylexicon score s =
           return (i,j+1)
 
 {-
+Results: 27/51 (52.941%)
+Execution Time: 1087.37509s (average: 21.321s/sentence)
+-}
+
+{-
 main :: IO()
 main = do
     start <- Time.getCurrentTime

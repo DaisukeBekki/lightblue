@@ -15,6 +15,8 @@ module CombinatoryCategorialGrammar (
   Node(..),
   RuleSymbol(..),
   Cat(..),
+  Signature,
+  printSignatures,
   -- * Syntactic Features
   PosFeature(..),
   ConjFeature(..),
@@ -47,16 +49,23 @@ module CombinatoryCategorialGrammar (
   id,
   verbSR,
   predSR,
+  nPlaceEventType,
+  nPlaceStateType,
+  nPlacePredType,
   properNameSR,
   commonNounSR,
   intensionalEvent,
+  intensionalEventType,
   intensionalState,
+  intensionalStateType,
   modal,
+  modalType,
   mannerAdverb,
   eventModifier,
+  eventModifierType,
   negOperator,
   argumentCM,
-  adjunctCM
+  adjunctCM  
   ) where
 
 import Prelude hiding (id)
@@ -76,18 +85,27 @@ data Node = Node {
   sem :: Preterm,      -- ^ The semantic representation (in DTS)
   daughters :: [Node], -- ^ The daughter nodes
   score :: Rational,   -- ^ The score (between 0.00 to 1.00, larger the better)
-  source :: T.Text       -- ^ The source of the lexical entry
+  source :: T.Text,    -- ^ The source of the lexical entry
+  sig :: [Signature]   -- ^ Signature
   } deriving (Eq, Show)
+
+type Signature = (T.Text,Preterm)
+
+printSignature :: Signature -> T.Text
+printSignature (con,typ) = T.concat $ [toText (Con con), ":", toText typ]
+
+printSignatures :: [Signature] -> T.Text
+printSignatures sigs = T.concat ["[", (T.intercalate ", " $ map printSignature sigs), "]"]
 
 instance Ord Node where
   (Node {score=i}) `compare` (Node {score=j})
     | i < j  = GT
     | i == j = EQ
     | i > j  = LT
-  (Node _ _ _ _ _ _ _) `compare` (Node _ _ _ _ _ _ _) = EQ
+  (Node _ _ _ _ _ _ _ _) `compare` (Node _ _ _ _ _ _ _ _) = EQ
 
 instance SimpleText Node where
-  toText n@(Node _ _ _ _ _ _ _) = toTextLoop "" n
+  toText n@(Node _ _ _ _ _ _ _ sig') = T.concat [toTextLoop "" n, "Sig. ", printSignatures sig', "\n"]
     where toTextLoop indent node =
             case daughters node of 
               [] -> T.concat [(T.pack indent), toText (rs node), " ", pf node, " ", toText (cat node), " ", toTextWithVN [] (sem node), " ", source node, " [", T.pack (show ((fromRational $ score node)::Fixed E2)), "]\n"]
@@ -425,7 +443,8 @@ forwardFunctionApplicationRule lnode@(Node {rs=r, cat=SL x y1, sem=f}) rnode@(No
                    sem = betaReduce $ transvec newcat $ betaReduce $ App f a,
                    daughters = [lnode,rnode],
                    score = score(lnode)*score(rnode),
-                   source = "" --T.concat $ map (\(i,c)-> T.concat [T.pack (show i)," \\mapsto ",toTeX c,", "]) sub
+                   source = "", --T.concat $ map (\(i,c)-> T.concat [T.pack (show i)," \\mapsto ",toTeX c,", "]) sub
+                   sig = sig(lnode) ++ sig(rnode)
                    }:prevlist
 forwardFunctionApplicationRule _ _ prevlist = prevlist
 
@@ -447,7 +466,8 @@ backwardFunctionApplicationRule lnode@(Node {cat=y1, sem=a}) rnode@(Node {rs=r, 
                         sem = betaReduce $ transvec newcat $ betaReduce $ App f a,
                         daughters = [lnode,rnode],
                         score = score(lnode)*score(rnode),
-                        source = "" -- pf(lnode) `T.append` pf(rnode)
+                        source = "", -- pf(lnode) `T.append` pf(rnode)
+                        sig = sig(lnode) ++ sig(rnode)
                         }:prevlist
 backwardFunctionApplicationRule _ _ prevlist = prevlist
 
@@ -473,7 +493,8 @@ forwardFunctionComposition1Rule lnode@(Node {rs=r,cat=SL x y1, sem=f}) rnode@(No
                sem = betaReduce $ transvec newcat $ betaReduce $ (Lam (App f (App g (Var 0)))),
                daughters = [lnode,rnode],
                score = score(lnode)*score(rnode),
-               source = ""
+               source = "",
+               sig = sig(lnode) ++ sig(rnode)
                }:prevlist
 forwardFunctionComposition1Rule _ _ prevlist = prevlist
 
@@ -495,7 +516,8 @@ backwardFunctionComposition1Rule lnode@(Node {cat=BS y1 z, sem=g}) rnode@(Node {
                         sem = betaReduce $ transvec newcat $ betaReduce $ Lam (App f (App g (Var 0))),
                         daughters = [lnode,rnode],
                         score = score(lnode)*score(rnode),
-                        source = ""
+                        source = "",
+                        sig = sig(lnode) ++ sig(rnode)
                         }:prevlist
 backwardFunctionComposition1Rule _ _ prevlist = prevlist
 
@@ -521,7 +543,8 @@ forwardFunctionComposition2Rule lnode@(Node {rs=r,cat=(x `SL` y1), sem=f}) rnode
                         sem = betaReduce $ transvec newcat $ betaReduce $ Lam (Lam (App f (App (App g (Var 1)) (Var 0)))),
                         daughters = [lnode,rnode],
                         score = score(lnode)*score(rnode),
-                        source = ""
+                        source = "",
+                        sig = sig(lnode) ++ sig(rnode)
                         }:prevlist
 forwardFunctionComposition2Rule _ _ prevlist = prevlist
 
@@ -543,7 +566,8 @@ backwardFunctionComposition2Rule lnode@(Node {cat=(y1 `BS` z1) `BS` z2, sem=g}) 
                         sem = betaReduce $ transvec newcat $ betaReduce $ Lam (Lam (App f (App (App g (Var 1)) (Var 0)))),
                         daughters = [lnode,rnode],
                         score = score(lnode)*score(rnode),
-                        source = ""
+                        source = "",
+                        sig = sig(lnode) ++ sig(rnode)
                         }:prevlist
 backwardFunctionComposition2Rule _ _ prevlist = prevlist
 
@@ -565,7 +589,8 @@ backwardFunctionComposition3Rule lnode@(Node {cat=((y1 `BS` z1) `BS` z2) `BS` z3
                         sem = betaReduce $ transvec newcat $ betaReduce $ Lam (Lam (Lam (App f (App (App (App g (Var 2)) (Var 1)) (Var 0))))),
                         daughters = [lnode,rnode],
                         score = score(lnode)*score(rnode),
-                        source = ""
+                        source = "",
+                        sig = sig(lnode) ++ sig(rnode)
                         }:prevlist
 backwardFunctionComposition3Rule _ _ prevlist = prevlist
 
@@ -592,7 +617,8 @@ forwardFunctionCrossedComposition1Rule lnode@(Node {rs=r,cat=SL x y1, sem=f}) rn
             sem = betaReduce $ transvec newcat $ betaReduce $ (Lam (App f (App g (Var 0)))),
             daughters = [lnode,rnode],
             score = score(lnode)*score(rnode)*(100 % 100), -- degrade the score when this rule is used.
-            source = ""
+            source = "",
+            sig = sig(lnode) ++ sig(rnode)
             }:prevlist
 forwardFunctionCrossedComposition1Rule _ _ prevlist = prevlist
 
@@ -618,13 +644,14 @@ forwardFunctionCrossedComposition2Rule lnode@(Node {rs=r,cat=(x `SL` y1), sem=f}
                         sem = betaReduce $ transvec newcat $ betaReduce $ Lam (Lam (App f (App (App g (Var 1)) (Var 0)))),
                         daughters = [lnode,rnode],
                         score = score(lnode)*score(rnode)*(99 % 100), -- degrade the score more when this rule is used.
-                        source = ""
+                        source = "",
+                        sig = sig(lnode) ++ sig(rnode)
                         }:prevlist
 forwardFunctionCrossedComposition2Rule _ _ prevlist = prevlist
 
 -- | Forward functional crossed substitution rule
 forwardFunctionCrossedSubstitutionRule :: Node -> Node -> [Node] -> [Node]
-forwardFunctionCrossedSubstitutionRule lnode@(Node {rs=r,cat=((x `SL` y1) `BS` z1), sem=f}) rnode@(Node {cat=(y2 `BS` z2), sem=g}) prevlist =
+forwardFunctionCrossedSubstitutionRule lnode@(Node {rs=_,cat=((x `SL` y1) `BS` z1), sem=f}) rnode@(Node {cat=(y2 `BS` z2), sem=g}) prevlist =
   -- [>Sx] x/y1\z:f  y2\z:g  ==> x\z: \x.(fx)(gx)
   if False -- r == FFC1 || r == FFC2 || r == FFC3 || (isNoncaseNP y1) || not (isArgumentCategory z2) || not (isArgumentCategory z1) -- Non-normal forms + Ad-hoc rule
   then prevlist
@@ -644,7 +671,8 @@ forwardFunctionCrossedSubstitutionRule lnode@(Node {rs=r,cat=((x `SL` y1) `BS` z
                         sem = betaReduce $ transvec newcat $ betaReduce $ Lam (App (App f (Var 0)) (App g (Var 0))),
                         daughters = [lnode,rnode],
                         score = score(lnode)*score(rnode)*(100 % 100),
-                        source = ""
+                        source = "",
+                        sig = sig(lnode) ++ sig(rnode)
                         }:prevlist
 forwardFunctionCrossedSubstitutionRule _ _ prevlist = prevlist
 
@@ -669,7 +697,8 @@ coordinationRule lnode@(Node {cat=x1, sem=s1}) cnode@(Node {cat=c, sem=conj}) rn
               sem = betaReduce $ transvec newcat $ betaReduce $ Lamvec (App (App conj (Appvec 0 s1)) (Appvec 0 s2)),
               daughters = [lnode,cnode,rnode],
               score = score(lnode)*score(rnode),
-              source = ""
+              source = "",
+              sig = sig(lnode) ++ sig(rnode)
               }:prevlist
     _ -> prevlist
 
@@ -683,7 +712,8 @@ parenthesisRule lnode@(Node {cat=LPAREN}) cnode rnode@(Node {cat=RPAREN}) prevli
     sem = sem(cnode),
     daughters = [lnode,cnode,rnode],
     score = score(cnode),
-    source = ""
+    source = "",
+    sig = sig(lnode) ++ sig(rnode)
     }:prevlist
 parenthesisRule _ _ _ prevlist = prevlist
 
@@ -941,8 +971,8 @@ transvec c preterm = case c of
 
 {- Some Macros for defining lexical items -}
 
-lexicalitem :: T.Text -> T.Text -> Integer -> Cat -> Preterm -> Node
-lexicalitem word num r c s = Node {rs=LEX, pf=word, cat=c, sem=s, daughters=[], score=(r % 100), source=num}
+lexicalitem :: T.Text -> T.Text -> Integer -> Cat -> Preterm -> [Signature] -> Node
+lexicalitem pf' source' score' cat' sem' sig'= Node {rs=LEX, pf=pf', cat=cat', sem=sem', daughters=[], score=(score' % 100), source=source', sig=sig'}
 
 {- Some Marcos for CCG categories/features -}
 
@@ -984,11 +1014,30 @@ id = Lam (Var 0)
 -- i==2 -> S\NP\NP:       \y.\x.\c.(e:event)X(op(e,x,y)X(ce)
 -- i==3 -> S\NP\NP\NP: \z.\y.\x.\c.(e:event)X(op(e,x,y,z)X(ce)
 -- i==4 -> error
+
 verbSR :: Int -> T.Text -> Preterm
 verbSR i op | i == 1 = (Lam (Lam (Sigma (Con "event") (Sigma (App (App (Con op) (Var 2)) (Var 0)) (App (Var 2) (Var 1))))))
             | i == 2 = (Lam (Lam (Lam (Sigma (Con "event") (Sigma (App (App (App (Con op) (Var 3)) (Var 2)) (Var 0)) (App (Var 2) (Var 1)))))))
             | i == 3 = (Lam (Lam (Lam (Lam (Sigma (Con "event") (Sigma (App (App (App (App (Con op) (Var 4)) (Var 3)) (Var 2)) (Var 0)) (App (Var 2) (Var 1))))))))
             | otherwise = Con $ T.concat ["verbSR: verb ",op," of ", T.pack (show i), " arguments"]
+
+nPlaceEventType :: Int -> Preterm
+nPlaceEventType i
+  | i < 0 = Con $ T.concat ["nPlaceEvent with: ", T.pack (show i)]
+  | i == 0 = Pi (Con "event") Type
+  | otherwise = Pi (Con "entity") (nPlaceEventType (i-1))
+
+nPlaceStateType :: Int -> Preterm
+nPlaceStateType i
+  | i < 0 = Con $ T.concat ["nPlaceState with: ", T.pack (show i)]
+  | i == 0 = Pi (Con "state") Type
+  | otherwise = Pi (Con "entity") (nPlaceStateType (i-1))
+
+nPlacePredType :: Int -> Preterm
+nPlacePredType i
+  | i < 0 = Con $ T.concat ["nPlacePred with: ", T.pack (show i)]
+  | i == 0 = Type
+  | otherwise = Pi (Con "entity") (nPlaceStateType (i-1))
 
 -- | S\NP: \x.\c.(s:state)Xop(s,x)X(ce)
 predSR :: Int -> T.Text -> Preterm
@@ -1008,6 +1057,9 @@ commonNounSR op = (Lam (Lam (Sigma (Con "state") (Sigma (App (App (Con op) (Var 
 modal :: T.Text -> Preterm 
 modal op = (Lam (Lam (App (Con op) (App (Var 1) (Var 0)))))
 
+modalType :: Preterm
+modalType = Pi Type Type
+
 -- | 
 -- >>> S\NP\(S\NP):    \p.\x.\c.op(x,\z.(pz)c)
 -- >>> S\NP\NP\(S\NP): \p.\y.\x.\c.op(x,\z.((py)z)c)
@@ -1016,10 +1068,16 @@ intensionalEvent i op | i == 1 = (Lam (Lam (Lam (Sigma (Con "event") (Sigma (App
                      | i == 2 = (Lam (Lam (Lam (Lam (App (App (Con op) (Lam (App (App (Var 4) (Var 3)) (Var 1)))) (Var 1))))))
                      | otherwise = Con $ T.concat ["intensionalEvent: verb ",op," of ", T.pack (show i), " arguments"]
 
+intensionalEventType :: Preterm
+intensionalEventType = Pi (Pi (Con "entity") Type) (Pi (Con "entity") (Pi (Con "event") Type))
+
 intensionalState :: Int -> T.Text -> Preterm 
 intensionalState i op | i == 1 = (Lam (Lam (Lam (Sigma (Con "state") (Sigma (App (App (App (Con op) (Lam (App (App (Var 4) (Var 0)) (Lam Top)))) (Var 2)) (Var 0)) (App (Var 2) (Var 1)))))))
                      | i == 2 = (Lam (Lam (Lam (Lam (App (App (Con op) (Lam (App (App (Var 4) (Var 3)) (Var 1)))) (Var 1))))))
                      | otherwise = Con $ T.concat ["intensionalState: verb ",op," of ", T.pack (show i), " arguments"]
+
+intensionalStateType :: Preterm
+intensionalStateType = Pi (Pi (Con "entity") Type) (Pi (Con "entity") (Pi (Con "state") Type))
 
 -- | T/T: \p.\v.\c.pv(\e.(op e) X ce)
 mannerAdverb :: T.Text -> Preterm 
@@ -1028,6 +1086,9 @@ mannerAdverb op = (Lam (Lamvec (Lam (App (Appvec 1 (Var 2)) (Lam (Sigma (App (Co
 -- | S\S: \p.\c.p(\e.(op e) X ce)
 eventModifier :: T.Text -> Preterm 
 eventModifier op = (Lam (Lam (App (Var 1) (Lam (Sigma (App (Con op) (Var 0)) (App (Var 2) (Var 1)))))))
+
+eventModifierType :: Preterm
+eventModifierType = Pi (Con "event") Type
 
 -- | S\S: \p.\c.not (pc)
 negOperator :: Preterm -- 
