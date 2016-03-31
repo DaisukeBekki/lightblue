@@ -165,45 +165,49 @@ instance Typeset Node where
 
 instance Typeset Cat where
   toTeX category = case category of
-    S x1 x2 x3 -> T.concat [
-                    "S\\f{",
-                    printF x1,",",
-                    printF x2,",",
-                    pmFeatures2TeX x3,
-                    "}"
-                    ]
-    NP cas      -> T.concat ["\\np\\f{",(printF cas),"}"]
-    Sbar x      -> T.concat ["\\bar{S}\\f{",(printF x),"}"]
-    N           -> "N"
-    CONJ        -> "\\conj"
-    LPAREN      -> "LPAREN"
-    RPAREN      -> "RPAREN"
     SL x y      -> T.concat [toTeX x, "/", toTeX' y]
     BS x y      -> T.concat [toTeX x, "{\\bs}", toTeX' y]
     T True i u  -> T.concat ["\\vT^{\\sq{",(T.pack $ show i),"}}_{",toTeX u,"}"]
     T False i u -> T.concat [toTeX' u, "^{\\sq{",(T.pack $ show i),"}}"]
+    S (pos:(conj:pm)) -> 
+                   T.concat [
+                     "S\\f{",
+                     printF pos,",",
+                     printF conj,",",
+                     pmfs2TeX pm,
+                     "}"
+                     ]
+    NP [cas]    -> T.concat ["\\np\\f{",(printF cas),"}"]
+    Sbar [sf]   -> T.concat ["\\bar{S}\\f{",(printF sf),"}"]
+    N           -> "N"
+    CONJ        -> "\\conj"
+    LPAREN      -> "LPAREN"
+    RPAREN      -> "RPAREN"
+    _ -> "Error: toTeX Cat"
 
 toTeX' :: Cat -> T.Text
 toTeX' c = if isBaseCategory c 
            then toTeX c
            else T.concat ["(", toTeX c, ")"]
 
-pmFeature2TeX :: Bool -> T.Text -> PMFeature -> Maybe T.Text
-pmFeature2TeX _ label pmf = case (label,pmf) of
-    (l,P)     -> Just $ T.concat ["{+}", l]
-    (_,M)     -> Nothing -- if shared then Just $ T.concat ["{-}", l] else Nothing
-    (l,PM)    -> Just $ T.concat ["{\\pm}", l]
-    (l,F i f) -> do
-                 x <- pmFeature2TeX True l f
+pmf2TeX :: Bool -> T.Text -> Feature -> Maybe T.Text
+pmf2TeX _ label pmf = case (label,pmf) of
+    (l,F [CCG.P])       -> Just $ T.concat ["{+}", l]
+    (_,F [CCG.M])       -> Nothing -- if shared then Just $ T.concat ["{-}", l] else Nothing
+    (l,F [CCG.P,CCG.M]) -> Just $ T.concat ["{\\pm}", l]
+    (l,F [CCG.M,CCG.P]) -> Just $ T.concat ["{\\pm}", l]
+    (l,SF i f) -> do
+                 x <- pmf2TeX True l (F f)
                  return $ T.concat [x,":\\sq{",T.pack (show i),"}"]
+    _ -> return $ T.pack "Error: pmf2TeX"
 
-pmFeatures2TeX :: [PMFeature] -> T.Text
-pmFeatures2TeX pmfs = T.intercalate "{,}" $ Maybe.catMaybes $ pmFeatures2TeXLoop ["t","p","n","N","T"] pmfs
+pmfs2TeX :: [Feature] -> T.Text
+pmfs2TeX pmfs = T.intercalate "{,}" $ Maybe.catMaybes $ pmfs2TeXLoop ["t","p","n","N","T"] pmfs
 
-pmFeatures2TeXLoop :: [T.Text] -> [PMFeature] -> [Maybe T.Text]
-pmFeatures2TeXLoop labels pmfs = case (labels,pmfs) of
+pmfs2TeXLoop :: [T.Text] -> [Feature] -> [Maybe T.Text]
+pmfs2TeXLoop labels pmfs = case (labels,pmfs) of
   ([],[])         -> []
-  ((l:ls),(p:ps)) -> (pmFeature2TeX False l p):(pmFeatures2TeXLoop ls ps)
+  ((l:ls),(p:ps)) -> (pmf2TeX False l p):(pmfs2TeXLoop ls ps)
   _ -> [Just $ T.concat ["Error: mismatch in ", T.pack (show labels), " and ", T.pack (show pmfs)]]
 
 instance Typeset RuleSymbol where

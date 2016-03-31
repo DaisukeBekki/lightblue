@@ -18,6 +18,7 @@ import qualified Data.Text.Lazy as T                 --text
 import qualified Data.Text.Lazy.IO as T              --text
 import qualified System.Process as S                 --process
 import CombinatoryCategorialGrammar
+import LexicalTemplates
 
 --import qualified Data.List as L
 --import qualified System.IO as S
@@ -47,8 +48,8 @@ jumanNouns2nodes jumancompnouns =
   let name = \j -> T.intercalate "~" $ reverse j in
   case jumancompnouns of
     [] -> []
-    ((JumanCompNP j):js) -> (lexicalitem (T.concat $ reverse j) "(CompN)" 95 (T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Nc])) (properNameSR (name j)) [((name j),nPlacePredType 1)]):(jumanNouns2nodes js)
-    ((JumanCompCN j):js) -> (lexicalitem (T.concat $ reverse j) "(CompN)" 95 (N) (commonNounSR (name j)) [((name j),nPlacePredType 1)]):(jumanNouns2nodes js)
+    ((JumanCompNP j):js) -> (lexicalitem (T.concat $ reverse j) "(CompN)" 95 (T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F [Nc]])) (properNameSR (name j))):(jumanNouns2nodes js)
+    ((JumanCompCN j):js) -> (lexicalitem (T.concat $ reverse j) "(CompN)" 95 (N) (commonNounSR (name j))):(jumanNouns2nodes js)
 
 -- | usage: findCompNouns jumanPairs [] 
 -- |   returns the list of pair (hyoso, predname)  

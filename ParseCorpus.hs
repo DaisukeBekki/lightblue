@@ -40,8 +40,8 @@ f mylexicon score s =
   lexicon <- CP.setupLexicon mylexicon (T.replace "―" "、" s)
   S.putStr $ "[" ++ show (j+1) ++ "] "
   T.putStrLn s
-  T.putStrLn $ "Beam width = 16:"
-  let (chart0,_) = CP.parseMain 16 lexicon s
+  -- T.putStrLn $ "Beam width = 64:"
+  let (chart0,nodes0) = CP.parseMain 64 lexicon s
   if CP.topBox chart0 /= []
     then
       do
@@ -50,6 +50,7 @@ f mylexicon score s =
       -- T.putStrLn $ T.concat ["yes\t", CCG.toText $ CCG.cat h, "\n\t", CCG.toText $ CCG.sem h, "\n"]
       return (i+1,j+1)
     else
+      {-
       do
       T.putStrLn $ "Beam width = 128:"
       let (chart1,nodes1) = CP.parseMain 128 lexicon s
@@ -61,9 +62,10 @@ f mylexicon score s =
           -- T.putStrLn $ T.concat ["yes\t", CCG.toText $ CCG.cat h, "\n\t", CCG.toText $ CCG.sem h, "\n"]
           return (i+1,j+1)
         else
+          -}
           do
           T.putStrLn $ T.concat ["Failed (", T.pack (show $ i), " out of ", T.pack (show $ j+1), "), showing the partial derivations:\n"]
-          mapM_ (T.putStrLn . (\l -> if l==[] then T.empty else CCG.toText $ head l) . CP.bestOnly) (reverse nodes1)
+          mapM_ (T.putStrLn . (\l -> if l==[] then T.empty else CCG.toText $ head l) . CP.bestOnly) (reverse nodes0)
           return (i,j+1)
 
 {-

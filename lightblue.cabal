@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                lightblue
-version:             0.1.0.0
+version:             0.1.1.0
 synopsis:            A CCG parser for Japanese with DTS-representation
 --description:
 license:             AllRightsReserved
@@ -19,7 +19,7 @@ cabal-version:       >=1.8
 
 library
   build-depends:     base == 4.*, process >= 1.2 && < 1.5, containers == 0.4.*, time == 1.4.*, text == 1.2.1.*, xml-conduit == 1.3.*
-  exposed-modules:   DependentTypes, CombinatoryCategorialGrammar, JapaneseLexicon, ChartParser, TeXmodule, XMLmodule, CallJuman, MyLexicon
+  exposed-modules:   DependentTypes, CombinatoryCategorialGrammar, JapaneseLexicon, ChartParser, TeXmodule, XMLmodule, CallJuman, MyLexicon, LexicalTemplates
   --other-modules:
 
 executable lightblue

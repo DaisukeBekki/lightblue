@@ -88,7 +88,7 @@ sOnly :: [CCG.Node] -> [CCG.Node]
 sOnly = filter isS
   where isS node = 
           case CCG.cat node of
-            CCG.S _ _ _ -> True
+            CCG.S _ -> True
             _ -> False
 
 {- Main functions -}
@@ -169,8 +169,8 @@ boxAccumulator beam lexicon (chart,word,i,j) c =
                 else [];
       list1 = checkUnaryRules list0;
       list2 = checkBinaryRules i j chart list1;
-      list3 = checkCoordinationRule i j chart list2;
-      list4 = checkParenthesisRule i j chart list3;
+--      list3 = checkCoordinationRule i j chart list2;
+      list4 = checkParenthesisRule i j chart list2;
       list5 = checkEmptyCategories list4 in
   ((M.insert (i,j) (cutoff beam list5) chart), newword, i-1, j)
 
@@ -197,6 +197,7 @@ checkBinaryRules i j chart prevlist =
          prevlist
          (take (j-i-1) [i+1..]) -- [k | i<k<j]
 
+{-
 checkCoordinationRule :: Int -> Int -> Chart -> [CCG.Node] -> [CCG.Node]
 checkCoordinationRule i j chart prevlist =
   foldl' (\acck k -> foldl' (\accc cnode -> foldl' (\accl lnode -> foldl' (\accr rnode -> CCG.coordinationRule lnode cnode rnode accr)
@@ -208,6 +209,7 @@ checkCoordinationRule i j chart prevlist =
                             (filter (\n -> (CCG.cat n)==CCG.CONJ) (lookupChart k (k+1) chart)))
          prevlist
          (take (j-i-2) [i+1..]) -- [k | i<k<j-1]  i-k k-k+1 k+1-j
+-}
 
 checkParenthesisRule :: Int -> Int -> Chart -> [CCG.Node] -> [CCG.Node]
 checkParenthesisRule i j chart prevlist 

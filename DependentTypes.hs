@@ -23,6 +23,8 @@ module DependentTypes (
   -- * Types
   Preterm(..),
   Selector(..),
+  Signature,
+  printSignatures,
   -- * Classes
   SimpleText(..),
   toTextDeBruijn,
@@ -70,6 +72,14 @@ data Preterm =
 -- | 'Proj' 'Fst' m is the first projection of m, while 'Proj' 'Snd' m is the second projection of m.
 data Selector = Fst | Snd
   deriving (Eq, Show)
+
+type Signature = (T.Text,Preterm)
+
+printSignature :: Signature -> T.Text
+printSignature (con,typ) = T.concat $ [toText (Con con), ":", toText typ]
+
+printSignatures :: [Signature] -> T.Text
+printSignatures sigs = T.concat ["[", (T.intercalate ", " $ map printSignature sigs), "]"]
 
 -- | A class 'SimpleText' has a method 'toText' that translates a SimpleText term into a simple text notation.
 class SimpleText a where
