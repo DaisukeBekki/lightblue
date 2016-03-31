@@ -96,7 +96,7 @@ emptyCategories = [
               ((Lam (Lam (Lamvec (Sigma (Sigma (Con "entity") (App (App (Var 3) (Var 0)) (Lam Top))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[]),
   -- 空助詞
   ec "cm" "(515)" 60
-              (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [F[Ga,O,Ni]]))) `BS` (NP [F[Nc]]))
+              (((T True 1 anySExStem) `SL` ((T True 1 anySExStem) `BS` (NP [F[Ga,O]]))) `BS` (NP [F[Nc]]))
               argumentCM,
   -- pro1
   ec "pro" "(597)" 98

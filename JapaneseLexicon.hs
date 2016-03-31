@@ -110,7 +110,7 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "特殊:括弧終" ct = [(RPAREN, (Unit, []))]
   -- T.isPrefixOf "数詞"           ct = [(N,id)]
   | T.isPrefixOf "感動詞"               ct  = [(defS [Exp] [Term], (id, []))]
-  | otherwise                              = [(defS [Error] [Term], ((Con $ T.concat [T.pack "Juman Error: ", ct]), []))]
+  | otherwise                              = [(defS [Exp] [Term], ((Con $ T.concat [T.pack "Juman Error: ", ct]), []))]
 
 constructProperName :: T.Text -> [(Cat, (Preterm, [Signature]))]
 constructProperName daihyo = [((T True 4 anySExStem `SL` (T True 4 anySExStem `BS` NP [F[Nc]])), properNameSR daihyo)]

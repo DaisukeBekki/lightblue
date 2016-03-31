@@ -28,15 +28,12 @@ module CombinatoryCategorialGrammar (
   unaryRules,
   binaryRules,
   -- trinaryRules  
-  --coordinationRule,
-  parenthesisRule,
-  -- Test code
-  test
+  coordinationRule,
+  parenthesisRule
   ) where
 
 import Prelude hiding (id)
 import qualified Data.Text.Lazy as T --text
-import qualified Data.Text.Lazy.IO as T --for test code only
 import qualified Data.List as L      --base
 import qualified Data.Maybe as Maybe --base
 import Data.Fixed                    --base
@@ -111,21 +108,21 @@ data Feature =
   deriving (Eq, Show)
 
 data FeatureValue =
-               V5k | V5s | V5t | V5n | V5m | V5r | V5w | V5g | V5z | V5b |
-               V5IKU | V5YUK | V5ARU | V5NAS | V5TOW |
-               V1 | VK | VS | VSN | VZ | VURU |
-               Aauo | Ai | ANAS | ATII | ABES |
-               Nda | Nna | Nno | Ntar | Nni | Nemp | Nto |
-               Exp | Error |
-               Stem | UStem | Neg | Cont | Term | Attr | Hyp | Imper | Pre |
-               NegL | TeForm | NiForm |
-               EuphT | EuphD |
-               ModU | ModD | ModS |
-               VoR | VoS | VoE |
-               P | M |
-               Nc | Ga | O | Ni | To | Niyotte | No |
-               ToCL | YooniCL
-               deriving (Eq)
+  V5k | V5s | V5t | V5n | V5m | V5r | V5w | V5g | V5z | V5b |
+  V5IKU | V5YUK | V5ARU | V5NAS | V5TOW |
+  V1 | VK | VS | VSN | VZ | VURU |
+  Aauo | Ai | ANAS | ATII | ABES |
+  Nda | Nna | Nno | Ntar | Nni | Nemp | Nto |
+  Exp | -- Error |
+  Stem | UStem | Neg | Cont | Term | Attr | Hyp | Imper | Pre |
+  NegL | TeForm | NiForm |
+  EuphT | EuphD |
+  ModU | ModD | ModS |
+  VoR | VoS | VoE |
+  P | M |
+  Nc | Ga | O | Ni | To | Niyotte | No |
+  ToCL | YooniCL
+  deriving (Eq)
 
 instance Show FeatureValue where
   show V5k = "v:5:k"
@@ -162,7 +159,7 @@ instance Show FeatureValue where
   show Ntar = "n:tar"
   show Nto  = "n:to"
   show Exp = "exp"
-  show Error = "error"
+  -- show Error = "error"
   --
   show Stem = "stem"
   show UStem = "ustem"
@@ -216,8 +213,8 @@ instance SimpleText Cat where
                        "]"
                        ]
     NP [cas]    -> T.concat ["NP[", printF cas, "]"]
-    N           -> "N"
     Sbar [sf]   -> T.concat ["Sbar[", printF sf, "]"]
+    N           -> "N"
     CONJ        -> "CONJ"
     LPAREN      -> "LPAREN"
     RPAREN      -> "RPAREN"
@@ -354,60 +351,6 @@ binaryRules lnode rnode =
   . forwardFunctionComposition1Rule lnode rnode
   . backwardFunctionApplicationRule lnode rnode
   . forwardFunctionApplicationRule lnode rnode
-
-{- Test -}
-
---plus :: [FeatureValue]
---plus = [P]
-
-minus :: [FeatureValue]
-minus = [M]
-
-pm :: [FeatureValue]
-pm = [P,M]
-
-verb :: [FeatureValue]
-verb = [V5k, V5s, V5t, V5n, V5m, V5r, V5w, V5g, V5z, V5b, V5IKU, V5YUK, V5ARU, V5NAS, V5TOW, V1, VK, VS, VSN, VZ, VURU]
-
-adjective :: [FeatureValue]
-adjective = [Aauo, Ai, ANAS, ATII, ABES]
-
-nomPred :: [FeatureValue]
-nomPred = [Nda, Nna, Nno, Nni, Nemp, Ntar]
-
-anyPos :: [FeatureValue]
-anyPos = verb ++ adjective ++ nomPred ++ [Exp]
-
-nonStem :: [FeatureValue]
-nonStem = [Neg, Cont, Term, Attr, Hyp, Imper, Pre, ModU, ModS, VoR, VoS, VoE, NegL, TeForm]
-
-anySExStem :: Cat
-anySExStem = S [F anyPos, F nonStem, SF 1 pm, SF 2 pm, SF 3 pm, F minus, F minus]
-
-test :: IO()
-test = do
-  let x = T True 1 anySExStem ;
-      y1 = T True 1 anySExStem `BS` NP [F [Nc]];
-      y2 = (T True 1 (S [F anyPos, F nonStem, SF 1 [P,M], SF 2 [P,M], SF 3 [P,M], F[M], F[M]]) `BS` T True 1 (S [F anyPos, F nonStem, SF 1 [P,M], SF 2 [P,M], SF 3 [P,M], F[M], F[M]])) `BS` NP [F [Nc]]
-  T.putStr "y1: "
-  T.putStrLn $ toText y1
-  T.putStr "y2: "
-  T.putStrLn $ toText y2
-  let inc = maximumIndexC y2
-  T.putStr "maximumIndexC y2: "
-  print $ maximumIndexC y2
-  T.putStr "incr.y1.inc: "    
-  print (incrementIndexC y1 inc)
-  let Just uc@(_,csub,fsub) = unifyCategory [] [] y2 (incrementIndexC y1 inc)
-  T.putStr "unifyCategory y2 (incr. y1 inc): "
-  print uc
-  T.putStr "csub: "
-  print csub
-  T.putStr "fsub: "
-  print fsub
-  let newcat = simulSubstituteCV csub fsub (incrementIndexC x inc)
-  T.putStr "newcat: "
-  T.putStrLn $ toText newcat
 
 -- | Forward function application rule.
 forwardFunctionApplicationRule :: Node -> Node -> [Node] -> [Node]
@@ -663,21 +606,15 @@ forwardFunctionCrossedSubstitutionRule lnode@(Node {rs=_,cat=((x `SL` y1) `BS` z
                         }:prevlist
 forwardFunctionCrossedSubstitutionRule _ _ prevlist = prevlist
 
-{-
 -- | Coordination rule.
 coordinationRule :: Node -> Node -> Node -> [Node] -> [Node]
 coordinationRule lnode@(Node {cat=x1, sem=s1}) cnode@(Node {cat=c, sem=conj}) rnode@(Node {cat=x2, sem=s2}) prevlist =
   -- [<Phi>] x1:f1  CONJ  x2:f2  ==>  x:\lambda\vec{x} (conj f1\vec{x}) f2\vec{x}
   case (x1,c,x2) of
-    ((T True i (S _ a2 a3) `SL` (T True j (S _ b2 b3) `BS` NP [Nc])),CONJ,(T True _ (S c1 c2 c3) `SL` (T True _ (S d1 d2 d3) `BS` NP [Nc]))) -> 
-      let e2 = L.intersect a2 c2; f2 = L.intersect b2 d2 in
-      -- let inc = max (maximumIndexC x1) (maximumIndexC x2) in
-      if e2==[] || f2==[]
-      then prevlist
-      else 
-        case do; (e3,fsub) <- unifyFeatures [] a3 c3; (f3,_) <- unifyFeatures fsub b3 d3; return (e3,f3) of
-          Nothing -> prevlist
-          Just (e3,f3) -> let newcat = (T True i (S c1 e2 e3) `SL` (T True j (S d1 f2 f3) `BS` NP [Nc])) in
+    ((T True i (S (_:as)) `SL` (T True j (S (_:bs)) `BS` NP [F[Nc]])),CONJ,(T True _ (S (c:cs)) `SL` (T True _ (S (d:ds)) `BS` NP [F[Nc]]))) -> 
+      case do; (es,fsub) <- unifyFeatures [] as cs; (fs,_) <- unifyFeatures fsub bs ds; return (es,fs) of
+        Nothing -> prevlist
+        Just (es,fs) -> let newcat = (T True i (S (c:es)) `SL` (T True j (S (d:fs)) `BS` NP [F[Nc]])) in
             Node {
               rs = COORD,
               pf = T.concat [pf(lnode),pf(cnode),pf(rnode)],
@@ -689,7 +626,6 @@ coordinationRule lnode@(Node {cat=x1, sem=s1}) cnode@(Node {cat=c, sem=conj}) rn
               sig = sig(lnode) ++ sig(rnode)
               }:prevlist
     _ -> prevlist
--}
 
 -- | Parenthesis rule.
 parenthesisRule :: Node -> Node -> Node -> [Node] -> [Node]
