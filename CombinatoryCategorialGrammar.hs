@@ -120,7 +120,7 @@ data FeatureValue =
   Stem | UStem | Neg | Cont | Term | Attr | Hyp | Imper | Pre |
   NegL | TeForm | NiForm |
   EuphT | EuphD |
-  ModU | ModD | ModS |
+  ModU | ModD | ModS | ModM | 
   VoR | VoS | VoE |
   P | M |
   Nc | Ga | O | Ni | To | Niyotte | No |
@@ -181,6 +181,7 @@ instance Show FeatureValue where
   show ModU = "mod:u"
   show ModD = "mod:d"
   show ModS = "mod:s"
+  show ModM = "mod:m"
   show VoR = "vo:r"
   show VoS = "vo:s"
   show VoE = "vo:e"
