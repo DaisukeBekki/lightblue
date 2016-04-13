@@ -23,6 +23,7 @@ module ChartParser (
   topBox,
   bestOnly,
   sOnly,
+  CCG.Node(..),
   -- * 
   L.myLexicon,
   L.setupLexicon
@@ -54,7 +55,7 @@ printChart handle chart = mapM_ printList $ M.toList $ M.filter (/= []) chart
 printChartInSimpleText :: S.Handle -> [CCG.Node] -> IO()
 printChartInSimpleText handle nodes = 
   do
-  mapM_ (\node -> S.hPutStr handle $ (T.unpack $ CCG.toText node) ++ "\n") nodes
+  mapM_ (\node -> S.hPutStr handle $ (T.unpack $ CCG.toText node) ++ (take 100 $ repeat '-') ++ "\n") nodes
   S.hPutStrLn handle $ "Number of nodes: " ++ show (length nodes)
 
 -- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style

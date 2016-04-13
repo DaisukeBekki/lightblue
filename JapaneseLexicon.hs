@@ -41,7 +41,7 @@ lookupLexicon word lexicon = filter (\l -> (pf l) == word) lexicon
 -- | This function takes a sentence and returns a numeration needed to parse that sentence, i.e., a union of 
 setupLexicon :: Lexicon -> T.Text -> IO(Lexicon)
 setupLexicon mylexicon sentence = do
-  jumandic <- T.readFile "/home/bekki/dropbox/MyProgram/Haskell/CCG04/Juman.dic"
+  jumandic <- T.readFile "/home/bekki/dropbox/MyProgram/Haskell/CCG05/Juman.dic"
   let jumandicFiltered = concat $ map parseJumanLine $ filter (\l -> (head l) `T.isInfixOf` sentence) $ map (T.split (=='\t')) (T.lines jumandic)
   let mylexiconFiltered = filter (\l -> T.isInfixOf (pf l) sentence) mylexicon
   jumanCN <- JU.jumanCompoundNouns sentence
@@ -52,9 +52,10 @@ setupLexicon mylexicon sentence = do
 parseJumanLine :: [T.Text] -> [Node]
 parseJumanLine jumanline = 
   case jumanline of
-    (hyoki:(score':(cat':(daihyo':(source':(caseframe:_)))))) -> 
-      let catsemlist = jumanPos2Cat daihyo' cat' caseframe in
-      [(lexicalitem hyoki (T.concat ["(J",T.take 3 source',")"]) (read (T.unpack score')::Integer) cat2 (sem2,sig2)) | (cat2,(sem2,sig2)) <- catsemlist] --(T.concat [daihyo',":",cat']))
+    (hyoki:(score':(cat':(daihyo':(yomi':(source':(caseframe:_))))))) -> 
+      let catsemlist = jumanPos2Cat (T.concat [daihyo',"/",yomi']) cat' caseframe in
+      -- let catsemlist = jumanPos2Cat daihyo' cat' caseframe in
+      [(lexicalitem hyoki (T.concat ["(J",T.take 3 source',")"]) (read (T.unpack score')::Integer) cat2 semsig) | (cat2,semsig) <- catsemlist] --(T.concat [daihyo',":",cat']))
     _ -> []
 
 -- | Main function 1 "jumanPos2Cat" that converts Juman entries to lexical items
@@ -93,16 +94,16 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "形容詞:ナ形容詞特殊"    ct = constructPredicate daihyo [Nda,Nna] -- 同じ
   | T.isPrefixOf "形容詞:ナノ形容詞"     ct = constructPredicate daihyo [Nda,Nna,Nno]
   | T.isPrefixOf "形容詞:タル形容詞"     ct = constructPredicate daihyo [Ntar,Nto]
-  | T.isPrefixOf "副詞"   ct  = constructPredicate daihyo [Nda,Nna,Nno,Nni,Nemp]
+  | T.isPrefixOf "副詞"   ct  = constructPredicate daihyo [Nda,Nna,Nno,Nni,Nto,Nemp]
   | T.isPrefixOf "連体詞" ct  = [(N `SL` N, ((Lam (Lam (Lam (Sigma (App (App (Var 2) (Var 1)) (Var 0)) (App (Con daihyo) (Var 0)))))), [(daihyo, nPlacePredType 1)]))]
   | T.isPrefixOf "接続詞" ct = [((T False 1 (S [F anyPos, F[Term,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]])) `SL` T False 1 (S [F anyPos, F[Term,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]]), (id, []))]
   | T.isPrefixOf "接頭辞:名詞接頭辞" ct   = [(N `SL` N, ((Lam (Lam (Lam (App (App (Var 2) (Var 1)) (Lam (Sigma (App (Con daihyo) (Var 0)) (App (Var 2) (Var 1)))))))), [(daihyo, nPlacePredType 1)]))]
   | T.isPrefixOf "接頭辞:動詞接頭辞" ct   = [((T False 1 (defS verb [Stem]) `SL` (T False 1 (defS verb [Stem]))), ((Lam (Lam (App (Var 1) (Lam (Sigma (App (Con daihyo) (Var 0)) (App (Var 2) (Var 1))))))), [(daihyo, nPlacePredType 1)]))]
   | T.isPrefixOf "接頭辞:イ形容詞接頭辞"  ct   = [((defS [Aauo] [Stem] `BS` NP [F[Ga]]) `SL` (defS [Aauo] [Stem] `BS` NP [F[Ga]]), (id, []))]
   | T.isPrefixOf "接頭辞:ナ形容詞接頭辞"  ct   = [((defS [Nda] [Stem] `BS` NP [F[Ga]]) `SL` (defS [Nda] [Stem] `BS` NP [F[Ga]]), (id, []))]
-  | T.isPrefixOf "接尾辞:名詞性名詞助数辞" ct  = constructCommonNoun daihyo
+  | T.isPrefixOf "接尾辞:名詞性名詞助数辞" ct  = constructCommonNoun daihyo -- ビット、ヘクトパスカル
+  -- | T.isPrefixOf "接尾辞:名詞性名詞接尾辞" ct  = [((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Nc]])) `BS` N), ((Lam n (Lam p (Lam c ()))), []) ]
   | T.isPrefixOf "接尾辞:名詞性特殊接尾辞" ct  = constructCommonNoun daihyo
-  | T.isPrefixOf "接尾辞:名詞性名詞接尾辞" ct  = constructCommonNoun daihyo
   | T.isPrefixOf "接尾辞:名詞性述語接尾辞" ct  = constructCommonNoun daihyo
   --  T.isPrefixOf "特殊:句点" ct = 
   --  T.isPrefixOf "特殊:読点" ct = 
@@ -113,7 +114,7 @@ jumanPos2Cat daihyo ct caseframe
   | otherwise                              = [(defS [Exp] [Term], ((Con $ T.concat [T.pack "Juman Error: ", ct]), []))]
 
 constructProperName :: T.Text -> [(Cat, (Preterm, [Signature]))]
-constructProperName daihyo = [((T True 4 anySExStem `SL` (T True 4 anySExStem `BS` NP [F[Nc]])), properNameSR daihyo)]
+constructProperName daihyo = [((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Nc]])), properNameSR daihyo)]
 
 constructPredicate :: T.Text -> [FeatureValue] -> [(Cat, (Preterm, [Signature]))]
 constructPredicate daihyo cpos = [(defS cpos [Stem] `BS` NP [F[Ga]], predSR 1 daihyo)]
@@ -124,7 +125,7 @@ constructCommonNoun daihyo = [(N, commonNounSR daihyo)]
 constructVerb :: T.Text -> T.Text -> [FeatureValue] -> [FeatureValue] -> [(Cat, (Preterm, [Signature]))]
 constructVerb daihyo caseframe posF conjF =
   if caseframe == T.empty
-    then [((defS posF conjF `BS` NP [F[Ga]]) `BS` NP [F[Ni,O]], verbSR 2 daihyo)]
+    then [(defS posF conjF `BS` NP [F[Ga]], verbSR 1 daihyo)]
     else let caseframelist = map (T.split (==',')) $ T.split (=='#') caseframe in
          [(verbCat cf (defS posF conjF), (verbSR (length cf) daihyo)) | cf <- caseframelist]
 
@@ -134,7 +135,7 @@ verbCat cf ct = case cf of
   (c:cs) | c == "ガ格" -> (verbCat cs ct) `BS` NP [F[Ga]]
          | c == "ヲ格" -> (verbCat cs ct) `BS` NP [F[O]]
          | c == "ニ格" -> (verbCat cs ct) `BS` NP [F[Ni]]
-         | c == "ト格" -> (verbCat cs ct) `BS` NP [F[To]]
+         -- | c == "ト格" -> (verbCat cs ct) `BS` NP [F[To]]
          | c == "ト節" -> (verbCat cs ct) `BS` Sbar [F[ToCL]]
          | c == "によって" -> (verbCat cs ct) `BS` NP [F[Niyotte]]
          | otherwise -> (verbCat cs ct)

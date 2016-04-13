@@ -29,11 +29,14 @@ module CombinatoryCategorialGrammar (
   binaryRules,
   -- trinaryRules  
   coordinationRule,
-  parenthesisRule
+  parenthesisRule,
+  -- test
+  test
   ) where
 
 import Prelude hiding (id)
 import qualified Data.Text.Lazy as T --text
+import qualified Data.Text.Lazy.IO as T -- for test only
 import qualified Data.List as L      --base
 import qualified Data.Maybe as Maybe --base
 import Data.Fixed                    --base
@@ -200,7 +203,7 @@ instance SimpleText Cat where
   toText category = case category of
     SL x y      -> T.concat [toText x, "/", toText' y]
     BS x y      -> T.concat [toText x, "\\", toText' y]
-    T True i c     -> T.concat ["T[", toText c, "]<", (T.pack $ show i),">"]
+    T True i c     -> T.concat ["T[",toText c,"]<", (T.pack $ show i),">"]
     T False i c     -> T.concat [toText c, "<", (T.pack $ show i), ">"]
     S (pos:(conj:pmf)) -> 
               T.concat [
@@ -351,6 +354,64 @@ binaryRules lnode rnode =
   . forwardFunctionComposition1Rule lnode rnode
   . backwardFunctionApplicationRule lnode rnode
   . forwardFunctionApplicationRule lnode rnode
+
+{- Test -}
+
+--plus :: [FeatureValue]
+--plus = [P]
+
+minus :: [FeatureValue]
+minus = [M]
+
+pm :: [FeatureValue]
+pm = [P,M]
+
+verb :: [FeatureValue]
+verb = [V5k, V5s, V5t, V5n, V5m, V5r, V5w, V5g, V5z, V5b, V5IKU, V5YUK, V5ARU, V5NAS, V5TOW, V1, VK, VS, VSN, VZ, VURU]
+
+adjective :: [FeatureValue]
+adjective = [Aauo, Ai, ANAS, ATII, ABES]
+
+nomPred :: [FeatureValue]
+nomPred = [Nda, Nna, Nno, Nni, Nemp, Ntar]
+
+anyPos :: [FeatureValue]
+anyPos = verb ++ adjective ++ nomPred ++ [Exp]
+
+nonStem :: [FeatureValue]
+nonStem = [Neg, Cont, Term, Attr, Hyp, Imper, Pre, ModU, ModS, VoR, VoS, VoE, NegL, TeForm]
+
+anySExStem :: Cat
+anySExStem = S [F anyPos, F nonStem, SF 1 pm, SF 2 pm, SF 3 pm, F minus, F minus]
+
+test :: IO()
+test = do
+  let x = T True 1 anySExStem ;
+      y1 = T True 1 anySExStem `BS` NP [F [Nc]];
+      y2 = (T True 1 (S [F anyPos, F nonStem, SF 1 [P,M], SF 2 [P,M], SF 3 [P,M], F[M], F[M]]) `BS` T True 1 (S [F anyPos, F nonStem, SF 1 [P,M], SF 2 [P,M], SF 3 [P,M], F[M], F[M]])) `BS` NP [F [Nc]]
+  T.putStrLn "Functional application: x/y1 y2"
+  T.putStr "x: "    
+  T.putStrLn $ toText x
+  T.putStr "y1: "
+  T.putStrLn $ toText y1
+  T.putStr "y2: "
+  T.putStrLn $ toText y2
+  let inc = maximumIndexC y2
+  T.putStr "maximumIndexC y2: "
+  print $ maximumIndexC y2
+  T.putStr "increment y1 by inc: "    
+  print (incrementIndexC y1 inc)
+  let Just uc@(_,csub,fsub) = unifyCategory [] [] y2 (incrementIndexC y1 inc)
+  T.putStr "unifyCategory y2 (incr. y1 inc): "
+  print uc
+  T.putStr "csub: "
+  print csub
+  T.putStr "fsub: "
+  print fsub
+  let newcat = simulSubstituteCV csub fsub (incrementIndexC x inc)
+  T.putStr "newcat: "
+  T.putStrLn $ toText newcat
+
 
 -- | Forward function application rule.
 forwardFunctionApplicationRule :: Node -> Node -> [Node] -> [Node]
@@ -608,10 +669,10 @@ forwardFunctionCrossedSubstitutionRule _ _ prevlist = prevlist
 
 -- | Coordination rule.
 coordinationRule :: Node -> Node -> Node -> [Node] -> [Node]
-coordinationRule lnode@(Node {cat=x1, sem=s1}) cnode@(Node {cat=c, sem=conj}) rnode@(Node {cat=x2, sem=s2}) prevlist =
+coordinationRule lnode@(Node {cat=x1, sem=s1}) cnode@(Node {cat=CONJ, sem=conj}) rnode@(Node {cat=x2, sem=s2}) prevlist =
   -- [<Phi>] x1:f1  CONJ  x2:f2  ==>  x:\lambda\vec{x} (conj f1\vec{x}) f2\vec{x}
-  case (x1,c,x2) of
-    ((T True i (S (_:as)) `SL` (T True j (S (_:bs)) `BS` NP [F[Nc]])),CONJ,(T True _ (S (c:cs)) `SL` (T True _ (S (d:ds)) `BS` NP [F[Nc]]))) -> 
+  case (x1,x2) of
+    ((T True i (S (_:as)) `SL` (T True j (S (_:bs)) `BS` NP [F[Nc]])),(T True _ (S (c:cs)) `SL` (T True _ (S (d:ds)) `BS` NP [F[Nc]]))) -> 
       case do; (es,fsub) <- unifyFeatures [] as cs; (fs,_) <- unifyFeatures fsub bs ds; return (es,fs) of
         Nothing -> prevlist
         Just (es,fs) -> let newcat = (T True i (S (c:es)) `SL` (T True j (S (d:fs)) `BS` NP [F[Nc]])) in
@@ -626,6 +687,7 @@ coordinationRule lnode@(Node {cat=x1, sem=s1}) cnode@(Node {cat=c, sem=conj}) rn
               sig = sig(lnode) ++ sig(rnode)
               }:prevlist
     _ -> prevlist
+coordinationRule _ _ _ prevlist = prevlist
 
 -- | Parenthesis rule.
 parenthesisRule :: Node -> Node -> Node -> [Node] -> [Node]
@@ -720,14 +782,33 @@ incrementIndexF fs i = case fs of
   ((SF j f2):fs2) -> (SF (i+j) f2):(incrementIndexF fs2 i)
   (fh:ft) -> fh:(incrementIndexF ft i)
 
+-- | Data for category/feature unification
+-- csub :: SubstData Cat
+-- fsub :: SubstData [FeatureValue]
+data SubstData a = SubstLink Int | SubstVal a deriving (Show, Eq)
+type Assignment a = [(Int,SubstData a)]
+
+-- | takes a key 'i' and a value 'v', an assignment function, and returns
+-- its 'i'-variant (that maps 'i' to 'v').
+alter :: (Ord a, Eq a) => a -> b -> [(a,b)] -> [(a,b)]
+alter i v mp = (i,v):(filter (\(j,_) -> i /= j) mp)
+
+-- | takes an assignment, an integer 'i' (as a key) and a value 'v',
+-- returns a pair of 'i' and its value if it exists,
+-- or a pair of 'i' and 'v' if it does not exists or an illegal link is found in the assignment.
+fetchValue :: Assignment a -> Int -> a -> (Int, a)
+fetchValue sub i v =
+  case L.lookup i sub of
+    Just (SubstLink j) | j < i -> fetchValue sub j v
+    Just (SubstVal v') -> (i,v')
+    _ -> (i,v)
+
 -- | substituteCateogoryVariable 
 --
 -- >>> T1 [1->X/Y] ==> X/Y
-simulSubstituteCV :: [(Int,Cat)] -> [(Int,Feature)] -> Cat -> Cat
+simulSubstituteCV :: Assignment Cat -> Assignment [FeatureValue] -> Cat -> Cat
 simulSubstituteCV csub fsub c = case c of
-    T f j c3 -> case L.lookup j csub of
-                  Just c4 -> simulSubstituteCV csub fsub c4
-                  Nothing -> T f j (simulSubstituteCV csub fsub c3)
+    T _ i _ -> snd $ fetchValue csub i c
     SL ca cb -> SL (simulSubstituteCV csub fsub ca) (simulSubstituteCV csub fsub cb)
     BS ca cb -> BS (simulSubstituteCV csub fsub ca) (simulSubstituteCV csub fsub cb)
     S f -> S (simulSubstituteFV fsub f)
@@ -735,18 +816,39 @@ simulSubstituteCV csub fsub c = case c of
     NP f -> NP (simulSubstituteFV fsub f)
     _ -> c
 
-unifyCategory :: [(Int,Cat)] -> [(Int,Feature)] -> Cat -> Cat -> Maybe (Cat, [(Int,Cat)], [(Int,Feature)])
-unifyCategory csub fsub c1 c2 = case (c1,c2) of
-  (T f1 i c3, T f2 j c4) -> do
-                            (c5,csub2,fsub2) <- unifyCategory csub fsub c3 c4
-                            return $ case () of
-                                       _ | i <= j    -> (T (f1 && f2) j c5, (i,(T (f1 && f2) j c5)):csub2, fsub2)
-                                         | otherwise -> (T (f1 && f2) i c5, (j,(T (f1 && f2) i c5)):csub2, fsub2)
-  (T f i c3, c4) -> do --- c4 is not T
-                    (c5,csub2,fsub2) <- if f == True 
-                                    then unifyWithHead csub fsub c3 c4
-                                    else unifyCategory csub fsub c3 c4
-                    return (c5,(i,c5):csub2,fsub2)
+unifyCategory :: Assignment Cat -> Assignment [FeatureValue] -> Cat -> Cat -> Maybe (Cat, Assignment Cat, Assignment [FeatureValue])
+unifyCategory csub fsub c1 c2 =
+  let c1' = case c1 of
+              T _ i _ -> snd $ fetchValue csub i c1
+              _ -> c1 in
+  let c2' = case c2 of
+              T _ j _ -> snd $ fetchValue csub j c2
+              _ -> c2 in
+  unifyCategory2 csub fsub c1' c2'
+
+unifyCategory2 :: Assignment Cat -> Assignment [FeatureValue] -> Cat -> Cat -> Maybe (Cat, Assignment Cat, Assignment [FeatureValue])
+unifyCategory2 csub fsub c1 c2 = case (c1,c2) of
+  (T f1 i u1, T f2 j u2) ->
+    if i == j
+       then Just (c1,csub,fsub)
+       else do
+            (u3,csub2,fsub2) <- case (f1,f2) of
+                                  (True,True) -> unifyCategory2 csub fsub u1 u2
+                                  (True,False) -> unifyWithHead csub fsub u1 u2
+                                  (False,True) -> unifyWithHead csub fsub u2 u1
+                                  (False,False) -> unifyCategory2 csub fsub u1 u2
+            let ijmax = max i j; ijmin = min i j; result = T (f1 && f2) ijmin u3
+            Just (result, alter ijmin (SubstVal result) (alter ijmax (SubstLink ijmin) csub2), fsub2)
+  (T f i u, c) -> do
+                     (c3,csub2,fsub2) <- case f of
+                                           True -> unifyWithHead csub fsub u c
+                                           False -> unifyCategory csub fsub u c
+                     Just (c3, alter i (SubstVal c3) csub2, fsub2)
+  (c, T f i u) -> do
+                     (c3,csub2,fsub2) <- case f of
+                                           True -> unifyWithHead csub fsub u c
+                                           False -> unifyCategory csub fsub u c
+                     Just (c3, alter i (SubstVal c3) csub2, fsub2)
   (NP f1, NP f2) -> do
                     (f3,fsub2) <- unifyFeatures fsub f1 f2
                     return ((NP f3), csub, fsub2)
@@ -768,11 +870,10 @@ unifyCategory csub fsub c1 c2 = case (c1,c2) of
   (CONJ, CONJ)     -> Just (CONJ, csub, fsub)
   (LPAREN, LPAREN) -> Just (LPAREN, csub, fsub)
   (RPAREN, RPAREN) -> Just (RPAREN, csub, fsub)
-  (_, T _ _ _) -> unifyCategory csub fsub c2 c1
   _ -> Nothing
 
--- | Unify c1 with the head of c2
-unifyWithHead :: [(Int,Cat)] -> [(Int,Feature)] -> Cat -> Cat -> Maybe (Cat, [(Int,Cat)], [(Int,Feature)])
+-- | Unify c1 (in T True i c1) with the head of c2
+unifyWithHead :: Assignment Cat -> Assignment [FeatureValue] -> Cat -> Cat -> Maybe (Cat, Assignment Cat, Assignment [FeatureValue])
 unifyWithHead csub fsub c1 c2 = case c2 of
   SL x y -> do
             (x',csub2,fsub2) <- unifyWithHead csub fsub c1 x
@@ -781,72 +882,57 @@ unifyWithHead csub fsub c1 c2 = case c2 of
             (x',csub2,fsub2) <- unifyWithHead csub fsub c1 x
             return $ (BS x' y, csub2, fsub2)
   T f i u -> do
-           (x',csub2,fsub2) <- unifyCategory csub fsub c1 u
-           return $ (T f i x', csub2, fsub2)
-  bc -> do
-        (x',csub2,fsub2) <- unifyCategory csub fsub c1 bc
-        return (x', csub2, fsub2)
-
-getFeatureValue :: [(Int,Feature)] -> Int -> [FeatureValue] -> (Int, [FeatureValue])
-getFeatureValue fsub i v =
-  case L.lookup i fsub of
-    Just (SF j v') | j <= i -> getFeatureValue fsub j v'
-    Just (F v') -> (i,v')
-    _ -> (i,v)
+             (x',csub2,fsub2) <- unifyCategory csub fsub c1 u
+             return $ (T f i x', csub2, fsub2)
+  x -> unifyCategory csub fsub c1 x
 
 -- | substituteFeatureVariable
 --
 -- >>> F 1 f [1->PM] ==> f[PM/1]
-substituteFV :: [(Int,Feature)] -> Feature -> Feature
+substituteFV :: Assignment [FeatureValue] -> Feature -> Feature
 substituteFV fsub f1 = case f1 of
-  SF i v -> let (j,v') = getFeatureValue fsub i v in 
-            SF j v'
+  SF i v -> let (j,v') = fetchValue fsub i v in SF j v'
   _ -> f1
 
-simulSubstituteFV :: [(Int,Feature)] -> [Feature] -> [Feature]
+simulSubstituteFV :: Assignment [FeatureValue] -> [Feature] -> [Feature]
 simulSubstituteFV fsub = map (substituteFV fsub)
 
-alter :: (Ord a, Eq a) => a -> b -> [(a,b)] -> [(a,b)]
-alter i v mp = (i,v):(filter (\(j,_) -> i /= j) mp)
-
 -- | unifyFeature
-unifyFeature :: [(Int,Feature)] -> Feature -> Feature -> Maybe (Feature, [(Int,Feature)])
+unifyFeature :: Assignment [FeatureValue] -> Feature -> Feature -> Maybe (Feature, Assignment [FeatureValue])
 unifyFeature fsub f1 f2 = case (f1,f2) of
   (SF i v1, SF j v2) -> if i == j
                            then
-                             let (i',v1') = getFeatureValue fsub i v1;
+                             let (i',v1') = fetchValue fsub i v1;
                                  v3 = L.intersect v1' v2 in
                              if v3 == []
                                 then Nothing
-                                else 
-                                  let sf = SF i v3 in
-                                  Just (sf, (alter i' (F v3) fsub))
+                                else Just (SF i' v3, (alter i' (SubstVal v3) fsub))
                            else
-                             let (i',v1') = getFeatureValue fsub i v1;
-                                 (j',v2') = getFeatureValue fsub j v2;
+                             let (i',v1') = fetchValue fsub i v1;
+                                 (j',v2') = fetchValue fsub j v2;
                                  v3 = L.intersect v1' v2' in
                              if v3 == []
                                 then Nothing
                                 else
-                                  let sf = SF (min i' j') v3 in
-                                  Just (sf, (alter (max i' j') sf (alter (min i j) (F v3) fsub)))
-  (SF i v1, F v2) -> let (i',v1') = getFeatureValue fsub i v1;
+                                  let ijmax = max i' j'; ijmin = min i' j' in
+                                  Just (SF ijmin v3, (alter ijmax (SubstLink ijmin) (alter ijmin (SubstVal v3) fsub)))
+  (SF i v1, F v2) -> let (i',v1') = fetchValue fsub i v1;
                          v3 = L.intersect v1' v2 in
                      if v3 == []
                         then Nothing
-                        else Just (SF i' v3, (alter i' (F v3) fsub))
-  (F v1, SF j v2) -> let (j',v2') = getFeatureValue fsub j v2;
+                        else Just (SF i' v3, (alter i' (SubstVal v3) fsub))
+  (F v1, SF j v2) -> let (j',v2') = fetchValue fsub j v2;
                          v3 = L.intersect v1 v2' in
                      if v3 == []
                         then Nothing
-                        else Just (SF j' v3, (alter j' (F v3) fsub))
+                        else Just (SF j' v3, (alter j' (SubstVal v3) fsub))
   (F v1, F v2) -> let v3 = L.intersect v1 v2 in
                   if v3 == []
                      then Nothing
                      else Just (F v3, fsub)
 
 -- |
-unifyFeatures :: [(Int,Feature)] -> [Feature] -> [Feature] -> Maybe ([Feature], [(Int,Feature)])
+unifyFeatures :: Assignment [FeatureValue] -> [Feature] -> [Feature] -> Maybe ([Feature], Assignment [FeatureValue])
 unifyFeatures fsub f1 f2 = case (f1,f2) of
   ([],[]) -> Just ([],fsub)
   ((f1h:f1t),(f2h:f2t)) -> do

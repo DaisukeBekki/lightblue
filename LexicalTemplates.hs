@@ -91,7 +91,7 @@ nonStem :: [FeatureValue]
 nonStem = [Neg, Cont, Term, Attr, Hyp, Imper, Pre, ModU, ModS, VoR, VoS, VoE, NegL, TeForm]
 
 anySExStem :: Cat
-anySExStem = S [F anyPos, F nonStem, SF 1 [P,M], SF 2 [P,M], SF 3 [P,M], F [M], F [M]]
+anySExStem = S [SF 2 anyPos, SF 3 nonStem, SF 4 [P,M], SF 5 [P,M], SF 6 [P,M], F [M], F [M]]
 
 m5 :: [Feature]
 m5 = [F[M],F[M],F[M],F[M],F[M]]

@@ -172,8 +172,8 @@ instance Typeset Cat where
     S (pos:(conj:pm)) -> 
                    T.concat [
                      "S\\f{",
-                     printF pos,",",
-                     printF conj,",",
+                     f2TeX pos,",",
+                     f2TeX conj,",",
                      pmfs2TeX pm,
                      "}"
                      ]
@@ -189,6 +189,16 @@ toTeX' :: Cat -> T.Text
 toTeX' c = if isBaseCategory c 
            then toTeX c
            else T.concat ["(", toTeX c, ")"]
+
+f2TeX :: Feature -> T.Text
+f2TeX (SF i f) = T.concat [fVal2TeX f, ":\\sq{", T.pack (show i), "}"]
+f2TeX (F f) = fVal2TeX f
+
+fVal2TeX :: [FeatureValue] -> T.Text
+fVal2TeX [] = T.empty
+fVal2TeX [pos] = T.pack $ show pos
+fVal2TeX [pos1,pos2] = T.pack $ (show pos1) ++ "|" ++ (show pos2)
+fVal2TeX (pos1:(pos2:_)) = T.pack $ (show pos1) ++ "|" ++ (show pos2) ++ "|+"
 
 pmf2TeX :: Bool -> T.Text -> Feature -> Maybe T.Text
 pmf2TeX _ label pmf = case (label,pmf) of
