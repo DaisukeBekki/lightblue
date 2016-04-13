@@ -55,7 +55,10 @@ printChart handle chart = mapM_ printList $ M.toList $ M.filter (/= []) chart
 printChartInSimpleText :: S.Handle -> [CCG.Node] -> IO()
 printChartInSimpleText handle nodes = 
   do
-  mapM_ (\node -> S.hPutStr handle $ (T.unpack $ CCG.toText node) ++ (take 100 $ repeat '-') ++ "\n") nodes
+  S.hPutStrLn handle (take 100 $ repeat '-')
+  mapM_ (\node -> do S.hPutStr handle $ T.unpack $ CCG.toText node
+                     S.hPutStrLn handle $ take 100 $ repeat '-'
+        ) nodes
   S.hPutStrLn handle $ "Number of nodes: " ++ show (length nodes)
 
 -- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style

@@ -57,7 +57,7 @@ f mylexicon score s =
       if CP.topBox chart1 /= []
         then
           do
-          T.putStrLn $ T.concat ["Succeeded (", T.pack (show $ i+1), "/", T.pack (show $ j+1)," = "] 
+          T.putStr $ T.concat ["Succeeded (", T.pack (show $ i+1), "/", T.pack (show $ j+1)," = "] 
           S.putStrLn $ percent (i+1,j+1) ++ "%)\n"
           T.putStrLn $ CCG.toText $ head $ CP.bestOnly $ CP.topBox chart1
           -- T.putStrLn $ T.concat ["yes\t", CCG.toText $ CCG.cat h, "\n\t", CCG.toText $ CCG.sem h, "\n"]

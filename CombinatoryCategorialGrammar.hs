@@ -203,7 +203,8 @@ instance SimpleText Cat where
   toText category = case category of
     SL x y      -> T.concat [toText x, "/", toText' y]
     BS x y      -> T.concat [toText x, "\\", toText' y]
-    T True i c     -> T.concat ["T[",toText c,"]<", (T.pack $ show i),">"]
+--    T True i c     -> T.concat ["T[",toText c,"]<", (T.pack $ show i),">"]
+    T True i _     -> T.concat ["T<", (T.pack $ show i),">"]
     T False i c     -> T.concat [toText c, "<", (T.pack $ show i), ">"]
     S (pos:(conj:pmf)) -> 
               T.concat [

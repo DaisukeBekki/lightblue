@@ -33,31 +33,31 @@ emptyCategories = [
   --            ((defS [V1] [Neg,Cont,NegL,EuphT]) `BS` (defS [V1] [Stem]))
   --            id,
   -- カ行変格活用動詞語幹
-  ec "come" "(154)" 100
-              ((defS [VK] [Stem] `BS` NP [F[Ga]]) `BS` NP [F[Ni]])
-              (verbSR 2 "来る"),
+  --ec "come" "(154)" 100
+  --            ((defS [VK] [Stem] `BS` NP [F[Ga]]) `BS` NP [F[Ni]])
+  --            (verbSR 2 "来る"),
   -- サ行変格活用動詞語幹 -- とりあえずガヲ、ガヲトのパターンのみ。
-  ec "\\emp" "(156)" 100
+  ec "do" "(156)" 100
               ((defS [VS] [Stem] `BS` NP [F[Ga]]) `BS` NP [F[O]])
               (verbSR 2 "する"),
   --lexicalitem "\\emp" "(156)" (100%100)
   --            (((defS [VS] [Stem] `BS` NP [Ga]) `BS` NP [F[O]]) `BS` defS [To])
   --            (Lam (Lam (App (Con "する") (Pair (Var 0) (Var 1))))),
   -- イ形容詞終止形活用語彙
-  ec "\\emp" "(175)" 100
-              (S [F[Ai], F[Term], F[M], F[M], SF 1 [P,M], F[M], F[M]] `BS` S [F[Ai], F[Stem], F[M], F[M], SF 1 [P,M], F[M], F[M]])
-              (id,[]),
+  --ec "\\emp" "(175)" 100
+  --            (S [F[Ai], F[Term], F[M], F[M], SF 1 [P,M], F[M], F[M]] `BS` S [F[Ai], F[Stem], F[M], F[M], SF 1 [P,M], F[M], F[M]])
+  --            (id,[]),
   -- 判定詞語幹
-  ec "be" "(235a)" 100
+  ec "be-pred." "(235a)" 100
               ((defS [Nda,Nno,Ntar] [Stem] `BS` NP [F [Ga]]) `BS` N)
               (id,[]),
-  ec "be" "(235b)" 100
+  ec "be-ident." "(235b)" 100
               ((defS [Nda] [Stem] `BS` NP [F[Ga]]) `BS` NP [F[Nc]])
               ((Lam (Lam (Lam (Sigma (Eq (Con "entity") (Var 1) (Var 2)) (App (Var 1) (Var 0)))))),[]),
   -- サ変語幹→状詞語幹
-  ec "\\emp" "(262)" 99
-              (defS [Nda,Nno] [Stem] `BS` defS [VSN] [Stem])
-              (id,[]),
+  --ec "\\emp" "(262)" 99
+  --            (defS [Nda,Nno] [Stem] `BS` defS [VSN] [Stem])
+  --            (id,[]),
   -- サ変語幹→名詞
   ec "\\emp" "ss" 99
               ((((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Nc]])) `BS` NP [F[No]]) `BS` NP [F[No]]) `BS` ((defS [VS] [Stem] `BS` NP [F [Ga]]) `BS` NP [F [O]]))
@@ -70,9 +70,9 @@ emptyCategories = [
               (defS [VS,VSN] [Stem] `BS` S [F verb,F[Cont],F[P],F[P,M],F[P,M],F[M],F[P,M]])
               (id,[]),
   -- 補助動詞「くる」
-  ec "come" "(416)" 100
-              (defS [VK] [Stem] `BS` defS verb [TeForm])
-              (eventModifier "来る"),
+  --ec "come" "(416)" 100
+  --            (defS [VK] [Stem] `BS` defS verb [TeForm])
+  --            (eventModifier "来る"),
   -- 推量のウ
   ec "\\emp" "(349)" 100
               (S [SF 1 anyPos, F[Pre], SF 2 [P,M], SF 3 [P,M],SF 4 [P,M],F[M],F[M]] `BS` S [SF 1 anyPos, F[ModU], SF 2 [P,M],SF 3 [P,M],SF 4 [P,M],F[M],F[M]])
@@ -103,7 +103,7 @@ emptyCategories = [
               (T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Ga,O,Ni,To,No]]))
               ((Lam (App (Var 0) (Asp 1 (Con "entity")))),[]),
   -- pro2
-  ec "pro" "(597)" 96
+  ec "pro" "(597)" 98
               (T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Ga,O,Ni,To,No]]))
               ((Lam (App (Var 0) (Asp 2 (Con "entity")))),[]),
   -- pro3
@@ -270,22 +270,26 @@ myLexicon = concat $ [
   mylex ["蹴ろ","けろ"] "(152)" ((defS [V1] [Imper] `BS` NP [F[Ga]]) `BS` NP [F[O]]) (verbSR 2 "蹴る"),
   mylex ["捻ろ","ひねろ"] "(153)" ((defS [V1] [Imper] `BS` NP [F[Ga]]) `BS` NP [F[O]]) (verbSR 2 "捻る"),
   --- カ変動詞
-  conjSuffix "来" "(155)" [VK] [Neg,Cont,EuphT,NegL],
-  conjSuffix "来ら" "(155)" [VK] [VoR],
-  conjSuffix "来さ" "(155)" [VK] [VoS],
-  conjSuffix "来る" "(155)" [VK] [Term,Attr],
-  conjSuffix "来れ" "(155)" [VK] [Hyp],
-  conjSuffix "来い" "(155)" [VK] [Imper],
-  conjSuffix "来よ" "(155)" [VK] [ModU],
-  conjSuffix "こ" "(155)" [VK] [Neg,NegL],
-  conjSuffix "き" "(155)" [VK] [Cont,EuphT],
-  conjSuffix "こら" "(155)" [VK] [VoR],
-  conjSuffix "こさ" "(155)" [VK] [VoS],
-  conjSuffix "くる" "(155)" [VK] [Term,Attr],
-  conjSuffix "くれ" "(155)" [VK] [Hyp],
-  conjSuffix "こい" "(155)" [VK] [Imper],
-  conjSuffix "こよ" "(155)" [VK] [ModU],
+  mylex ["来"] "(155)" ((defS [VK] [Neg,Cont,EuphT,NegL] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
+  mylex ["こ"] "(155)" ((defS [VK] [Neg,NegL] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
+  mylex ["き"] "(155)" ((defS [VK] [Cont,EuphT] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
+  mylex ["来ら","こら"] "(155)" ((defS [VK] [VoR] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
+  mylex ["来さ","こさ"] "(155)" ((defS [VK] [VoS] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
+  mylex ["来る","くる"] "(155)" ((defS [VK] [Term,Attr] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
+  mylex ["来れ","くれ"] "(155)" ((defS [VK] [Hyp] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
+  mylex ["来い","こい"] "(155)" ((defS [VK] [Imper] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
+  mylex ["来よ","こよ"] "(155)" ((defS [VK] [ModU] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
   mylex ["来ん","くん"] "(155)" (S ([F[VK], F[Term,Attr]]++mmmpm) `BS` defS [VK] [Stem]) (id,[]),
+  -- 補助動詞「くる」
+  mylex ["来"] "(416)" ((defS [VK] [Neg,Cont,EuphT,NegL]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
+  mylex ["こ"] "(416)" ((defS [VK] [Neg,NegL]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
+  mylex ["き"] "(416)" ((defS [VK] [Cont,EuphT]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
+  mylex ["来ら","こら"] "(416)" ((defS [VK] [VoR]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
+  mylex ["来さ","こさ"] "(416)" ((defS [VK] [VoS]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
+  mylex ["来る","くる"] "(416)" ((defS [VK] [Term,Attr]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
+  mylex ["来れ","くれ"] "(416)" ((defS [VK] [Hyp]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
+  mylex ["来い","こい"] "(416)" ((defS [VK] [Imper]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
+  mylex ["来よ","こよ"] "(416)" ((defS [VK] [ModU]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
   --- サ変動詞
   conjSuffix "さ" "(157)" [VS,VSN] [VoR,VoS],
   conjSuffix "し" "(157)" [VS,VSN] [Neg,Cont,EuphT],
