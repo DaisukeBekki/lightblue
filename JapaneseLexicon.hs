@@ -68,7 +68,7 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "名詞:固有名詞"     ct  = constructProperName daihyo
   -- T.isPrefixOf "名詞:時相名詞"    ct  = constructProperName daihyo
   | T.isPrefixOf "名詞:副詞的名詞"   ct  = [((anySExStem `SL` anySExStem) `BS` (defS anyPos [Attr]), (id,[]))]
-  | T.isPrefixOf "名詞:時相名詞"     ct  = constructPredicate daihyo [Nda,Nna,Nno] [Stem]
+  | T.isPrefixOf "名詞:時相名詞"     ct  = constructPredicate daihyo [Nda,Nna,Nno,Nni,Nemp] [Stem]
   | T.isPrefixOf "動詞:子音動詞カ行促音便形" ct  = constructVerb daihyo caseframe [V5IKU,V5YUK] [Stem]
   | T.isPrefixOf "動詞:子音動詞カ行"  ct  = constructVerb daihyo caseframe [V5k] [Stem]
   | T.isPrefixOf "動詞:子音動詞サ行"  ct  = constructVerb daihyo caseframe [V5s] [Stem]
