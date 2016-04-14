@@ -31,12 +31,12 @@ module CombinatoryCategorialGrammar (
   coordinationRule,
   parenthesisRule,
   -- test
-  test
+  -- test
   ) where
 
 import Prelude hiding (id)
 import qualified Data.Text.Lazy as T --text
-import qualified Data.Text.Lazy.IO as T -- for test only
+--import qualified Data.Text.Lazy.IO as T -- for test only
 import qualified Data.List as L      --base
 import qualified Data.Maybe as Maybe --base
 import Data.Fixed                    --base
@@ -205,7 +205,7 @@ instance SimpleText Cat where
     SL x y      -> T.concat [toText x, "/", toText' y]
     BS x y      -> T.concat [toText x, "\\", toText' y]
 --    T True i c     -> T.concat ["T[",toText c,"]<", (T.pack $ show i),">"]
-    T True i _     -> T.concat ["T<", (T.pack $ show i),">"]
+    T True i _     -> T.concat ["T", T.pack $ show i]
     T False i c     -> T.concat [toText c, "<", (T.pack $ show i), ">"]
     S (pos:(conj:pmf)) -> 
               T.concat [
@@ -362,6 +362,7 @@ binaryRules lnode rnode =
 --plus :: [FeatureValue]
 --plus = [P]
 
+{-
 minus :: [FeatureValue]
 minus = [M]
 
@@ -413,7 +414,7 @@ test = do
   let newcat = simulSubstituteCV csub fsub (incrementIndexC x inc)
   T.putStr "newcat: "
   T.putStrLn $ toText newcat
-
+-}
 
 -- | Forward function application rule.
 forwardFunctionApplicationRule :: Node -> Node -> [Node] -> [Node]
@@ -732,9 +733,12 @@ transvec c preterm = case c of
                Lamvec m -> Lam (deleteLambda 0 (addLambda 0 m))
                m        -> m
   N -> case preterm of
-              Lam (Lamvec m) -> Lam (deleteLambda 0 m)
-              Lamvec (Lam m) -> deleteLambda 0 (Lam m)
-              Lamvec m -> Lam (deleteLambda 0 (addLambda 0 m))
+              Lam (Lam (Lamvec m)) -> Lam (Lam (deleteLambda 0 m))
+              Lam (Lamvec (Lam m)) -> Lam (deleteLambda 0 (Lam m))
+              Lamvec (Lam (Lam m)) -> deleteLambda 0 (Lam (Lam m))
+              Lamvec (Lam m) -> Lam (deleteLambda 0 (addLambda 0 (Lam m)))
+              Lam (Lamvec m) -> Lam (Lam (deleteLambda 0 (addLambda 0 m)))
+              Lamvec m -> Lam (Lam (deleteLambda 0 (addLambda 0 (addLambda 0 m))))
               m        -> m
   _ -> preterm
 
@@ -839,7 +843,7 @@ unifyCategory2 csub fsub c1 c2 = case (c1,c2) of
                                   (True,False) -> unifyWithHead csub fsub u1 u2
                                   (False,True) -> unifyWithHead csub fsub u2 u1
                                   (False,False) -> unifyCategory2 csub fsub u1 u2
-            let ijmax = max i j; ijmin = min i j; result = T (f1 && f2) ijmin u3
+            let ijmax = max i j; ijmin = min i j; result = T (f1 || f2) ijmin u3
             Just (result, alter ijmin (SubstVal result) (alter ijmax (SubstLink ijmin) csub2), fsub2)
   (T f i u, c) -> do
                      (c3,csub2,fsub2) <- case f of

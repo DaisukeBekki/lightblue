@@ -74,9 +74,9 @@ emptyCategories = [
   --            (defS [VK] [Stem] `BS` defS verb [TeForm])
   --            (eventModifier "来る"),
   -- 推量のウ
-  ec "\\emp" "(349)" 100
-              (S [SF 1 anyPos, F[Pre], SF 2 [P,M], SF 3 [P,M],SF 4 [P,M],F[M],F[M]] `BS` S [SF 1 anyPos, F[ModU], SF 2 [P,M],SF 3 [P,M],SF 4 [P,M],F[M],F[M]])
-              (modalSR "ウ[MCN]"),
+  --ec "\\emp" "(349)" 100
+  --            (S [SF 1 anyPos, F[Pre], SF 2 [P,M], SF 3 [P,M],SF 4 [P,M],F[M],F[M]] `BS` S [SF 1 anyPos, F[ModU], SF 2 [P,M],SF 3 [P,M],SF 4 [P,M],F[M],F[M]])
+  --            (modalSR "ウ[MCN]"),
    -- 可能態
   ec "\\emp" "(652a)" 99
               ((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP [F[Ga]]) `BS` (defS anyPos [VoE] `BS` NP [F[Ga]]))
@@ -107,9 +107,9 @@ emptyCategories = [
               (T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Ga,O,Ni,To,No]]))
               ((Lam (App (Var 0) (Asp 2 (Con "entity")))),[]),
   -- pro3
-  --lexicalitem "$pro_3$" "(597)" 80
-  --            (T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Ga,O,Ni,To,No]))
-  --            (Lam (App (Var 0) (Asp 3 (Con "entity")))),
+  ec "pro" "(597)" 96
+              (T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Ga,No]]))
+              ((Lam (App (Var 0) (Asp 3 (Con "entity")))),[]),
   -- 関係節化演算子(relativizer)
   ec "rel" "(670)" 99
               ((N `SL` N) `BS` (S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]] `BS` NP [F[Ga,O,Ni,To]]))
@@ -142,7 +142,7 @@ conjSuffix :: T.Text -> T.Text -> [FeatureValue] -> [FeatureValue] -> [Node]
 conjSuffix wd num catpos catconj = [lexicalitem wd num 100 ((S ([SF 1 catpos, F catconj]++m5)) `BS` (S ([SF 1 catpos, F[Stem]]++m5))) (id,[])]
 
 teidaiS :: Cat
-teidaiS = S [SF 1 anyPos, SF 2 nonStem, F [P,M], F [P,M], F [P,M], F [M], F [M]]
+teidaiS = S [SF 2 anyPos, SF 3 nonStem, SF 4 [P,M], SF 5 [P,M], SF 6 [P,M], F[M], F[M]]
 
 -- | A list of (mostly functional) lexical items extracted from Bekki (2010).
 myLexicon :: [Node]
@@ -151,12 +151,12 @@ myLexicon = concat $ [
   -- argument:
   --mylex ["が"] "(524)" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [Ga])) `BS` NP [Nc]) argumentCM,
   mylex ["を"] "(524)" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[O]])) `BS` NP [F[Nc]]) argumentCM,
-  mylex ["に","には","へ"] "(524)" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Ni]])) `BS` NP [F[Nc]]) argumentCM,
+  mylex ["に","へ"] "(524)" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Ni]])) `BS` NP [F[Nc]]) argumentCM,
   mylex ["によって","によっては"] "(524)" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Niyotte]])) `BS` NP [F[Nc]]) argumentCM,
-  mylex ["が","の","のは"] "(531)?" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Ga,No]])) `BS` NP [F[Nc]]) argumentCM,
+  mylex ["が","の"] "(531)?" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Ga,No]])) `BS` NP [F[Nc]]) argumentCM,
   -- 格助詞（の）
-  mylex ["の"] "(531)+" ((N `SL` N) `BS` NP [F[Nc]]) -- これだとダメ
-               ((Lam (Lam (Lam (Lam (Sigma (App (App (Con "の[MCN]") (Var 1)) (Var 3)) (App (App (Var 2) (Var 1)) (Var 0))))))),[]),
+  mylex ["の"] "(531)+" ((N `SL` N) `BS` (T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Nc]]))) 
+               ((Lam (Lam (Lam (Lam (App (Var 3) (Lam (Sigma (App (App (Var 3) (Var 2)) (Var 1)) (App (App (Con "の[MCN]") (Var 1)) (Var 3))))))))),[]),
   -- adjunct:
   mylex ["と","とは","とも","とさえ"] "(524)+" ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` NP [F[Nc]]) (adjunctCM "ト"),
   mylex ["へ","へは","へも","へさえ"] "(516)" ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` NP [F[Nc]]) (adjunctCM "終点"),
@@ -176,7 +176,7 @@ myLexicon = concat $ [
   mylex ["と","や","に"] "new" CONJ andSR,
   mylex ["そして","および"] "new" CONJ andSR,
   mylex ["なり","やら","だの"] "new" CONJ andSR,
-  mylex ["にくわえて","に加えて","ならびに","並びに"] "new" CONJ andSR,
+  mylex ["にくわえて","に加えて","ならびに","並びに","をはじめ","をはじめとして","を始め"] "new" CONJ andSR,
   -- 等位接続（選言）
   mylex ["か"] "new" CONJ orSR,
   mylex ["または","又は"] "new" CONJ orSR,
@@ -410,7 +410,8 @@ myLexicon = concat $ [
   mylex ["だろう","であろう","だろ"] "(357)" (S [SF 1 (verb++adjective), F[Pre], SF 2 [P,M],F[M],F[M],F[M],F[M]] `BS` S [SF 1 (verb++adjective), F[Term], SF 2 [P,M],F[M],F[P,M],F[M],F[M]]) (modalSR "ダロウ[MCN]"), -- ここから作業再開 (3/8)
   mylex ["だろう","であろう","だろ"] "(357)" (S [F[Nda], F[Pre], SF 1 [P,M],F[M],F[M],F[M],F[M]] `BS` S [F[Nda], F[Stem], SF 1 [P,M],F[M],F[M],F[M],F[M]]) (modalSR "ダロウ[MCN]"),
   mylex ["でしょう","でしょ"] "(357)" (S [SF 1 (verb++adjective), F[Pre], SF 2 [P,M],F[P],F[M],F[M],F[M]] `BS` S [SF 1 (verb++adjective), F[Term], SF 2 [P,M],F[P,M],F[P,M],F[M],F[M]]) (modalSR "ダロウ[MCN]"),
-  mylex ["でしょう","でしょ"] "(357)" (S [F[Nda], F[Pre], SF 1 [P,M],F[P],F[M],F[M],F[M]] `BS` S [F[Nda], F[Stem], SF 1 [P,M],F[P,M],F[P,M],F[M],F[M]]) (modalSR "ダロウ[MCN]"),
+  mylex ["でしょう","でしょ"] "(357)" (S [F[Nda], F[Pre], F[M],F[P],F[M],F[M],F[M]] `BS` S [F[Nda], F[Stem], F[M],F[P,M],F[P,M],F[M],F[M]]) (modalSR "ダロウ[MCN]"),
+  mylex ["でしょう","でしょ"] "(357)+" (S [F[Nda], F[Pre], F[P],F[P],F[M],F[M],F[M]] `BS` S [F[Nda], F[Term], F[P],F[P,M],F[P,M],F[M],F[M]]) (modalSR "ダロウ[MCN]"),
   mylex ["まい"] "(359a)" (S [SF 1 verb, F[Pre], F[M],SF 2 [P,M],F[P],F[M],F[M]] `BS` S [SF 1 verb, F[Term], F[M],SF 2 [P,M],F[M],F[M],F[M]])
                          ((Lam (Lam (App (Con "ダロウ[MCN]") (Not (App (Var 1) (Var 0)))))),[]),
   mylex ["まい"] "(359b)" (S [SF 1 [V1,VK,VS,VSN,VZ], F[Pre], F[M],SF 2 [P,M],F[P],F[M],F[M]] `BS` S [SF 1 [V1,VK,VS,VSN,VZ], F[Neg], F[M],SF 2 [P,M],F[M],F[M],F[M]])
@@ -448,7 +449,7 @@ myLexicon = concat $ [
   --mylex ["は"] "(385)" (S anyPos nonStem [M,M,M,M,P] `BS` defS anyPos nonStem) (Lam (Lam 
   mylex ["は"] "(550)" (((T True 1 teidaiS) `SL` ((T True 1 teidaiS) `BS` (NP [F[Ga,O]]))) `BS` (NP [F[Nc]])) argumentCM,
   mylex ["には"] "(550)" (((T True 1 teidaiS) `SL` ((T True 1 teidaiS) `BS` (NP [F[Ni]]))) `BS` (NP [F[Nc]])) argumentCM,
-  mylex ["とは"] "new" (((T True 1 teidaiS) `SL` ((T True 1 teidaiS) `BS` (NP [F[To]]))) `BS` (NP [F[Nc]])) argumentCM,
+  --mylex ["とは"] "new" (((T True 1 teidaiS) `SL` ((T True 1 teidaiS) `BS` (NP [F[To]]))) `BS` (NP [F[Nc]])) argumentCM,
   --
   mylex ["も"] "(385)" (((T True 1 teidaiS) `SL` ((T True 1 teidaiS) `BS` (NP [F[Ga,O]]))) `BS` (NP [F[Nc]])) argumentCM,
   mylex ["にも"] "(385)" (((T True 1 teidaiS) `SL` ((T True 1 teidaiS) `BS` (NP [F[Ni]]))) `BS` (NP [F[Nc]])) argumentCM,
@@ -663,7 +664,7 @@ myLexicon = concat $ [
   mylex ["何","なに"] "new" (NP [F[Nc]]) (properNameSR "何"),
   mylex ["何処","どこ"] "new" (NP [F[Nc]]) (properNameSR "どこ"),
   -- 従属節導入表現
-  mylex ["と","とは","とも"] "new" (Sbar [F[ToCL]] `BS` S [F anyPos, F[Term,Imper], F[P,M],F[P,M],F[P,M],F[M],F[M]]) (id,[]),
+  mylex ["と","とは","とも"] "new" (Sbar [F[ToCL]] `BS` S [F anyPos, F[Term,Imper,Pre],F[P,M],F[P,M],F[P,M],F[M],F[M]]) (id,[]),
   mylex ["ように","ようには","ようにも"] "new" (Sbar [F[YooniCL]] `BS` S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]]) (id,[]),
   mylex ["という"] "new" ((N `SL` N) `BS` S [F anyPos, F[Term], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
   ((Lam (Lam (Lam (Lam (Sigma (App (Var 3) (Lam Top)) (App (App (Var 3) (Var 2)) (Lam (Sigma (App (App (Con "content") (Var 1)) (Var 3)) (App (Var 3) (Var 1)))))))))), [("content",nPlaceEventType 1)]),
@@ -690,9 +691,6 @@ myLexicon = concat $ [
   -- っけ
   -- や
   -- かい
-  -- 句読点
-  -- mylex "。"  "" (anyS `BS` anyS) id,
-  -- mylex "、"  "" (anyS `BS` anyS) id,
   -- 括弧
   --mylex ["「","（","(","『","《","〈","【","［","[","−","-"] "new" LPAREN Unit,
   --mylex ["」","）",")","』","》","〉","】","］","]","−","-"] "new" RPAREN Unit,
