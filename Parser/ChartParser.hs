@@ -119,9 +119,13 @@ parseMain beam lexicon sentence
       let (chart,_,_,_,nodes) = T.foldl' (chartAccumulator beam lexicon) (M.empty,[0],0,T.empty,[]) (purifyText sentence) in
       (chart,nodes)
 
--- | removes occurrences of some letters from an input text.
+-- | removes occurrences of non-letters from an input text.
 purifyText :: T.Text -> T.Text
-purifyText = T.filter (\c -> not $ isSpace c || c `elem` ['◎','○','●'])
+purifyText text = T.filter (\c -> not $ isSpace c)
+                    (case T.uncons text of
+                        Nothing -> T.empty
+                        Just (c,t) | c `elem` [' ','　','◎','○','●','・','▲','△','▼','△'] -> t
+                                   | otherwise -> text)
 
 -- | triples representing a state during parsing:
 -- the parsed result (=chart) of the left of the pivot,

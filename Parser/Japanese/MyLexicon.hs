@@ -60,7 +60,7 @@ emptyCategories = [
   --            (id,[]),
   -- サ変語幹→名詞
   ec "\\emp" "ss" 99
-              ((((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Nc]])) `BS` NP [F[No]]) `BS` NP [F[No]]) `BS` ((defS [VS] [Stem] `BS` NP [F [Ga]]) `BS` NP [F [O]]))
+              ((((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Nc]])) `BS` NP [F[No]]) `BS` NP [F[No]]) `BS` ((defS [VSN] [Stem] `BS` NP [F [Ga]]) `BS` NP [F [O]]))
               ((Lam (Lam (Lam (Lam (Lamvec (App (App (App (Var 4) (Var 3)) (Var 2)) (Lam (Appvec 1 (App (Var 2) (Var 0)))))))))),[]),
   -- 形式述語スル
   ec "do" "(380a)" 100
