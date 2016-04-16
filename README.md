@@ -32,23 +32,24 @@ Do the following in the directory under which you'd like to install *lightblue*.
 #!shell
 git clone git@bitbucket.org:DaisukeBekki/lightblue.git
 ```
-Then the directory *lightblue* (we will call this directory as <lightblue> in the following) will be created under the directory in which you did the above.
+This operation will create the directory *lightblue* (we will call this directory as <lightblue> in the following document) under the directory in which you did the above.
 
 ### Configuration
-The following command checks dependencies.
+Move to <lightblue> and check the dependencies by the following command.
 ```
 #!shell
 cabal configure
 ```
-If 
 
 ### Build
+Then build *lightblue* in <lightblue>.
 ```
 #!shell
 cabal build
 ```
 
 ### Generating the Document
+The HTML document is created by the following command.
 ```
 #!shell
 cabal haddock
@@ -56,14 +57,32 @@ cabal haddock
 The generated document is found at: `<lightblue>/dist/doc/html/lightblue/index.html`
 
 ### Installation
-
+If the build is successful, then you can install *lightblue-0.1.1.0* in your GHC system.
 ```
 #!shell
 cabal install
 ```
-If succeeded, executable is found at `<home>/.cabal/bin/lightblue` and `<home>/.cabal/bin/lightbluetest`
+If succeeded, executable is found at `<home>/.cabal/bin/lightblue` and `<home>/.cabal/bin/lightbluetest`.
+You may want to set a path to `<home>/.cabal/bin`.
 
 ### How to run tests
+To parse a Japanese sentence and get a text representation, execute:
+```
+#!shell
+echo 太郎がパンを食べた。 | lightblue -text
+```
+or equivalently,
+```
+#!shell
+./parse 太郎がパンを食べた。
+```
+
+If you have a text file (one sentence per line) <corpus>, then you can feed it to *lightblue* by:
+```
+#!shell
+lightbluetest <corpus>
+```
+
 ### Deployment instructions
 
 ## Contribution guidelines ###
