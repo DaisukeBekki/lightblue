@@ -51,7 +51,7 @@ cabal build
 ```
 
 ### Generating the Document
-The HTML document is created by the following command.
+The HTML document is created by the following command in <lightblue>:
 ```
 #!shell
 cabal haddock
