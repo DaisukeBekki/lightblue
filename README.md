@@ -76,6 +76,23 @@ or equivalently,
 ./parse 太郎がパンを食べた。
 ```
 
+If you want an XML output, do
+```
+#!shell
+echo 太郎がパンを食べた。 | lightblue -xml
+```
+or equivalently,
+```
+#!shell
+./parse2xml 太郎がパンを食べた。
+```
+
+*lightblue* can be used as a part-of-speech tagger with the `-postag` option:
+```
+#!shell
+echo 太郎がパンを食べた。 | lightblue -postag
+```
+
 If you have a text file (one sentence per line) <corpus>, then you can feed it to *lightblue* by:
 ```
 #!shell
