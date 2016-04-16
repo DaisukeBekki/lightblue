@@ -37,7 +37,7 @@ import qualified Data.Map as M         --container
 --import qualified Data.Maybe as Maybe   --base
 import qualified System.IO as S        --base
 import qualified Parser.CombinatoryCategorialGrammar as CCG --(Node, unaryRules, binaryRules, trinaryRules, isCONJ, cat, SimpleText)
-import qualified Parser.Japanese.Lexicon as L (Lexicon, lookupLexicon, setupLexicon, emptyCategories, myLexicon)
+import qualified Parser.Japanese.Lexicon as L (LexicalItems, lookupLexicon, setupLexicon, emptyCategories, myLexicon)
 import qualified Parser.Japanese.Templates as LT
 import qualified Parser.TeXmodule as TEX
 
@@ -110,7 +110,7 @@ parse beam sentence = do
 
 -- | parses a (Japanees) sentence and generates a CYK-chart.
 parseMain :: Int          -- ^ The beam width
-             -> L.Lexicon -- ^ A lexicon to be used for parsing
+             -> L.LexicalItems -- ^ A lexicon to be used for parsing
              -> T.Text    -- ^ A sentence to be parsed
              -> (Chart, [[CCG.Node]])
 parseMain beam lexicon sentence
@@ -133,7 +133,7 @@ type PartialChart = (Chart,[Int],Int,T.Text,[[CCG.Node]])
 
 -- | The 'chartAccumulator' function
 chartAccumulator :: Int             -- ^ beam width
-                    -> L.Lexicon    -- ^ my lexicon
+                    -> L.LexicalItems    -- ^ my lexicon
                     -> PartialChart -- ^ accumulated result (Chart, Int, Text)
                     -> Char         -- ^ next char of a unparsed text
                     -> PartialChart
@@ -186,7 +186,7 @@ type PartialBox = (Chart,T.Text,Int,Int)
 
 -- | The 'boxAccumulator' function
 boxAccumulator :: Int           -- ^ beam width
-                  -> L.Lexicon  -- ^ my lexicon
+                  -> L.LexicalItems  -- ^ my lexicon
                   -> PartialBox -- ^ accumulated result (Chart, Text, Int, Int)
                   -> Char       -- ^ 
                   -> PartialBox

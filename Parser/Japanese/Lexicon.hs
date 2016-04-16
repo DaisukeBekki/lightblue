@@ -11,7 +11,7 @@ Stability   : beta
 -}
 module Parser.Japanese.Lexicon (
   --Node(..),
-  Lexicon,
+  LexicalItems,
   --isCONJ,
   lookupLexicon,
   setupLexicon,
@@ -32,14 +32,14 @@ import Parser.Japanese.Templates
 import Logic.DependentTypes
 
 -- | Lexicon consists of a set of CCG Nodes
-type Lexicon = [Node]
+type LexicalItems = [Node]
 
 -- | This function takes a word and a lexicon and returns a set of CCG lexical entries whose PF is that word.
-lookupLexicon :: T.Text -> Lexicon -> [Node]
+lookupLexicon :: T.Text -> LexicalItems -> [Node]
 lookupLexicon word lexicon = filter (\l -> (pf l) == word) lexicon
 
 -- | This function takes a sentence and returns a numeration needed to parse that sentence, i.e., a union of 
-setupLexicon :: Lexicon -> T.Text -> IO(Lexicon)
+setupLexicon :: LexicalItems -> T.Text -> IO(LexicalItems)
 setupLexicon mylexicon sentence = do
   jumandic <- T.readFile "/home/bekki/dropbox/MyProgram/Haskell/CCG06/Parser/Japanese/Juman.dic"
   let jumandicFiltered = concat $ map parseJumanLine $ filter (\l -> (head l) `T.isInfixOf` sentence) $ map (T.split (=='\t')) (T.lines jumandic)
