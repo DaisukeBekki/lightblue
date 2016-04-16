@@ -1,8 +1,8 @@
 # README
 ## What is this repository for?
 
-* A Japanese CCG parser with DTS representations 
-* Version 0.1.1.0
+* *lightblue* is a Japanese CCG parser with DTS representations.
+* The current version is 0.1.1.0.
 * [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
 
 ## How do I get set up?
