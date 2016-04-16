@@ -545,12 +545,11 @@ myLexicon = concat $ [
   mylex ["易","やす"] "(476a)" ((defS [Aauo] [Stem] `BS` NP [F[Ga]]) `BS` (defS verb [Cont] `BS` NP [F[Ga]])) (intensionalState 1 "ヤスイ"),
   mylex ["易","やす"] "(476b)" (((defS [Aauo] [Stem] `BS` NP [F[Ni,Ga]]) `BS` NP [F[Ga]]) `BS` ((defS verb [Cont] `BS` NP [F[Ga]])) `BS` NP [F[O]]) (intensionalState 2 "易"),
   -- 6.2.3-6.2.6
-  mylex ["らし"] "(478)" (defS [Ai] [Stem] `BS` defS verb [Term])      (modalSR "ラシイ[MCN]"),
-  mylex ["らし"] "(478)" (defS [Ai] [Stem] `BS` defS adjective [Term]) (modalSR "ラシイ[MCN]"),
+  mylex ["らし"] "(478)" (defS [Ai] [Stem] `BS` S [F(verb++adjective),F[Term],F[P,M],F[M],F[P,M],F[M],F[M]])      (modalSR "ラシイ[MCN]"),
+  mylex ["らし"] "(478)" (defS [Ai] [Stem] `BS` S [F[Nda],F[Term],F[P],F[M],F[M],F[M],F[M]])     (modalSR "ラシイ[MCN]"),
   mylex ["らし"] "(478)" (defS [Ai] [Stem] `BS` defS [Nda] [Stem])     (modalSR "ラシイ[MCN]"),
   mylex ["っぽ"] "(480)" (defS [Aauo] [Stem] `BS` defS [Aauo,Nda] [Stem]) (modalSR "ポイ[MCN]"),
-  mylex ["くさ"] "(478)" (defS [Ai] [Stem] `BS` defS verb [Term])         (modalSR "クサイ[MCN]"),
-  mylex ["くさ"] "(478)" (defS [Ai] [Stem] `BS` defS adjective [Term])    (modalSR "クサイ[MCN]"),
+  mylex ["くさ"] "(478)" (defS [Ai] [Stem] `BS` S [F(verb++adjective),F[Term],F[P,M],F[M],F[P,M],F[M],F[M]])         (modalSR "クサイ[MCN]"),
   mylex ["くさ"] "(478)" (defS [Ai] [Stem] `BS` defS [Nda] [Stem])       (modalSR "クサイ[MCN]"),
   mylex ["べき"] "(488)" (defS [Nda] [Attr] `BS` defS verb [Term])       (modalSR "ベキ[MCN]"),
   -- 状詞性接尾語
