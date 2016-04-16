@@ -35,7 +35,7 @@ git clone git@bitbucket.org:DaisukeBekki/lightblue.git
 This operation will create the directory *lightblue* (we will call this directory as <lightblue> in the following document) under the directory in which you did the above.
 
 ### Configuration
-You have to rewrite the value of `jumandicpath` in `Parser/Japanese/Lexicon.hs` according to your environment.
+First you have to rewrite the value of `jumandicpath` in `<lightblue>/Parser/Japanese/Lexicon.hs` to the location of `<lightblue>/Parser/Japanese/Juman.dic` according to your environment.
 
 Then move to <lightblue> and check the dependencies by the following command.
 ```
