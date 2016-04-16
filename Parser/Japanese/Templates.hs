@@ -19,7 +19,7 @@ module Parser.Japanese.Templates (
   adjective,
   nomPred,
   nonStem,
-  anySExStem,
+  modifiableS,
   anyPos,
   m5,
   pmmmm,
@@ -63,14 +63,9 @@ lexicalitem pf' source' score' cat' (sem',sig') = Node {rs=LEX, pf=pf', cat=cat'
 
 -- | Category S with the default feature setting
 defS :: [FeatureValue] -> [FeatureValue] -> Cat
-defS p c = S [F p,
-              F c,
-              F [M],
-              F [M],
-              F [M],
-              F [M],
-              F [M]
-             ]
+defS p c = S [F p,F c,F[M],F[M],F[M],F[M],F[M]]
+
+
 
 --catS :: [FeatureValue] -> [FeatureValue] -> Feature -> Feature -> Feature -> Feature -> Feature -> Cat
 --catS pos conj pm1 pm2 pm3 pm4 pm5 = S [F pos, F conj, pm1, pm2, pm3, pm4, pm5]
@@ -85,13 +80,13 @@ nomPred :: [FeatureValue]
 nomPred = [Nda, Nna, Nno, Nni, Nemp, Ntar]
 
 anyPos :: [FeatureValue]
-anyPos = verb ++ adjective ++ nomPred ++ [Exp]
+anyPos = verb ++ adjective ++ nomPred
 
 nonStem :: [FeatureValue]
 nonStem = [Neg, Cont, Term, Attr, Hyp, Imper, Pre, VoR, VoS, VoE, NegL, TeForm, NiForm]
 
-anySExStem :: Cat
-anySExStem = S [SF 2 anyPos, SF 3 nonStem, SF 4 [P,M], SF 5 [P,M], SF 6 [P,M], F[M], F[M]]
+modifiableS :: Cat
+modifiableS = S [SF 2 anyPos,SF 3 nonStem,SF 4 [P,M],SF 5 [P,M],SF 6 [P,M],F[M],F[M]]
 
 m5 :: [Feature]
 m5 = [F[M],F[M],F[M],F[M],F[M]]

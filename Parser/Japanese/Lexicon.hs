@@ -66,7 +66,7 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "名詞:地名"        ct  = constructProperName daihyo
   | T.isPrefixOf "名詞:組織名"      ct  = constructProperName daihyo
   | T.isPrefixOf "名詞:固有名詞"     ct  = constructProperName daihyo
-  | T.isPrefixOf "名詞:副詞的名詞"   ct  = [((anySExStem `SL` anySExStem) `BS` (defS anyPos [Attr]), (id,[]))]
+  | T.isPrefixOf "名詞:副詞的名詞"   ct  = [((modifiableS `SL` modifiableS) `BS` (defS anyPos [Attr]), (id,[]))]
   | T.isPrefixOf "名詞:時相名詞"     ct  = constructPredicate daihyo [Nda,Nna,Nno,Nni,Nemp] [Stem]
   | T.isPrefixOf "動詞:子音動詞カ行促音便形" ct  = constructVerb daihyo caseframe [V5IKU,V5YUK] [Stem]
   | T.isPrefixOf "動詞:子音動詞カ行"  ct  = constructVerb daihyo caseframe [V5k] [Stem]
@@ -113,7 +113,7 @@ jumanPos2Cat daihyo ct caseframe
   | otherwise                    = [(defS [Exp] [Term], ((Con $ T.concat [T.pack "Juman Error: ", ct]), []))]
 
 constructProperName :: T.Text -> [(Cat, (Preterm, [Signature]))]
-constructProperName daihyo = [((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Nc]])), properNameSR daihyo)]
+constructProperName daihyo = [((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])), properNameSR daihyo)]
 
 constructPredicate :: T.Text -> [FeatureValue] -> [FeatureValue] -> [(Cat, (Preterm, [Signature]))]
 constructPredicate daihyo posF conjF = [(defS posF conjF `BS` NP [F[Ga]], predSR 1 daihyo)]

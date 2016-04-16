@@ -124,7 +124,7 @@ purifyText :: T.Text -> T.Text
 purifyText text = T.filter (\c -> not $ isSpace c)
                     (case T.uncons text of
                         Nothing -> T.empty
-                        Just (c,t) | c `elem` [' ','　','◎','○','●','・','▲','△','▼','△'] -> t
+                        Just (c,t) | c `elem` [' ','　','◎','○','●','・','▲','△','▼','△'] -> t -- remove symbols at the beginning of sentences
                                    | otherwise -> text)
 
 -- | triples representing a state during parsing:
