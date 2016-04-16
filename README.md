@@ -32,6 +32,7 @@ Do the following in the directory under which you'd like to install *lightblue*.
 #!shell
 git clone git@bitbucket.org:DaisukeBekki/lightblue.git
 ```
+Then the directory *lightblue* (we will call this directory as <lightblue> in the following) will be created under the directory in which you did the above.
 
 ### Configuration
 The following command checks dependencies.
