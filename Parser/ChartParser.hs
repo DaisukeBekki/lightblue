@@ -10,7 +10,7 @@ Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
 -}
 
-module ChartParser (
+module Parser.ChartParser (
   -- * Main parser
   parse,
   parseMain,
@@ -34,10 +34,12 @@ import Data.Char                       --base
 import Data.Fixed                      --base
 import qualified Data.Text.Lazy as T   --text
 import qualified Data.Map as M         --container
+--import qualified Data.Maybe as Maybe   --base
 import qualified System.IO as S        --base
-import qualified CombinatoryCategorialGrammar as CCG --(Node, unaryRules, binaryRules, trinaryRules, isCONJ, cat, SimpleText)
-import qualified JapaneseLexicon as L (Lexicon, lookupLexicon, setupLexicon, emptyCategories, myLexicon)
-import qualified TeXmodule as TEX
+import qualified Parser.CombinatoryCategorialGrammar as CCG --(Node, unaryRules, binaryRules, trinaryRules, isCONJ, cat, SimpleText)
+import qualified Parser.Japanese.Lexicon as L (Lexicon, lookupLexicon, setupLexicon, emptyCategories, myLexicon)
+import qualified Parser.Japanese.Templates as LT
+import qualified Parser.TeXmodule as TEX
 
 -- | The type for CYK-charts.
 type Chart = M.Map (Int,Int) [CCG.Node]
@@ -114,8 +116,12 @@ parseMain :: Int          -- ^ The beam width
 parseMain beam lexicon sentence
   | sentence == T.empty = (M.empty,[]) -- foldl returns a runtime error when text is empty
   | otherwise =
-      let (chart,_,_,_,nodes) = T.foldl' (chartAccumulator beam lexicon) (M.empty,[0],0,T.empty,[]) sentence in
+      let (chart,_,_,_,nodes) = T.foldl' (chartAccumulator beam lexicon) (M.empty,[0],0,T.empty,[]) (purifyText sentence) in
       (chart,nodes)
+
+-- | removes occurrences of some letters from an input text.
+purifyText :: T.Text -> T.Text
+purifyText = T.filter (\c -> not $ isSpace c || c `elem` ['◎','○','●'])
 
 -- | triples representing a state during parsing:
 -- the parsed result (=chart) of the left of the pivot,
@@ -135,13 +141,7 @@ chartAccumulator beam lexicon (chart,seplist,i,stack,parsed) c =
   let newstack = (T.cons c stack);
       (sep:seps) = seplist in
   if c `elem` ['、','，',',','-','―','−','。','．','！','？','!','?'] || isSpace c -- Each seperator is an end of a phase
-    then let -- edge = [((x,i+1),(lookupChart x i chart)) | x <- [sep..i-1]]
-             -- top = lookupChart sep i chart;
-             -- filteredChartList = filter (\p -> fst (fst p) < sep) $ M.toList chart;
-             -- newchart1 = M.fromList $ foldl' (\chartList k -> ((k,i+1),(lookupChart k i chart)):chartList) filteredChartList [0..sep];
-             --(s1,s2) = T.splitAt (fromIntegral (i+1-sep)) newstack;
-             --(newchart2,_,_,_) = T.foldl' (boxAccumulator beam lexicon) (newchart1,(T.reverse s1),sep-1,i+1) s2
-             newchart = M.fromList $ foldl' (punctFilter sep i) [] $ M.toList chart
+    then let newchart = M.fromList $ ((i,i+1),[andCONJ (T.singleton c), orCONJ (T.singleton c)]):(foldl' (punctFilter sep i) [] $ M.toList chart)
          in (newchart, ((i+1):seps), (i+1), newstack, (take 1 (sort (lookupChart sep (i+1) newchart)):parsed))
     else let (newchart,_,_,_) = T.foldl' (boxAccumulator beam lexicon) (chart,T.empty,i,i+1) newstack;
              newseps | c `elem` ['「','『'] = (i+1:seplist)
@@ -149,10 +149,34 @@ chartAccumulator beam lexicon (chart,seplist,i,stack,parsed) c =
                      | otherwise = seplist 
          in (newchart,newseps,(i+1),newstack,parsed)
 
+{-
+punctFilter :: Int -> [((Int,Int),[CCG.Node])] -> ((Int,Int),[CCG.Node]) -> [((Int,Int),[CCG.Node])]
+punctFilter i charlist e@((from,to),nodes) 
+  | to == i = ((from,to+1),nodes):(e:charlist)
+  | otherwise = e:charlist
+-}
+
+{-
+punctFilter i chartList e@((from,to),nodes)
+  | to == i = let filterednodes = Maybe.catMaybes $ map (\n -> case CCG.unifyWithHead [] [] LT.anySExStem (CCG.cat n) of 
+                                                                 Nothing -> CCG.unifyWithHead [] [] N (CCG.cat n) of
+                                                                              Nothing -> Nothing
+                                                                              _ -> Just n
+                                                                 _ -> Just n) nodes
+              in ((from,to+1),filterednodes):(e:chartList)
+  | otherwise = e:chartList
+-}
+
+andCONJ :: T.Text -> CCG.Node
+andCONJ c = LT.lexicalitem c "new" 100 CCG.CONJ LT.andSR
+
+orCONJ :: T.Text -> CCG.Node
+orCONJ c = LT.lexicalitem c "new" 100 CCG.CONJ LT.orSR
+
 punctFilter :: Int -> Int -> [((Int,Int),[CCG.Node])] -> ((Int,Int),[CCG.Node]) -> [((Int,Int),[CCG.Node])]
 punctFilter sep i chartList e@((from,to),nodes)
   | to == i = if from <= sep 
-                 then ((from,to+1),nodes):chartList
+                 then ((from,to+1),nodes):(e:chartList)
                  else chartList
   | otherwise = if from < sep
                   then e:chartList

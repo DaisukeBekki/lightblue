@@ -19,15 +19,15 @@ cabal-version:       >=1.8
 
 library
   build-depends:     base == 4.*, process >= 1.2 && < 1.5, containers == 0.4.*, time == 1.4.*, text == 1.2.1.*, xml-conduit == 1.3.*
-  exposed-modules:   DependentTypes, CombinatoryCategorialGrammar, JapaneseLexicon, ChartParser, TeXmodule, XMLmodule, CallJuman, MyLexicon, LexicalTemplates
+  exposed-modules:   Logic.DependentTypes, Parser.CombinatoryCategorialGrammar, Parser.Japanese.Lexicon, Parser.ChartParser, Parser.TeXmodule, Parser.XMLmodule, Parser.Japanese.CallJuman, Parser.Japanese.MyLexicon, Parser.Japanese.Templates
   --other-modules:
 
 executable lightblue
   main-is:           ParseText.hs
-  other-modules:     ChartParser, XMLmodule
+  other-modules:     Parser.ChartParser, Parser.XMLmodule
   build-depends:     base == 4.*, process >= 1.2 && < 1.5, containers == 0.4.*, time == 1.4.*, text ==1.2.1.*, xml-conduit == 1.3.*
 
 executable lightbluetest
   main-is:           ParseCorpus.hs
-  other-modules:     DependentTypes, CombinatoryCategorialGrammar, ChartParser
+  other-modules:     Logic.DependentTypes, Parser.CombinatoryCategorialGrammar, Parser.ChartParser
   build-depends:     base == 4.*, process >= 1.2 && < 1.5, containers == 0.4.*, time == 1.4.*, text ==1.2.1.*

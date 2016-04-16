@@ -9,7 +9,7 @@ Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
 -}
-module JapaneseLexicon (
+module Parser.Japanese.Lexicon (
   --Node(..),
   Lexicon,
   --isCONJ,
@@ -25,11 +25,11 @@ import qualified Data.Text.Lazy.IO as T --text
 --import qualified Control.Parallel.Strategies as P  --parallel
 --import Data.Ratio as R                  --base
 --import qualified Data.Maybe as M
-import qualified CallJuman as JU
-import qualified MyLexicon as LEX
-import CombinatoryCategorialGrammar
-import DependentTypes
-import LexicalTemplates
+import Parser.CombinatoryCategorialGrammar
+import qualified Parser.Japanese.CallJuman as JU
+import qualified Parser.Japanese.MyLexicon as LEX
+import Parser.Japanese.Templates
+import Logic.DependentTypes
 
 -- | Lexicon consists of a set of CCG Nodes
 type Lexicon = [Node]
@@ -41,7 +41,7 @@ lookupLexicon word lexicon = filter (\l -> (pf l) == word) lexicon
 -- | This function takes a sentence and returns a numeration needed to parse that sentence, i.e., a union of 
 setupLexicon :: Lexicon -> T.Text -> IO(Lexicon)
 setupLexicon mylexicon sentence = do
-  jumandic <- T.readFile "/home/bekki/dropbox/MyProgram/Haskell/CCG05/Juman.dic"
+  jumandic <- T.readFile "/home/bekki/dropbox/MyProgram/Haskell/CCG06/Parser/Japanese/Juman.dic"
   let jumandicFiltered = concat $ map parseJumanLine $ filter (\l -> (head l) `T.isInfixOf` sentence) $ map (T.split (=='\t')) (T.lines jumandic)
   let mylexiconFiltered = filter (\l -> T.isInfixOf (pf l) sentence) mylexicon
   jumanCN <- JU.jumanCompoundNouns sentence
@@ -66,7 +66,6 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "名詞:地名"        ct  = constructProperName daihyo
   | T.isPrefixOf "名詞:組織名"      ct  = constructProperName daihyo
   | T.isPrefixOf "名詞:固有名詞"     ct  = constructProperName daihyo
-  -- T.isPrefixOf "名詞:時相名詞"    ct  = constructProperName daihyo
   | T.isPrefixOf "名詞:副詞的名詞"   ct  = [((anySExStem `SL` anySExStem) `BS` (defS anyPos [Attr]), (id,[]))]
   | T.isPrefixOf "名詞:時相名詞"     ct  = constructPredicate daihyo [Nda,Nna,Nno,Nni,Nemp] [Stem]
   | T.isPrefixOf "動詞:子音動詞カ行促音便形" ct  = constructVerb daihyo caseframe [V5IKU,V5YUK] [Stem]
@@ -102,16 +101,16 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "接頭辞:イ形容詞接頭辞"  ct   = [((defS [Aauo] [Stem] `BS` NP [F[Ga]]) `SL` (defS [Aauo] [Stem] `BS` NP [F[Ga]]), (id, []))]
   | T.isPrefixOf "接頭辞:ナ形容詞接頭辞"  ct   = [((defS [Nda] [Stem] `BS` NP [F[Ga]]) `SL` (defS [Nda] [Stem] `BS` NP [F[Ga]]), (id, []))]
   | T.isPrefixOf "接尾辞:名詞性名詞助数辞" ct  = constructCommonNoun daihyo -- ビット、ヘクトパスカル
-  --  T.isPrefixOf "接尾辞:名詞性名詞接尾辞" ct  = [((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Nc]])) `BS` N), ((Lam n (Lam p (Lam c ()))), []) ]
+  | T.isPrefixOf "接尾辞:名詞性名詞接尾辞" ct  = [(N `BS` N, ((Lam (Lam (Lam (App (App (Var 2) (Var 1)) (Lam (Sigma (App (Con daihyo) (Var 0)) (App (Var 2) (Var 0)))))))), [(daihyo, nPlacePredType 1)]))]
   | T.isPrefixOf "接尾辞:名詞性特殊接尾辞" ct  = constructCommonNoun daihyo
   | T.isPrefixOf "接尾辞:名詞性述語接尾辞" ct  = constructCommonNoun daihyo
-  --  T.isPrefixOf "特殊:句点" ct = 
-  --  T.isPrefixOf "特殊:読点" ct = 
+  --  T.isPrefixOf "特殊:句点" ct =
+  --  T.isPrefixOf "特殊:読点" ct =
   | T.isPrefixOf "特殊:括弧始" ct = [(LPAREN, (Unit, []))]
   | T.isPrefixOf "特殊:括弧終" ct = [(RPAREN, (Unit, []))]
-  -- T.isPrefixOf "数詞"           ct = [(N,id)]
-  | T.isPrefixOf "感動詞"               ct  = [(defS [Exp] [Term], (id, []))]
-  | otherwise                              = [(defS [Exp] [Term], ((Con $ T.concat [T.pack "Juman Error: ", ct]), []))]
+  | T.isPrefixOf "数詞"       ct = constructCommonNoun daihyo
+  | T.isPrefixOf "感動詞"     ct  = [(defS [Exp] [Term], (id, []))]
+  | otherwise                    = [(defS [Exp] [Term], ((Con $ T.concat [T.pack "Juman Error: ", ct]), []))]
 
 constructProperName :: T.Text -> [(Cat, (Preterm, [Signature]))]
 constructProperName daihyo = [((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Nc]])), properNameSR daihyo)]

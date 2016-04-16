@@ -9,7 +9,7 @@ Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
 -}
-module MyLexicon (
+module Parser.Japanese.MyLexicon (
   emptyCategories,
   myLexicon
   ) where
@@ -17,9 +17,9 @@ module MyLexicon (
 import Prelude hiding (id)
 import qualified Data.Text.Lazy as T
 import Data.Ratio
-import CombinatoryCategorialGrammar
-import DependentTypes
-import LexicalTemplates
+import Parser.CombinatoryCategorialGrammar
+import Logic.DependentTypes
+import Parser.Japanese.Templates
 
 ec :: T.Text -> T.Text -> Integer -> Cat -> (Preterm, [Signature]) -> Node
 ec word num r c (s,sg) = Node {rs=EC, pf=word, cat=c, sem=s, daughters=[], score=(r % 100), source=num, sig=sg}
@@ -100,11 +100,11 @@ emptyCategories = [
               argumentCM,
   -- pro1
   ec "pro" "(597)" 99
-              (T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Ga,O,Ni,To,No]]))
+              (T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Ga,O,Ni,To,No,Niyotte]]))
               ((Lam (App (Var 0) (Asp 1 (Con "entity")))),[]),
   -- pro2
-  ec "pro" "(597)" 98
-              (T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Ga,O,Ni,To,No]]))
+  ec "pro" "(597)" 99
+              (T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Ga,O,Ni,To,No,Niyotte]]))
               ((Lam (App (Var 0) (Asp 2 (Con "entity")))),[]),
   -- pro3
   ec "pro" "(597)" 96
@@ -565,7 +565,7 @@ myLexicon = concat $ [
   mylex ["的","てき"] "(508)" ((defS [Nda,Nna,Nni] [Stem] `BS` NP [F[Ga]]) `BS` N) ((Lam (Lam (App (Var 1) (Var 0)))), []),-- ??
   mylex ["気味","ぎみ"] "(509)" ((defS [Nda,Nna,Nno,Nni] [Stem] `BS` NP [F[Ga]]) `BS` N) ((Lam (Lam (App (Var 1) (Var 0)))),[]),-- ??
   mylex ["なの"] "(510)" (defS [Nda] [Stem] `BS` defS [Nda] [Stem])          (modalSR "ナノダ[MCN]"),
-  mylex ["の","ん"] "(511)" (defS [Nda] [Stem] `BS` S [F anyPos, F[Attr], F[M],F[M],F[M],F[P,M],F[M]])           (modalSR "ノダ[MCN]"),
+  mylex ["の","ん"] "(511)" (S [F[Nda],F[Stem],SF 1 [P,M],SF 2 [P,M],SF 3 [P,M],F[M],F[M]] `BS` S [F anyPos,F[Attr],SF 1 [P,M],SF 2 [P,M],SF 3 [P,M],F[P,M],F[M]])           (modalSR "ノダ[MCN]"),
   mylex ["筈","はず","ハズ"] "(511)" (defS [Nda] [Stem] `BS` defS anyPos [Attr]) (modalSR "ハズダ[MCN]"),
   mylex ["訳","わけ","ワケ"] "(511)" (defS [Nda] [Stem] `BS` defS anyPos [Attr]) (modalSR "ワケダ[MCN]"),
   mylex ["つもり"] "new" (defS [Nda] [Stem] `BS` defS anyPos [Attr])            (modalSR "ツモリ[MCN]"),
@@ -674,7 +674,10 @@ myLexicon = concat $ [
   -- 連用節
   --mylex ["に"] "new" ((T True 1 anySExStem `SL` T True 1 anySExStem) `BS` (defS [Nni] [Stem])) (Lam (Lam (Sigma (Var 1) (Var 1)))),
   -- 条件節
-  mylex ["ば"] "new" ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` (defS anyPos [Neg,Hyp])) ((Lam (Lam (Pi (Var 1) (Var 1)))),[]),
+  mylex ["ば"] "new" ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` (S [F anyPos,F[NegL,Hyp],F[P,M],F[P,M],F[P,M],F[M],F[M]])) 
+        ((Lam (Lam (Lam (Pi (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
+  mylex ["と"] "new" ((T False 1 anySExStem `SL` T False 1 anySExStem) `BS` (S [F anyPos,F[Term],F[P,M],F[P,M],F[P,M],F[M],F[M]])) 
+        ((Lam (Lam (Lam (Pi (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
   -- 終助詞
   mylex ["か"] "new" (S [SF 1 anyPos, F[Term], F[P,M],F[P,M],F[P,M],F[M],F[M]] `BS` S [SF 1 anyPos, F[Term], F[P,M],F[P,M],F[P,M],F[M],F[M]]) (id,[]),
   --mylex ["ね","ねえ","ねー","ネ"] "new" (defS anyPos, F[Term]] `BS` defS anyPos [Term]) (id,[]),
@@ -699,6 +702,7 @@ myLexicon = concat $ [
   -- 形式名詞
   mylex ["こと","事"] "new" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Nc]])) `BS` (S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]])) ((Lam (Lam (Lamvec (Sigma (Con "entity") (Sigma (Sigma (Con "state") (App (App (Con "こと") (Var 1 )) (Var 0))) (Sigma (App (App (Con "content") (App (Var 4) (Lam Top))) (Var 1)) (Appvec 3 (App (Var 4) (Var 2))))))))),[("こと",Type),("content",Type)]),
   mylex ["の"] "new" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Nc]])) `BS` (S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]])) ((Lam (Lam (Lamvec (Sigma (Con "entity") (Sigma (Sigma (Con "state") (App (App (Con "の") (Var 1 )) (Var 0))) (Sigma (App (App (Con "content") (App (Var 4) (Lam Top))) (Var 1)) (Appvec 3 (App (Var 4) (Var 2))))))))),[("の",Type),("content",Type)]),
+  mylex ["ことな","事な"] "new" (S [F[ANAS],F[Stem],F[M],F[M],F[P],F[M],F[M]] `BS` S [F anyPos,F [Attr],F[M],F[M],F[P,M],F[M],F[M]]) negOperator,
   -- 量化表現：Q-no N
   mylex ["すべての","あらゆる","一人一人の","各","各々の","それぞれの"] "(534)" ((T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F[Nc]])) `SL` N) 
         ((Lam (Lam (Lamvec (Pi (Sigma (Con "entity") (App (App (Var 3) (Var 0)) (Lam Top))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[]),

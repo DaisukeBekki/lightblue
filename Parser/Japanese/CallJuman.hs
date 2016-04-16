@@ -9,7 +9,7 @@ Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
 -}
-module CallJuman (
+module Parser.Japanese.CallJuman (
   jumanCompoundNouns
   ) where
   
@@ -17,8 +17,8 @@ import Prelude as P
 import qualified Data.Text.Lazy as T                 --text
 import qualified Data.Text.Lazy.IO as T              --text
 import qualified System.Process as S                 --process
-import CombinatoryCategorialGrammar
-import LexicalTemplates
+import Parser.CombinatoryCategorialGrammar
+import qualified Parser.Japanese.Templates as TPL
 
 --import qualified Data.List as L
 --import qualified System.IO as S
@@ -48,8 +48,8 @@ jumanNouns2nodes jumancompnouns =
   let name = \j -> T.intercalate "~" $ reverse j in
   case jumancompnouns of
     [] -> []
-    ((JumanCompNP j):js) -> (lexicalitem (T.concat $ reverse j) "(CompN)" 95 (T True 1 anySExStem `SL` (T True 1 anySExStem `BS` NP [F [Nc]])) (properNameSR (name j))):(jumanNouns2nodes js)
-    ((JumanCompCN j):js) -> (lexicalitem (T.concat $ reverse j) "(CompN)" 95 (N) (commonNounSR (name j))):(jumanNouns2nodes js)
+    ((JumanCompNP j):js) -> (TPL.lexicalitem (T.concat $ reverse j) "(CompN)" 95 (T True 1 TPL.anySExStem `SL` (T True 1 TPL.anySExStem `BS` NP [F [Nc]])) (TPL.properNameSR (name j))):(jumanNouns2nodes js)
+    ((JumanCompCN j):js) -> (TPL.lexicalitem (T.concat $ reverse j) "(CompN)" 95 (N) (TPL.commonNounSR (name j))):(jumanNouns2nodes js)
 
 -- | usage: findCompNouns jumanPairs [] 
 -- |   returns the list of pair (hyoso, predname)  
@@ -57,10 +57,9 @@ findCompNouns :: [JumanCompNoun] -> [JumanPair] -> [JumanCompNoun]
 findCompNouns compNouns jumanPairs =
   case jumanPairs of
     [] -> compNouns
-    (j1,j2,j3,j4):js -> case () of
-                       _ | (j2 == "名詞" || j3 == "名詞接頭辞" || "名詞性名詞" `T.isPrefixOf` j3) || (j2 == "動詞" && j4 == "基本連用形") -> accepted1Noun compNouns js j1
-                         | (j2 == "未定義語") -> processingCompNoun compNouns js [j1] j3
-                         | otherwise -> findCompNouns compNouns js
+    (j1,j2,j3,j4):js | (j2 == "名詞" || j3 == "名詞接頭辞" || "名詞性名詞" `T.isPrefixOf` j3) || (j2 == "動詞" && j4 == "基本連用形") -> accepted1Noun compNouns js j1
+                     | (j2 == "未定義語") -> processingCompNoun compNouns js [j1] j3
+                     | otherwise -> findCompNouns compNouns js
 
 accepted1Noun :: [JumanCompNoun] -> [JumanPair] -> T.Text -> [JumanCompNoun]
 accepted1Noun compNouns jumanPairs oneNoun = case jumanPairs of           

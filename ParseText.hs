@@ -7,8 +7,8 @@ import qualified Data.Text.Lazy.IO as T  --text
 import qualified Data.Time as Time       --time
 import qualified System.IO as S          --base
 import qualified System.Environment as S --base
-import qualified ChartParser as CP
-import qualified XMLmodule as XML        --conduit
+import qualified Parser.ChartParser as CP
+import qualified Parser.XMLmodule as XML        --conduit
 
 main :: IO()
 main = do
@@ -33,8 +33,8 @@ main = do
       let time = Time.diffUTCTime stop start
       mapM_ (action chart2 topbox2 time) args
   where action chart topbox time op
-          | op == "-tex" = CP.printNodesInTeX S.stdout $ CP.bestOnly $ topbox
-          | op == "-text" = CP.printChartInSimpleText S.stderr $ CP.bestOnly $ topbox
+          | op == "-tex" = CP.printNodesInTeX S.stdout $ take 10 $ CP.bestOnly $ topbox
+          | op == "-text" = CP.printChartInSimpleText S.stderr $ take 10 $ CP.bestOnly $ topbox
           | op == "-xml"  = XML.render S.stderr $ CP.bestOnly $ topbox
           | op == "-postag"  = CP.posTagger S.stdout $ CP.bestOnly $ topbox
           | op == "-debug" = CP.printChart S.stdout chart -- do; CP.printNodes S.stdout 30 $ ns; CP.printChart S.stdout chart

@@ -11,12 +11,12 @@ Stability   : beta
 To compile:
 > ghc -package text-1.2.1.1 XMLmodulem
 -}
-module XMLmodule (
+module Parser.XMLmodule (
   render
   ) where
 
-import qualified CombinatoryCategorialGrammar as CCG
-import qualified DependentTypes as D
+import qualified Parser.CombinatoryCategorialGrammar as CCG
+import qualified Logic.DependentTypes as D
 import qualified Data.Text.Lazy as T   --text
 import qualified Data.Map as M         --container
 import qualified Text.XML as X         --xml-conduit

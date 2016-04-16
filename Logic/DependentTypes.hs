@@ -1,4 +1,4 @@
-{-# OPTIONS -Wall #-}
+{-# OPTIONS -Wall -XDeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {-|
@@ -19,8 +19,8 @@ Lightblue requries @juman@ and @nkf@ to be installed in advance.
 > cabal haddock
 
 -}
-module DependentTypes (
-  -- * Types
+module Logic.DependentTypes (
+  -- * Typess
   Preterm(..),
   Selector(..),
   Signature,
@@ -40,6 +40,8 @@ module DependentTypes (
   ) where
 
 import qualified Data.Text.Lazy as T
+--import qualified GHC.Generics as C
+--import qualified Data.Serialize as C
 
 -- | Preterms of Underspecified Dependent Type Theory (UDTT).
 data Preterm =
@@ -90,9 +92,16 @@ instance SimpleText Selector where
   toText Fst = "1"  -- `Proj` `Fst` m is the first projection of m
   toText Snd = "2" -- `Proj` `Snd` m is the second projection of m
 
+
 -- | translates a term into a simple text notation.
 instance SimpleText Preterm where
   toText = toTextWithVN []
+
+--instance C.Serialize Selector
+--instance C.Generic T.Text
+-- instance C.GSerialize (C.Rep T.Text)
+--instance C.Serialize T.Text 
+--instance C.Serialize Preterm
 
 toTextDeBruijn :: Preterm -> T.Text
 toTextDeBruijn preterm = case preterm of
@@ -304,10 +313,9 @@ multiply m n = Natrec m Zero (Lam (Lam (add n (Var 0))))
 -- addLambda 0 (Appvec 0 m) = Appvec 0 (App () (Var 1))
 addLambda :: Int -> Preterm -> Preterm
 addLambda i preterm = case preterm of
-  Var j      -> case () of
-                  _ | j > i     -> Var (j+1)
-                    | j < i     -> Var j
-                    | otherwise -> Con $ T.concat [" Error: var ", T.pack (show j)]
+  Var j | j > i     -> Var (j+1)
+        | j < i     -> Var j
+        | otherwise -> Con $ T.concat [" Error: var ", T.pack (show j)]
   Pi a b     -> Pi (addLambda i a) (addLambda (i+1) b)
   Not a      -> Not (addLambda (i+1) a)
   Lam m      -> Lam (addLambda (i+1) m)
@@ -316,10 +324,9 @@ addLambda i preterm = case preterm of
   Pair m n   -> Pair (addLambda i m) (addLambda i n)
   Proj s m   -> Proj s (addLambda i m)
   Lamvec m   -> Lamvec (addLambda (i+1) m)
-  Appvec j m -> case () of
-                  _ | j > i      -> Appvec (j+1) (addLambda i m)
-                    | j < i      -> Appvec j (addLambda i m)
-                    | otherwise  -> Appvec j (App (addLambda i m) (Var (j+1)))
+  Appvec j m | j > i     -> Appvec (j+1) (addLambda i m)
+             | j < i     -> Appvec j (addLambda i m)
+             | otherwise -> Appvec j (App (addLambda i m) (Var (j+1)))
   Asp j m    -> Asp j (addLambda i m)
   t -> t
 
@@ -327,10 +334,9 @@ addLambda i preterm = case preterm of
 -- this function takes an index and a preterm, transforms the latter in a way that the Var/Appvec with an index j 
 deleteLambda :: Int -> Preterm -> Preterm
 deleteLambda i preterm = case preterm of
-  Var j      -> case () of
-                  _ | j > i     -> Var (j-1)
-                    | j < i     -> Var j
-                    | otherwise -> Con $ T.concat ["Error: var ", T.pack (show j)]
+  Var j | j > i     -> Var (j-1)
+        | j < i     -> Var j
+        | otherwise -> Con $ T.concat ["Error: var ", T.pack (show j)]
   Pi a b     -> Pi (deleteLambda i a) (deleteLambda (i+1) b)
   Not a      -> Not (deleteLambda (i+1) a)
   Lam m      -> Lam (deleteLambda (i+1) m)
@@ -339,10 +345,9 @@ deleteLambda i preterm = case preterm of
   Pair m n   -> Pair (deleteLambda i m) (deleteLambda i n)
   Proj s m   -> Proj s (deleteLambda i m)
   Lamvec m   -> Lamvec (deleteLambda (i+1) m)
-  Appvec j m -> case () of
-                  _ | j > i     -> Appvec (j-1) (deleteLambda i m)
-                    | j < i     -> Appvec j (deleteLambda i m)
-                    | otherwise -> deleteLambda i m
+  Appvec j m | j > i     -> Appvec (j-1) (deleteLambda i m)
+             | j < i     -> Appvec j (deleteLambda i m)
+             | otherwise -> deleteLambda i m
   Asp j m    -> Asp j (deleteLambda i m)
   t -> t
 

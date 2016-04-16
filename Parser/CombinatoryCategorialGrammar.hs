@@ -10,7 +10,7 @@ Stability   : beta
 
 Syntactic categories, syntactic features and combinatory rules of CCG.
 -}
-module CombinatoryCategorialGrammar (
+module Parser.CombinatoryCategorialGrammar (
   -- * Types
   Node(..),
   RuleSymbol(..),
@@ -31,7 +31,8 @@ module CombinatoryCategorialGrammar (
   coordinationRule,
   parenthesisRule,
   -- test
-  -- test
+  unifyCategory,
+  unifyWithHead
   ) where
 
 import Prelude hiding (id)
@@ -43,7 +44,7 @@ import Data.Fixed                    --base
 import Data.Ratio                    --base
 --import Control.Monad                 --base
 --import Text.Printf -- for 'printf'
-import DependentTypes
+import Logic.DependentTypes
 
 data Node = Node {
   rs :: RuleSymbol,    -- ^ The name of the rule
@@ -843,7 +844,7 @@ unifyCategory2 csub fsub c1 c2 = case (c1,c2) of
                                   (True,False) -> unifyWithHead csub fsub u1 u2
                                   (False,True) -> unifyWithHead csub fsub u2 u1
                                   (False,False) -> unifyCategory2 csub fsub u1 u2
-            let ijmax = max i j; ijmin = min i j; result = T (f1 || f2) ijmin u3
+            let ijmax = max i j; ijmin = min i j; result = T (f1 && f2) ijmin u3
             Just (result, alter ijmin (SubstVal result) (alter ijmax (SubstLink ijmin) csub2), fsub2)
   (T f i u, c) -> do
                      (c3,csub2,fsub2) <- case f of

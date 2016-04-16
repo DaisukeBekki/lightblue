@@ -9,7 +9,7 @@ Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
 -}
 
-module LexicalTemplates (
+module Parser.Japanese.Templates (
   -- * Macros for lexical items
   lexicalitem,
   -- * Macros for CCG syntactic features
@@ -51,8 +51,8 @@ module LexicalTemplates (
 import Prelude hiding (id)
 import qualified Data.Text.Lazy as T -- text
 import Data.Ratio
-import CombinatoryCategorialGrammar
-import DependentTypes
+import Parser.CombinatoryCategorialGrammar
+import Logic.DependentTypes
 
 {- Some Macros for defining lexical items -}
 
@@ -88,7 +88,7 @@ anyPos :: [FeatureValue]
 anyPos = verb ++ adjective ++ nomPred ++ [Exp]
 
 nonStem :: [FeatureValue]
-nonStem = [Neg, Cont, Term, Attr, Hyp, Imper, Pre, ModU, ModS, VoR, VoS, VoE, NegL, TeForm]
+nonStem = [Neg, Cont, Term, Attr, Hyp, Imper, Pre, VoR, VoS, VoE, NegL, TeForm, NiForm]
 
 anySExStem :: Cat
 anySExStem = S [SF 2 anyPos, SF 3 nonStem, SF 4 [P,M], SF 5 [P,M], SF 6 [P,M], F[M], F[M]]

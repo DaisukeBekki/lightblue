@@ -8,7 +8,7 @@ Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
 -}
-module TeXmodule (
+module Parser.TeXmodule (
   Typeset(..),
   printNNodesInTeX,
   printNodesInTeX
@@ -17,8 +17,8 @@ module TeXmodule (
 import qualified Data.Text.Lazy as T
 import qualified Data.Maybe as Maybe
 import qualified System.IO as S        --base
-import DependentTypes
-import CombinatoryCategorialGrammar as CCG
+import Logic.DependentTypes
+import Parser.CombinatoryCategorialGrammar as CCG
 
 -- | `Typeset` is a class of types whose terms can be translated into a TeX source (in Data.Text.Lazy). 
 class Typeset a where
