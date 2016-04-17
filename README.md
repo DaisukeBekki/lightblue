@@ -9,7 +9,7 @@
 
 ### Prerequisite: Haskell Platform
   1. GHC/cabal (>= version 7.0)
-    * Debian: `sudo apt-get install ghc`
+    * Debian: `sudo apt-get install haskell-platform` `sudo apt-get install haskell-mode`
     * Mac: 
 
 ### Prerequisite: command-line tools
