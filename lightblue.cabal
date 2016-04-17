@@ -12,7 +12,7 @@ author:              Daisuke Bekki
 maintainer:          Daisuke Bekki
 stability:           beta
 homepage:            https://bitbucket.org/DaisukeBekki/lightblue
-data-files:          Juman.dic
+data-files:          Parser/Japanese/Juman.dic
 category:            Parser
 build-type:          Simple
 cabal-version:       >=1.8
