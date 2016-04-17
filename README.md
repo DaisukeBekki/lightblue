@@ -9,7 +9,7 @@
 
 ### Prerequisite: Haskell Platform
   1. GHC/cabal (>= version 7.0)
-    * Debian: `sudo apt-get install ghc`
+    * Debian: `sudo apt-get install haskell-platform` `sudo apt-get install haskell-mode`
     * Mac: 
 
 ### Prerequisite: command-line tools
@@ -18,10 +18,10 @@
     * Mac:
   1. nkf (only for handling EUC-code for juman)
     * Debian: `sudo apt-get install nkf`
-    * Mac:
+    * Mac: `sudo port install nkf`
   1. tidy (only for prettyprinting XML outputs)
     * Debian: `sudo apt-get install tidy`
-    * Mac:
+    * Mac: `sudo port install tidy`
 
 ### Download
 Do the following in the directory under which you'd like to install *lightblue*.
