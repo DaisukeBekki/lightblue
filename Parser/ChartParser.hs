@@ -70,6 +70,7 @@ posTagger handle nodes =
     [] -> S.hPutStrLn handle "No results."
     (n:_) -> mapM_ ((S.hPutStrLn handle) . T.unpack) $ node2PosTags n
 
+-- | A subroutine for `posTagger` function
 node2PosTags :: CCG.Node -> [T.Text]
 node2PosTags node@(CCG.Node _ _ _ _ _ _ _ _) =
   case CCG.daughters node of
@@ -153,12 +154,12 @@ chartAccumulator beam lexicon (chart,seplist,i,stack,parsed) c =
                      | otherwise = seplist 
          in (newchart,newseps,(i+1),newstack,parsed)
 
-{-
-punctFilter :: Int -> [((Int,Int),[CCG.Node])] -> ((Int,Int),[CCG.Node]) -> [((Int,Int),[CCG.Node])]
-punctFilter i charlist e@((from,to),nodes) 
-  | to == i = ((from,to+1),nodes):(e:charlist)
-  | otherwise = e:charlist
--}
+punctFilter :: Int -> Int -> [((Int,Int),[CCG.Node])] -> ((Int,Int),[CCG.Node]) -> [((Int,Int),[CCG.Node])]
+punctFilter sep i charList e@((from,to),nodes) 
+  | to == i = ((from,to+1),nodes):(e:charList)
+  | otherwise = if from <= sep
+                   then e:charList
+                   else charList
 
 {-
 punctFilter i chartList e@((from,to),nodes)
@@ -171,12 +172,7 @@ punctFilter i chartList e@((from,to),nodes)
   | otherwise = e:chartList
 -}
 
-andCONJ :: T.Text -> CCG.Node
-andCONJ c = LT.lexicalitem c "new" 100 CCG.CONJ LT.andSR
-
-orCONJ :: T.Text -> CCG.Node
-orCONJ c = LT.lexicalitem c "new" 100 CCG.CONJ LT.orSR
-
+{-
 punctFilter :: Int -> Int -> [((Int,Int),[CCG.Node])] -> ((Int,Int),[CCG.Node]) -> [((Int,Int),[CCG.Node])]
 punctFilter sep i chartList e@((from,to),nodes)
   | to == i = if from <= sep 
@@ -185,6 +181,13 @@ punctFilter sep i chartList e@((from,to),nodes)
   | otherwise = if from < sep
                   then e:chartList
                   else chartList
+-}
+
+andCONJ :: T.Text -> CCG.Node
+andCONJ c = LT.lexicalitem c "new" 100 CCG.CONJ LT.andSR
+
+orCONJ :: T.Text -> CCG.Node
+orCONJ c = LT.lexicalitem c "new" 100 CCG.CONJ LT.orSR
 
 type PartialBox = (Chart,T.Text,Int,Int)
 
