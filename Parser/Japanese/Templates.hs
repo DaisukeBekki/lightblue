@@ -39,6 +39,8 @@ module Parser.Japanese.Templates (
   intensionalEvent,
   intensionalState,
   modalSR,
+  modifierSR,
+  ---
   mannerAdverb,
   eventModifier,
   negOperator,
@@ -165,6 +167,10 @@ commonNounSR op = ((Lam (Lam (Sigma (Con "state") (Sigma (App (App (Con op) (Var
 -- | S\S, S/S: \p.\c.op (pc)
 modalSR :: T.Text -> (Preterm,[Signature])
 modalSR op = ((Lam (Lam (App (Con op) (App (Var 1) (Var 0))))), [(op, Pi Type Type)])
+
+-- | N\N, N/N
+modifierSR :: T.Text -> (Preterm,[Signature])
+modifierSR op = ((Lam (Lam (Lam (App (App (Var 2) (Var 1)) (Lam (Sigma (App (Con op) (Var 0)) (App (Var 2) (Var 0)))))))), [(op, nPlacePredType 1)])
 
 -- | 
 -- >>> S\NP\(S\NP):    \p.\x.\c.op(x,\z.(pz)c)

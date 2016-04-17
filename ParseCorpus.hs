@@ -22,11 +22,9 @@ main = do
     args <- S.getArgs
     sentences <- T.readFile $ head args
     let mylexicon = CP.myLexicon
-    -- (i,j) <- L.foldl' (f mylexicon) (return (0,0)) $ filter (/= T.empty) $ concat $ map (T.split (`elem` ['、','―','，','。','．','「','」'])) $ T.lines sentences
     (i,j) <- L.foldl' (f mylexicon) (return (0,0)) $ filter (/= T.empty) $ T.lines sentences
     stop <- Time.getCurrentTime
     let totaltime = Time.diffUTCTime stop start
-    --CP.printChartInSimpleText $ topbox
     S.hPutStrLn S.stderr $ "Results: " ++ (show i) ++ "/" ++ (show j) ++ " (" ++ (show $ ((fromRational ((toEnum i % toEnum j)*100))::Fixed E3)) ++ "%)"
     S.hPutStrLn S.stderr $ "Execution Time: " ++ show totaltime ++ " (average: " ++ (show $ ((fromRational ((toEnum (fromEnum totaltime)) % toEnum (j*1000000000000)))::Fixed E3)) ++ "s/sentence)"
 
@@ -37,7 +35,7 @@ f :: [CCG.Node]
 f mylexicon score s =
   do
   (i,j) <- score
-  lexicon <- CP.setupLexicon mylexicon (T.replace "―" "、" s)
+  lexicon <- CP.setupLexicon mylexicon s
   S.putStr $ "[" ++ show (j+1) ++ "] "
   T.putStrLn s
   T.putStrLn $ "Beam width = 16:"

@@ -3,7 +3,7 @@
 # Juman.dic:	ParseMorita.hs 
 
 all:  Parser/Japanese/Juman.dic
-	ghc --make -package text-1.2.1.1 -package containers-0.4.2.1 ParseText.hs
+	ghc --make -O2 -package text-1.2.1.1 -package containers-0.4.2.1 ParseText.hs
 
 install: Parser/Japanese/Juman.dic
 	cabal configure
@@ -11,7 +11,7 @@ install: Parser/Japanese/Juman.dic
 	cabal install
 
 test: Parser/Japanese/Juman.dic
-	ghc -package text-1.2.1.1 -package containers-0.4.2.1 ParseCorpus.hs
+	ghc -O2 -package text-1.2.1.1 -package containers-0.4.2.1 ParseCorpus.hs
 
 run: ParseCorpus
 	./ParseCorpus ../JSeM_beta/test.txt

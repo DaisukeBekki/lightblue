@@ -48,8 +48,8 @@ jumanNouns2nodes jumancompnouns =
   let name = \j -> T.intercalate "~" $ reverse j in
   case jumancompnouns of
     [] -> []
-    ((JumanCompNP j):js) -> (TPL.lexicalitem (T.concat $ reverse j) "(CompN)" 95 (T True 1 TPL.modifiableS `SL` (T True 1 TPL.modifiableS `BS` NP [F [Nc]])) (TPL.properNameSR (name j))):(jumanNouns2nodes js)
-    ((JumanCompCN j):js) -> (TPL.lexicalitem (T.concat $ reverse j) "(CompN)" 95 (N) (TPL.commonNounSR (name j))):(jumanNouns2nodes js)
+    ((JumanCompNP j):js) -> (TPL.lexicalitem (T.concat $ reverse j) "(CompN)" 96 (T True 1 TPL.modifiableS `SL` (T True 1 TPL.modifiableS `BS` NP [F [Nc]])) (TPL.properNameSR (name j))):((TPL.lexicalitem (T.concat $ reverse j) "(CompN)" 94 (N) (TPL.commonNounSR (name j))):(jumanNouns2nodes js))
+    ((JumanCompCN j):js) -> (TPL.lexicalitem (T.concat $ reverse j) "(CompN)" 96 (N) (TPL.commonNounSR (name j))):(jumanNouns2nodes js)
 
 -- | usage: findCompNouns jumanPairs [] 
 -- |   returns the list of pair (hyoso, predname)  

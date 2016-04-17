@@ -37,9 +37,9 @@ emptyCategories = [
   --ec "come" "(154)" 100
   --            ((defS [VK] [Stem] `BS` NP [F[Ga]]) `BS` NP [F[Ni]])
   --            (verbSR 2 "来る"),
-  -- サ行変格活用動詞語幹 -- とりあえずガヲ、ガヲトのパターンのみ。
+  -- サ行変格活用動詞語幹 -- とりあえずガヲ、ガヲトのパターンのみ。→サ変名詞のみに修正
   ec "do" "(156)" 100
-              ((defS [VS] [Stem] `BS` NP [F[Ga]]) `BS` NP [F[O]])
+              ((defS [VS] [Stem] `BS` NP [F[Ga]]) `BS` defS [VSN] [Stem])
               (verbSR 2 "する"),
   --lexicalitem "\\emp" "(156)" (100%100)
   --            (((defS [VS] [Stem] `BS` NP [Ga]) `BS` NP [F[O]]) `BS` defS [To])
@@ -123,7 +123,7 @@ emptyCategories = [
               ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F ([V5k, V5s, V5t, V5n, V5m, V5r, V5w, V5g, V5z, V5b, V5IKU, V5YUK, V5ARU, V5NAS, V5TOW, V1, VS, VSN, VZ]++adjective++nomPred), F[Cont], F[M],F[P,M],F[P,M],F[M],F[M]]))
               ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
   ec "\\emp" "new" 99
-              ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F anyPos, F[TeForm], F[M],F[P,M],F[P,M],F[M],F[M]]))
+              ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F anyPos, F[TeForm,NiForm], F[M],F[P,M],F[P,M],F[M],F[M]]))
               ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[])
   -- ダロウ接続形を派生する空範疇
   -- lexicalitem "\\emp" "(354)" (99%100)
@@ -155,7 +155,7 @@ myLexicon = concat $ [
   mylex ["によって","によっては"] "(524)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Niyotte]])) `BS` NP [F[Nc]]) argumentCM,
   mylex ["が","の"] "(531)?" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Ga,No]])) `BS` NP [F[Nc]]) argumentCM,
   -- 格助詞（の）
-  mylex ["の"] "(531)+" ((N `SL` N) `BS` (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) 
+  mylex ["の","が"] "(531)+" ((N `SL` N) `BS` (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) 
                ((Lam (Lam (Lam (Lam (App (Var 3) (Lam (Sigma (App (App (Var 3) (Var 2)) (Var 1)) (App (App (Con "の[MCN]") (Var 1)) (Var 3))))))))),[]),
   -- adjunct:
   mylex ["と","とは","とも","とさえ"] "(524)+" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` NP [F[Nc]]) (adjunctCM "ト"),
@@ -739,5 +739,6 @@ myLexicon = concat $ [
   mylex ["死","し"] "BCCWJ" ((defS [V5s] [Stem] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "死す"),
   mylex ["ユーカㇻ"] "BCCWJ" (NP [F[Nc]]) (properNameSR "ユーカラ"),
   mylex ["則ち"] "BCCWJ" (defS [Nemp] [Stem] `BS` NP [F[Ga]]) (predSR 1 "すなわち"),
+  mylex ["まっ先"] "BCCWJ" (defS [Nni] [Stem] `BS` NP [F[Ga]]) (predSR 1 "真っ先"),
   mylex ["事実"] "BCCWJ" N (commonNounSR "事実")
   ]

@@ -122,9 +122,9 @@ parseMain beam lexicon sentence
 -- | removes occurrences of non-letters from an input text.
 purifyText :: T.Text -> T.Text
 purifyText text = T.filter (\c -> not $ isSpace c)
-                    (case T.uncons text of
+                    (case T.uncons text of -- remove a non-literal symbol at the beginning of a sentence (if any)
                         Nothing -> T.empty
-                        Just (c,t) | c `elem` [' ','　','◎','○','●','・','▲','△','▼','△'] -> t -- remove symbols at the beginning of sentences
+                        Just (c,t) | c `elem` [' ','　','◎','○','●','・','▲','△','▼','△'] -> t
                                    | otherwise -> text)
 
 -- | triples representing a state during parsing:
