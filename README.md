@@ -10,7 +10,7 @@
 ### Prerequisite: Haskell Platform
   1. GHC/cabal (>= version 7.0)
     * Debian: `sudo apt-get install haskell-platform` `sudo apt-get install haskell-mode`
-    * Mac: `https://ghcformacosx.github.io/`
+    * Mac: [Haskell for Mac OS X](https://ghcformacosx.github.io/)
 
 ### Prerequisite: command-line tools
   1. juman (>= version 5.0)
