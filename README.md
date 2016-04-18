@@ -40,6 +40,9 @@ Then move to <lightblue> and check the dependencies by the following command.
 cabal configure
 ```
 
+If this fails, please install the following libraries manually:
+`cabal install containers-0.4.2.1`
+
 ### Build
 Then build *lightblue* in <lightblue>.
 ```
