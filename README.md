@@ -15,7 +15,7 @@
 ### Prerequisite: command-line tools
   1. juman (>= version 5.0)
     * Debian: `sudo apt-get install juman`
-    * Mac:
+    * Mac: [日本語形態素解析システム JUMAN](http://nlp.ist.i.kyoto-u.ac.jp/index.php?JUMAN)
   1. nkf (only for handling EUC-code for juman)
     * Debian: `sudo apt-get install nkf`
     * Mac: `sudo port install nkf`
