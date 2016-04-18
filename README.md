@@ -3,7 +3,6 @@
 
 * *lightblue* is a Japanese CCG parser with DTS representations.
 * The current version is 0.1.1.0.
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
 
 ## How do I get set up?
 
@@ -11,6 +10,12 @@
   1. GHC/cabal (>= version 7.0)
     * Debian: `sudo apt-get install haskell-platform` `sudo apt-get install haskell-mode`
     * Mac: [Haskell for Mac OS X](https://ghcformacosx.github.io/)
+
+After installing GHC, update cabal.
+```
+#!shell
+cabal update
+```
 
 ### Prerequisite: command-line tools
   1. juman (>= version 5.0)
@@ -34,9 +39,11 @@ This operation will create the directory *lightblue* (we will call this director
 ### Configuration
 First you have to rewrite the value of `jumandicpath` in `<lightblue>/Parser/Japanese/Lexicon.hs` to the location of `<lightblue>/Parser/Japanese/Juman.dic` according to your environment.
 
-Then move to <lightblue> and check the dependencies by the following command.
+Then move to <lightblue>, create a sandbox environment there, and check the dependencies as follows.
 ```
 #!shell
+cd <lightblue>
+cabal sandbox init
 cabal configure
 ```
 
@@ -115,3 +122,4 @@ lightbluetest <corpus>
 
 * Repo owner or admin
 * Other community or team contact
+* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
