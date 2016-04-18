@@ -42,6 +42,7 @@ cabal configure
 
 If this fails, please install the following libraries manually:
 `cabal install containers-0.4.2.1`
+`cabal install text-1.2.1.1`
 
 ### Build
 Then build *lightblue* in <lightblue>.
