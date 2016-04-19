@@ -37,7 +37,8 @@ $ git clone git@bitbucket.org:DaisukeBekki/lightblue.git
 This operation will create the directory *lightblue* (we will call this directory as <lightblue> in the following document) under the directory in which you did the above.
 
 ### Configuration
-First you have to rewrite the value of `jumandicpath` in `<lightblue>/Parser/Japanese/Lexicon.hs` to the location of `<lightblue>/Parser/Japanese/Juman.dic` according to your environment.
+First you have to add the environment variable LIGHTBLUE and set its value as <lightblue>.  For example, you may add the following line to .bashrc (or whatever configuration file for your shell).
+`export LIGHTBLUE=/home/lightblue/`
 
 Then move to <lightblue>, create a sandbox environment there, and check the dependencies as follows.
 ```
