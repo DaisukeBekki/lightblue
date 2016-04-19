@@ -15,7 +15,6 @@ module Parser.Japanese.Lexicon (
   --isCONJ,
   lookupLexicon,
   setupLexicon,
-  jumandicpath,
   LEX.emptyCategories,
   LEX.myLexicon
   ) where
@@ -25,6 +24,7 @@ import qualified Data.Text.Lazy as T    --text
 import qualified Data.Text.Lazy.IO as T --text
 import qualified Data.List as L         -- base
 import qualified Data.Map as M          -- base
+import qualified System.Environment as E -- base
 --import qualified Control.Parallel.Strategies as P  --parallel
 --import Data.Ratio as R                  --base
 --import qualified Data.Maybe as M
@@ -34,9 +34,9 @@ import qualified Parser.Japanese.MyLexicon as LEX
 import Parser.Japanese.Templates
 import Logic.DependentTypes
 
--- | The location of @Juman.dic@
-jumandicpath :: String
-jumandicpath = "/home/bekki/dropbox/MyProgram/Haskell/CCG06/Parser/Japanese/Juman.dic"
+---- | The location of @Juman.dic@
+--jumandicpath :: String
+--jumandicpath = "/home/bekki/dropbox/MyProgram/Haskell/CCG06/Parser/Japanese/Juman.dic"
 
 -- | Lexicon consists of a set of CCG Nodes
 type LexicalItems = [Node]
@@ -48,14 +48,15 @@ lookupLexicon word lexicon = filter (\l -> (pf l) == word) lexicon
 -- | This function takes a sentence and returns a numeration needed to parse that sentence, i.e., a union of 
 setupLexicon :: LexicalItems -> T.Text -> IO(LexicalItems)
 setupLexicon mylexicon sentence = do
-  -- | 1. Setting up lexical items provided by JUMAN++
-  jumandic <- T.readFile jumandicpath
+  --  1. Setting up lexical items provided by JUMAN++
+  jumandicpath <- E.getEnv "LIGHTBLUE"
+  jumandic <- T.readFile $ jumandicpath ++ "Parser/Japanese/Juman.dic"
   let (jumandicFiltered,(f2,f3)) = L.foldl' parseJumanLine ([],(M.empty,M.empty)) $ filter (\l -> (head l) `T.isInfixOf` sentence) $ map (T.split (=='\t')) (T.lines jumandic)
-  -- | 2. Setting up private lexicon
+  --  2. Setting up private lexicon
   let mylexiconFiltered = filter (\l -> T.isInfixOf (pf l) sentence) mylexicon
-  -- | 3. Setting up compound nouns (returned from an execution of JUMAN)
+  --  3. Setting up compound nouns (returned from an execution of JUMAN)
   jumanCN <- JU.jumanCompoundNouns (T.replace "―" "、" sentence)
-  -- |
+  -- 
   let commonnouns = map (\(hyoki, daihyo) -> lexicalitem hyoki "(CN)" 100 N (commonNounSR daihyo)) $ M.toList f2
   let propernames = map (\(hyoki, daihyo) -> lexicalitem hyoki "(PN)" 100 ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) (properNameSR daihyo)) $ M.toList f3
   -- | 1+2+3
