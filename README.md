@@ -29,6 +29,7 @@ $ sudo apt-get install haskell-mode
 
 ### Prerequisite: command-line tools
 The followint tools must be installed before executing *lightblue*.
+
   1. juman (>= version 5.0)
     * Debian: `sudo apt-get install juman`
     * Mac: [日本語形態素解析システム JUMAN](http://nlp.ist.i.kyoto-u.ac.jp/index.php?JUMAN)
@@ -48,7 +49,7 @@ $ git clone git@bitbucket.org:DaisukeBekki/lightblue.git
 This operation will create the directory *lightblue* (henceforth we will refer to this directory as <lightblue>) under the directory in which you did the above.
 
 ### Configuration
-First you need to add the environment variable LIGHTBLUE and set its value as <lightblue>.  Suppose that <lightblue> is `/home/lightblue/', you are suppsed to add the following line to .bashrc (or whatever configuration file for your shell).
+First you need to add the environment variable LIGHTBLUE and set its value as <lightblue>.  Suppose that <lightblue> is `/home/lightblue/`, you are supposed to add the following line to .bashrc (or whatever configuration file for your shell).
 `export LIGHTBLUE=/home/lightblue/`
 
 Then move to <lightblue>, create a sandbox environment there, and check the dependencies as follows.
