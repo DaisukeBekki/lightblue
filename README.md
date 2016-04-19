@@ -1,20 +1,28 @@
 # README
 ## What is this repository for?
 
-* *lightblue* is a Japanese CCG parser with DTS representations.
-* The current version is 0.1.1.0.
+* *lightblue* is a Japanese CCG parser with DTS representations.  The current version is 0.1.1.0.  Copyright is owned by Daisuke Bekki.
+
 
 ## How do I get set up?
 
 ### Prerequisite: Haskell Platform
   1. GHC/cabal (>= version 7.0)
-    * Debian: `sudo apt-get install haskell-platform` `sudo apt-get install haskell-mode`
+    * Linux: [The Glasgow Haskell Compiler](https://www.haskell.org/ghc/) 
     * Mac: [Haskell for Mac OS X](https://ghcformacosx.github.io/)
+
+In Debian you may just do `sudo apt-get install haskell-platform`.
 
 After installing GHC, update cabal.
 ```
 #!shell
 $ cabal update
+```
+
+Installing Haskell-mode for Emacs will help.
+```
+#!shell
+$ sudo apt-get install haskell-mode
 ```
 
 ### Prerequisite: command-line tools
@@ -105,8 +113,6 @@ If you have a text file (one sentence per line) <corpus>, then you can feed it t
 #!shell
 $ lightbluetest <corpus>
 ```
-
-### Deployment instructions
 
 ## Contribution guidelines ###
 
