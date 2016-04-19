@@ -48,11 +48,13 @@ $ cabal install --only-dependencies
 $ cabal build
 ```
 
-If this fails, please install the following libraries manually:
+### Installation
+If the build is successful, then you can install *lightblue-0.1.1.0*.
 ```
-$ cabal install containers-0.4.2.1`
-$ cabal install text-1.2.1.1`
+#!shell
+$ cabal install
 ```
+If succeeded, executable is found at `<lightblue>/.cabal-sandbox/bin/lightblue` and `<lightblue>/.cabal-sandbox/bin/lightbluetest`.  You may want to set a path to `<lightblue>/.cabal-sandbox/bin`.
 
 ### Generating the Document
 The HTML document is created by the following command in <lightblue>:
@@ -61,15 +63,6 @@ The HTML document is created by the following command in <lightblue>:
 $ cabal haddock
 ```
 The generated document is found at: `<lightblue>/dist/doc/html/lightblue/index.html`
-
-### Installation
-If the build is successful, then you can install *lightblue-0.1.1.0* in your GHC system.
-```
-#!shell
-$ cabal install
-```
-If succeeded, executable is found at `<home>/.cabal/bin/lightblue` and `<home>/.cabal/bin/lightbluetest`.
-You may want to set a path to `<home>/.cabal/bin`.
 
 ### How to run tests
 To parse a Japanese sentence and get a text representation, execute:
