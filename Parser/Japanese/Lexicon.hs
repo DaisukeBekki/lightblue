@@ -46,14 +46,14 @@ lookupLexicon :: T.Text -> LexicalItems -> [Node]
 lookupLexicon word lexicon = filter (\l -> (pf l) == word) lexicon
 
 -- | This function takes a sentence and returns a numeration needed to parse that sentence, i.e., a union of 
-setupLexicon :: LexicalItems -> T.Text -> IO(LexicalItems)
-setupLexicon mylexicon sentence = do
+setupLexicon :: T.Text -> IO(LexicalItems)
+setupLexicon sentence = do
   --  1. Setting up lexical items provided by JUMAN++
   jumandicpath <- E.getEnv "LIGHTBLUE"
   jumandic <- T.readFile $ jumandicpath ++ "Parser/Japanese/Juman.dic"
   let (jumandicFiltered,(f2,f3)) = L.foldl' parseJumanLine ([],(M.empty,M.empty)) $ filter (\l -> (head l) `T.isInfixOf` sentence) $ map (T.split (=='\t')) (T.lines jumandic)
   --  2. Setting up private lexicon
-  let mylexiconFiltered = filter (\l -> T.isInfixOf (pf l) sentence) mylexicon
+  let mylexiconFiltered = filter (\l -> T.isInfixOf (pf l) sentence) LEX.myLexicon
   --  3. Setting up compound nouns (returned from an execution of JUMAN)
   jumanCN <- JU.jumanCompoundNouns (T.replace "―" "、" sentence)
   -- 

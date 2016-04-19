@@ -13,7 +13,6 @@ Stability   : beta
 module Parser.ChartParser (
   -- * Main parser
   parse,
-  parseMain,
   -- * Printing (in Text) functions
   printChart,
   TEX.printNodesInTeX,
@@ -25,8 +24,8 @@ module Parser.ChartParser (
   sOnly,
   CCG.Node(..),
   -- * 
-  L.myLexicon,
-  L.setupLexicon
+  --L.myLexicon,
+  --L.setupLexicon
   ) where
 
 import Data.List
@@ -37,7 +36,7 @@ import qualified Data.Map as M         --container
 --import qualified Data.Maybe as Maybe   --base
 import qualified System.IO as S        --base
 import qualified Parser.CombinatoryCategorialGrammar as CCG --(Node, unaryRules, binaryRules, trinaryRules, isCONJ, cat, SimpleText)
-import qualified Parser.Japanese.Lexicon as L (LexicalItems, lookupLexicon, setupLexicon, emptyCategories, myLexicon)
+import qualified Parser.Japanese.Lexicon as L (LexicalItems, lookupLexicon, setupLexicon, emptyCategories)
 import qualified Parser.Japanese.Templates as LT
 import qualified Parser.TeXmodule as TEX
 
@@ -100,25 +99,17 @@ sOnly = filter isS
 
 {- Main functions -}
 
--- | Main parsing function, showing the standard use of the `parseMain` function.
+-- | Main parsing function to parse a Japanees sentence and generates a CYK-chart.
 parse :: Int           -- ^ The beam width
          -> T.Text     -- ^ A sentence to be parsed
-         -> IO(Chart)
-parse beam sentence = do
-  lexicon <- L.setupLexicon L.myLexicon sentence
-  let (chart,_) = parseMain beam lexicon sentence
-  return chart
-
--- | parses a (Japanees) sentence and generates a CYK-chart.
-parseMain :: Int          -- ^ The beam width
-             -> L.LexicalItems -- ^ A lexicon to be used for parsing
-             -> T.Text    -- ^ A sentence to be parsed
-             -> (Chart, [[CCG.Node]])
-parseMain beam lexicon sentence
-  | sentence == T.empty = (M.empty,[]) -- foldl returns a runtime error when text is empty
+         -> IO(Chart, [[CCG.Node]])
+parse beam sentence 
+  | sentence == T.empty = return (M.empty,[]) -- foldl returns a runtime error when text is empty
   | otherwise =
-      let (chart,_,_,_,nodes) = T.foldl' (chartAccumulator beam lexicon) (M.empty,[0],0,T.empty,[]) (purifyText sentence) in
-      (chart,nodes)
+      do
+      lexicon <- L.setupLexicon (T.replace "―" "。" sentence)
+      let (chart,_,_,_,nodes) = T.foldl' (chartAccumulator beam lexicon) (M.empty,[0],0,T.empty,[]) (purifyText sentence)
+      return (chart,nodes)
 
 -- | removes occurrences of non-letters from an input text.
 purifyText :: T.Text -> T.Text
