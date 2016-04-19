@@ -1,17 +1,19 @@
 # README
 ## What is this repository for?
 
-* *lightblue* is a Japanese CCG parser with DTS representations.  The current version is 0.1.1.0.  Copyright is owned by Daisuke Bekki.
+* *lightblue* is a Japanese CCG parser with DTS representations.  
+* Current version: 0.1.1.0.  
+* Copyright owner: Daisuke Bekki
 
 
 ## How do I get set up?
 
 ### Prerequisite: Haskell Platform
-  1. GHC/cabal (>= version 7.0)
+  1. GHC (>= version 7.4)/Cabal (>= version 1.20)
     * Linux: [The Glasgow Haskell Compiler](https://www.haskell.org/ghc/) 
     * Mac: [Haskell for Mac OS X](https://ghcformacosx.github.io/)
 
-In Debian you may just do `sudo apt-get install haskell-platform`.
+In Debian, you may just do it by `sudo apt-get install haskell-platform`.
 
 After installing GHC, update cabal.
 ```
@@ -26,6 +28,7 @@ $ sudo apt-get install haskell-mode
 ```
 
 ### Prerequisite: command-line tools
+The followint tools must be installed before executing *lightblue*.
   1. juman (>= version 5.0)
     * Debian: `sudo apt-get install juman`
     * Mac: [日本語形態素解析システム JUMAN](http://nlp.ist.i.kyoto-u.ac.jp/index.php?JUMAN)
@@ -42,10 +45,10 @@ Do the following in the directory under which you'd like to install *lightblue*.
 #!shell
 $ git clone git@bitbucket.org:DaisukeBekki/lightblue.git
 ```
-This operation will create the directory *lightblue* (we will call this directory as <lightblue> in the following document) under the directory in which you did the above.
+This operation will create the directory *lightblue* (henceforth we will refer to this directory as <lightblue>) under the directory in which you did the above.
 
 ### Configuration
-First you have to add the environment variable LIGHTBLUE and set its value as <lightblue>.  For example, you may add the following line to .bashrc (or whatever configuration file for your shell).
+First you need to add the environment variable LIGHTBLUE and set its value as <lightblue>.  Suppose that <lightblue> is `/home/lightblue/', you are suppsed to add the following line to .bashrc (or whatever configuration file for your shell).
 `export LIGHTBLUE=/home/lightblue/`
 
 Then move to <lightblue>, create a sandbox environment there, and check the dependencies as follows.
@@ -54,16 +57,20 @@ Then move to <lightblue>, create a sandbox environment there, and check the depe
 $ cd <lightblue>
 $ cabal sandbox init
 $ cabal install --only-dependencies
+```
+If everything is ok, then build *lightblue* there.
+
+```
 $ cabal build
 ```
 
 ### Installation
-If the build is successful, then you can install *lightblue-0.1.1.0*.
+If the build is successful, then you may install *lightblue-0.1.1.0* in the sandbox.
 ```
 #!shell
 $ cabal install
 ```
-If succeeded, executable is found at `<lightblue>/.cabal-sandbox/bin/lightblue` and `<lightblue>/.cabal-sandbox/bin/lightbluetest`.  You may want to set a path to `<lightblue>/.cabal-sandbox/bin`.
+If succeeded, executable is found at `<lightblue>/.cabal-sandbox/bin/lightblue` and `<lightblue>/.cabal-sandbox/bin/lightbluetest`.  You may want to add a path to `<lightblue>/.cabal-sandbox/bin`.
 
 ### Generating the Document
 The HTML document is created by the following command in <lightblue>:
@@ -74,6 +81,7 @@ $ cabal haddock
 The generated document is found at: `<lightblue>/dist/doc/html/lightblue/index.html`
 
 ### How to run tests
+Set the permission of scripts `parse` and `parse2xml` to executable.
 ```
 #!shell
 $ chmod 755 parse
@@ -114,14 +122,7 @@ If you have a text file (one sentence per line) <corpus>, then you can feed it t
 $ lightbluetest <corpus>
 ```
 
-## Contribution guidelines ###
+## Contact ##
 
-* Writing tests
-* Code review
-* Other guidelines
-
-## Who do I talk to? ###
-
-* Repo owner or admin
-* Other community or team contact
+* Repo owner: [Daisuke Bekki](http://www.is.ocha.ac.jp/~bekki/)
 * [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
