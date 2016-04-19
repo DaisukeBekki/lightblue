@@ -1,0 +1,583 @@
+%%% 統語範疇に素性を付けるマクロ：S\f{f1,f2,...}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\makeatletter
+\newcount\m % \def\fの外に出さないと、カウンターが足りなくなる。
+\def\f#1{%
+\ensuremath{_{%
+\m=0
+\@for\templist:=#1%
+  \do{\advance\m by 1}%
+\ifnum\m=1%
+\mathit{#1}%
+\else%
+\begin{subarray}{l}%
+\@for\templist:=#1%
+  \do{%
+  \mathit{\templist} \\ %
+  }%
+\end{subarray}%
+\fi%
+}}%
+}
+\makeatother
+
+% emath代替マクロ
+\newcommand{\resetcounter}[1]{\setcounter{#1}{0}}
+\newcommand{\maru}[1]{\text{\textcircled{\ensuremath{\scriptstyle #1}}}}
+\newcommand{\zettaiti}[1]{\ensuremath{\left|{#1}\right|}}
+\newcommand{\dlim}[1]{\ensuremath{\displaystyle \mathop{lim}\limits_{#1}}}
+
+%%% 参照用マクロ
+%%%%%%%%%%%%%%%%
+\newcommand{\refex}[1]{(\ref{ex:#1})}
+\newcommand{\refchap}[1]{Chapter~\ref{chap:#1}}
+\newcommand{\refsec}[1]{Section~\ref{sec:#1}}
+\newcommand{\refsubsec}[1]{Subsection~\ref{subsec:#1}}
+\newcommand{\refapp}[1]{Appendix~\ref{sec:#1}}
+\newcommand{\refdef}[1]{Definition~\ref{def:#1}}
+\newcommand{\refax}[1]{Axiom~\ref{ax:#1}}
+\newcommand{\refth}[1]{Theorem~\ref{th:#1}}
+\newcommand{\refths}[1]{\ensuremath{(\text{Th.}\ref{th:#1})}}
+\newcommand{\reflem}[1]{Lemma~\ref{lem:#1}}
+\newcommand{\reflems}[1]{\ensuremath{\text{Lem.
+}\ref{lem:#1}}}
+\newcommand{\reflex}[1]{Lexicon~\ref{lex:#1}}
+\newcommand{\refrem}[1]{Remark~\ref{rem:#1}}
+\newcommand{\refexe}[1]{Exercise~\ref{exe:#1}}
+\newcommand{\refexs}[1]{\ensuremath{\text{Ex.}\ref{exe:#1}}}
+\newcommand{\refexa}[1]{Example~\ref{exa:#1}}
+\newcommand{\reftab}[1]{Table~\ref{tab:#1}}
+\newcommand{\reffig}[1]{Figure~\ref{tab:#1}}
+\newcommand{\refeq}[1]{(\ref{eq:#1})}
+\newcommand{\reffn}[1]{Footnote~\ref{fn:#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ボックス
+\newenvironment{centre}{\begin{center}$\begin{array}{c}}{\end{array}$\end{center}}
+\newcommand{\fitbox}[1]{\noindent\resizebox{\textwidth}{!}{#1}} % 
+\newenvironment{rulebox}{
+\hfil\begin{center}
+$\begin{array}{l}
+}{
+\end{array}$
+\end{center}
+}
+
+\newcommand{\rulesbox}[2][1]{
+\hfil\begin{center}
+\scalebox{#1}[#1]{$\begin{array}{l}
+#2
+\end{array}$}
+\end{center}
+}
+
+
+%%% emathPbを用いた枠→emathPbの代わりにfancybox.styを使用することにした
+%%%%%%%%%%%%%%%%%%%%%
+\usepackage{fancybox}
+\usepackage{dashbox}
+\setlength{\fboxsep}{8pt}
+
+\if0
+\usepackage{framed}
+\newcommand{\stackedbox}[1]{\lbox[1]{\fbox{#1}}}
+\newenvironment{basicshadowbox}{%
+  \def\FrameCommand{\fboxsep=3pt \shadowbox}%
+  \MakeFramed {\FrameRestore}}%
+ {\endMakeFramed}
+\newenvironment{basicstackedbox}{%
+  \def\FrameCommand{\fboxsep=0pt \stackedbox}%
+  \MakeFramed {\FrameRestore}}%
+ {\endMakeFramed}
+\fi
+
+\newenvironment{basicshadowbox}%
+  {\medskip%
+   \noindent%
+   \begin{Sbox}%
+   \begin{minipage}{.95\textwidth}%
+   }{%
+   \end{minipage}%
+   \end{Sbox}%
+   \shadowbox{\TheSbox}} %ここの改行の仕方がovalbox, fboxと違うことに注意
+\newenvironment{basicstackedbox}%
+  {\medskip%
+   \noindent%
+   \begin{Sbox}%
+   \begin{minipage}{.95\textwidth}%
+   }{%
+   \end{minipage}%
+   \end{Sbox}%
+   \lbox[1]{\fbox{\TheSbox}}
+   }
+\newenvironment{dotbox}%
+  {\medskip%
+   \noindent%
+   \begin{Sbox}%
+   \begin{minipage}{.95\textwidth}%
+   }{
+   \end{minipage}%
+   \end{Sbox}%
+   \dbox{\TheSbox}
+   }
+\cornersize{.2}
+\newenvironment{obox}%
+  {\medskip%
+   \noindent%
+   \begin{Sbox}%
+   \begin{minipage}{.95\textwidth}%
+   }{
+   \end{minipage}%
+   \end{Sbox}%
+   \ovalbox{\TheSbox}
+   }
+\newenvironment{defbox}[1][]%
+  {\resetcounter{equation}%
+   \begin{basicshadowbox}%
+   \begin{definition}[#1]%
+   }{%
+   \end{definition}%
+   \end{basicshadowbox}} 
+\newenvironment{axbox}[1][]%
+  {\resetcounter{equation}%
+   \begin{basicshadowbox}%
+   \begin{axiom}[#1]%
+   }{%
+   \end{axiom}%
+   \end{basicshadowbox}}
+\newenvironment{thbox}[1][]%
+  {\resetcounter{equation}%
+   \begin{basicstackedbox}%
+   \begin{theorem}[#1]%
+   }{
+   \end{theorem}%
+   \end{basicstackedbox}%
+   }
+\newenvironment{lembox}[1][]%
+  {\resetcounter{equation}%
+   \begin{basicstackedbox}%
+   \begin{lemma}[#1]%
+   }{
+   \end{lemma}%
+   \end{basicstackedbox}%
+   }
+\newenvironment{refdefbox}[2][]%
+  {\resetcounter{equation}%
+   \begin{basicshadowbox}%
+   \noindent\textbf{\refdef{#2}}\ #1%
+   }{%
+   \end{basicshadowbox}%
+   } 
+\newenvironment{refaxbox}[2][]%
+  {\resetcounter{equation}%
+   \begin{basicshadowbox}%
+   \begin{axiom}[#1]%
+   }{%
+   \end{axiom}%
+   \end{basicshadowbox}}
+\newenvironment{refthbox}[2][]%
+  {\resetcounter{equation}%
+   \begin{basicstackedbox}%
+   \noindent\textbf{\refth{#2}}\ #1%
+   }{
+   \end{basicstackedbox}%
+   }
+\newenvironment{reflembox}[2][]%
+  {\resetcounter{equation}%
+   \begin{basicstackedbox}%
+   \noindent\textbf{\reflem{#2}}\ #1%
+   }{
+   \end{basicstackedbox}%
+   }
+
+%%% 番号(n)付き木構造（の枠）
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\extree}[3][.9]{\vbox{
+\begin{exe}\ex\label{ex:#2}\end{exe}
+\vspace{-2em}\hfil\scalebox{#1}[#1]{\ensuremath{#3}}\hfil\smallskip
+}}
+
+\newcommand{\extreew}[3][1.0]{\vbox{
+\begin{exe}
+\ex\label{ex:#2}\sn\hspace{-3em}\hfil\scalebox{#1}[#1]{#3}\hfil\end{exe}}
+} % ワイドextree
+
+\newcommand{\extreec}[4][1.0]{\vbox{\begin{exe}\ex{#3}\label{ex:#2}\sn\begin{centre}\scalebox{#1}[#1]{#4}\end{centre}\end{exe}}} % キャプション付きextree
+\newcommand{\extreecw}[4][1.0]{\vbox{\begin{exe}\ex{#3}\label{ex:#2}\end{exe}\begin{centre}\scalebox{#1}[#1]{#4}\end{centre}}} % キャプション付きワイドextree
+
+%%% CCG Syntax %%%
+%%%
+%%% 構造共有（ボックス付き番号）\fboxを使うのがポイント
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\sq}[1]{\ensuremath{\setlength{\fboxsep}{1pt}\fbox{\ensuremath{\scriptstyle #1}}}}
+
+%%% 範疇変数T、空PFφ、Sbar
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\vT}[0]{\ensuremath{\mbox{\boldmath$T$}}}
+\newcommand{\emp}[0]{\ensuremath{\varnothing}}
+%\newcommand{\NP}{\ensuremath{\mathit{NP}}}
+\newcommand{\conj}{\ensuremath{\mathit{CONJ}}}
+\newcommand{\Sbar}{\ensuremath{\bar{S}}}
+\newcommand{\np}{\ensuremath{\mathit{NP}}}
+\newcommand{\pp}{\ensuremath{\mathit{PP}}}
+\newcommand{\vp}{\ensuremath{\mathit{VP}}}
+
+\newcommand{\iv}[2][]{\ensuremath{\LAM[x]\LAM[c]{#1\pred{#2}(x)}}}
+\newcommand{\tv}[2][]{\ensuremath{\LAM[y]\LAM[x]\LAM[c]{#1\pred{#2}(x,y)}}}
+\newcommand{\dv}[2][]{\ensuremath{\LAM[z]\LAM[y]\LAM[x]\LAM[c]{#1\pred{#2}(x,y,z)}}}
+
+
+%%% バックスラッシュ
+%%%%%%%%%%%%%%%%%%%%
+\newcommand{\bs}{\ensuremath{\backslash}}
+
+%%% スペース空けbox
+%%%%%%%%%%%%%%%%%%%
+\newcommand{\vs}[1]{\vrule height #1 width 0pt}
+%\newcommand{\vrulebox}[2]{\vrule height #1 width #2}
+%\newcommand{\downbox}[1]{\begin{array}{c}\\#1\end{array}}
+
+%%% 統語範疇＋意味表示記述マクロ
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\cat}[1]{\ensuremath{\begin{array}{l}#1\end{array}}}
+\newcommand{\vcat}[2]{\ensuremath{\cat{#1}:\cat{#2}}}
+%\newcommand{\vvcat}[2]{\ensuremath{{{\displaystyle #1} \atop {\displaystyle #2}}}}
+%\newcommand{\vvcat}[3][0pt]{\ensuremath{\begin{array}{c}\begin{array}{l}\mathit{#2}\end{array}\\\vbox{\hbox{\vs{#1}}\hbox{$\begin{array}{l}:#3\end{array}$}}\end{array}}}
+\newcommand{\vvcat}[3][0pt]{
+  \deduce{#3}{#2}
+  }
+%\newcommand{\double}[2]{\ensuremath{{{\displaystyle #1} \atop {\displaystyle #2}}}}
+\newcommand{\double}[2]{\ensuremath{\begin{array}{l}{\displaystyle #1}\\{\displaystyle #2}\end{array}}}
+\newcommand{\ccat}[1]{\ensuremath{\cat{#1}}}
+
+\newcommand{\tri}[3]{\vcat{#2}{#3}}
+
+%%% 演繹関係記述マクロ
+%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\topbox}[2]{\vbox{\hbox{$\displaystyle #1$}\hbox{\vs{#2}}}} 
+\newcommand{\botbox}[2]{\vbox{\hbox{\vs{#1}}\hbox{$\displaystyle #2$}}}
+\newcommand{\mmfrac}[2]{\frac{\topbox{#1}{2pt}}{\botbox{2.5pt}{#2}}} % 数式用
+\newcommand{\mfrac}[2]{\frac{\displaystyle #1}{\displaystyle #2}}
+
+%%% 語彙項目記述マクロ
+%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\lex}[4][C]{\ensuremath{\text{#2} \vdash_{\mathit{#1}} #3:#4}}
+\newcommand{\vlex}[4][]{\ensuremath{{\scriptstyle #1}\mfrac{\text{#2}}{\vcat{#3}{#4}}}}
+%\newcommand{\vvlex}[4][]{\ensuremath{{\scriptstyle #1}\mfrac{\text{#2}}{\vvcat{\mathit{#3}}{#4}}}}
+\newcommand{\vvlex}[4][]{
+  \infer[\kern-0.2em{\scriptstyle \text{#1}}]{\deduce{#4}{#3}}{\text{#2}}
+  }
+\newcommand{\clex}[3][]{\ensuremath{{\scriptstyle #1}\mfrac{\text{#2}}{\cat{#3}}}}
+\newcommand{\llex}[3]{\ensuremath{\text{#1} \vdash #2}\sn \qquad\qquad\qquad \ensuremath{#3}} % 長い語彙項目用（少々邪道）
+
+%%% 句構造記述マクロ
+%%%%%%%%%%%%%%%%%%%%
+\newcommand{\ph}[3][]{\ensuremath{\begin{array}[t]{c}{\scriptstyle #1}\mfrac{#3}{#2}\end{array}}} % #1は>、#2は下、#3はph|vlex|vvlex
+
+%%% Category Theroy
+%%%%%%%%%%%%%%%%%%%
+\newcommand{\C}[1]{\ensuremath{\mathcal{#1}}}
+\newcommand{\F}[1]{\ensuremath{\boldsymbol{#1}}}
+\newcommand{\interim}{\begin{centre}\cdot\ \bullet\ \text{●}\ \bullet\ \cdot\end{centre}}
+
+%%% 論理表示
+%%%%%%%%%%%%
+\newcommand{\eval}[2][]{\ensuremath{\llbracket #2 \rrbracket_{#1}}}
+\newcommand{\evalu}[2][]{\ensuremath{\llbracket #2 \rrbracket^{#1}}}
+\newcommand{\evalx}[1]{\ensuremath{\llbracket #1 \rrbracket_{\bar{X}}}}
+%\newcommand{\eval}[1]{\ensuremath{\left[\kern-0.15em\left[ {#1}\right]\kern-0.15em\right]}}
+
+\newcommand{\seq}[1]{\ensuremath{#1_1 \dots #1_n}}
+\newcommand{\ang}[1]{\ensuremath{(#1)}}
+\newcommand{\tuple}[1]{\ensuremath{(#1)}}
+\newcommand{\set}[1]{\ensuremath{\left\{#1 \right\}}}
+\newcommand{\setof}[2]{\ensuremath{\left\{ #1 \left|\ #2\right.\right\}}}
+\newcommand{\amp}[0]{\ensuremath{\ \&\ }}
+\newcommand{\br}[1]{\ensuremath{\left[\text{#1}\right]}}
+%\newcommand{\br}[2][]{\ensuremath{\left[_{\text{#1}}\ \text{#2}\right]}}
+\newcommand{\bri}[2]{\ensuremath{{\left[\text{#1}\right]}_{\mathit{#2}}}}
+  \newcommand{\leftb}[1][]{\ensuremath{\left[_{\text{#1}}\right.}}
+  \newcommand{\rightb}[1][]{\ensuremath{\left.\right]_{\text{#1}}}}
+\newcommand{\from}[0]{\leftarrow}
+\newcommand{\node}[2][]{\ensuremath{\left[_{#1}\ \text{#2}\ \right]}}
+\newcommand{\gap}{\underline{\quad}}
+
+\newcommand{\PI}[0]{\ensuremath{\textstyle \prod_1^n}}
+\newcommand{\PII}[0]{\ensuremath{\textstyle \prod_{i=1}^n}}
+\newcommand{\PRn}[1]{\ensuremath{\ang{#1}_1^n}}
+
+\newcommand{\Var}{\ensuremath{\C{V}ar}}
+\newcommand{\Con}{\ensuremath{\C{C}on}}
+\newcommand{\Typ}{\ensuremath{\C{T}yp}}
+\newcommand{\GT}{\ensuremath{\C{GT}}}
+\newcommand{\Alp}{\ensuremath{\C{A}}}
+\newcommand{\Sem}{\ensuremath{\C{S}em}}
+\newcommand{\Lat}{\ensuremath{\C{L}at}}
+%\newcommand{\Th}[1]{\ensuremath{\C{T}h(#1)}}
+\newcommand{\Th}[1]{\ensuremath{#1}}
+\newcommand{\TDL}{\ensuremath{\C{T}DL}}
+
+%\newcommand{\Set}[1]{\ensuremath{\underbar{#1}}}
+\newcommand{\Set}[1]{\ensuremath{\mathbb{#1}}}
+\newcommand{\Dashv}{\reflectbox{\ensuremath{\vDash}}}
+\newcommand{\DashvDash}{\>\reflectbox{\ensuremath{\vDash}}\!\vDash}
+\newcommand{\dashvdash}{\>\reflectbox{\ensuremath{\vdash}}\!\vdash}
+%\newcommand{\dashvv}{\>\reflectbox{\ensuremath{\vdash}}}
+
+\newcommand{\Pow}[1]{\ensuremath{\C{P}ow(#1)}}
+
+\newcommand{\inv}[1]{\ensuremath{{#1}^{-1}}}
+
+%%% 証明
+%%%%%%%%
+\newcommand{\vproof}[2]{\begin{array}{c}#1 \\ \vdots \\ #2 \end{array}}
+\newenvironment{eqnproof}{$\begin{array}[t]{rcll}}{\end{array}$}
+\newcommand{\where}[1]{\ensuremath{\quad where\ #1.}}
+\newcommand{\rightwardproof}{\noindent($\Rightarrow$)について：}
+\newcommand{\leftwardproof}{\noindent($\Leftarrow$)について：}
+\newcommand{\upwardproof}{\noindent($\Uparrow$)について：}
+\newcommand{\downwardproof}{\noindent($\Downarrow$)について：}
+\newcommand{\cond}{\ensuremath{\quad\Longrightarrow\quad}}
+\newcommand{\caseof}[1]{\noindent\underline{#1}}
+\newcommand{\subcaseof}[1]{\noindent\ensuremath{\boxplus}\ \underline{#1}}
+\newcommand{\subsubcaseof}[1]{\noindent\ensuremath{\boxminus}\ \underline{#1}}
+
+%%% Natural Deduction
+\newlength{\mylength}
+\def\myspace#1{%
+  \settowidth{\mylength}{#1}
+  \hspace{\mylength}}
+
+\newcommand{\nd}[3][]{\infer[\kern-0.2em{\scriptstyle \mathit{#1}}]{#2}{#3}}
+\newcommand{\nnd}[4][]{\infer[\kern-0.2em{\scriptstyle \mathit{#1},#2}]{#3}{#4}}
+\newcommand{\dnd}[3][]{\infer=[\kern-0.2em{\scriptstyle \mathit{#1}}]{#2}{#3}}
+\newcommand{\discharged}[2][]{\infer[\kern-0.4em{\scriptstyle {#1}}]{#2}{}}
+%\newcommand{\discharged}[2][]{\left[ #2 \right]_{#1}}
+\newcommand{\dischargedproof}[3][]{\infer[\kern-0.4em{\scriptstyle #1}]{\infer*{#2}{#3}}{}}
+\newcommand{\dischargeddot}[2][]{
+  \infer*{}{\infer[\kern-0.4em{\scriptstyle {#1}}]{#2}{}}{}
+  }
+
+%\newcommand{\assumption}[1]{\ensuremath{\genfrac{}{}{0pt}{0}{}{#1}}}
+%\newcommand{\derivation}[2]{\ensuremath{\genfrac{}{}{0pt}{0}{#2}{#1}}}
+
+%%% 型理論
+%%%%%%%%%%
+\newcommand{\fv}[1]{\ensuremath{\mathit{fv}(#1)}}
+\newcommand{\bv}[1]{\ensuremath{\mathit{bv}(#1)}}
+\newcommand{\shift}[2]{\ensuremath{\texttt{shift}\>#1.#2}}
+\newcommand{\reset}[1]{\ensuremath{\texttt{reset}(#1)}}
+\newcommand{\sep}{\ |\ }
+
+\newcommand{\reduce}[1]{\ensuremath{\twoheadrightarrow_{#1}}}
+\newcommand{\reduceone}[1]{\ensuremath{\rightarrow_{#1}}}
+\newcommand{\reducePone}[1]{\ensuremath{\Rightarrow_{#1}}}
+\newcommand{\reduceP}[1]{\ensuremath{\Longrightarrow_{#1}}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\pred}[1]{\ensuremath{\normalfont \textbf{#1}}}
+\newcommand{\name}[1]{\ensuremath{\normalfont \mathit{#1}}}
+\newcommand{\type}[1]{\ensuremath{\normalfont \textsf{#1}}}
+
+\newcommand{\LAM}[2][x]{\ensuremath{\lambda #1.#2}}
+\newcommand{\LAMb}[2][x]{(\LAM[#1]{#2})}
+\newcommand{\APP}[2]{\ensuremath{#1 #2}}
+\newcommand{\APPb}[2]{(\APP{#1}{#2})}
+\newcommand{\PR}[2]{\ensuremath{\ang{#1,#2}}}
+\newcommand{\PRb}[2]{(\PR{#1}{#2})}
+\newcommand{\PJ}[2][]{\ensuremath{\pi_{#1}(#2)}}
+\newcommand{\PJb}[2][]{(\PJ{#1}{#2})}
+
+\newcommand{\sel}[1][]{\ensuremath{({@}:#1)}}
+
+\newcommand{\eq}[3][]{\ensuremath{\type{Eq}_{#1}(#2,#3)}}
+\newcommand{\eqterm}{\ensuremath{\type{eq}}}
+\newcommand{\iq}[3][]{\ensuremath{#2 =_{#1} #3}}
+\newcommand{\refl}[2][]{\ensuremath{\type{refl}_{#1}(#2)}}
+
+\newcommand{\unpack}[2][x]{\ensuremath{\type{unpack}\ #1\ \type{as}\ #2}}
+\newcommand{\IN}[2]{\ensuremath{#1\ \type{in}\ #2}}
+\newcommand{\with}[3]{\ensuremath{\type{Sub}(#1)\ \type{with}\ #2\ \type{via}\ #3}}
+
+\newcommand{\pick}[3]{\ensuremath{#3 \triangleleft #2}}
+
+\newcommand{\disj}[4][x]{\ensuremath{\type{unpack}\ #2\ \type{as}\ #1\ \type{in}\ (#3;#4)}}
+
+\newcommand{\defequiv}{\ensuremath{\stackrel{\mathit{def}}{\equiv}}}
+
+%%% 証明論
+%%%%%%%%%%
+\newcommand{\turnstile}[1]{\ensuremath{\vdash_{\textbf{#1}} }}
+\newcommand{\biturnstile}[1]{\ensuremath{\dashvdash_{\textbf{#1}} }}
+%\newcommand{\revturnstile}[1]{\ensuremath{{}_{\textbf{#1}\dashvv} }}
+\newcommand{\Arrow}[1]{\ensuremath{\Rightarrow_{\textbf{#1}} }}
+\newcommand{\mi}[1]{\ensuremath{\mathit{#1}}}
+\newcommand{\Lrule}[1]{\ensuremath{\mathit{#1{\Rightarrow}}}}
+\newcommand{\Rrule}[1]{\ensuremath{\mathit{{\Rightarrow}#1}}}
+\newenvironment{Htheorem}{\begin{flushleft}$\begin{array}[t]{lrll}}{\end{array}$\end{flushleft}}
+\newenvironment{Hproof}{\begin{flushleft}$\begin{array}{rll}}{\end{array}$\end{flushleft}}
+\newenvironment{Lproof}{\begin{flushleft}$\begin{array}{lrcll}}{\end{array}$\end{flushleft}}
+\newcommand{\system}[1]{\textbf{#1}}
+%\newcommand{\Theorems}[1]{\ensuremath{\mathcal{T}\mathit{h}(#1)}}
+\newcommand{\dash}{\ensuremath{\mathit{'}}}
+
+\newcommand{\thissystem}{\ensuremath{\lambda_{\Pi\Sigma}}}
+\newcommand{\sem}[1]{\texttt{SR}(\text{#1})}
+
+%%%Vertical Notation for DTS%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\Entity}{\ensuremath{\pred{entity}}}
+\newcommand{\cont}[2]{\ensuremath{(#1,#2)}}
+
+\newcommand{\dSigma}[3][x]{\ensuremath{%
+  \left[\kern-0.3em
+  \begin{array}{l}
+  #1{:}#2 \\
+  #3
+  \end{array}
+  \kern-0.3em\right]
+  }}
+\newcommand{\dSigmae}[2][x]{\ensuremath{%
+  \left[\kern-0.3em
+  \begin{array}{l}
+  #1{:}\Entity \\
+  #2
+  \end{array}
+  \kern-0.3em\right]
+  }}
+\newcommand{\dConj}[3][x]{\ensuremath{%
+  \left[\kern-0.3em
+  \begin{array}{l}
+  #2 \\
+  #3
+  \end{array}
+  \kern-0.3em\right]
+  }}
+\newcommand{\dConjL}{\ensuremath{\left[\kern-0.3em}}
+\newcommand{\dConjR}{\ensuremath{\kern-0.3em\right]}}
+\newcommand{\coProd}{\ensuremath{\oplus}}
+
+\newcommand{\dPi}[3][x]{\ensuremath{%
+  \left( 
+%  \begin{array}{l}
+  #1{:}#2 
+%  \end{array}
+  \right) \to #3
+  }}
+\newcommand{\dPie}[2][x]{\ensuremath{%
+  \left( 
+  #1{:}\Entity
+  \right)
+  \to #2
+  }}
+\newcommand{\dImp}[3][x]{\ensuremath{%
+  #2 \to #3
+  }}
+
+%%% CCG rules
+%%%%%%%%%%%%%
+\newcommand{\forwardfunctionalapplication}{
+  \nd[>]{X:fa}{X/Y:f \qquad Y:a}
+  }
+\newcommand{\backwardfunctionalapplication}{
+  \nd[<]{X:fa}{Y:a \qquad X \bs Y:f}
+  }
+\newcommand{\forwardfunctionalcomposition}{
+  \nd[>B]{X/Z:\LAM[x]f(gx)}{X/Y:f \qquad Y/Z:g}
+  }
+\newcommand{\backwardfunctionalcomposition}{
+  \nd[<B]{X \bs Z:\LAM[x]f(gx)}{Y \bs Z:g \qquad X \bs Y:f}
+  }
+\newcommand{\forwardfunctionalcompositionN}{
+  \nd[>B^n]{X/\$/Z:\lambda \vec{x}.f(g\vec{x})}{X/Y:f \qquad Y/\$/Z:g}
+  }
+\newcommand{\backwardfunctionalcompositionN}{
+  \nd[<B^n]{X \bs \$ \bs Z:\lambda \vec{x}.f(g\vec{x})}{Y \bs \$ \bs Z:g \qquad X \bs Y:f}
+  }
+\newcommand{\forwardfunctionalcrossedcomposition}{
+  \nd[>Bx]{
+    X \bs Z:\LAM[x]f(gx)
+    }{
+    X/Y:f
+    \qquad
+    Y \bs Z:g
+    }
+  }
+\newcommand{\backwardfunctionalcrossedcomposition}{
+  \nd[<Bx]{
+    X/Z:\LAM[x]f(gx)
+    }{
+    Y/Z:g 
+    \qquad
+    X \bs Y:f
+    }
+  }
+\newcommand{\forwardcrossedsubstitution}{
+  \nd[>S_{\times}]{X \bs Z:\LAM[x]fx(gx)}{(X/Y) \bs Z:f \qquad Y \bs Z:g}
+  }
+\newcommand{\backwardcrossedsubstitution}{
+  \nd[<S_{\times}]{X/Z:\LAM[x]fx(gx)}{Y/Z:g \qquad (X \bs Y)/Z:f}
+  }
+\newcommand{\forwardtyperaising}{
+  \nd[>T]{\vT/(\vT \bs X):\lambda f.fa}{X:a}
+  }
+\newcommand{\backwardtyperaising}{
+  \nd[<T]{\vT \bs (\vT/X):\lambda f.fa}{X:a}
+  }
+%\newcommand{\typeraisingconditionJ}{但し$\vT$はそれぞれ、$\vT \bs X \bs \$$もしくは$\vT/X/\$$という統語範疇を持つ語彙項目が存在するような統語範疇である。}
+\newcommand{\typeraisingconditionJ}{但し\ensuremath{X}は、用言の項が持つ統語範疇(\text{argument type})である。}
+\newcommand{\typeraisingconditionE}{where \ensuremath{\vT} is a category such that there is a lexical item whose category is either \ensuremath{\vT \bs X \bs \$} or \ensuremath{\vT/X/\$}.}
+
+\newcommand{\coordination}{
+  \nd[\langle\Phi\rangle]{
+    S:f_1\circ\dots\circ f_m
+    }{
+    S:f_1
+    \qquad
+    \cdots
+    \qquad
+    \conj:\circ
+    \qquad
+    S:f_m
+    }
+  }
+
+\newcommand{\Gcoordination}{
+  \nd[\langle\Phi\rangle]{
+    S|X_n|\dots|X_1:\LAM[x_1]\dots\LAM[x_n](f_1 x_1 \dots x_n)\circ\dots\circ(f_m x_1 \dots x_n)
+    }{
+    S|X_n|\dots|X_1:f_1
+    \qquad
+    \cdots
+    \qquad
+    \conj:\circ
+    \qquad
+    S|X_n|\dots|X_1:f_m
+    }
+  }
+
+\newcommand{\coordinationconditionJ}{\text{ただし、}\ensuremath{1 < m}}
+\newcommand{\coordinationconditionE}{where \ensuremath{1 < m}, \ensuremath{0 < n}.}
+\newcommand{\forwardscrambling}{
+  \nd[>\sigma]{(\vT/(X\bs\$))/(\vT/X):\lambda g.\LAM[x]g(fx)}{X/(X\bs\$):f}
+  }
+\newcommand{\backwardscrambling}{
+  \nd[<\sigma]{(\vT \bs (X/\$))\bs(\vT \bs X):\lambda g.\LAM[x]g(fx)}{X \bs(X/\$):f}
+  }
+%\newcommand{\scramblingconditionJ}{}
+%\newcommand{\scramblingconditionE}{}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\tocite}[1]{■要出典：#1■}
+\newcommand{\entail}{\ensuremath{\Vdash}}
+\newcommand{\notentail}{\ensuremath{\not\Vdash}}
+\newcommand{\qt}[1]{\ensuremath{\text{``#1''}}}
+
+\newcommand{\sectionN}[1]{
+\section*{#1}
+\addcontentsline{toc}{section}{#1}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

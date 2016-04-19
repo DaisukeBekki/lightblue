@@ -1,0 +1,45 @@
+%
+% strike out text
+% by bakuya@dbg.bs1.fc.nec.co.jp
+% modified juline.sty
+%
+% \strike{text}          -  strike out text with single line
+% \Strike{text}          -  strike out text with double line
+% \overlap{text1}{text2} -  overlap text2 on text2 (or vice versa)
+%
+
+\newskip\wd@uline
+\def\strike#1{\strike@one#1\endstrike@one}
+\def\strike@one#1{\ifx#1\endstrike@one\def\u@line{\hskip\kanjiskip}\else%
+\hskip\kanjiskip% insert glue
+\settowidth{\wd@uline}{#1}%
+#1\kern-\wd@uline\lower -0.2em%0.33em
+\hbox{\vrule width\wd@uline height0.05em}%
+%\makebox[0mm][r]{\rule[-0.33em]{\wd@uline}{0.1em}}%
+\let\u@line=\strike@one\fi\u@line}
+
+\def\Strike#1{\strike@two#1\endstrike@two}
+\def\strike@two#1{\ifx#1\endstrike@two\def\u@line{\hskip\kanjiskip}\else%
+\hskip\kanjiskip% insert glue
+\settowidth{\wd@uline}{#1}%
+#1\kern-\wd@uline\lower -0.1em
+\hbox{\vrule width\wd@uline height0.05em}%
+\kern-\wd@uline\lower -0.3em
+\hbox{\vrule width\wd@uline height0.05em}%
+%\makebox[0mm][r]{\rule[-0.33em]{\wd@uline}{0.1em}}%
+\let\u@line=\strike@two\fi\u@line}
+
+\newskip\wd@top
+\newskip\wd@btm
+\def\@overlap#1#2{%
+%\hskip\kanjiskip% insert glue%
+\settowidth{\wd@btm}{#1}\settowidth{\wd@top}{#2}%
+\addtolength{\wd@top}{-\wd@btm}%
+\setlength{\wd@top}{.5\wd@top}%
+\setlength{\wd@uline}{\wd@btm}\addtolength{\wd@uline}{\wd@top}%
+#1\kern-\wd@uline#2\hskip-\wd@top}
+\def\overlap#1#2{%
+\newskip\wd@topi\newskip\wd@btmi%
+\settowidth{\wd@btmi}{#1}\settowidth{\wd@topi}{#2}%
+\ifnum\wd@btmi>\wd@topi{\@overlap{#1}{#2}}%
+\else{\@overlap{#2}{#1}}\fi}
