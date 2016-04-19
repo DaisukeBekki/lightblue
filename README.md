@@ -65,6 +65,12 @@ $ cabal haddock
 The generated document is found at: `<lightblue>/dist/doc/html/lightblue/index.html`
 
 ### How to run tests
+```
+#!shell
+$ chmod 755 parse
+$ chmod 755 parse2xml
+```
+
 To parse a Japanese sentence and get a text representation, execute:
 ```
 #!shell
