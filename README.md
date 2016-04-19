@@ -14,7 +14,7 @@
 After installing GHC, update cabal.
 ```
 #!shell
-cabal update
+$ cabal update
 ```
 
 ### Prerequisite: command-line tools
@@ -32,7 +32,7 @@ cabal update
 Do the following in the directory under which you'd like to install *lightblue*.
 ```
 #!shell
-git clone git@bitbucket.org:DaisukeBekki/lightblue.git
+$ git clone git@bitbucket.org:DaisukeBekki/lightblue.git
 ```
 This operation will create the directory *lightblue* (we will call this directory as <lightblue> in the following document) under the directory in which you did the above.
 
@@ -42,27 +42,23 @@ First you have to rewrite the value of `jumandicpath` in `<lightblue>/Parser/Jap
 Then move to <lightblue>, create a sandbox environment there, and check the dependencies as follows.
 ```
 #!shell
-cd <lightblue>
-cabal sandbox init
-cabal configure
+$ cd <lightblue>
+$ cabal sandbox init
+$ cabal install --only-dependencies
+$ cabal build
 ```
 
 If this fails, please install the following libraries manually:
-`cabal install containers-0.4.2.1`
-`cabal install text-1.2.1.1`
-
-### Build
-Then build *lightblue* in <lightblue>.
 ```
-#!shell
-cabal build
+$ cabal install containers-0.4.2.1`
+$ cabal install text-1.2.1.1`
 ```
 
 ### Generating the Document
 The HTML document is created by the following command in <lightblue>:
 ```
 #!shell
-cabal haddock
+$ cabal haddock
 ```
 The generated document is found at: `<lightblue>/dist/doc/html/lightblue/index.html`
 
@@ -70,7 +66,7 @@ The generated document is found at: `<lightblue>/dist/doc/html/lightblue/index.h
 If the build is successful, then you can install *lightblue-0.1.1.0* in your GHC system.
 ```
 #!shell
-cabal install
+$ cabal install
 ```
 If succeeded, executable is found at `<home>/.cabal/bin/lightblue` and `<home>/.cabal/bin/lightbluetest`.
 You may want to set a path to `<home>/.cabal/bin`.
@@ -79,35 +75,35 @@ You may want to set a path to `<home>/.cabal/bin`.
 To parse a Japanese sentence and get a text representation, execute:
 ```
 #!shell
-echo 太郎がパンを食べた。 | lightblue -text
+$ echo 太郎がパンを食べた。 | lightblue -text
 ```
 or equivalently,
 ```
 #!shell
-./parse 太郎がパンを食べた。
+$ ./parse 太郎がパンを食べた。
 ```
 
 If you want an XML output, do
 ```
 #!shell
-echo 太郎がパンを食べた。 | lightblue -xml
+$ echo 太郎がパンを食べた。 | lightblue -xml
 ```
 or equivalently,
 ```
 #!shell
-./parse2xml 太郎がパンを食べた。
+$ ./parse2xml 太郎がパンを食べた。
 ```
 
 *lightblue* can be used as a part-of-speech tagger with the `-postag` option:
 ```
 #!shell
-echo 太郎がパンを食べた。 | lightblue -postag
+$ echo 太郎がパンを食べた。 | lightblue -postag
 ```
 
 If you have a text file (one sentence per line) <corpus>, then you can feed it to *lightblue* by:
 ```
 #!shell
-lightbluetest <corpus>
+$ lightbluetest <corpus>
 ```
 
 ### Deployment instructions
