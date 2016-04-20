@@ -2,19 +2,12 @@
 
 \usepackage[dvips, hmargin=2cm, top=1cm, bottom=1cm]{geometry}
 
-%\usepackage{makeidx}
-
 \usepackage{latexsym}
 \usepackage{amsmath}
 \usepackage{amsthm}
 \usepackage[psamsfonts]{amssymb}
-
-\usepackage[dvips]{graphicx} %gb4eの後に宣言すると何故か通らないので注意。
-\usepackage{enumerate}
+\usepackage[dvips]{graphicx}
 \usepackage{fancyhdr}
-%\usepackage{longtable}
-%\usepackage{colortbl}
-%\usepackage{multirow}
 \usepackage{proof}
 
 \usepackage{natbib}
@@ -22,18 +15,18 @@
 
 \input{index-macro.txt}
 
-%\makeindex
-
-\title{（タイトル）}
-\author{戸次大介 \\\\
-        お茶の水女子大学 \\
-        大学院人間文化創成科学研究科}
+\author{
+  Daisuke Bekki \\
+  Ochanomizu University \thanks{2-1-1 Ohtsuka, Bunkyo-ku, Tokyo 112-8610, Japan.} \\
+  CREST, Japan Science and Technology Agency \thanks{4-1-8 Honcho, Kawaguchi, Saitama, 332-0012, Japan}\thanks{This research is partially supported by JST, CREST.} \\
+  National Institute of Advanced Industrial Science and Technology, The Artificial Intelligence Research Center \thanks{1-1-1 Higashi, Tsukuba, Ibaraki 305-8561, Japan.} \\
+  National Institute of Informatics \thanks{2-1-2 Hitotsubashi, Chiyoda-ku, Tokyo, 101-8430, Japan.} 
+  }
 \date{\today}
 %\pagestyle{empty}
 
-%%% fancy.styによるヘッダ・フッタの設定
+%%% fancy.sty
 \pagestyle{fancy}
-%\renewcommand{\chaptermark}[1]{\markboth{第 \thechapter 章\quad #1}{}}
 \renewcommand{\sectionmark}[1]{\markright{\thesection.\quad #1}}
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0pt}
@@ -47,24 +40,11 @@
 %\maketitle
 %\thispagestyle{empty}
 
-%\begin{center}
-%\scalebox{.6}[.6]{
-%$\begin{array}{l}
 \input{outjis.txt}
-%\end{array}$
-%}
-%\end{center}
 
 \fancyhead[LO,RE]{}
 
-%\newpage
-%\appendix
-%\section*{Appendix}
-%\addcontentsline{toc}{section}{Appendix}
-
 \bibliographystyle{MyBibStyle}
 \bibliography{MyLibrary}
-
-%\printindex
 
 \end{document}

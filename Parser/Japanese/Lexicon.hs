@@ -116,7 +116,7 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "形容詞:ナ形容詞特殊"    ct = constructPredicate daihyo [Nda,Nna] [Stem] -- 同じ
   | T.isPrefixOf "形容詞:ナノ形容詞"     ct = constructPredicate daihyo [Nda,Nna,Nno] [Stem]
   | T.isPrefixOf "形容詞:タル形容詞"     ct = constructPredicate daihyo [Ntar,Nto] [Stem]
-  | T.isPrefixOf "副詞"   ct  = constructPredicate daihyo [Nda,Nna,Nno,Nni,Nto,Nemp] [Stem]
+  | T.isPrefixOf "副詞"   ct  = (constructPredicate daihyo [Nda,Nna,Nno,Nni,Nto,Nemp] [Stem]) ++ (constructCommonNoun daihyo)
   | T.isPrefixOf "連体詞" ct  = [(N `SL` N, modifierSR daihyo)]
   | T.isPrefixOf "接続詞" ct = [((T False 1 (S [F anyPos, F[Term,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]])) `SL` T False 1 (S [F anyPos, F[Term,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]]), (id, []))]
   | T.isPrefixOf "接頭辞:名詞接頭辞" ct   = [(N `SL` N, modifierSR daihyo)]

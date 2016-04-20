@@ -160,7 +160,7 @@ myLexicon = concat $ [
   -- 格助詞（の）
   mylex ["の"] "(531)+" ((N `SL` N) `BS` (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) 
                ((Lam (Lam (Lam (Lam (App (Var 3) (Lam (Sigma (App (App (Var 3) (Var 2)) (Var 1)) (App (App (Con "の[MCN]") (Var 1)) (Var 3))))))))),[]),
-  mylex' ["が"] "(531)+" 90 ((N `SL` N) `BS` (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) 
+  mylex' ["が"] "(531)+" 92 ((N `SL` N) `BS` (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) 
                ((Lam (Lam (Lam (Lam (App (Var 3) (Lam (Sigma (App (App (Var 3) (Var 2)) (Var 1)) (App (App (Con "の[MCN]") (Var 1)) (Var 3))))))))),[]),
   -- adjunct:
   mylex ["と","とは","とも","とさえ"] "(524)+" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` NP [F[Nc]]) (adjunctCM "ト"),
@@ -755,6 +755,6 @@ myLexicon = concat $ [
   mylex ["ユーカㇻ"] "BCCWJ" (NP [F[Nc]]) (properNameSR "ユーカラ"),
   mylex ["則ち"] "BCCWJ" (defS [Nemp] [Stem] `BS` NP [F[Ga]]) (predSR 1 "すなわち"),
   mylex ["まっ先"] "BCCWJ" (defS [Nni] [Stem] `BS` NP [F[Ga]]) (predSR 1 "真っ先"),
-  mylex ["引返","引き返","引きかえ","ひき返","ひきかえ"] "BCCWJ" (defS [V5s] [Stem] `BS` NP [F[Ga]]) (verbSR 1 "引き返す"),
-  mylex ["事実"] "BCCWJ" N (commonNounSR "事実")
+  mylex ["引返","引き返","引きかえ","ひき返","ひきかえ"] "BCCWJ" (defS [V5s] [Stem] `BS` NP [F[Ga]]) (verbSR 1 "引き返す")
+  --mylex ["事実"] "BCCWJ" N (commonNounSR "事実")
   ]
