@@ -67,8 +67,6 @@ lexicalitem pf' source' score' cat' (sem',sig') = Node {rs=LEX, pf=pf', cat=cat'
 defS :: [FeatureValue] -> [FeatureValue] -> Cat
 defS p c = S [F p,F c,F[M],F[M],F[M],F[M],F[M]]
 
-
-
 --catS :: [FeatureValue] -> [FeatureValue] -> Feature -> Feature -> Feature -> Feature -> Feature -> Cat
 --catS pos conj pm1 pm2 pm3 pm4 pm5 = S [F pos, F conj, pm1, pm2, pm3, pm4, pm5]
 

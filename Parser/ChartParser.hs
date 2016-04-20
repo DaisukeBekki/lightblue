@@ -11,18 +11,20 @@ Stability   : beta
 -}
 
 module Parser.ChartParser (
-  -- * Main parser
+  -- * Main parsing function
   parse,
   -- * Printing (in Text) functions
   printChart,
   TEX.printNodesInTeX,
   printChartInSimpleText,
   posTagger,
+  CCG.Node(..),
+  CCG.SimpleText(..),
   -- * Utilities to filter the parsing results
   topBox,
   bestOnly,
   sOnly,
-  CCG.Node(..),
+  --CCG.Node(..),
   -- * 
   --L.myLexicon,
   --L.setupLexicon
@@ -33,7 +35,6 @@ import Data.Char                       --base
 import Data.Fixed                      --base
 import qualified Data.Text.Lazy as T   --text
 import qualified Data.Map as M         --container
---import qualified Data.Maybe as Maybe   --base
 import qualified System.IO as S        --base
 import qualified Parser.CombinatoryCategorialGrammar as CCG --(Node, unaryRules, binaryRules, trinaryRules, isCONJ, cat, SimpleText)
 import qualified Parser.Japanese.Lexicon as L (LexicalItems, lookupLexicon, setupLexicon, emptyCategories)
@@ -102,7 +103,7 @@ sOnly = filter isS
 -- | Main parsing function to parse a Japanees sentence and generates a CYK-chart.
 parse :: Int           -- ^ The beam width
          -> T.Text     -- ^ A sentence to be parsed
-         -> IO(Chart, [[CCG.Node]])
+         -> IO(Chart, [[CCG.Node]]) -- ^ A pair of the resulting CYK-chart and a list of CYK-charts for segments
 parse beam sentence 
   | sentence == T.empty = return (M.empty,[]) -- foldl returns a runtime error when text is empty
   | otherwise =
@@ -152,6 +153,12 @@ punctFilter sep i charList e@((from,to),nodes)
                    then e:charList
                    else charList
 
+andCONJ :: T.Text -> CCG.Node
+andCONJ c = LT.lexicalitem c "new" 100 CCG.CONJ LT.andSR
+
+orCONJ :: T.Text -> CCG.Node
+orCONJ c = LT.lexicalitem c "new" 100 CCG.CONJ LT.orSR
+
 {-
 punctFilter i chartList e@((from,to),nodes)
   | to == i = let filterednodes = Maybe.catMaybes $ map (\n -> case CCG.unifyWithHead [] [] LT.anySExStem (CCG.cat n) of 
@@ -174,31 +181,21 @@ punctFilter sep i chartList e@((from,to),nodes)
                   else chartList
 -}
 
-andCONJ :: T.Text -> CCG.Node
-andCONJ c = LT.lexicalitem c "new" 100 CCG.CONJ LT.andSR
-
-orCONJ :: T.Text -> CCG.Node
-orCONJ c = LT.lexicalitem c "new" 100 CCG.CONJ LT.orSR
-
 type PartialBox = (Chart,T.Text,Int,Int)
 
 -- | The 'boxAccumulator' function
-boxAccumulator :: Int           -- ^ beam width
-                  -> L.LexicalItems  -- ^ my lexicon
-                  -> PartialBox -- ^ accumulated result (Chart, Text, Int, Int)
-                  -> Char       -- ^ 
+boxAccumulator :: Int               -- ^ beam width
+                  -> L.LexicalItems -- ^ my lexicon
+                  -> PartialBox     -- ^ accumulated result (Chart, Text, Int, Int)
+                  -> Char           -- ^ 
                   -> PartialBox
 boxAccumulator beam lexicon (chart,word,i,j) c =
   let newword = T.cons c word;
-      list0 = if (T.compareLength newword 20) == LT -- Does not execute lookup for a long word (run "LongestWord" to check it (23))
+      list0 = if (T.compareLength newword 23) == LT -- Does not execute lookup for a long word (run "LongestWord" to check it (=23))
                 then L.lookupLexicon newword lexicon
                 else [];
-      list1 = checkUnaryRules list0;
-      list2 = checkBinaryRules i j chart list1;
-      list3 = checkCoordinationRule i j chart list2;
-      list4 = checkParenthesisRule i j chart list3;
-      list5 = checkEmptyCategories list4 in
-  ((M.insert (i,j) (cutoff beam list5) chart), newword, i-1, j)
+      list1 = checkEmptyCategories $ checkParenthesisRule i j chart $ checkCoordinationRule i j chart $ checkBinaryRules i j chart $ checkUnaryRules list0 in
+  ((M.insert (i,j) (cutoff beam list1) chart), newword, i-1, j)
 
 -- | take `beam` nodes from the top of `ndoes`.
 cutoff :: Int -> [CCG.Node] -> [CCG.Node]
@@ -249,5 +246,4 @@ checkParenthesisRule i j chart prevlist
 checkEmptyCategories :: [CCG.Node] -> [CCG.Node]
 checkEmptyCategories prevlist =
   foldl' (\p ec -> foldl' (\list node -> (CCG.binaryRules node ec) $ (CCG.binaryRules ec node) list) p p) prevlist L.emptyCategories
-  --foldr (\p -> (CCG.binaryRules (fst p) (snd p)) . (CCG.binaryRules (snd p) (fst p))) prevlist [(x,y) | x <- prevlist, y <- L.emptyCategories]
 

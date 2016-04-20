@@ -140,6 +140,9 @@ emptyCategories = [
 mylex :: [T.Text] -> T.Text -> Cat -> (Preterm, [Signature]) -> [Node]
 mylex wds num cat' (sem',sig') = [(lexicalitem wd num 100 cat' (sem',sig')) | wd <- wds ]
 
+mylex' :: [T.Text] -> T.Text -> Integer -> Cat -> (Preterm, [Signature]) -> [Node]
+mylex' wds num sco cat' (sem',sig') = [(lexicalitem wd num sco cat' (sem',sig')) | wd <- wds ]
+
 -- | 活用語尾登録用マクロ
 conjSuffix :: T.Text -> T.Text -> [FeatureValue] -> [FeatureValue] -> [Node]
 conjSuffix wd num catpos catconj = [lexicalitem wd num 100 ((S ([SF 1 catpos, F catconj]++m5)) `BS` (S ([SF 1 catpos, F[Stem]]++m5))) (id,[])]
@@ -155,7 +158,9 @@ myLexicon = concat $ [
   mylex ["によって","によっては"] "(524)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Niyotte]])) `BS` NP [F[Nc]]) argumentCM,
   mylex ["が","の"] "(531)?" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Ga,No]])) `BS` NP [F[Nc]]) argumentCM,
   -- 格助詞（の）
-  mylex ["の","が"] "(531)+" ((N `SL` N) `BS` (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) 
+  mylex ["の"] "(531)+" ((N `SL` N) `BS` (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) 
+               ((Lam (Lam (Lam (Lam (App (Var 3) (Lam (Sigma (App (App (Var 3) (Var 2)) (Var 1)) (App (App (Con "の[MCN]") (Var 1)) (Var 3))))))))),[]),
+  mylex' ["が"] "(531)+" 90 ((N `SL` N) `BS` (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) 
                ((Lam (Lam (Lam (Lam (App (Var 3) (Lam (Sigma (App (App (Var 3) (Var 2)) (Var 1)) (App (App (Con "の[MCN]") (Var 1)) (Var 3))))))))),[]),
   -- adjunct:
   mylex ["と","とは","とも","とさえ"] "(524)+" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` NP [F[Nc]]) (adjunctCM "ト"),
@@ -290,6 +295,16 @@ myLexicon = concat $ [
   mylex ["来れ","くれ"] "(416)" ((defS [VK] [Hyp]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
   mylex ["来い","こい"] "(416)" ((defS [VK] [Imper]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
   mylex ["来よ","こよ"] "(416)" ((defS [VK] [ModU]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
+  -- 動詞「やってくる」
+  mylex ["やって来"] "(416)" ((defS [VK] [Neg,Cont,ModM,EuphT,NegL]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
+  mylex ["やってこ"] "(416)" ((defS [VK] [Neg,NegL]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
+  mylex ["やってき"] "(416)" ((defS [VK] [Cont,ModM,EuphT]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
+  mylex ["やって来ら","やってこら"] "(416)" ((defS [VK] [VoR]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
+  mylex ["やって来さ","やってこさ"] "(416)" ((defS [VK] [VoS]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
+  mylex ["やって来る","やってくる"] "(416)" ((defS [VK] [Term,Attr]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
+  mylex ["やって来れ","やってくれ"] "(416)" ((defS [VK] [Hyp]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
+  mylex ["やって来い","やってこい"] "(416)" ((defS [VK] [Imper]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
+  mylex ["やって来よ","やってこよ"] "(416)" ((defS [VK] [ModU]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
   --- サ変動詞
   conjSuffix "さ" "(157)" [VS,VSN] [VoR,VoS],
   conjSuffix "し" "(157)" [VS,VSN] [Neg,Cont,ModM,EuphT],
@@ -740,5 +755,6 @@ myLexicon = concat $ [
   mylex ["ユーカㇻ"] "BCCWJ" (NP [F[Nc]]) (properNameSR "ユーカラ"),
   mylex ["則ち"] "BCCWJ" (defS [Nemp] [Stem] `BS` NP [F[Ga]]) (predSR 1 "すなわち"),
   mylex ["まっ先"] "BCCWJ" (defS [Nni] [Stem] `BS` NP [F[Ga]]) (predSR 1 "真っ先"),
+  mylex ["引返","引き返","引きかえ","ひき返","ひきかえ"] "BCCWJ" (defS [V5s] [Stem] `BS` NP [F[Ga]]) (verbSR 1 "引き返す"),
   mylex ["事実"] "BCCWJ" N (commonNounSR "事実")
   ]

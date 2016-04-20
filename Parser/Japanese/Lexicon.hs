@@ -51,16 +51,17 @@ setupLexicon sentence = do
   --  1. Setting up lexical items provided by JUMAN++
   jumandicpath <- E.getEnv "LIGHTBLUE"
   jumandic <- T.readFile $ jumandicpath ++ "Parser/Japanese/Juman.dic"
-  let (jumandicFiltered,(f2,f3)) = L.foldl' parseJumanLine ([],(M.empty,M.empty)) $ filter (\l -> (head l) `T.isInfixOf` sentence) $ map (T.split (=='\t')) (T.lines jumandic)
+  let jumandicFiltered = filter (\l -> (head l) `T.isInfixOf` sentence) $ map (T.split (=='\t')) (T.lines jumandic)
+  let (jumandicParsed,(f2,f3)) = L.foldl' parseJumanLine ([],(M.empty,M.empty)) $ jumandicFiltered
   --  2. Setting up private lexicon
   let mylexiconFiltered = filter (\l -> T.isInfixOf (pf l) sentence) LEX.myLexicon
   --  3. Setting up compound nouns (returned from an execution of JUMAN)
   jumanCN <- JU.jumanCompoundNouns (T.replace "―" "、" sentence)
   -- 
-  let commonnouns = map (\(hyoki, daihyo) -> lexicalitem hyoki "(CN)" 100 N (commonNounSR daihyo)) $ M.toList f2
-  let propernames = map (\(hyoki, daihyo) -> lexicalitem hyoki "(PN)" 100 ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) (properNameSR daihyo)) $ M.toList f3
+  let commonnouns = map (\(hyoki, daihyo) -> lexicalitem hyoki "(CN)" (if hyoki==daihyo then 99 else 90) N (commonNounSR daihyo)) $ M.toList f2
+  let propernames = map (\(hyoki, daihyo) -> lexicalitem hyoki "(PN)" (if hyoki==daihyo then 99 else 90) ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) (properNameSR daihyo)) $ M.toList f3
   -- | 1+2+3
-  let numeration = jumandicFiltered ++ mylexiconFiltered ++ commonnouns ++ propernames ++ jumanCN
+  let numeration = jumandicParsed ++ mylexiconFiltered ++ commonnouns ++ propernames ++ jumanCN
   return $ numeration `seq` numeration
 
 -- | Read each line in "Juman.dic" and convert it to a CCG lexical item
@@ -70,9 +71,11 @@ parseJumanLine (lexicalitems, (commonnouns, propernames)) jumanline =
   case jumanline of
     (hyoki:(score':(cat':(daihyo':(yomi':(source':(caseframe:_))))))) 
       | T.isPrefixOf "名詞:普通名詞" cat' -> 
-          (lexicalitems, ((M.insertWith' (\t1 t2 -> T.intercalate ";" [t1,t2]) hyoki (T.concat [daihyo',"/",yomi']) commonnouns), propernames))
+          let commonnouns' = M.insertWith' (\t1 t2 -> T.intercalate ";" [t1,t2]) hyoki (T.concat [daihyo',"/",yomi']) commonnouns in
+          (lexicalitems, (commonnouns', propernames))
       | T.isPrefixOf "名詞:固有名詞" cat' || T.isPrefixOf "名詞:人名" cat' || T.isPrefixOf "名詞:地名" cat' || T.isPrefixOf "名詞:組織名" cat' ->
-          (lexicalitems, (commonnouns, M.insertWith' (\t1 t2 -> T.intercalate ";" [t1,t2]) hyoki (T.concat [daihyo',"/",yomi']) propernames))
+          let propernames' = M.insertWith' (\t1 t2 -> T.intercalate ";" [t1,t2]) hyoki (T.concat [daihyo',"/",yomi']) propernames in
+          (lexicalitems, (commonnouns, propernames'))
       | otherwise ->
           let catsemlist = jumanPos2Cat (T.concat [daihyo',"/",yomi']) cat' caseframe in
           ([(lexicalitem hyoki (T.concat ["(J",T.take 3 source',")"]) (read (T.unpack score')::Integer) cat2 semsig) | (cat2,semsig) <- catsemlist]++lexicalitems, (commonnouns,propernames))
