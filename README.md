@@ -49,8 +49,8 @@ $ git clone git@bitbucket.org:DaisukeBekki/lightblue.git
 This operation will create the directory *lightblue* (henceforth we will refer to this directory as <lightblue>) under the directory in which you did the above.
 
 ### Configuration
-First you need to add the environment variable LIGHTBLUE and set its value as <lightblue>.  Suppose that <lightblue> is `/home/lightblue/`, you are supposed to add the following line to .bashrc (or whatever configuration file for your shell).
-`export LIGHTBLUE=/home/lightblue/`
+First you need to add the environment variable LIGHTBLUE and set its value as <lightblue>.  You may add the following line to .bashrc, .bash.profile, or whatever configuration file for your shell.
+`export LIGHTBLUE=<lightblue>`
 
 Then move to <lightblue>, create a sandbox environment there, and check the dependencies as follows.
 ```
