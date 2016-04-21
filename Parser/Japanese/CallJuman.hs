@@ -20,9 +20,6 @@ import qualified System.Process as S                 --process
 import Parser.CombinatoryCategorialGrammar
 import qualified Parser.Japanese.Templates as TPL
 
---import qualified Data.List as L
---import qualified System.IO as S
-
 -- | Main function: jumaCompoundNouns
 -- |   given a sentence, returns a list of compound nouns
 jumanCompoundNouns :: T.Text -> IO([Node])
