@@ -30,7 +30,9 @@ module Parser.Japanese.Templates (
   -- * Templates for DTS representations
   id,
   verbSR,
+  verbSR',
   predSR,
+  nPlaceVerbType,
   nPlaceEventType,
   nPlaceStateType,
   nPlacePredType,
@@ -124,11 +126,44 @@ id = Lam (Var 0)
 -- i==3 -> S\NP\NP\NP: \z.\y.\x.\c.(e:event)X(op(e,x,y,z)X(ce)
 -- i==4 -> error
 
-verbSR :: Int -> T.Text -> (Preterm,[Signature])
-verbSR i op | i == 1 = ((Lam (Lam (Sigma (Con "event") (Sigma (App (App (Con op) (Var 2)) (Var 0)) (App (Var 2) (Var 1)))))), [(op, nPlaceEventType 1)])
-            | i == 2 = ((Lam (Lam (Lam (Sigma (Con "event") (Sigma (App (App (App (Con op) (Var 3)) (Var 2)) (Var 0)) (App (Var 2) (Var 1))))))), [(op, nPlaceEventType 2)])
-            | i == 3 = ((Lam (Lam (Lam (Lam (Sigma (Con "event") (Sigma (App (App (App (App (Con op) (Var 4)) (Var 3)) (Var 2)) (Var 0)) (App (Var 2) (Var 1)))))))), [(op, nPlaceEventType 3)])
-            | otherwise = (Con $ T.concat ["verbSR: verb ",op," of ", T.pack (show i), " arguments"], [])
+verbSR :: Int -> T.Text -> (Preterm, [Signature])
+verbSR i daihyo 
+  | i == 1 =           ((Lam (Lam (Sigma (Con "event") (Sigma           (App (App (Con daihyo) (Var 2)) (Var 0))                   (App (Var 2) (Var 1)))))), [(daihyo,nPlaceEventType 1)])
+  | i == 2 =      ((Lam (Lam (Lam (Sigma (Con "event") (Sigma      (App (App (App (Con daihyo) (Var 3)) (Var 2)) (Var 0))          (App (Var 2) (Var 1))))))), [(daihyo,nPlaceEventType 2)])
+  | i == 3 = ((Lam (Lam (Lam (Lam (Sigma (Con "event") (Sigma (App (App (App (App (Con daihyo) (Var 4)) (Var 3)) (Var 2)) (Var 0)) (App (Var 2) (Var 1)))))))), [(daihyo,nPlaceEventType 3)])
+  | otherwise = (Con $ T.concat ["verbSR: verb ",daihyo," of ", T.pack (show i), " arguments"], [])
+
+verbSR' :: T.Text -> T.Text -> [T.Text] -> (Preterm,[Signature])
+verbSR' daihyo eventuality caseframe = (verbSR'' daihyo caseframe caseframe, [(daihyo, nPlaceVerbType eventuality caseframe)])
+
+verbSR'' :: T.Text      -- ^ daihyo
+          -> [T.Text] -- ^ A case frame
+          -> [T.Text] -- ^ A case frame
+          -> Preterm
+verbSR'' daihyo caseframe caseframe2 = case caseframe of
+  [] -> (Lam (Sigma (Con "event") (Sigma (argstcore (Con daihyo) caseframe2) (App (Var 2) (Var 1)))))
+  (_:cfs) -> Lam (verbSR'' daihyo cfs caseframe2)
+
+argstcore :: Preterm -> [T.Text] -> Preterm
+argstcore tm caseframe = 
+  let n = (length caseframe) + 1 in
+  case caseframe of
+    [] -> App tm (Var 0)
+    (cf:cfs) | cf == "ト節" -> argstcore (App tm (App (Var n) (Lam Top))) cfs
+             | otherwise -> argstcore (App tm (Var n)) cfs
+
+nPlaceVerbType :: T.Text      -- ^ Eventuarlity
+                  -> [T.Text] -- ^ A case frame
+                  -> Preterm  
+nPlaceVerbType eventuality caseframe = case caseframe of
+  [] -> Pi (Con eventuality) Type
+  (cf:cfs) | cf == "ガ格" -> Pi (Con "entity") (nPlaceVerbType eventuality cfs)
+           | cf == "ヲ格" -> Pi (Con "entity") (nPlaceVerbType eventuality cfs)
+           | cf == "ニ格" -> Pi (Con "entity") (nPlaceVerbType eventuality cfs)
+           --  cf == "ト格" -> Pi (Con "entity") (nPlaceVerbType eventuality cfs)
+           | cf == "ト節" -> Pi (Con "type") (nPlaceVerbType eventuality cfs)
+           | cf == "によって" -> Pi (Con "entity") (nPlaceVerbType eventuality cfs)
+           | otherwise -> nPlaceVerbType eventuality cfs
 
 nPlaceEventType :: Int -> Preterm
 nPlaceEventType i

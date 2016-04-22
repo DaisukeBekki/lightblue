@@ -50,10 +50,10 @@ setupLexicon sentence = do
   let mylexiconFiltered = filter (\l -> T.isInfixOf (pf l) sentence) LEX.myLexicon
   --  3. Setting up compound nouns (returned from an execution of JUMAN)
   jumanCN <- JU.jumanCompoundNouns (T.replace "―" "、" sentence)
-  --
+  --  4. Accumulating common nons and proper names entries
   let commonnouns = map (\(hyoki, (daihyo,score')) -> lexicalitem hyoki "(CN)" score' N (commonNounSR daihyo)) $ M.toList cn
   let propernames = map (\(hyoki, (daihyo,score')) -> lexicalitem hyoki "(PN)" score' ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) (properNameSR daihyo)) $ M.toList pn
-  -- | 1+2+3
+  --  5. 1+2+3+4
   let numeration = jumandicParsed ++ mylexiconFiltered ++ commonnouns ++ propernames ++ jumanCN
   return $ numeration `seq` numeration
 
@@ -142,16 +142,14 @@ constructVerb daihyo caseframe posF conjF =
   if caseframe == T.empty
     then [(defS posF conjF `BS` NP [F[Ga]], verbSR 1 daihyo)]
     else let caseframelist = map (T.split (==',')) $ T.split (=='#') caseframe in
-         [(verbCat cf (defS posF conjF), (verbSR (length cf) daihyo)) | cf <- caseframelist]
+         [(verbCat cf (defS posF conjF), verbSR' daihyo "event" cf) | cf <- caseframelist]
 
 verbCat :: [T.Text] -> Cat -> Cat
-verbCat cf ct = case cf of
-  [] -> ct
-  (c:cs) | c == "ガ格" -> (verbCat cs ct) `BS` NP [F[Ga]]
-         | c == "ヲ格" -> (verbCat cs ct) `BS` NP [F[O]]
-         | c == "ニ格" -> (verbCat cs ct) `BS` NP [F[Ni]]
-         --  c == "ト格" -> (verbCat cs ct) `BS` NP [F[To]]
-         | c == "ト節" -> (verbCat cs ct) `BS` Sbar [F[ToCL]]
-         | c == "によって" -> (verbCat cs ct) `BS` NP [F[Niyotte]]
-         | otherwise -> (verbCat cs ct)
-
+verbCat caseframe cat' = case caseframe of
+  [] -> cat'
+  (cf:cfs) | cf == "ガ格" -> (verbCat cfs cat') `BS` NP [F[Ga]]
+           | cf == "ヲ格" -> (verbCat cfs cat') `BS` NP [F[O]]
+           | cf == "ニ格" -> (verbCat cfs cat') `BS` NP [F[Ni]]
+           | cf == "ト節" -> (verbCat cfs cat') `BS` Sbar [F[ToCL]]
+           | cf == "によって" -> (verbCat cfs cat') `BS` NP [F[Niyotte]]
+           | otherwise -> (verbCat cfs cat')
