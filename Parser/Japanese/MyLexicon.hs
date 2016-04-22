@@ -40,7 +40,7 @@ emptyCategories = [
   -- サ行変格活用動詞語幹 -- とりあえずガヲ、ガヲトのパターンのみ。→サ変名詞のみに修正
   ec "do" "(156)" 100
               ((defS [VS] [Stem] `BS` NP [F[Ga]]) `BS` defS [VSN] [Stem])
-              (verbSR 2 "する"),
+              ((Lam (Lam (Lam (Sigma (Con "event") (App (App (App (Con "する") (App (Var 3) (Var 1))) (Var 2)) (Var 0)))))), [("する",Pi Type (Pi (Con "entity") Type))]),
   --lexicalitem "\\emp" "(156)" (100%100)
   --            (((defS [VS] [Stem] `BS` NP [Ga]) `BS` NP [F[O]]) `BS` defS [To])
   --            (Lam (Lam (App (Con "する") (Pair (Var 0) (Var 1))))),
@@ -628,17 +628,18 @@ myLexicon = concat $ [
   mylex ["せ"] "(635)" (((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP [F[Ga]]) `BS` NP [F[O]]) `BS` (defS anyPos [VoS] `BS` NP [F[Ga]]))
         ((Lam (Lam (Lam (Lam (App (App (Var 3) (Var 2)) (Lam (Sigma (Con "event") (Sigma (App (App (App (Con "使役") (Var 1)) (Var 3)) (Var 0)) (App (Var 3) (Var 1)))))))))),[]), 
   -- 自発態
-  --mylex ["思われ"] "new" ((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP [F[Ga]]) `BS` Sbar [ToCL]) 
-  --      Lam p (Lam x (Lam c (
-  --考えられ  
-  --感じられ, Ni, ToCL
-  --見受けられ, Ni, ToCL/ Ga
-  --予想され, Ni, ToCL
-  --思い出され, Ni,Ga
-  --悔やまれ, Ni,Ga/Ni,To
-  --偲ばれ, Ni,Ga
-  --見られ, Ni,Ga/Ni,Ga
-  --見える？聞こえる？              
+  mylex ["思われ","おもわれ"] "new" (verbCat ["ト節","ニ格"] [V1] [Stem,Neg,Cont,ModM,NegL,EuphT]) (verbSR' "思われる/おもわれる" "state" ["ト節","ニ格"]),
+  mylex ["感じられ"] "new" (verbCat ["ト節","ニ格"] [V1] [Stem,Neg,Cont,ModM,NegL,EuphT]) (verbSR' "感じられる/かんじられる" "state" ["ト節","ニ格"]),
+  mylex ["悔やまれ","くやまれ"] "new" (verbCat ["ガ格","ニ格"] [V1] [Stem,Neg,Cont,ModM,NegL,EuphT]) (verbSR' "悔やまれる/くやまれる" "state" ["ガ格","ニ格"]),
+  mylex ["偲ばれ","しのばれ"] "new" (verbCat ["ガ格","ニ格"] [V1] [Stem,Neg,Cont,ModM,NegL,EuphT]) (verbSR' "偲ばれる/しのばれる" "state" ["ガ格","ニ格"]),
+  mylex ["思い出され","おもいだされ"] "new" (verbCat ["ガ格","ニ格"] [V1] [Stem,Neg,Cont,ModM,NegL,EuphT]) (verbSR' "思い出される/おもいだされる" "state" ["ガ格","ニ格"]),
+  mylex ["考えられ"] "new" (verbCat ["ト節"] [V1] [Stem,Neg,Cont,ModM,NegL,EuphT]) (verbSR' "考えられる/かんがえられる" "state" ["ト節"]),
+  mylex ["予想され"] "new" (verbCat ["ト節"] [V1] [Stem,Neg,Cont,ModM,NegL,EuphT]) (verbSR' "予想される/よそうされる" "state" ["ト節"]),
+  mylex ["見受けられ","見うけられ"] "new" (verbCat ["ト節"] [V1] [Stem,Neg,Cont,ModM,NegL,EuphT]) (verbSR' "見受けられる/みうけられる" "state" ["ト節"]),
+  mylex ["悔やまれ","くやまれ"] "new" (verbCat ["ト節"] [V1] [Stem,Neg,Cont,ModM,NegL,EuphT]) (verbSR' "悔やまれる/くやまれる" "state" ["ト節"]),
+  mylex ["見られ","みられ"] "new" (verbCat ["ガ格","ニ格"] [V1] [Stem,Neg,Cont,ModM,NegL,EuphT]) (verbSR' "見られる/みられる" "state" ["ガ格","ニ格"]),
+  mylex ["見え","みえ"] "new" (verbCat ["ガ格","ニ格"] [V1] [Stem,Neg,Cont,ModM,NegL,EuphT]) (verbSR' "見える/みえる" "state" ["ガ格","ニ格"]),
+  mylex ["聞こえ","きこえ"] "new" (verbCat ["ガ格","ニ格"] [V1] [Stem,Neg,Cont,ModM,NegL,EuphT]) (verbSR' "見える/みえる" "state" ["ガ格","ニ格"]),
   -- 以下、「可能」はstateを導入すべきか。
   mylex ["れ"] "(660a)" ((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP [F[Ga]]) `BS` (defS [V1,VK] [VoR] `BS` NP [F[Ga]]))
         ((Lam (Lam (Lam (App (Con "可能") (Pair (Var 1) (Lam (App (App (Var 3) (Var 0)) (Var 1)))))))),[]),

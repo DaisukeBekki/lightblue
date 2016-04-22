@@ -29,6 +29,7 @@ module Parser.Japanese.Templates (
   mppmm,
   -- * Templates for DTS representations
   id,
+  verbCat,
   verbSR,
   verbSR',
   predSR,
@@ -126,6 +127,16 @@ id = Lam (Var 0)
 -- i==3 -> S\NP\NP\NP: \z.\y.\x.\c.(e:event)X(op(e,x,y,z)X(ce)
 -- i==4 -> error
 
+verbCat :: [T.Text] -> [FeatureValue] -> [FeatureValue] -> Cat
+verbCat caseframe posF conjF = case caseframe of
+  [] -> defS posF conjF
+  (cf:cfs) | cf == "ガ格" -> (verbCat cfs posF conjF) `BS` NP [F[Ga]]
+           | cf == "ヲ格" -> (verbCat cfs posF conjF) `BS` NP [F[O]]
+           | cf == "ニ格" -> (verbCat cfs posF conjF) `BS` NP [F[Ni]]
+           | cf == "ト節" -> (verbCat cfs posF conjF) `BS` Sbar [F[ToCL]]
+           | cf == "によって" -> (verbCat cfs posF conjF) `BS` NP [F[Niyotte]]
+           | otherwise -> (verbCat cfs posF conjF)
+
 verbSR :: Int -> T.Text -> (Preterm, [Signature])
 verbSR i daihyo 
   | i == 1 =           ((Lam (Lam (Sigma (Con "event") (Sigma           (App (App (Con daihyo) (Var 2)) (Var 0))                   (App (Var 2) (Var 1)))))), [(daihyo,nPlaceEventType 1)])
@@ -133,7 +144,7 @@ verbSR i daihyo
   | i == 3 = ((Lam (Lam (Lam (Lam (Sigma (Con "event") (Sigma (App (App (App (App (Con daihyo) (Var 4)) (Var 3)) (Var 2)) (Var 0)) (App (Var 2) (Var 1)))))))), [(daihyo,nPlaceEventType 3)])
   | otherwise = (Con $ T.concat ["verbSR: verb ",daihyo," of ", T.pack (show i), " arguments"], [])
 
-verbSR' :: T.Text -> T.Text -> [T.Text] -> (Preterm,[Signature])
+verbSR' :: T.Text -> T.Text -> [T.Text] -> (Preterm, [Signature])
 verbSR' daihyo eventuality caseframe = (verbSR'' daihyo caseframe caseframe, [(daihyo, nPlaceVerbType eventuality caseframe)])
 
 verbSR'' :: T.Text      -- ^ daihyo
@@ -154,14 +165,14 @@ argstcore tm caseframe =
 
 nPlaceVerbType :: T.Text      -- ^ Eventuarlity
                   -> [T.Text] -- ^ A case frame
-                  -> Preterm  
+                  -> Preterm
 nPlaceVerbType eventuality caseframe = case caseframe of
   [] -> Pi (Con eventuality) Type
   (cf:cfs) | cf == "ガ格" -> Pi (Con "entity") (nPlaceVerbType eventuality cfs)
            | cf == "ヲ格" -> Pi (Con "entity") (nPlaceVerbType eventuality cfs)
            | cf == "ニ格" -> Pi (Con "entity") (nPlaceVerbType eventuality cfs)
            --  cf == "ト格" -> Pi (Con "entity") (nPlaceVerbType eventuality cfs)
-           | cf == "ト節" -> Pi (Con "type") (nPlaceVerbType eventuality cfs)
+           | cf == "ト節" -> Pi Type (nPlaceVerbType eventuality cfs)
            | cf == "によって" -> Pi (Con "entity") (nPlaceVerbType eventuality cfs)
            | otherwise -> nPlaceVerbType eventuality cfs
 

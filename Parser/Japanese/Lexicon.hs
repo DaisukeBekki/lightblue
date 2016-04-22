@@ -142,14 +142,6 @@ constructVerb daihyo caseframe posF conjF =
   if caseframe == T.empty
     then [(defS posF conjF `BS` NP [F[Ga]], verbSR 1 daihyo)]
     else let caseframelist = map (T.split (==',')) $ T.split (=='#') caseframe in
-         [(verbCat cf (defS posF conjF), verbSR' daihyo "event" cf) | cf <- caseframelist]
+         [(verbCat cf posF conjF, verbSR' daihyo "event" cf) | cf <- caseframelist]
 
-verbCat :: [T.Text] -> Cat -> Cat
-verbCat caseframe cat' = case caseframe of
-  [] -> cat'
-  (cf:cfs) | cf == "ガ格" -> (verbCat cfs cat') `BS` NP [F[Ga]]
-           | cf == "ヲ格" -> (verbCat cfs cat') `BS` NP [F[O]]
-           | cf == "ニ格" -> (verbCat cfs cat') `BS` NP [F[Ni]]
-           | cf == "ト節" -> (verbCat cfs cat') `BS` Sbar [F[ToCL]]
-           | cf == "によって" -> (verbCat cfs cat') `BS` NP [F[Niyotte]]
-           | otherwise -> (verbCat cfs cat')
+
