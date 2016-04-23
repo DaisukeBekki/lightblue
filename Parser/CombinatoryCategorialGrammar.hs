@@ -673,13 +673,16 @@ forwardFunctionCrossedSubstitutionRule _ _ prevlist = prevlist
 
 -- | Coordination rule.
 coordinationRule :: Node -> Node -> Node -> [Node] -> [Node]
-coordinationRule lnode@(Node {cat=x1, sem=s1}) cnode@(Node {cat=CONJ, sem=conj}) rnode@(Node {cat=x2, sem=s2}) prevlist =
+coordinationRule lnode@(Node {rs=r, cat=x1, sem=s1}) cnode@(Node {cat=CONJ, sem=conj}) rnode@(Node {cat=x2, sem=s2}) prevlist =
   -- [<Phi>] x1:f1  CONJ  x2:f2  ==>  x:\lambda\vec{x} (conj f1\vec{x}) f2\vec{x}
-  case (x1,x2) of
-    ((T True i (S (_:as)) `SL` (T True j (S (_:bs)) `BS` NP [F[Nc]])),(T True _ (S (c:cs)) `SL` (T True _ (S (d:ds)) `BS` NP [F[Nc]]))) -> 
-      case do; (es,fsub) <- unifyFeatures [] as cs; (fs,_) <- unifyFeatures fsub bs ds; return (es,fs) of
-        Nothing -> prevlist
-        Just (es,fs) -> let newcat = (T True i (S (c:es)) `SL` (T True j (S (d:fs)) `BS` NP [F[Nc]])) in
+  if r == COORD
+  then prevlist
+  else
+    case (x1,x2) of
+      ((T True i (S (_:as)) `SL` (T True j (S (_:bs)) `BS` NP [F[Nc]])),(T True _ (S (c:cs)) `SL` (T True _ (S (d:ds)) `BS` NP [F[Nc]]))) -> 
+        case do; (es,fsub) <- unifyFeatures [] as cs; (fs,_) <- unifyFeatures fsub bs ds; return (es,fs) of
+          Nothing -> prevlist
+          Just (es,fs) -> let newcat = (T True i (S (c:es)) `SL` (T True j (S (d:fs)) `BS` NP [F[Nc]])) in
             Node {
               rs = COORD,
               pf = T.concat [pf(lnode),pf(cnode),pf(rnode)],
@@ -690,7 +693,7 @@ coordinationRule lnode@(Node {cat=x1, sem=s1}) cnode@(Node {cat=CONJ, sem=conj})
               source = "",
               sig = sig(lnode) ++ sig(rnode)
               }:prevlist
-    _ -> prevlist
+      _ -> prevlist
 coordinationRule _ _ _ prevlist = prevlist
 
 -- | Parenthesis rule.
@@ -888,9 +891,9 @@ unifyWithHead csub fsub c1 c2 = case c2 of
   BS x y -> do
             (x',csub2,fsub2) <- unifyWithHead csub fsub c1 x
             return $ (BS x' y, csub2, fsub2)
---  T f i u -> do
---             (x',csub2,fsub2) <- unifyCategory csub fsub c1 u
---             return $ (T f i x', csub2, fsub2)
+  T f i u -> do
+             (x',csub2,fsub2) <- unifyCategory csub fsub c1 u
+             return $ (T f i x', alter i (SubstVal $ T f i x') csub2, fsub2)
   x -> unifyCategory csub fsub c1 x
 
 -- | substituteFeatureVariable

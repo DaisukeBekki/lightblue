@@ -23,7 +23,6 @@ module Parser.ChartParser (
   -- * Utilities to filter the parsing results
   topBox,
   bestOnly,
-  sOnly,
   isS,
   --CCG.Node(..),
   -- * 
@@ -92,14 +91,14 @@ bestOnly nodes = case nodes of
   (firstnode:ns) -> firstnode:(takeWhile (\node -> CCG.score(node) >= CCG.score(firstnode)) ns)
 
 -- | `sOnly` 
-sOnly :: [CCG.Node] -> [CCG.Node]
-sOnly = filter isS
+--sOnly :: [CCG.Node] -> [CCG.Node]
+--sOnly = filter isS
 
 isS :: CCG.Node -> Bool
 isS node = case CCG.cat node of
              CCG.S _ -> True
+             CCG.Sbar _ -> True
              _ -> False
-
 
 {- Main functions -}
 
@@ -141,7 +140,7 @@ chartAccumulator beam lexicon (chart,seplist,i,stack,parsed) c =
   let newstack = (T.cons c stack);
       (sep:seps) = seplist in
   if c `elem` ['、','，',',','-','―','−','。','．','！','？','!','?'] || isSpace c -- Each seperator is an end of a phase
-    then let newchart = M.fromList $ ((i,i+1),[andCONJ (T.singleton c), orCONJ (T.singleton c)]):(foldl' (punctFilter sep i) [] $ M.toList chart)
+    then let newchart = M.fromList $ ((i,i+1),[andCONJ (T.singleton c), emptyCM (T.singleton c)]):(foldl' (punctFilter sep i) [] $ M.toList chart)
          in (newchart, ((i+1):seps), (i+1), newstack, (take 1 (sort (lookupChart sep (i+1) newchart)):parsed))
     else let (newchart,_,_,_) = T.foldl' (boxAccumulator beam lexicon) (chart,T.empty,i,i+1) newstack;
              newseps | c `elem` ['「','『'] = (i+1:seplist)
@@ -157,10 +156,13 @@ punctFilter sep i charList e@((from,to),nodes)
                    else charList
 
 andCONJ :: T.Text -> CCG.Node
-andCONJ c = LT.lexicalitem c "new" 100 CCG.CONJ LT.andSR
+andCONJ c = LT.lexicalitem c "punct" 100 CCG.CONJ LT.andSR
 
-orCONJ :: T.Text -> CCG.Node
-orCONJ c = LT.lexicalitem c "new" 100 CCG.CONJ LT.orSR
+emptyCM :: T.Text -> CCG.Node
+emptyCM c = LT.lexicalitem c "punct" 99 (((CCG.T True 1 LT.modifiableS) `CCG.SL` ((CCG.T True 1 LT.modifiableS) `CCG.BS` (CCG.NP [CCG.F[CCG.Ga,CCG.O]]))) `CCG.BS` (CCG.NP [CCG.F[CCG.Nc]])) LT.argumentCM
+
+--orCONJ :: T.Text -> CCG.Node
+--orCONJ c = LT.lexicalitem c "new" 100 CCG.CONJ LT.orSR
 
 {-
 punctFilter i chartList e@((from,to),nodes)

@@ -1,3 +1,3 @@
 #!/bin/bash
-echo $1 | ./ParseText -text -tex -time > tex/out.txt
+echo $2 | ./ParseText $1
 #echo $1 | lightblue -text -tex -time > tex/out.txt

@@ -13,10 +13,13 @@ main = do
   start    <- Time.getCurrentTime
   args     <- S.getArgs
   sentence <- T.getLine
-  (chart1,_) <- CP.parse 32 sentence
+  (chart,_) <- CP.parse 32 sentence
+  let top = CP.topBox chart;
+      sonly = filter CP.isS top;
+      top' = if sonly == [] then top else sonly
   stop     <- Time.getCurrentTime
   let time = Time.diffUTCTime stop start
-  mapM_ (action chart1 (CP.bestOnly $ CP.topBox chart1) time) args
+  mapM_ (action chart (CP.bestOnly top') time) args
   where action chart topbox time op
           | op == "-tex" = CP.printNodesInTeX S.stdout $ topbox
           | op == "-text" = CP.printChartInSimpleText S.stderr $ topbox
