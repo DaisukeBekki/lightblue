@@ -668,7 +668,10 @@ myLexicon = concat $ [
   -- それとも
   -- それに
   -- けど,けども,けれど,けれども（このあたりまではすべて「接続詞」エントリあり
-  -- から、ので
+  mylex ["から"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Term], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
+        ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
+  mylex ["ので"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Term], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
+        ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
   -- まで
   -- より
   -- まま（名詞：副詞的名詞？？）
@@ -693,7 +696,7 @@ myLexicon = concat $ [
   -- 従属節導入表現
   mylex ["と","とは","とも"] "new" (Sbar [F[ToCL]] `BS` S [F anyPos, F[Term,Imper,Pre],F[P,M],F[P,M],F[P,M],F[M],F[M]]) (id,[]),
   mylex ["ように","ようには","ようにも"] "new" (Sbar [F[YooniCL]] `BS` S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]]) (id,[]),
-  mylex ["という"] "new" ((N `SL` N) `BS` S [F anyPos, F[Term], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
+  mylex ["という"] "toiu" (S [F[V1], F[Attr], F[M],F[M],F[M],F[M],F[M]] `BS` S [F anyPos, F[Term,Pre,Imper], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
   ((Lam (Lam (Lam (Lam (Sigma (App (Var 3) (Lam Top)) (App (App (Var 3) (Var 2)) (Lam (Sigma (App (App (Con "content") (Var 1)) (Var 3)) (App (Var 3) (Var 1)))))))))), [("content",nPlaceEventType 1)]),
   mylex ["とともに"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Term], F[P,M], F[P,M], F[P,M], F[M], F[M]]) ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 1) (Var 0)))))),[]),
   --- とする
@@ -768,6 +771,7 @@ myLexicon = concat $ [
   mylex ["ユーカㇻ"] "BCCWJ" (NP [F[Nc]]) (properNameSR "ユーカラ"),
   mylex ["則ち"] "BCCWJ" (defS [Nemp] [Stem] `BS` NP [F[Ga]]) (predSR 1 "すなわち"),
   mylex ["まっ先"] "BCCWJ" (defS [Nni] [Stem] `BS` NP [F[Ga]]) (predSR 1 "真っ先"),
-  mylex ["引返","引き返","引きかえ","ひき返","ひきかえ"] "BCCWJ" (defS [V5s] [Stem] `BS` NP [F[Ga]]) (verbSR 1 "引き返す")
+  mylex ["引返","引き返","引きかえ","ひき返","ひきかえ"] "BCCWJ" (defS [V5s] [Stem] `BS` NP [F[Ga]]) (verbSR 1 "引き返す"),
+  mylex ["殪"] "BCCWJ" ((defS [V5s] [Stem] `BS` NP [F[Ga]]) `BS` NP [F[O]]) (verbSR 2 "殪す")
   --mylex ["事実"] "BCCWJ" N (commonNounSR "事実")
   ]

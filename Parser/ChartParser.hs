@@ -24,6 +24,7 @@ module Parser.ChartParser (
   topBox,
   bestOnly,
   sOnly,
+  isS,
   --CCG.Node(..),
   -- * 
   --L.myLexicon,
@@ -93,10 +94,12 @@ bestOnly nodes = case nodes of
 -- | `sOnly` 
 sOnly :: [CCG.Node] -> [CCG.Node]
 sOnly = filter isS
-  where isS node = 
-          case CCG.cat node of
-            CCG.S _ -> True
-            _ -> False
+
+isS :: CCG.Node -> Bool
+isS node = case CCG.cat node of
+             CCG.S _ -> True
+             _ -> False
+
 
 {- Main functions -}
 

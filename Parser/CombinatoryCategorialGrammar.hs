@@ -888,9 +888,9 @@ unifyWithHead csub fsub c1 c2 = case c2 of
   BS x y -> do
             (x',csub2,fsub2) <- unifyWithHead csub fsub c1 x
             return $ (BS x' y, csub2, fsub2)
-  T f i u -> do
-             (x',csub2,fsub2) <- unifyCategory csub fsub c1 u
-             return $ (T f i x', csub2, fsub2)
+--  T f i u -> do
+--             (x',csub2,fsub2) <- unifyCategory csub fsub c1 u
+--             return $ (T f i x', csub2, fsub2)
   x -> unifyCategory csub fsub c1 x
 
 -- | substituteFeatureVariable

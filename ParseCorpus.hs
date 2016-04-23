@@ -38,7 +38,9 @@ f score s =
       do
       T.putStr $ T.concat ["Succeeded (", T.pack (show $ i+1), "/", T.pack (show $ j+1)," = "] 
       S.putStrLn $ percent (i+1,j+1) ++ "%)\n"
-      T.putStrLn $ CCG.toText $ head $ CP.bestOnly $ CP.topBox chart0
+      let topbox = CP.topBox chart0;
+          sonly = filter CP.isS topbox
+      T.putStrLn $ CCG.toText $ head $ CP.bestOnly $ if sonly == [] then topbox else sonly
       return (i+1,j+1)
     else
       do
