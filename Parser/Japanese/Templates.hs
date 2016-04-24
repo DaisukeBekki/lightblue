@@ -49,6 +49,7 @@ module Parser.Japanese.Templates (
   negOperator,
   argumentCM,
   adjunctCM,
+  adjunctNM,
   andSR,
   orSR
   ) where
@@ -239,17 +240,25 @@ mannerAdverb op = ((Lam (Lamvec (Lam (App (Appvec 1 (Var 2)) (Lam (Sigma (App (C
 eventModifier :: T.Text -> (Preterm, [Signature])
 eventModifier op = ((Lam (Lam (App (Var 1) (Lam (Sigma (App (Con op) (Var 0)) (App (Var 2) (Var 1))))))), [(op, Pi (Con "event") Type)])
 
--- | S\S: \p.\c.not (pc)
+-- | negation operator
+-- S\S: \p.\c.not (pc)
 negOperator :: (Preterm, [Signature])
 negOperator = ((Lam (Lam (Not (App (Var 1) (Var 0))))), [])
 
--- | T/(T\NP[cm])\NP[nc]: \x.\p.px
+-- | argument case marker
+-- T/(T\NP[cm])\NP[nc]: \x.\p.px
 argumentCM :: (Preterm, [Signature])
 argumentCM = ((Lam (Lam (App (Var 0) (Var 1)))), [])
 
--- | T/T\NP[nc]: \x.\p.\v.\c.p (\e.op(e,x) X ce)
+-- | adjunct case marker
+-- S1/S1\NP[nc]: \x.\p.\c.p (\e.op(e,x) X ce)
 adjunctCM :: T.Text -> (Preterm, [Signature])
 adjunctCM c = ((Lam (Lam (Lam (App (Var 1) (Lam (Sigma (App (App (Con c) (Var 3)) (Var 0)) (App (Var 2) (Var 1)))))))), [(c, nPlaceEventType 1)])
+
+-- | adjunct nominal modifier
+-- N/N\(T/T\NP[nc]): \p.\n.\x.\c.(nx (\s.p(\z.op(s,z)) X cs)
+adjunctNM :: T.Text -> (Preterm, [Signature])
+adjunctNM c = ((Lam (Lam (Lam (Lam (Lamvec (App (App (Var 3) (Var 2)) (Lam (Sigma (Appvec 1 (App (Var 5) (Lam (App (App (Con c) (Var 0)) (Var 1))))) (App (Var 3) (Var 1)))))))))), [(c, nPlaceStateType 1)])
 
 andSR :: (Preterm, [Signature])
 andSR = ((Lam (Lam (Sigma (Var 1) (Var 1)))), [])

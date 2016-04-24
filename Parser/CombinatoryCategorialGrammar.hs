@@ -693,7 +693,21 @@ coordinationRule lnode@(Node {rs=r, cat=x1, sem=s1}) cnode@(Node {cat=CONJ, sem=
               source = "",
               sig = sig(lnode) ++ sig(rnode)
               }:prevlist
-      _ -> prevlist
+      _ ->
+        let inc = maximumIndexC x1 in
+        case unifyCategory [] [] x1 (incrementIndexC x2 inc) of
+          Nothing -> prevlist -- Unification failure
+          Just (x3,_,_) -> let newcat = x3 in
+             Node {
+              rs = COORD,
+              pf = T.concat [pf(lnode),pf(cnode),pf(rnode)],
+              cat = newcat,
+              sem = betaReduce $ transvec newcat $ betaReduce $ Lamvec (App (App conj (Appvec 0 s1)) (Appvec 0 s2)),
+              daughters = [lnode,cnode,rnode],
+              score = score(lnode)*score(rnode),
+              source = "",
+              sig = sig(lnode) ++ sig(rnode)
+              }:prevlist
 coordinationRule _ _ _ prevlist = prevlist
 
 -- | Parenthesis rule.
