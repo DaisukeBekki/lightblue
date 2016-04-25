@@ -427,7 +427,7 @@ forwardFunctionApplicationRule lnode@(Node {rs=r, cat=SL x y1, sem=f}) rnode@(No
     case y1 of
       T True _ _ -> prevlist -- Ad-hoc rule
       _ -> let inc = maximumIndexC y2 in
-           case unifyCategory [] [] y2 (incrementIndexC y1 inc) of
+           case unifyCategory [] [] [] y2 (incrementIndexC y1 inc) of
              Nothing -> prevlist -- Unification failure
              Just (_,csub,fsub) ->
                let newcat = simulSubstituteCV csub fsub (incrementIndexC x inc) in
@@ -451,7 +451,7 @@ backwardFunctionApplicationRule lnode@(Node {cat=y1, sem=a}) rnode@(Node {rs=r, 
   then prevlist
   else     
     let inc = maximumIndexC y1 in
-    case unifyCategory [] [] y1 (incrementIndexC y2 inc) of
+    case unifyCategory [] [] [] y1 (incrementIndexC y2 inc) of
       Nothing -> prevlist -- Unification failure
       Just (_,csub,fsub) -> let newcat = simulSubstituteCV csub fsub (incrementIndexC x inc) in
                       Node {
@@ -474,7 +474,7 @@ forwardFunctionComposition1Rule lnode@(Node {rs=r,cat=SL x y1, sem=f}) rnode@(No
   then prevlist
   else  
     let inc = maximumIndexC (cat rnode) in
-    case unifyCategory [] [] y2 (incrementIndexC y1 inc) of
+    case unifyCategory [] [] [] y2 (incrementIndexC y1 inc) of
       Nothing -> prevlist -- Unification failure
       Just (_,csub,fsub) -> 
         let z' = simulSubstituteCV csub fsub z in
@@ -501,7 +501,7 @@ backwardFunctionComposition1Rule lnode@(Node {cat=BS y1 z, sem=g}) rnode@(Node {
   then prevlist
   else
     let inc = maximumIndexC (cat lnode) in
-    case unifyCategory [] [] y1 (incrementIndexC y2 inc) of
+    case unifyCategory [] [] [] y1 (incrementIndexC y2 inc) of
       Nothing -> prevlist -- Unification failure
       Just (_,csub,fsub) -> let newcat = simulSubstituteCV csub fsub ((incrementIndexC x inc) `BS` z) in
                       Node {
@@ -524,7 +524,7 @@ forwardFunctionComposition2Rule lnode@(Node {rs=r,cat=(x `SL` y1), sem=f}) rnode
   then prevlist
   else     
     let inc = maximumIndexC (cat rnode) in
-    case unifyCategory [] [] (incrementIndexC y1 inc) y2 of
+    case unifyCategory [] [] [] (incrementIndexC y1 inc) y2 of
       Nothing -> prevlist -- Unification failure
       Just (_,csub,fsub) -> 
         let z1' = simulSubstituteCV csub fsub z1 in
@@ -551,7 +551,7 @@ backwardFunctionComposition2Rule lnode@(Node {cat=(y1 `BS` z1) `BS` z2, sem=g}) 
   then prevlist
   else
     let inc = maximumIndexC (cat lnode) in
-    case unifyCategory [] [] (incrementIndexC y2 inc) y1 of
+    case unifyCategory [] [] [] (incrementIndexC y2 inc) y1 of
       Nothing -> prevlist -- Unification failure
       Just (_,csub,fsub) -> let newcat = simulSubstituteCV csub fsub (((incrementIndexC x inc) `BS` z1) `BS` z2) in
                       Node {
@@ -574,7 +574,7 @@ backwardFunctionComposition3Rule lnode@(Node {cat=((y1 `BS` z1) `BS` z2) `BS` z3
   then prevlist
   else  
     let inc = maximumIndexC (cat lnode) in
-    case unifyCategory [] [] (incrementIndexC y2 inc) y1 of
+    case unifyCategory [] [] [] (incrementIndexC y2 inc) y1 of
       Nothing -> prevlist -- Unification failure
       Just (_,csub,fsub) -> let newcat = simulSubstituteCV csub fsub ((((incrementIndexC x inc) `BS` z1) `BS` z2) `BS` z3) in
                       Node {
@@ -597,7 +597,7 @@ forwardFunctionCrossedComposition1Rule lnode@(Node {rs=r,cat=SL x y1, sem=f}) rn
   then prevlist
   else 
     let inc = maximumIndexC (cat rnode) in
-    case unifyCategory [] [] y2 (incrementIndexC y1 inc) of
+    case unifyCategory [] [] [] y2 (incrementIndexC y1 inc) of
       Nothing -> prevlist -- Unification failure
       Just (_,csub,fsub) -> 
         let z' = simulSubstituteCV csub fsub z in
@@ -625,7 +625,7 @@ forwardFunctionCrossedComposition2Rule lnode@(Node {rs=r,cat=(x `SL` y1), sem=f}
   then prevlist
   else
     let inc = maximumIndexC (cat rnode) in
-    case unifyCategory [] [] (incrementIndexC y1 inc) y2 of
+    case unifyCategory [] [] [] (incrementIndexC y1 inc) y2 of
       Nothing -> prevlist -- Unification failure
       Just (_,csub,fsub) ->
         let z1' = simulSubstituteCV csub fsub z1 in
@@ -652,10 +652,10 @@ forwardFunctionCrossedSubstitutionRule lnode@(Node {rs=_,cat=((x `SL` y1) `BS` z
   then prevlist
   else
     let inc = maximumIndexC (cat rnode) in
-    case unifyCategory [] [] (incrementIndexC z1 inc) z2 of
+    case unifyCategory [] [] [] (incrementIndexC z1 inc) z2 of
       Nothing -> prevlist -- Unification failure
       Just (z,csub1,fsub1) ->
-        case unifyCategory csub1 fsub1 (incrementIndexC y1 inc) y2 of
+        case unifyCategory csub1 fsub1 [] (incrementIndexC y1 inc) y2 of
           Nothing -> prevlist -- Unification failure
           Just (_,csub2,fsub2) ->
             let newcat = simulSubstituteCV csub2 fsub2 ((incrementIndexC x inc) `BS` z) in
@@ -695,7 +695,7 @@ coordinationRule lnode@(Node {rs=r, cat=x1, sem=s1}) cnode@(Node {cat=CONJ, sem=
               }:prevlist
       _ ->
         let inc = maximumIndexC x1 in
-        case unifyCategory [] [] x1 (incrementIndexC x2 inc) of
+        case unifyCategory [] [] [] x1 (incrementIndexC x2 inc) of
           Nothing -> prevlist -- Unification failure
           Just (x3,_,_) -> let newcat = x3 in
              Node {
@@ -840,39 +840,49 @@ simulSubstituteCV csub fsub c = case c of
     NP f -> NP (simulSubstituteFV fsub f)
     _ -> c
 
-unifyCategory :: Assignment Cat -> Assignment [FeatureValue] -> Cat -> Cat -> Maybe (Cat, Assignment Cat, Assignment [FeatureValue])
-unifyCategory csub fsub c1 c2 =
+unifyCategory :: Assignment Cat -> Assignment [FeatureValue] -> [Int] -> Cat -> Cat -> Maybe (Cat, Assignment Cat, Assignment [FeatureValue])
+unifyCategory csub fsub banned c1 c2 =
   let c1' = case c1 of
               T _ i _ -> snd $ fetchValue csub i c1
               _ -> c1 in
   let c2' = case c2 of
               T _ j _ -> snd $ fetchValue csub j c2
               _ -> c2 in
-  unifyCategory2 csub fsub c1' c2'
+  unifyCategory2 csub fsub banned c1' c2'
 
-unifyCategory2 :: Assignment Cat -> Assignment [FeatureValue] -> Cat -> Cat -> Maybe (Cat, Assignment Cat, Assignment [FeatureValue])
-unifyCategory2 csub fsub c1 c2 = case (c1,c2) of
+unifyCategory2 :: Assignment Cat -> Assignment [FeatureValue] -> [Int] -> Cat -> Cat -> Maybe (Cat, Assignment Cat, Assignment [FeatureValue])
+unifyCategory2 csub fsub banned c1 c2 = case (c1,c2) of
   (T f1 i u1, T f2 j u2) ->
-    if i == j
-       then Just (c1,csub,fsub)
-       else do
-            (u3,csub2,fsub2) <- case (f1,f2) of
-                                  (True,True) -> unifyCategory2 csub fsub u1 u2
-                                  (True,False) -> unifyWithHead csub fsub u1 u2
-                                  (False,True) -> unifyWithHead csub fsub u2 u1
-                                  (False,False) -> unifyCategory2 csub fsub u1 u2
-            let ijmax = max i j; ijmin = min i j; result = T (f1 && f2) ijmin u3
-            Just (result, alter ijmin (SubstVal result) (alter ijmax (SubstLink ijmin) csub2), fsub2)
-  (T f i u, c) -> do
-                     (c3,csub2,fsub2) <- case f of
-                                           True -> unifyWithHead csub fsub u c
-                                           False -> unifyCategory csub fsub u c
-                     Just (c3, alter i (SubstVal c3) csub2, fsub2)
-  (c, T f i u) -> do
-                     (c3,csub2,fsub2) <- case f of
-                                           True -> unifyWithHead csub fsub u c
-                                           False -> unifyCategory csub fsub u c
-                     Just (c3, alter i (SubstVal c3) csub2, fsub2)
+    if i `elem` banned || j `elem` banned
+    then Nothing
+    else
+      if i == j
+         then Just (c1,csub,fsub)
+         else do
+              let ijmax = max i j; ijmin = min i j
+              (u3,csub2,fsub2) <- case (f1,f2) of
+                                    (True,True) -> unifyCategory2 csub fsub (ijmin:banned) u1 u2
+                                    (True,False) -> unifyWithHead csub fsub (ijmin:banned) u1 u2
+                                    (False,True) -> unifyWithHead csub fsub (ijmin:banned) u2 u1
+                                    (False,False) -> unifyCategory2 csub fsub (ijmin:banned) u1 u2
+              let result = T (f1 && f2) ijmin u3
+              Just (result, alter ijmin (SubstVal result) (alter ijmax (SubstLink ijmin) csub2), fsub2)
+  (T f i u, c) -> if i `elem` banned
+                     then Nothing
+                     else
+                       do
+                       (c3,csub2,fsub2) <- case f of
+                                             True -> unifyWithHead csub fsub (i:banned) u c
+                                             False -> unifyCategory csub fsub (i:banned) u c
+                       Just (c3, alter i (SubstVal c3) csub2, fsub2)
+  (c, T f i u) -> if i `elem` banned
+                     then Nothing
+                     else
+                       do
+                       (c3,csub2,fsub2) <- case f of
+                                             True -> unifyWithHead csub fsub (i:banned) u c
+                                             False -> unifyCategory csub fsub (i:banned) u c
+                       Just (c3, alter i (SubstVal c3) csub2, fsub2)
   (NP f1, NP f2) -> do
                     (f3,fsub2) <- unifyFeatures fsub f1 f2
                     return ((NP f3), csub, fsub2)
@@ -883,12 +893,12 @@ unifyCategory2 csub fsub c1 c2 = case (c1,c2) of
                         (f3,fsub2) <- unifyFeatures fsub f1 f2
                         return ((Sbar f3), csub, fsub2)
   (SL c3 c4, SL c5 c6) -> do
-                          (c7,csub2,fsub2) <- unifyCategory csub fsub c4 c6
-                          (c8,csub3,fsub3) <- unifyCategory csub2 fsub2 c3 c5
+                          (c7,csub2,fsub2) <- unifyCategory csub fsub banned c4 c6
+                          (c8,csub3,fsub3) <- unifyCategory csub2 fsub2 banned c3 c5
                           return (SL c8 c7,csub3,fsub3)
   (BS c3 c4, BS c5 c6) -> do
-                          (c7,csub2,fsub2) <- unifyCategory csub fsub c4 c6
-                          (c8,csub3,fsub3) <- unifyCategory csub2 fsub2 c3 c5
+                          (c7,csub2,fsub2) <- unifyCategory csub fsub banned c4 c6
+                          (c8,csub3,fsub3) <- unifyCategory csub2 fsub2 banned c3 c5
                           return (BS c8 c7, csub3, fsub3)
   (N, N)           -> Just (N, csub, fsub)
   (CONJ, CONJ)     -> Just (CONJ, csub, fsub)
@@ -897,18 +907,21 @@ unifyCategory2 csub fsub c1 c2 = case (c1,c2) of
   _ -> Nothing
 
 -- | Unify c1 (in T True i c1) with the head of c2
-unifyWithHead :: Assignment Cat -> Assignment [FeatureValue] -> Cat -> Cat -> Maybe (Cat, Assignment Cat, Assignment [FeatureValue])
-unifyWithHead csub fsub c1 c2 = case c2 of
+unifyWithHead :: Assignment Cat -> Assignment [FeatureValue] -> [Int] -> Cat -> Cat -> Maybe (Cat, Assignment Cat, Assignment [FeatureValue])
+unifyWithHead csub fsub banned c1 c2 = case c2 of
   SL x y -> do
-            (x',csub2,fsub2) <- unifyWithHead csub fsub c1 x
+            (x',csub2,fsub2) <- unifyWithHead csub fsub banned c1 x
             return $ (SL x' y, csub2, fsub2)
   BS x y -> do
-            (x',csub2,fsub2) <- unifyWithHead csub fsub c1 x
+            (x',csub2,fsub2) <- unifyWithHead csub fsub banned c1 x
             return $ (BS x' y, csub2, fsub2)
-  T f i u -> do
-             (x',csub2,fsub2) <- unifyCategory csub fsub c1 u
-             return $ (T f i x', alter i (SubstVal $ T f i x') csub2, fsub2)
-  x -> unifyCategory csub fsub c1 x
+  T f i u -> if i `elem` banned
+                then Nothing
+                else
+                   do
+                   (x',csub2,fsub2) <- unifyCategory csub fsub (i:banned) c1 u
+                   return $ (T f i x', alter i (SubstVal $ T f i x') csub2, fsub2)
+  x -> unifyCategory csub fsub banned c1 x
 
 -- | substituteFeatureVariable
 --
