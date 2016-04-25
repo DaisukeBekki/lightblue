@@ -18,7 +18,7 @@ main = do
     start <- Time.getCurrentTime
     args <- S.getArgs
     sentences <- T.readFile $ head args
-    (i,j) <- L.foldl' f (return (0,0)) $ filter (/= T.empty) $ T.lines sentences
+    (i,j) <- L.foldl' f (return (0,0)) $ filter (\t -> not (t == T.empty || "☎" `T.isPrefixOf` t)) $ T.lines sentences
     stop <- Time.getCurrentTime
     let totaltime = Time.diffUTCTime stop start
     S.hPutStrLn S.stderr $ "Results: " ++ (show i) ++ "/" ++ (show j) ++ " (" ++ (show $ ((fromRational ((toEnum i % toEnum j)*100))::Fixed E3)) ++ "%)"
