@@ -51,7 +51,8 @@ module Parser.Japanese.Templates (
   adjunctCM,
   adjunctNM,
   andSR,
-  orSR
+  orSR,
+  conjunctionSR,
   ) where
 
 import Prelude hiding (id)
@@ -226,7 +227,7 @@ intensionalEvent i op | i == 1 = ((Lam (Lam (Lam (Sigma (Con "event") (Sigma (Ap
                       | otherwise = (Con $ T.concat ["intensionalEvent: verb ",op," of ", T.pack (show i), " arguments"],[])
   where sg = Pi (Pi (Con "entity") Type) (Pi (Con "entity") (Pi (Con "event") Type))
 
-intensionalState :: Int -> T.Text -> (Preterm,[Signature])
+intensionalState :: Int -> T.Text -> (Preterm, [Signature])
 intensionalState i op | i == 1 = ((Lam (Lam (Lam (Sigma (Con "state") (Sigma (App (App (App (Con op) (Lam (App (App (Var 4) (Var 0)) (Lam Top)))) (Var 2)) (Var 0)) (App (Var 2) (Var 1))))))), [(op,sg)])
                       | i == 2 = ((Lam (Lam (Lam (Lam (App (App (Con op) (Lam (App (App (Var 4) (Var 3)) (Var 1)))) (Var 1)))))), [(op,sg)])
                       | otherwise = (Con $ T.concat ["intensionalState: verb ",op," of ", T.pack (show i), " arguments"], [])
@@ -265,3 +266,6 @@ andSR = ((Lam (Lam (Sigma (Var 1) (Var 1)))), [])
 
 orSR :: (Preterm, [Signature])
 orSR = ((Lam (Lam (Pi (Not (Var 1)) (Var 1)))), [])
+
+conjunctionSR :: T.Text -> (Preterm, [Signature])
+conjunctionSR c = ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (Sigma (App (Var 2) (Var 1)) (App (App (Con $ T.concat [c,"[DRel]"]) (Var 0)) (Var 1))))))), [])

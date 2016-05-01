@@ -36,7 +36,7 @@ data JSeMData = JSeMData {
 
 parseJSeM :: FilePath -> IO()
 parseJSeM xml = do
-  callCoq "hoge"
+  --callCoq "hoge"
   doc <- X.readFile X.def xml
   let cursor = X.fromDocument doc
   let problemNodes = X.child cursor >>= X.element "problem"

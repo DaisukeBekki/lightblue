@@ -111,7 +111,7 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "形容詞:タル形容詞"     ct = constructPredicate daihyo [Ntar,Nto] [Stem]
   | T.isPrefixOf "副詞"   ct  = (constructPredicate daihyo [Nda,Nna,Nno,Nni,Nto,Nemp] [Stem]) ++ (constructCommonNoun daihyo)
   | T.isPrefixOf "連体詞" ct  = [(N `SL` N, modifierSR daihyo)]
-  | T.isPrefixOf "接続詞" ct = [((T False 1 (S [F anyPos, F[Term,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]])) `SL` T False 1 (S [F anyPos, F[Term,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]]), (id, []))]
+  | T.isPrefixOf "接続詞" ct = constructConjunction daihyo
   | T.isPrefixOf "接頭辞:名詞接頭辞" ct   = [(N `SL` N, modifierSR daihyo)]
   | T.isPrefixOf "接頭辞:動詞接頭辞" ct   = [((defS verb [Stem] `SL` defS verb [Stem]), ((Lam (Lam (App (Var 1) (Lam (Sigma (App (Con daihyo) (Var 0)) (App (Var 2) (Var 1))))))), [(daihyo, nPlacePredType 1)]))]
   | T.isPrefixOf "接頭辞:イ形容詞接頭辞"  ct   = [((defS [Aauo] [Stem] `BS` NP [F[Ga]]) `SL` (defS [Aauo] [Stem] `BS` NP [F[Ga]]), (id, []))]
@@ -144,4 +144,10 @@ constructVerb daihyo caseframe posF conjF =
     else let caseframelist = map (T.split (==',')) $ T.split (=='#') caseframe in
          [(verbCat cf posF conjF, verbSR' daihyo "event" cf) | cf <- caseframelist]
 
-
+constructConjunction :: T.Text -> [(Cat, (Preterm, [Signature]))]
+constructConjunction daihyo = 
+  [
+  (((T False 1 (S [F anyPos, F[Term,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]]))
+    `SL` (T False 1 (S [F anyPos, F[Term,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]]))), 
+    ((Lam (Lam (Sigma (App (Var 1) (Lam Top)) (App (App (Con $ T.concat [daihyo,"[DRel]"]) (Proj Snd $ Asp 1 (Sigma Type (Var 0)))) (Var 0))))), []))
+    ]

@@ -86,7 +86,7 @@ topBox chart = let ((_,k),_) = M.findMax chart in
 
 -- | takes only the nodes with the best score.
 bestOnly :: [CCG.Node] -> [CCG.Node]
-bestOnly nodes = case nodes of
+bestOnly nodes = case sort nodes of
   [] -> []
   (firstnode:ns) -> firstnode:(takeWhile (\node -> CCG.score(node) >= CCG.score(firstnode)) ns)
 
