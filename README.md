@@ -6,7 +6,7 @@
 * Copyright owner: Daisuke Bekki
 
 
-## How do I get set up?
+## Installing lightblue
 
 ### Prerequisite: Haskell Platform
   1. GHC (>= version 7.4)/Cabal (>= version 1.20)
