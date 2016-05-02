@@ -32,7 +32,8 @@ module Parser.CombinatoryCategorialGrammar (
   parenthesisRule,
   -- test
   unifyCategory,
-  unifyWithHead
+  unifyWithHead,
+  isBunsetsu
   ) where
 
 import Prelude hiding (id)
@@ -86,8 +87,10 @@ data Cat =
 instance Eq Cat where
   SL x1 x2 == SL y1 y2 = (x1 == y1) && (x2 == y2)
   BS x1 x2 == BS y1 y2 = (x1 == y1) && (x2 == y2)
-  T f1 i x == T f2 j y = (f1 == f2) && (i == j) && (x == y)
-  S f1  == S f2  = unifiable f1 f2
+  T f1 _ x == T f2 _ y = (f1 == f2) && (x == y)
+  S (_:(f1:_))  == S (_:(f2:_))  = case unifyFeature [] f1 f2 of
+                                     Just _ -> True
+                                     Nothing -> False
   NP f1 == NP f2 = unifiable f1 f2
   N == N = True
   Sbar f1 == Sbar f2 = unifiable f1 f2
@@ -678,6 +681,19 @@ coordinationRule lnode@(Node {rs=r, cat=x1, sem=s1}) cnode@(Node {cat=CONJ, sem=
   if r == COORD
   then prevlist
   else
+    if endsWithT x2 && x1 == x2
+       then Node {
+              rs = COORD,
+              pf = T.concat [pf(lnode),pf(cnode),pf(rnode)],
+              cat = x2,
+              sem = betaReduce $ transvec x2 $ betaReduce $ Lamvec (App (App conj (Appvec 0 s1)) (Appvec 0 s2)),
+              daughters = [lnode,cnode,rnode],
+              score = score(lnode)*score(rnode),
+              source = "",
+              sig = sig(lnode) ++ sig(rnode)
+              }:prevlist
+       else prevlist
+    {-
     case (x1,x2) of
       ((T True i (S (_:as)) `SL` (T True j (S (_:bs)) `BS` NP [F[Nc]])),(T True _ (S (c:cs)) `SL` (T True _ (S (d:ds)) `BS` NP [F[Nc]]))) -> 
         case do; (es,fsub) <- unifyFeatures [] as cs; (fs,_) <- unifyFeatures fsub bs ds; return (es,fs) of
@@ -708,7 +724,15 @@ coordinationRule lnode@(Node {rs=r, cat=x1, sem=s1}) cnode@(Node {cat=CONJ, sem=
               source = "",
               sig = sig(lnode) ++ sig(rnode)
               }:prevlist
+    -}
 coordinationRule _ _ _ prevlist = prevlist
+
+endsWithT :: Cat -> Bool
+endsWithT c = case c of
+  SL x _ -> endsWithT x
+  --BS x _ -> endsWithT x
+  T _ _ _ -> True
+  _ -> False
 
 -- | Parenthesis rule.
 parenthesisRule :: Node -> Node -> Node -> [Node] -> [Node]
@@ -977,4 +1001,18 @@ unifyFeatures fsub f1 f2 = case (f1,f2) of
                            (f3t,fsub3) <- unifyFeatures fsub2 f1t f2t
                            return ((f3h:f3t), fsub3)
   _ -> Nothing
+
+-- | checks if a given category is the one that can appear on the left adjacent of a punctuation.
+isBunsetsu :: Cat -> Bool
+isBunsetsu c = case c of
+  SL x _ -> isBunsetsu x
+  BS x _ -> isBunsetsu x
+  LPAREN -> False
+  S (_:(f:_)) -> let katsuyo = case f of 
+                                 F feat -> feat
+                                 SF _ feat -> feat in
+                 if L.intersect katsuyo [Cont,Term,Attr,Hyp,Imper,Pre,TeForm,NiForm] == []
+                    then False
+                    else True
+  _ -> True
 

@@ -98,7 +98,7 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "動詞:子音動詞バ行"  ct  = constructVerb daihyo caseframe [V5b] [Stem]
   | T.isPrefixOf "動詞:母音動詞"     ct  = constructVerb daihyo caseframe [V1] [Stem,Neg,Cont,NegL,EuphT]
   | T.isPrefixOf "動詞:カ変動詞"     ct  = constructVerb daihyo caseframe [VK] [Stem]
-  | T.isPrefixOf "名詞:サ変名詞"     ct  = (constructCommonNoun daihyo) ++ (constructVerb daihyo caseframe [VSN,Nda] [Stem]) -- (262)
+  | T.isPrefixOf "名詞:サ変名詞"     ct  = ((constructCommonNoun daihyo) ++ (constructVerb daihyo caseframe [VS,VSN,Nda] [Stem])) -- (262)
   | T.isPrefixOf "動詞:サ変動詞"     ct  = constructVerb daihyo caseframe [VS] [Stem]
   | T.isPrefixOf "動詞:ザ変動詞"     ct  = constructVerb daihyo caseframe [VZ] [Stem]
   | T.isPrefixOf "動詞:動詞性接尾辞ます型" ct = constructVerb daihyo caseframe [V5NAS] [Stem]
@@ -109,7 +109,7 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "形容詞:ナ形容詞特殊"    ct = constructPredicate daihyo [Nda,Nna] [Stem] -- 同じ
   | T.isPrefixOf "形容詞:ナノ形容詞"     ct = constructPredicate daihyo [Nda,Nna,Nno] [Stem]
   | T.isPrefixOf "形容詞:タル形容詞"     ct = constructPredicate daihyo [Ntar,Nto] [Stem]
-  | T.isPrefixOf "副詞"   ct  = (constructPredicate daihyo [Nda,Nna,Nno,Nni,Nto,Nemp] [Stem]) ++ (constructCommonNoun daihyo)
+  | T.isPrefixOf "副詞"  ct  = ((constructPredicate daihyo [Nda,Nna,Nno,Nni,Nto,Nemp] [Stem]) ++ (constructCommonNoun daihyo))
   | T.isPrefixOf "連体詞" ct  = [(N `SL` N, modifierSR daihyo)]
   | T.isPrefixOf "接続詞" ct = constructConjunction daihyo
   | T.isPrefixOf "接頭辞:名詞接頭辞" ct   = [(N `SL` N, modifierSR daihyo)]

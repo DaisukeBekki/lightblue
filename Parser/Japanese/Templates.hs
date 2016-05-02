@@ -111,7 +111,6 @@ mmmpm = [F[M],F[M],F[M],F[P],F[M]]
 mppmm :: [Feature]
 mppmm = [F[M],F[P],F[P],F[M],F[M]]
 
-
 --anyConj :: [ConjFeature]
 --anyConj = [Stem, UStem, Neg, Cont, Term, Attr, Hyp, Imper, Pre, EuphT, EuphD, ModU, ModS, VoR, VoS, VoE, TeForm, NiForm, Yooni]
 

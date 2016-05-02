@@ -150,7 +150,7 @@ chartAccumulator beam lexicon (chart,seplist,i,stack,parsed) c =
 
 punctFilter :: Int -> Int -> [((Int,Int),[CCG.Node])] -> ((Int,Int),[CCG.Node]) -> [((Int,Int),[CCG.Node])]
 punctFilter sep i charList e@((from,to),nodes) 
-  | to == i = ((from,to+1),nodes):(e:charList)
+  | to == i = ((from,to+1),filter (\n -> CCG.isBunsetsu $ CCG.cat n) nodes):(e:charList)
   | otherwise = if from <= sep
                    then e:charList
                    else charList

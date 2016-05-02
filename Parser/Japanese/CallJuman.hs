@@ -35,6 +35,7 @@ callJuman :: T.Text -> IO([JumanCompNoun])
 callJuman sentence = do
   (_, stdout, _, _) <- S.runInteractiveCommand $ T.unpack $ T.concat ["echo ", sentence, " | nkf -e | juman | nkf -w"]
   t <- T.hGetContents stdout
+  --terminateProcess processhandle
   return $ findCompNouns [] $ map ((\l -> ((l!!0),(l!!3),(l!!5),(l!!9))) . (T.split (==' '))) $ filter (\x -> not (T.isPrefixOf "@" x)) $ P.takeWhile (/= "EOS") $ T.lines t 
            
 
