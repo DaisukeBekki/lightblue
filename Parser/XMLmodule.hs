@@ -16,7 +16,7 @@ module Parser.XMLmodule (
   ) where
 
 import qualified Parser.CombinatoryCategorialGrammar as CCG
-import qualified Logic.DependentTypes as D
+import qualified DTS.DependentTypes as D
 import qualified Data.Text.Lazy as T   --text
 import qualified Data.Map as M         --container
 import qualified Text.XML as X         --xml-conduit

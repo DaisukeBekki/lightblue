@@ -17,7 +17,7 @@ module Parser.TeXmodule (
 import qualified Data.Text.Lazy as T
 import qualified Data.Maybe as Maybe
 import qualified System.IO as S        --base
-import Logic.DependentTypes
+import DTS.DependentTypes
 import Parser.CombinatoryCategorialGrammar as CCG
 
 -- | `Typeset` is a class of types whose terms can be translated into a TeX source (in Data.Text.Lazy). 

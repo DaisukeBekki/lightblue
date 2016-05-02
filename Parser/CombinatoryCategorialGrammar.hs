@@ -23,17 +23,16 @@ module Parser.CombinatoryCategorialGrammar (
   printPMFs,
   -- * Tests
   isBaseCategory,
-  --isCONJ,
+  isBunsetsu,
   -- * Combinatory Rules
   unaryRules,
   binaryRules,
-  -- trinaryRules  
+  -- trinaryRules
   coordinationRule,
   parenthesisRule,
   -- test
   unifyCategory,
-  unifyWithHead,
-  isBunsetsu
+  unifyWithHead  
   ) where
 
 import Prelude hiding (id)
@@ -43,9 +42,7 @@ import qualified Data.List as L      --base
 import qualified Data.Maybe as Maybe --base
 import Data.Fixed                    --base
 import Data.Ratio                    --base
---import Control.Monad                 --base
---import Text.Printf -- for 'printf'
-import Logic.DependentTypes
+import DTS.DependentTypes
 
 data Node = Node {
   rs :: RuleSymbol,    -- ^ The name of the rule
@@ -84,6 +81,7 @@ data Cat =
   | BS Cat Cat       -- ^ X\\Y
   | T Bool Int Cat   -- ^ Category variables, where Int is an index, Cat is a restriction for its head. 
 
+-- | checks if given two categories can be coordinated.
 instance Eq Cat where
   SL x1 x2 == SL y1 y2 = (x1 == y1) && (x2 == y2)
   BS x1 x2 == BS y1 y2 = (x1 == y1) && (x2 == y2)
@@ -121,10 +119,11 @@ data FeatureValue =
   Aauo | Ai | ANAS | ATII | ABES |
   Nda | Nna | Nno | Ntar | Nni | Nemp | Nto |
   Exp | -- Error |
-  Stem | UStem | Neg | Cont | Term | Attr | Hyp | Imper | Pre |
+  Stem | UStem | NStem |
+  Neg | Cont | Term | Attr | Hyp | Imper | Pre |
   NegL | TeForm | NiForm |
   EuphT | EuphD |
-  ModU | ModD | ModS | ModM | 
+  ModU | ModD | ModS | ModM |
   VoR | VoS | VoE |
   P | M |
   Nc | Ga | O | Ni | To | Niyotte | No |
@@ -170,6 +169,7 @@ instance Show FeatureValue where
   --
   show Stem = "stem"
   show UStem = "ustem"
+  show NStem = "nstem"
   show Neg = "neg"
   show Cont = "cont"
   show Term = "term"
@@ -287,9 +287,6 @@ isArgumentCategory c = case c of
   Sbar _ -> True
   _ -> False
 
---isCONJ :: Cat -> Bool
---isCONJ c = c == CONJ
-
 -- | A test to check if a given category is T\NPnc.
 isNoncaseNP :: Cat -> Bool
 isNoncaseNP c = case c of
@@ -299,6 +296,20 @@ isNoncaseNP c = case c of
       (SF _ v:_) -> Nc `elem` v
       _ -> False
   _ -> False
+
+-- | A test to check if a given category is the one that can appear on the left adjacent of a punctuation.
+isBunsetsu :: Cat -> Bool
+isBunsetsu c = case c of
+  SL x _ -> isBunsetsu x
+  BS x _ -> isBunsetsu x
+  LPAREN -> False
+  S (_:(f:_)) -> let katsuyo = case f of 
+                                 F feat -> feat
+                                 SF _ feat -> feat in
+                 if L.intersect katsuyo [Cont,Term,Attr,Hyp,Imper,Pre,NStem,TeForm,NiForm] == []
+                    then False
+                    else True
+  _ -> True
 
 -- | The name of the CCG rule to derive the node.
 data RuleSymbol = 
@@ -344,12 +355,10 @@ instance SimpleText RuleSymbol where
 -- | The function to apply all the unaryRules to a CCG node.
 unaryRules :: Node -> [Node] -> [Node]
 unaryRules _ prevlist = prevlist
---unaryRules = sseriesRule
 
 -- | The function to apply all the binary rules to a given pair of CCG nodes.
 binaryRules :: Node -> Node -> [Node] -> [Node]
 binaryRules lnode rnode = 
-  --compoundNPRule lnode rnode
   forwardFunctionCrossedSubstitutionRule lnode rnode
   . forwardFunctionCrossedComposition2Rule lnode rnode
   . forwardFunctionCrossedComposition1Rule lnode rnode
@@ -641,7 +650,7 @@ forwardFunctionCrossedComposition2Rule lnode@(Node {rs=r,cat=(x `SL` y1), sem=f}
                         cat = newcat,
                         sem = betaReduce $ transvec newcat $ betaReduce $ Lam (Lam (App f (App (App g (Var 1)) (Var 0)))),
                         daughters = [lnode,rnode],
-                        score = score(lnode)*score(rnode)*(99 % 100), -- degrade the score more when this rule is used.
+                        score = score(lnode)*score(rnode)*(100 % 100), -- degrade the score more when this rule is used.
                         source = "",
                         sig = sig(lnode) ++ sig(rnode)
                         }:prevlist
@@ -681,7 +690,7 @@ coordinationRule lnode@(Node {rs=r, cat=x1, sem=s1}) cnode@(Node {cat=CONJ, sem=
   if r == COORD
   then prevlist
   else
-    if endsWithT x2 && x1 == x2
+    if (endsWithT x2 || isNStem x2) && x1 == x2
        then Node {
               rs = COORD,
               pf = T.concat [pf(lnode),pf(cnode),pf(rnode)],
@@ -693,45 +702,20 @@ coordinationRule lnode@(Node {rs=r, cat=x1, sem=s1}) cnode@(Node {cat=CONJ, sem=
               sig = sig(lnode) ++ sig(rnode)
               }:prevlist
        else prevlist
-    {-
-    case (x1,x2) of
-      ((T True i (S (_:as)) `SL` (T True j (S (_:bs)) `BS` NP [F[Nc]])),(T True _ (S (c:cs)) `SL` (T True _ (S (d:ds)) `BS` NP [F[Nc]]))) -> 
-        case do; (es,fsub) <- unifyFeatures [] as cs; (fs,_) <- unifyFeatures fsub bs ds; return (es,fs) of
-          Nothing -> prevlist
-          Just (es,fs) -> let newcat = (T True i (S (c:es)) `SL` (T True j (S (d:fs)) `BS` NP [F[Nc]])) in
-            Node {
-              rs = COORD,
-              pf = T.concat [pf(lnode),pf(cnode),pf(rnode)],
-              cat = newcat,
-              sem = betaReduce $ transvec newcat $ betaReduce $ Lamvec (App (App conj (Appvec 0 s1)) (Appvec 0 s2)),
-              daughters = [lnode,cnode,rnode],
-              score = score(lnode)*score(rnode),
-              source = "",
-              sig = sig(lnode) ++ sig(rnode)
-              }:prevlist
-      _ ->
-        let inc = maximumIndexC x1 in
-        case unifyCategory [] [] [] x1 (incrementIndexC x2 inc) of
-          Nothing -> prevlist -- Unification failure
-          Just (x3,_,_) -> let newcat = x3 in
-             Node {
-              rs = COORD,
-              pf = T.concat [pf(lnode),pf(cnode),pf(rnode)],
-              cat = newcat,
-              sem = betaReduce $ transvec newcat $ betaReduce $ Lamvec (App (App conj (Appvec 0 s1)) (Appvec 0 s2)),
-              daughters = [lnode,cnode,rnode],
-              score = score(lnode)*score(rnode),
-              source = "",
-              sig = sig(lnode) ++ sig(rnode)
-              }:prevlist
-    -}
 coordinationRule _ _ _ prevlist = prevlist
 
 endsWithT :: Cat -> Bool
 endsWithT c = case c of
   SL x _ -> endsWithT x
-  --BS x _ -> endsWithT x
   T _ _ _ -> True
+  _ -> False
+
+isNStem :: Cat -> Bool
+isNStem c = case c of
+  BS x _ -> isNStem x
+  S (_:(f:_)) -> case unifyFeature [] f (F[NStem]) of
+                   Just _ -> True
+                   Nothing -> False
   _ -> False
 
 -- | Parenthesis rule.
@@ -1001,18 +985,4 @@ unifyFeatures fsub f1 f2 = case (f1,f2) of
                            (f3t,fsub3) <- unifyFeatures fsub2 f1t f2t
                            return ((f3h:f3t), fsub3)
   _ -> Nothing
-
--- | checks if a given category is the one that can appear on the left adjacent of a punctuation.
-isBunsetsu :: Cat -> Bool
-isBunsetsu c = case c of
-  SL x _ -> isBunsetsu x
-  BS x _ -> isBunsetsu x
-  LPAREN -> False
-  S (_:(f:_)) -> let katsuyo = case f of 
-                                 F feat -> feat
-                                 SF _ feat -> feat in
-                 if L.intersect katsuyo [Cont,Term,Attr,Hyp,Imper,Pre,TeForm,NiForm] == []
-                    then False
-                    else True
-  _ -> True
 

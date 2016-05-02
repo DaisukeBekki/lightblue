@@ -59,7 +59,7 @@ import Prelude hiding (id)
 import qualified Data.Text.Lazy as T -- text
 import Data.Ratio
 import Parser.CombinatoryCategorialGrammar
-import Logic.DependentTypes
+import DTS.DependentTypes
 
 {- Some Macros for defining lexical items -}
 
@@ -88,7 +88,7 @@ anyPos :: [FeatureValue]
 anyPos = verb ++ adjective ++ nomPred
 
 nonStem :: [FeatureValue]
-nonStem = [Neg, Cont, Term, Attr, Hyp, Imper, Pre, VoR, VoS, VoE, NegL, TeForm, NiForm]
+nonStem = [Neg, Cont, Term, Attr, Hyp, Imper, Pre, NStem, VoR, VoS, VoE, NegL, TeForm]
 
 modifiableS :: Cat
 modifiableS = S [SF 2 anyPos, SF 3 nonStem, SF 4 [P,M],SF 5 [P,M],SF 6 [P,M],F[M],F[M]]

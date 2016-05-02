@@ -6,8 +6,8 @@ import qualified Data.Text.Lazy as T                 --text
 import qualified Data.Text.Lazy.IO as T              --text
 import qualified Data.List as L                      --base
 import qualified Data.Time as Time                   --time
-import Data.Ratio
-import Data.Fixed
+import qualified Data.Ratio as R
+import qualified Data.Fixed as F
 import qualified System.IO as S                      --base
 import qualified System.Environment as S             --base
 import qualified Parser.CombinatoryCategorialGrammar as CCG
@@ -21,11 +21,11 @@ main = do
     (i,j) <- L.foldl' f (return (0,0)) $ filter (\t -> not (t == T.empty || "☎" `T.isPrefixOf` t)) $ T.lines sentences
     stop <- Time.getCurrentTime
     let totaltime = Time.diffUTCTime stop start
-    S.hPutStrLn S.stderr $ "Results: " ++ (show i) ++ "/" ++ (show j) ++ " (" ++ (show $ ((fromRational ((toEnum i % toEnum j)*100))::Fixed E3)) ++ "%)"
-    S.hPutStrLn S.stderr $ "Execution Time: " ++ show totaltime ++ " (average: " ++ (show $ ((fromRational ((toEnum (fromEnum totaltime)) % toEnum (j*1000000000000)))::Fixed E3)) ++ "s/sentence)"
+    S.hPutStrLn S.stderr $ "Results: " ++ (show i) ++ "/" ++ (show j) ++ " (" ++ (show $ ((fromRational ((toEnum i R.% toEnum j)*100))::F.Fixed F.E3)) ++ "%)"
+    S.hPutStrLn S.stderr $ "Execution Time: " ++ show totaltime ++ " (average: " ++ (show $ ((fromRational ((toEnum (fromEnum totaltime)) R.% toEnum (j*1000000000000)))::F.Fixed F.E3)) ++ "s/sentence)"
 
 f :: IO(Int,Int) -- ^ (The number of succeeded parses, the number of processed sentences)
-     -> T.Text      -- ^ The next sentence to parse
+     -> T.Text      -- ^ A next sentence to parse
      -> IO(Int,Int)
 f score s =
   do
@@ -51,6 +51,6 @@ f score s =
 
 percent :: (Int,Int) -> String
 percent (i,j) = if j == 0
-                   then show (0::Fixed E2)
-                   else show ((fromRational (toEnum i % toEnum j)::Fixed E2) * 100)
+                   then show (0::F.Fixed F.E2)
+                   else show ((fromRational (toEnum i R.% toEnum j)::F.Fixed F.E2) * 100)
 

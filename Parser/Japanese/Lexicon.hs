@@ -29,7 +29,7 @@ import Parser.CombinatoryCategorialGrammar
 import qualified Parser.Japanese.CallJuman as JU
 import qualified Parser.Japanese.MyLexicon as LEX
 import Parser.Japanese.Templates
-import Logic.DependentTypes
+import DTS.DependentTypes
 
 -- | Lexicon consists of a set of CCG Nodes
 type LexicalItems = [Node]
@@ -83,7 +83,7 @@ jumanPos2Cat daihyo ct caseframe
   -- T.isPrefixOf "名詞:組織名"      ct  = constructProperName daihyo
   -- T.isPrefixOf "名詞:固有名詞"     ct  = constructProperName daihyo
   | T.isPrefixOf "名詞:副詞的名詞"   ct  = [((modifiableS `SL` modifiableS) `BS` (defS anyPos [Attr]), (id,[]))]
-  | T.isPrefixOf "名詞:時相名詞"     ct  = constructPredicate daihyo [Nda,Nna,Nno,Nni,Nemp] [Stem]
+  | T.isPrefixOf "名詞:時相名詞"     ct  = constructPredicate daihyo [Nda,Nna,Nno,Nni,Nemp] [NStem]
   | T.isPrefixOf "動詞:子音動詞カ行促音便形" ct  = constructVerb daihyo caseframe [V5IKU,V5YUK] [Stem]
   | T.isPrefixOf "動詞:子音動詞カ行"  ct  = constructVerb daihyo caseframe [V5k] [Stem]
   | T.isPrefixOf "動詞:子音動詞サ行"  ct  = constructVerb daihyo caseframe [V5s] [Stem]
@@ -98,24 +98,24 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "動詞:子音動詞バ行"  ct  = constructVerb daihyo caseframe [V5b] [Stem]
   | T.isPrefixOf "動詞:母音動詞"     ct  = constructVerb daihyo caseframe [V1] [Stem,Neg,Cont,NegL,EuphT]
   | T.isPrefixOf "動詞:カ変動詞"     ct  = constructVerb daihyo caseframe [VK] [Stem]
-  | T.isPrefixOf "名詞:サ変名詞"     ct  = ((constructCommonNoun daihyo) ++ (constructVerb daihyo caseframe [VS,VSN,Nda] [Stem])) -- (262)
+  | T.isPrefixOf "名詞:サ変名詞"     ct  = ((constructCommonNoun daihyo) ++ (constructVerb daihyo caseframe [VS,VSN] [Stem]) ++ (constructPredicate daihyo [Nda,Ntar] [NStem])) -- (262)
   | T.isPrefixOf "動詞:サ変動詞"     ct  = constructVerb daihyo caseframe [VS] [Stem]
   | T.isPrefixOf "動詞:ザ変動詞"     ct  = constructVerb daihyo caseframe [VZ] [Stem]
   | T.isPrefixOf "動詞:動詞性接尾辞ます型" ct = constructVerb daihyo caseframe [V5NAS] [Stem]
   | T.isPrefixOf "形容詞:イ形容詞アウオ段" ct = constructPredicate daihyo [Aauo] [Stem]
   | T.isPrefixOf "形容詞:イ形容詞イ段"    ct = constructPredicate daihyo [Ai] [Stem,Term]
   | T.isPrefixOf "形容詞:イ形容詞イ段特殊" ct = constructPredicate daihyo [Ai,Nna] [Stem] -- 大きい
-  | T.isPrefixOf "形容詞:ナ形容詞"       ct = constructPredicate daihyo [Nda,Nna,Nni] [Stem]
-  | T.isPrefixOf "形容詞:ナ形容詞特殊"    ct = constructPredicate daihyo [Nda,Nna] [Stem] -- 同じ
-  | T.isPrefixOf "形容詞:ナノ形容詞"     ct = constructPredicate daihyo [Nda,Nna,Nno] [Stem]
+  | T.isPrefixOf "形容詞:ナ形容詞"       ct = constructPredicate daihyo [Nda,Nna,Nni] [NStem]
+  | T.isPrefixOf "形容詞:ナ形容詞特殊"    ct = constructPredicate daihyo [Nda,Nna] [NStem] -- 同じ
+  | T.isPrefixOf "形容詞:ナノ形容詞"     ct = constructPredicate daihyo [Nda,Nna,Nno] [NStem]
   | T.isPrefixOf "形容詞:タル形容詞"     ct = constructPredicate daihyo [Ntar,Nto] [Stem]
-  | T.isPrefixOf "副詞"  ct  = ((constructPredicate daihyo [Nda,Nna,Nno,Nni,Nto,Nemp] [Stem]) ++ (constructCommonNoun daihyo))
+  | T.isPrefixOf "副詞"  ct  = ((constructPredicate daihyo [Nda,Nna,Nno,Nni,Nto,Nemp] [NStem]) ++ (constructCommonNoun daihyo))
   | T.isPrefixOf "連体詞" ct  = [(N `SL` N, modifierSR daihyo)]
   | T.isPrefixOf "接続詞" ct = constructConjunction daihyo
   | T.isPrefixOf "接頭辞:名詞接頭辞" ct   = [(N `SL` N, modifierSR daihyo)]
   | T.isPrefixOf "接頭辞:動詞接頭辞" ct   = [((defS verb [Stem] `SL` defS verb [Stem]), ((Lam (Lam (App (Var 1) (Lam (Sigma (App (Con daihyo) (Var 0)) (App (Var 2) (Var 1))))))), [(daihyo, nPlacePredType 1)]))]
   | T.isPrefixOf "接頭辞:イ形容詞接頭辞"  ct   = [((defS [Aauo] [Stem] `BS` NP [F[Ga]]) `SL` (defS [Aauo] [Stem] `BS` NP [F[Ga]]), (id, []))]
-  | T.isPrefixOf "接頭辞:ナ形容詞接頭辞"  ct   = [((defS [Nda] [Stem] `BS` NP [F[Ga]]) `SL` (defS [Nda] [Stem] `BS` NP [F[Ga]]), (id, []))]
+  | T.isPrefixOf "接頭辞:ナ形容詞接頭辞"  ct   = [((defS [Nda] [NStem] `BS` NP [F[Ga]]) `SL` (defS [Nda] [NStem] `BS` NP [F[Ga]]), (id, []))]
   | T.isPrefixOf "接尾辞:名詞性名詞助数辞" ct  = [(N `BS` N, modifierSR daihyo)] -- 例：ビット、ヘクトパスカル
   | T.isPrefixOf "接尾辞:名詞性名詞接尾辞" ct  = [(N `BS` N, modifierSR daihyo)]
   | T.isPrefixOf "接尾辞:名詞性特殊接尾辞" ct  = [(N `BS` N, modifierSR daihyo)]

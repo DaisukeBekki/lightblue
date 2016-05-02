@@ -19,7 +19,7 @@ Lightblue requries @juman@ and @nkf@ to be installed in advance.
 > cabal haddock
 
 -}
-module Logic.DependentTypes (
+module DTS.DependentTypes (
   -- * Typess
   Preterm(..),
   Selector(..),
