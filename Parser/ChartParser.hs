@@ -23,11 +23,7 @@ module Parser.ChartParser (
   -- * Utilities to filter the parsing results
   topBox,
   bestOnly,
-  isS,
-  --CCG.Node(..),
-  -- * 
-  --L.myLexicon,
-  --L.setupLexicon
+  isS
   ) where
 
 import Data.List
@@ -116,11 +112,12 @@ parse beam sentence
 
 -- | removes occurrences of non-letters from an input text.
 purifyText :: T.Text -> T.Text
-purifyText text = T.filter (\c -> not $ isSpace c)
-                    (case T.uncons text of -- remove a non-literal symbol at the beginning of a sentence (if any)
-                        Nothing -> T.empty
-                        Just (c,t) | c `elem` ['◎','○','●','▲','△','▼','△','★','☆','※','†','‡'] -> purifyText t
-                                   | otherwise -> T.cons c $ purifyText t)
+purifyText text = case T.uncons text of -- remove a non-literal symbol at the beginning of a sentence (if any)
+                    Nothing -> T.empty
+                    Just (c,t) | isSpace c -> purifyText t                                                                   -- ignore white spaces
+                               | c `elem` ['！','？','!','?','◎','○','●','▲','△','▼','△','★','☆','※','†','‡'] -> purifyText t -- ignore some symbols as meaningless
+                               | c `elem` ['，',',','-','―','−','。','．','／','＼','…'] -> T.cons '、' $ purifyText t          -- punctuations
+                               | otherwise -> T.cons c $ purifyText t
 
 -- | triples representing a state during parsing:
 -- the parsed result (=chart) of the left of the pivot,
@@ -139,7 +136,7 @@ chartAccumulator :: Int             -- ^ beam width
 chartAccumulator beam lexicon (chart,seplist,i,stack,parsed) c =
   let newstack = (T.cons c stack);
       (sep:seps) = seplist in
-  if c `elem` ['、','，',',','-','―','−','。','．','！','？','!','?','／','＼'] || isSpace c -- Each seperator is an end of a phase
+  if c == '、' -- Each seperator is an end of a phase
     then let newchart = M.fromList $ ((i,i+1),[andCONJ (T.singleton c), emptyCM (T.singleton c)]):(foldl' (punctFilter sep i) [] $ M.toList chart)
          in (newchart, ((i+1):seps), (i+1), newstack, (take 1 (sort (lookupChart sep (i+1) newchart)):parsed))
     else let (newchart,_,_,_) = T.foldl' (boxAccumulator beam lexicon) (chart,T.empty,i,i+1) newstack;

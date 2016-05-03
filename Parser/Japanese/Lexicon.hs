@@ -107,7 +107,7 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "形容詞:イ形容詞イ段特殊" ct = constructPredicate daihyo [Ai,Nna] [Stem] -- 大きい
   | T.isPrefixOf "形容詞:ナ形容詞"       ct = constructPredicate daihyo [Nda,Nna,Nni] [NStem]
   | T.isPrefixOf "形容詞:ナ形容詞特殊"    ct = constructPredicate daihyo [Nda,Nna] [NStem] -- 同じ
-  | T.isPrefixOf "形容詞:ナノ形容詞"     ct = constructPredicate daihyo [Nda,Nna,Nno] [NStem]
+  | T.isPrefixOf "形容詞:ナノ形容詞"     ct = constructPredicate daihyo [Nda,Nna,Nno,Nni] [NStem]
   | T.isPrefixOf "形容詞:タル形容詞"     ct = constructPredicate daihyo [Ntar,Nto] [Stem]
   | T.isPrefixOf "副詞"  ct  = ((constructPredicate daihyo [Nda,Nna,Nno,Nni,Nto,Nemp] [NStem]) ++ (constructCommonNoun daihyo))
   | T.isPrefixOf "連体詞" ct  = [(N `SL` N, modifierSR daihyo)]
@@ -139,10 +139,11 @@ constructCommonNoun daihyo = [(N, commonNounSR daihyo)]
 
 constructVerb :: T.Text -> T.Text -> [FeatureValue] -> [FeatureValue] -> [(Cat, (Preterm, [Signature]))]
 constructVerb daihyo caseframe posF conjF =
-  if caseframe == T.empty
-    then [(defS posF conjF `BS` NP [F[Ga]], verbSR 1 daihyo)]
-    else let caseframelist = map (T.split (==',')) $ T.split (=='#') caseframe in
-         [(verbCat cf posF conjF, verbSR' daihyo "event" cf) | cf <- caseframelist]
+  let caseframe' = if caseframe == T.empty
+                     then "ガ格"
+                     else caseframe;
+      caseframelist = map (T.split (==',')) $ T.split (=='#') caseframe' in
+  [(verbCat cf posF conjF, verbSR' daihyo "event" cf) | cf <- caseframelist]
 
 constructConjunction :: T.Text -> [(Cat, (Preterm, [Signature]))]
 constructConjunction daihyo = 

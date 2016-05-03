@@ -55,16 +55,19 @@ findCompNouns :: [JumanCompNoun] -> [JumanPair] -> [JumanCompNoun]
 findCompNouns compNouns jumanPairs =
   case jumanPairs of
     [] -> compNouns
-    (j1,j2,j3,j4):js | (j2 == "名詞" || j3 == "名詞接頭辞" || "名詞性名詞" `T.isPrefixOf` j3) || (j2 == "動詞" && j4 == "基本連用形") -> accepted1Noun compNouns js j1
+    (j1,j2,j3,j4):js | (j2 == "名詞" && j3 == "数詞") -> processingCompNoun compNouns js [j1] j3
+                     | (j2 == "動詞" && j4 == "基本連用形") -> processingCompNoun compNouns js [j1] j3
                      | (j2 == "未定義語") -> processingCompNoun compNouns js [j1] j3
+                     | isCNcomponent (j1,j2,j3,j4) -> accepted1Noun compNouns js j1
                      | otherwise -> findCompNouns compNouns js
 
 accepted1Noun :: [JumanCompNoun] -> [JumanPair] -> T.Text -> [JumanCompNoun]
-accepted1Noun compNouns jumanPairs oneNoun = case jumanPairs of           
-  [] -> compNouns
-  (j1,j2,j3,j4):js -> if j2 == "名詞" || j3 == "名詞接頭辞" || "名詞性名詞" `T.isPrefixOf` j3 || j2 == "未定義語" || (j2 == "動詞" && j4 == "基本連用形")
-                   then processingCompNoun compNouns js [j1,oneNoun] j3
-                   else findCompNouns compNouns js
+accepted1Noun compNouns jumanPairs oneNoun = 
+  case jumanPairs of
+    [] -> compNouns
+    (j1,j2,j3,j4):js -> if isCNcomponent (j1,j2,j3,j4) || j2 == "未定義語"
+                           then processingCompNoun compNouns js [j1,oneNoun] j3
+                           else findCompNouns compNouns js
 
 processingCompNoun :: [JumanCompNoun] -> [JumanPair] -> [T.Text] -> T.Text -> [JumanCompNoun]
 processingCompNoun compNouns jumanPairs compNoun compNounHead = 
@@ -72,7 +75,18 @@ processingCompNoun compNouns jumanPairs compNoun compNounHead =
                     then (JumanCompCN compNoun)
                     else (JumanCompNP compNoun) in
   case jumanPairs of 
-  [] -> newCompNoun:compNouns
-  (j1,j2,j3,j4):js -> if j2 == "名詞" || j3 == "名詞接頭辞" || "名詞性名詞" `T.isPrefixOf` j3 || j2 == "未定義語" || (j2 == "動詞" && j4 == "基本連用形")
-                   then processingCompNoun (newCompNoun:compNouns) js (j1:compNoun) j3
-                   else findCompNouns (newCompNoun:compNouns) js
+    [] -> newCompNoun:compNouns
+    (j1,j2,j3,j4):js -> if isCNcomponent (j1,j2,j3,j4) || j2 == "未定義語"
+                           then processingCompNoun (newCompNoun:compNouns) js (j1:compNoun) j3
+                           else findCompNouns (newCompNoun:compNouns) js
+
+isCNcomponent :: JumanPair -> Bool
+isCNcomponent (_,j2,j3,j4) =
+  if j2 == "名詞" ||
+     j3 == "名詞接頭辞" ||
+     "名詞性名詞" `T.isPrefixOf` j3 ||
+     "形容詞性名詞" `T.isPrefixOf` j3 ||
+     (j2 == "特殊" && j3 == "記号") ||
+     (j2 == "動詞" && j4 == "基本連用形")
+     then True
+     else False

@@ -605,7 +605,7 @@ backwardFunctionComposition3Rule _ _ prevlist = prevlist
 forwardFunctionCrossedComposition1Rule :: Node -> Node -> [Node] -> [Node]
 forwardFunctionCrossedComposition1Rule lnode@(Node {rs=r,cat=SL x y1, sem=f}) rnode@(Node {cat=BS y2 z, sem=g}) prevlist =
   -- [>Bx] x/y1  y2\z  ==> x\z
-  if r == FFC1 || r == FFC2 || r == FFC3 || r == EC || (isNoncaseNP y1) || not (isArgumentCategory z) -- Non-normal forms (+ Add-hoc rule 1)
+  if r == FFC1 || r == FFC2 || r == FFC3 || (isNoncaseNP y1) || not (isArgumentCategory z) -- Non-normal forms (+ Add-hoc rule 1)
   then prevlist
   else 
     let inc = maximumIndexC (cat rnode) in
@@ -690,7 +690,7 @@ coordinationRule lnode@(Node {rs=r, cat=x1, sem=s1}) cnode@(Node {cat=CONJ, sem=
   if r == COORD
   then prevlist
   else
-    if (endsWithT x2 || isNStem x2) && x1 == x2
+    if (endsWithT x2 || isNStem x2 || x2 == N) && x1 == x2
        then Node {
               rs = COORD,
               pf = T.concat [pf(lnode),pf(cnode),pf(rnode)],
