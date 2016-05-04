@@ -20,6 +20,22 @@ import qualified System.Process as S                 --process
 import Parser.CombinatoryCategorialGrammar
 import qualified Parser.Japanese.Templates as TPL
 
+{-
+see :: [JumanPair] -> IO([JumanPair])
+see = mapM see2
+
+see2 :: JumanPair -> IO(JumanPair)
+see2 noun@(j1,j2,j3,j4) = do
+  T.putStr j1
+  T.putStr ","
+  T.putStr j2
+  T.putStr ","
+  T.putStr j3
+  T.putStr ","
+  T.putStrLn j4
+  return noun
+-}
+
 -- | Main function: jumaCompoundNouns
 -- |   given a sentence, returns a list of compound nouns
 jumanCompoundNouns :: T.Text -> IO([Node])
@@ -27,7 +43,7 @@ jumanCompoundNouns sentence = do
   nounlist <- callJuman sentence
   return $ jumanNouns2nodes nounlist
 
-data JumanCompNoun = JumanCompCN [T.Text] | JumanCompNP [T.Text]
+data JumanCompNoun = JumanCompCN [T.Text] | JumanCompNP [T.Text] deriving (Eq,Show)
 type JumanPair = (T.Text, T.Text, T.Text, T.Text) -- (表層,品詞,品詞細分,（動詞なら）活用形)
 
 -- | Call Juman as an external process and returns a list of juman pos-tags
@@ -36,8 +52,9 @@ callJuman sentence = do
   (_, stdout, _, _) <- S.runInteractiveCommand $ T.unpack $ T.concat ["echo ", sentence, " | nkf -e | juman | nkf -w"]
   t <- T.hGetContents stdout
   --terminateProcess processhandle
+  --mapped <- see $ map ((\l -> ((l!!0),(l!!3),(l!!5),(l!!9))) . (T.split (==' '))) $ filter (\x -> not (T.isPrefixOf "@" x)) $ P.takeWhile (/= "EOS") $ T.lines t 
+  --return $ findCompNouns [] mapped
   return $ findCompNouns [] $ map ((\l -> ((l!!0),(l!!3),(l!!5),(l!!9))) . (T.split (==' '))) $ filter (\x -> not (T.isPrefixOf "@" x)) $ P.takeWhile (/= "EOS") $ T.lines t 
-           
 
 -- | Transforming juman pos-tags obtained from the given sentence 
 -- | into a list of (possible) compound nouns
@@ -46,8 +63,11 @@ jumanNouns2nodes jumancompnouns =
   let name = \j -> T.intercalate "~" $ reverse j in
   case jumancompnouns of
     [] -> []
-    ((JumanCompNP j):js) -> (TPL.lexicalitem (T.concat $ reverse j) "(CompN)" 96 (T True 1 TPL.modifiableS `SL` (T True 1 TPL.modifiableS `BS` NP [F [Nc]])) (TPL.properNameSR (name j))):((TPL.lexicalitem (T.concat $ reverse j) "(CompN)" 94 (N) (TPL.commonNounSR (name j))):(jumanNouns2nodes js))
-    ((JumanCompCN j):js) -> (TPL.lexicalitem (T.concat $ reverse j) "(CompN)" 96 (N) (TPL.commonNounSR (name j))):(jumanNouns2nodes js)
+    ((JumanCompNP j):js) -> (TPL.lexicalitem (T.concat $ reverse j) "(CompN)" 97 (T True 1 TPL.modifiableS `SL` (T True 1 TPL.modifiableS `BS` NP [F [Nc]])) (TPL.properNameSR (name j)))
+                            :((TPL.lexicalitem (T.concat $ reverse j) "(CompN)" 95 (N) (TPL.commonNounSR (name j)))
+                              :(jumanNouns2nodes js))
+    ((JumanCompCN j):js) -> (TPL.lexicalitem (T.concat $ reverse j) "(CompN)" 97 (N) (TPL.commonNounSR (name j)))
+                              :(jumanNouns2nodes js)
 
 -- | usage: findCompNouns jumanPairs [] 
 -- |   returns the list of pair (hyoso, predname)  
