@@ -1,22 +1,14 @@
-{-# OPTIONS -Wall -XDeriveGeneric #-}
+{-# OPTIONS -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {-|
 Description : Underspecified Dependent Type Theory (in de Bruijn index)
-Copyright   : Copyright (c) Daisuke Bekki, 2016
+Copyright   : (c) Daisuke Bekki, 2016
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
 
 Implementation of Underspecified Dependent Type Theory (Bekki forthcoming).
-How to install lightblue:
-
-Lightblue requries @juman@ and @nkf@ to be installed in advance.
-
-> cabal configure
-> cabal build
-> cabal install
-> cabal haddock
 
 -}
 module DTS.DependentTypes (
@@ -75,15 +67,18 @@ data Preterm =
 data Selector = Fst | Snd
   deriving (Eq, Show)
 
+-- | A type of an element of a type signature, that is, a list of pairs of a preterm and a type.
+-- ex. [entity:type, state:type, event:type, student:entity->type]
 type Signature = (T.Text,Preterm)
 
 printSignature :: Signature -> T.Text
 printSignature (con,typ) = T.concat $ [toText (Con con), ":", toText typ]
 
+-- | prints a signature in text.
 printSignatures :: [Signature] -> T.Text
 printSignatures sigs = T.concat ["[", (T.intercalate ", " $ map printSignature sigs), "]"]
 
--- | A class 'SimpleText' has a method 'toText' that translates a SimpleText term into a simple text notation.
+-- | A class with a 'toText' method that translates a SimpleText term into a simple text notation.
 class SimpleText a where
   toText :: a -> T.Text
 
@@ -103,6 +98,7 @@ instance SimpleText Preterm where
 --instance C.Serialize T.Text 
 --instance C.Serialize Preterm
 
+-- | prints a preterm in text, in the De Bruijn style.
 toTextDeBruijn :: Preterm -> T.Text
 toTextDeBruijn preterm = case preterm of
     Var i   -> T.pack (show i)
@@ -205,7 +201,7 @@ toTextWithVNLoop vlist preterm i = case preterm of
   Idpeel m n -> T.concat ["idpeel(", toTextWithVNLoop vlist m i, ",", toTextWithVNLoop vlist n i, ")"]
 
 -- | Substitution of the variable i in a preterm M with a preterm L
---   subst M L i = M[L/i]
+--   "subst M L i" = M[L/i]
 subst :: Preterm -> Preterm -> Int -> Preterm
 subst preterm l i = case preterm of
   Var j  -> if i == j
@@ -261,7 +257,7 @@ shiftIndices preterm d i = case preterm of
   Idpeel m n -> Idpeel (shiftIndices m d i) (shiftIndices n d i)
   t -> t
 
--- | Beta Reduction
+-- | Beta reduction
 betaReduce :: Preterm -> Preterm
 betaReduce preterm = case preterm of
   Var i  -> Var i
@@ -300,9 +296,11 @@ betaReduce preterm = case preterm of
                   Refl _ m' -> betaReduce $ (App n m')
                   m' -> Idpeel m' (betaReduce n)
 
+-- | adds two preterms (of type `Nat`).
 add :: Preterm -> Preterm -> Preterm
 add m n = Natrec m n (Lam (Lam (Succ (Var 0))))
 
+-- | multiplies two preterms (of type `Nat').
 multiply :: Preterm -> Preterm -> Preterm
 multiply m n = Natrec m Zero (Lam (Lam (add n (Var 0))))
 

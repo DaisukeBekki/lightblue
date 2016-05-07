@@ -18,6 +18,7 @@ module Parser.ChartParser (
   TEX.printNodesInTeX,
   printChartInSimpleText,
   posTagger,
+  -- * Data structures for CCG derivations
   CCG.Node(..),
   CCG.SimpleText(..),
   -- * Utilities to filter the parsing results
@@ -86,10 +87,11 @@ bestOnly nodes = case sort nodes of
   [] -> []
   (firstnode:ns) -> firstnode:(takeWhile (\node -> CCG.score(node) >= CCG.score(firstnode)) ns)
 
--- | `sOnly` 
+--`sOnly` 
 --sOnly :: [CCG.Node] -> [CCG.Node]
 --sOnly = filter isS
 
+-- | checks if a given node's category is `S` or `Sbar`.
 isS :: CCG.Node -> Bool
 isS node = case CCG.cat node of
              CCG.S _ -> True
@@ -198,6 +200,7 @@ boxAccumulator beam lexicon (chart,word,i,j) c =
                 else [];
       list1 = checkEmptyCategories $ checkParenthesisRule i j chart $ checkCoordinationRule i j chart $ checkBinaryRules i j chart $ checkUnaryRules list0 in
   ((M.insert (i,j) (cutoff beam list1) chart), newword, i-1, j)
+  --((M.insert (i,j) (cutoff (max (beam+i-j) 24) list1) chart), newword, i-1, j)
 
 -- | take `beam` nodes from the top of `ndoes`.
 cutoff :: Int -> [CCG.Node] -> [CCG.Node]

@@ -7,9 +7,6 @@ Copyright   : (c) Daisuke Bekki, 2016
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
-
-To compile:
-> ghc -package text-1.2.1.1 XMLmodulem
 -}
 module Parser.XMLmodule (
   render
@@ -29,7 +26,7 @@ import qualified System.IO as S        --base
 myname :: T.Text -> X.Name
 myname t = X.Name (T.toStrict t) Nothing Nothing 
 
---instance XMLable CCG.Node where
+-- | instance XMLable CCG.Node where
 toXML :: CCG.Node -> X.Node
 toXML node@(CCG.Node _ _ _ _ _ _ _ _) = 
     case CCG.daughters node of 
@@ -53,6 +50,7 @@ toXML node@(CCG.Node _ _ _ _ _ _ _ _) =
                                  ]) 
                                 (map toXML dtrs)
 
+-- | combines a set of CCG nodes into an XML document.
 toXMLDocument :: [CCG.Node] -> X.Document
 toXMLDocument nodes = 
   X.Document

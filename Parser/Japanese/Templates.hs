@@ -7,12 +7,14 @@ Copyright   : (c) Daisuke Bekki, 2016
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
+
+A set of templates for building a lexicon.
 -}
 
 module Parser.Japanese.Templates (
-  -- * Macros for lexical items
+  -- * Templates for lexical items
   lexicalitem,
-  -- * Macros for CCG syntactic features
+  -- * Templates for CCG syntactic features
   defS,
   ---
   verb,
@@ -63,27 +65,37 @@ import DTS.DependentTypes
 
 {- Some Macros for defining lexical items -}
 
-lexicalitem :: T.Text -> T.Text -> Integer -> Cat -> (Preterm, [Signature]) -> Node
+-- | defines a lexical item.
+lexicalitem :: T.Text                    -- ^ A phonetic form
+               -> T.Text                 -- ^ A source of a lexical item, such as a number in the CCG textbook.
+               -> Integer                -- ^ A score (0 to 100)
+               -> Cat                    -- ^ A syntactic category
+               -> (Preterm, [Signature]) -- ^ A semantic representation (in DTS) and a list of signatures
+               -> Node
 lexicalitem pf' source' score' cat' (sem',sig') = Node {rs=LEX, pf=pf', cat=cat', sem=sem', daughters=[], score=(score' % 100), source=source', sig=sig'}
 
 {- Some Marcos for CCG categories/features -}
 
--- | Category S with the default feature setting
+-- | Category S with the default feature setting (mainly for stems).
 defS :: [FeatureValue] -> [FeatureValue] -> Cat
 defS p c = S [F p,F c,F[M],F[M],F[M],F[M],F[M]]
 
 --catS :: [FeatureValue] -> [FeatureValue] -> Feature -> Feature -> Feature -> Feature -> Feature -> Cat
 --catS pos conj pm1 pm2 pm3 pm4 pm5 = S [F pos, F conj, pm1, pm2, pm3, pm4, pm5]
 
+-- | A set of conjugation forms of JP verbs.
 verb :: [FeatureValue]
 verb = [V5k, V5s, V5t, V5n, V5m, V5r, V5w, V5g, V5z, V5b, V5IKU, V5YUK, V5ARU, V5NAS, V5TOW, V1, VK, VS, VSN, VZ, VURU]
 
+-- | A set of conjugation forms of JP adjectives.
 adjective :: [FeatureValue]
 adjective = [Aauo, Ai, ANAS, ATII, ABES]
 
+-- | A set of conjugation forms of JP nominal predicates.
 nomPred :: [FeatureValue]
 nomPred = [Nda, Nna, Nno, Nni, Nemp, Ntar]
 
+-- | All conjugation forms, i.e. `verb` ++ `adjective` ++ `nomPred`
 anyPos :: [FeatureValue]
 anyPos = verb ++ adjective ++ nomPred
 
@@ -93,6 +105,7 @@ nonStem = [Neg, Cont, Term, Attr, Hyp, Imper, Pre, NStem, VoR, VoS, VoE, NegL, T
 modifiableS :: Cat
 modifiableS = S [SF 2 anyPos, SF 3 nonStem, SF 4 [P,M],SF 5 [P,M],SF 6 [P,M],F[M],F[M]]
 
+-- [F[M],F[M],F[M],F[M],F[M]]
 m5 :: [Feature]
 m5 = [F[M],F[M],F[M],F[M],F[M]]
 
@@ -118,7 +131,7 @@ mppmm = [F[M],F[P],F[P],F[M],F[M]]
 --anyCase = [Nc, Ga, O, Ni, To, Niyotte, No]
 
 {- Templates for Semantic Representation -}
--- | \x.x
+-- | Lam x.x
 id :: Preterm
 id = Lam (Var 0)
 

@@ -44,6 +44,7 @@ import Data.Fixed                    --base
 import Data.Ratio                    --base
 import DTS.DependentTypes
 
+-- | A node in CCG derivation tree.
 data Node = Node {
   rs :: RuleSymbol,    -- ^ The name of the rule
   pf :: T.Text,        -- ^ The phonetic form
@@ -69,6 +70,7 @@ instance SimpleText Node where
               [] -> T.concat [(T.pack indent), toText (rs node), " ", pf node, " ", toText (cat node), " ", toTextWithVN [] (sem node), " ", source node, " [", T.pack (show ((fromRational $ score node)::Fixed E2)), "]\n"]
               dtrs -> T.concat $ [(T.pack indent), toText (rs node), " ", toText (cat node), " ", toTextWithVN [] (sem node), " [", T.pack (show ((fromRational $ score node)::Fixed E2)), "]\n"] ++ (map (\d -> toTextLoop (indent++"  ") d) dtrs)
 
+-- | Syntactic categories of CCG.
 data Cat =
   S [Feature]        -- ^ S
   | NP [Feature]     -- ^ NP
@@ -107,11 +109,13 @@ unifiable f1 f2 = case unifyFeatures [] f1 f2 of
 instance Show Cat where
   show = T.unpack . toText
 
+-- | Syntactic features of CCG.
 data Feature = 
   F [FeatureValue]        -- ^ Syntactic feature
   | SF Int [FeatureValue] -- ^ Shared syntactic feature (with an index)
   deriving (Eq, Show)
 
+-- | Values of syntactic features of Japanese CCG.
 data FeatureValue =
   V5k | V5s | V5t | V5n | V5m | V5r | V5w | V5g | V5z | V5b |
   V5IKU | V5YUK | V5ARU | V5NAS | V5TOW |
@@ -233,10 +237,12 @@ instance SimpleText Cat where
                   then toText c
                   else T.concat ["(", toText c, ")"]
 
+-- | prints a syntactic feature in text.
 printF :: Feature -> T.Text
 printF (SF i f) = T.concat [printFVal f, "<", T.pack (show i), ">"]
 printF (F f) = printFVal f
 
+-- | prints a value of a syntactic feature.
 printFVal :: [FeatureValue] -> T.Text
 printFVal [] = T.empty
 printFVal [pos] = T.pack $ show pos
@@ -254,6 +260,7 @@ printPMF _ label pmf = case (label,pmf) of
                   return $ T.concat [x,"<",T.pack (show i),">"]
     _ -> return $ T.concat ["Error: printPMF", T.pack $ show pmf]
 
+-- | prints a list of syntactic features each of whose value is either `P` or `M` in text.
 printPMFs :: [Feature] -> T.Text
 printPMFs pmfs = T.intercalate "," $ Maybe.catMaybes $ printPMFsLoop ["t","p","n","N","T"] pmfs
 
@@ -262,6 +269,8 @@ printPMFsLoop labels pmfs = case (labels,pmfs) of
   ([],[])         -> []
   ((l:ls),(p:ps)) -> (printPMF False l p):(printPMFsLoop ls ps)
   _ -> [Just $ T.concat ["Error: mismatch in ", T.pack (show labels), " and ", T.pack (show pmfs)]]
+
+{- Tests for syntactic -}
 
 -- | A test to check if a given category is a base category (i.e. not a functional category nor a category variable).
 isBaseCategory :: Cat -> Bool
@@ -279,22 +288,21 @@ isBaseCategory c = case c of
 
 isArgumentCategory :: Cat -> Bool
 isArgumentCategory c = case c of
-  NP f -> case f of
-            (F [Nc]:_) -> False
-            (SF _ [Nc]:_) -> False
-            _ -> True
-  -- N -> False
+  NP _ | isNoncaseNP c -> False
+       | otherwise -> True
   Sbar _ -> True
   _ -> False
 
 -- | A test to check if a given category is T\NPnc.
+isTNoncaseNP :: Cat -> Bool
+isTNoncaseNP c = case c of
+  (T _ _ _) `BS` x -> isNoncaseNP x
+  _ -> False
+
 isNoncaseNP :: Cat -> Bool
 isNoncaseNP c = case c of
-  (T _ _ _) `BS` (NP cas) -> 
-    case cas of
-      (F v:_)    -> Nc `elem` v
-      (SF _ v:_) -> Nc `elem` v
-      _ -> False
+  NP (F v:_)    -> Nc `elem` v
+  NP (SF _ v:_) -> Nc `elem` v
   _ -> False
 
 -- | A test to check if a given category is the one that can appear on the left adjacent of a punctuation.
@@ -310,6 +318,20 @@ isBunsetsu c = case c of
                     then False
                     else True
   _ -> True
+
+endsWithT :: Cat -> Bool
+endsWithT c = case c of
+  SL x _ -> endsWithT x
+  T _ _ _ -> True
+  _ -> False
+
+isNStem :: Cat -> Bool
+isNStem c = case c of
+  BS x _ -> isNStem x
+  S (_:(f:_)) -> case unifyFeature [] f (F[NStem]) of
+                   Just _ -> True
+                   Nothing -> False
+  _ -> False
 
 -- | The name of the CCG rule to derive the node.
 data RuleSymbol = 
@@ -482,7 +504,7 @@ backwardFunctionApplicationRule _ _ prevlist = prevlist
 forwardFunctionComposition1Rule :: Node -> Node -> [Node] -> [Node]
 forwardFunctionComposition1Rule lnode@(Node {rs=r,cat=SL x y1, sem=f}) rnode@(Node {cat=SL y2 z, sem=g}) prevlist =
   -- [>B] x/y1  y2/z  ==> x/z
-  if r == FFC1 || r == FFC2 || r == FFC3 || (isNoncaseNP y1) -- Non-normal forms (+ Ad-hoc rule 1)
+  if r == FFC1 || r == FFC2 || r == FFC3 || (isTNoncaseNP y1) -- Non-normal forms (+ Ad-hoc rule 1)
   then prevlist
   else  
     let inc = maximumIndexC (cat rnode) in
@@ -532,7 +554,7 @@ backwardFunctionComposition1Rule _ _ prevlist = prevlist
 forwardFunctionComposition2Rule :: Node -> Node -> [Node] -> [Node]
 forwardFunctionComposition2Rule lnode@(Node {rs=r,cat=(x `SL` y1), sem=f}) rnode@(Node {cat=(y2 `SL` z1) `SL` z2, sem=g}) prevlist =
   -- [>B2] x/y1:f  y2/z1/z2:g  ==> x/z1/z2
-  if r == FFC1 || r == FFC2 || r == FFC3 || (isNoncaseNP y1) -- Non-normal forms
+  if r == FFC1 || r == FFC2 || r == FFC3 || (isTNoncaseNP y1) -- Non-normal forms
   then prevlist
   else     
     let inc = maximumIndexC (cat rnode) in
@@ -605,7 +627,7 @@ backwardFunctionComposition3Rule _ _ prevlist = prevlist
 forwardFunctionCrossedComposition1Rule :: Node -> Node -> [Node] -> [Node]
 forwardFunctionCrossedComposition1Rule lnode@(Node {rs=r,cat=SL x y1, sem=f}) rnode@(Node {cat=BS y2 z, sem=g}) prevlist =
   -- [>Bx] x/y1  y2\z  ==> x\z
-  if r == FFC1 || r == FFC2 || r == FFC3 || (isNoncaseNP y1) || not (isArgumentCategory z) -- Non-normal forms (+ Add-hoc rule 1)
+  if r == FFC1 || r == FFC2 || r == FFC3 || (isTNoncaseNP y1) || not (isArgumentCategory z) -- Non-normal forms (+ Add-hoc rule 1)
   then prevlist
   else 
     let inc = maximumIndexC (cat rnode) in
@@ -633,7 +655,7 @@ forwardFunctionCrossedComposition1Rule _ _ prevlist = prevlist
 forwardFunctionCrossedComposition2Rule :: Node -> Node -> [Node] -> [Node]
 forwardFunctionCrossedComposition2Rule lnode@(Node {rs=r,cat=(x `SL` y1), sem=f}) rnode@(Node {cat=(y2 `BS` z1) `BS` z2, sem=g}) prevlist =
   -- [>Bx2] x/y1:f  y2\z1\z2:g  ==> x\z1\z2
-  if r == FFC1 || r == FFC2 || r == FFC3 || r == EC || (isNoncaseNP y1) || not (isArgumentCategory z2) || not (isArgumentCategory z1) -- Non-normal forms + Ad-hoc rule
+  if r == FFC1 || r == FFC2 || r == FFC3 || r == EC || (isTNoncaseNP y1) || not (isArgumentCategory z2) || not (isArgumentCategory z1) -- Non-normal forms + Ad-hoc rule
   then prevlist
   else
     let inc = maximumIndexC (cat rnode) in
@@ -660,7 +682,7 @@ forwardFunctionCrossedComposition2Rule _ _ prevlist = prevlist
 forwardFunctionCrossedSubstitutionRule :: Node -> Node -> [Node] -> [Node]
 forwardFunctionCrossedSubstitutionRule lnode@(Node {rs=_,cat=((x `SL` y1) `BS` z1), sem=f}) rnode@(Node {cat=(y2 `BS` z2), sem=g}) prevlist =
   -- [>Sx] x/y1\z:f  y2\z:g  ==> x\z: \x.(fx)(gx)
-  if False -- r == FFC1 || r == FFC2 || r == FFC3 || (isNoncaseNP y1) || not (isArgumentCategory z2) || not (isArgumentCategory z1) -- Non-normal forms + Ad-hoc rule
+  if isNoncaseNP z1 -- to block CM + be-ident -- r == FFC1 || r == FFC2 || r == FFC3 || (isTNoncaseNP y1) || not (isArgumentCategory z2) || not (isArgumentCategory z1) -- Non-normal forms + Ad-hoc rule
   then prevlist
   else
     let inc = maximumIndexC (cat rnode) in
@@ -703,20 +725,6 @@ coordinationRule lnode@(Node {rs=r, cat=x1, sem=s1}) cnode@(Node {cat=CONJ, sem=
               }:prevlist
        else prevlist
 coordinationRule _ _ _ prevlist = prevlist
-
-endsWithT :: Cat -> Bool
-endsWithT c = case c of
-  SL x _ -> endsWithT x
-  T _ _ _ -> True
-  _ -> False
-
-isNStem :: Cat -> Bool
-isNStem c = case c of
-  BS x _ -> isNStem x
-  S (_:(f:_)) -> case unifyFeature [] f (F[NStem]) of
-                   Just _ -> True
-                   Nothing -> False
-  _ -> False
 
 -- | Parenthesis rule.
 parenthesisRule :: Node -> Node -> Node -> [Node] -> [Node]
@@ -848,7 +856,13 @@ simulSubstituteCV csub fsub c = case c of
     NP f -> NP (simulSubstituteFV fsub f)
     _ -> c
 
-unifyCategory :: Assignment Cat -> Assignment [FeatureValue] -> [Int] -> Cat -> Cat -> Maybe (Cat, Assignment Cat, Assignment [FeatureValue])
+-- | unifies two syntactic categories (`Cat`) and returns a unified syntactic category, under a given category assignment and a given feature assignment.
+unifyCategory :: Assignment Cat               -- ^ A category assignment function
+                 -> Assignment [FeatureValue] -- ^ A feature assignment function
+                 -> [Int] -- ^ A list of banned indices (unification to which is banned, preventing cyclic unification)
+                 -> Cat   -- ^ A first argument
+                 -> Cat   -- ^ A second argument
+                 -> Maybe (Cat, Assignment Cat, Assignment [FeatureValue])
 unifyCategory csub fsub banned c1 c2 =
   let c1' = case c1 of
               T _ i _ -> snd $ fetchValue csub i c1
@@ -914,8 +928,13 @@ unifyCategory2 csub fsub banned c1 c2 = case (c1,c2) of
   (RPAREN, RPAREN) -> Just (RPAREN, csub, fsub)
   _ -> Nothing
 
--- | Unify c1 (in T True i c1) with the head of c2
-unifyWithHead :: Assignment Cat -> Assignment [FeatureValue] -> [Int] -> Cat -> Cat -> Maybe (Cat, Assignment Cat, Assignment [FeatureValue])
+-- | unifies a cyntactic category `c1` (in `T True i c1`) with the head of `c2`, under a given feature assignment.
+unifyWithHead :: Assignment Cat 
+                 -> Assignment [FeatureValue] -- ^ A feature assignment function.
+                 -> [Int] -- ^ A list of indices
+                 -> Cat   -- ^ A first argument
+                 -> Cat   -- ^ A second argument
+                 -> Maybe (Cat, Assignment Cat, Assignment [FeatureValue])
 unifyWithHead csub fsub banned c1 c2 = case c2 of
   SL x y -> do
             (x',csub2,fsub2) <- unifyWithHead csub fsub banned c1 x

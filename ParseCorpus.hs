@@ -21,11 +21,11 @@ main = do
     (i,j) <- L.foldl' f (return (0,0)) $ filter isSentence $ T.lines sentences
     stop <- Time.getCurrentTime
     let totaltime = Time.diffUTCTime stop start
-    S.hPutStrLn S.stderr $ "Results: " ++ (show i) ++ "/" ++ (show j) ++ " (" ++ (show $ ((fromRational ((toEnum i R.% toEnum j)*100))::F.Fixed F.E3)) ++ "%)"
-    S.hPutStrLn S.stderr $ "Execution Time: " ++ show totaltime ++ " (average: " ++ (show $ ((fromRational ((toEnum (fromEnum totaltime)) R.% toEnum (j*1000000000000)))::F.Fixed F.E3)) ++ "s/sentence)"
+    S.hPutStrLn S.stdout $ "Results: " ++ (show i) ++ "/" ++ (show j) ++ " (" ++ (show $ ((fromRational ((toEnum i R.% toEnum j)*100))::F.Fixed F.E3)) ++ "%)"
+    S.hPutStrLn S.stdout $ "Execution Time: " ++ show totaltime ++ " (average: " ++ (show $ ((fromRational ((toEnum (fromEnum totaltime)) R.% toEnum (j*1000000000000)))::F.Fixed F.E3)) ++ "s/sentence)"
 
 isSentence :: T.Text -> Bool
-isSentence sentence = not (t == T.empty || "☎" `T.isPrefixOf` t || "（" `T.isSuffixOf` t)
+isSentence t = not (t == T.empty || "☎" `T.isPrefixOf` t || "（" `T.isSuffixOf` t)
 
 f :: IO(Int,Int) -- ^ (The number of succeeded parses, the number of processed sentences)
      -> T.Text      -- ^ A next sentence to parse
@@ -49,7 +49,7 @@ f score s =
       do
       T.putStr $ T.concat ["Failed (", T.pack (show $ i), "/", T.pack (show $ j+1), " = "]
       S.putStrLn $ percent (i,j+1) ++ "%), showing parsed segments:\n"
-      mapM_ (T.putStrLn . (\l -> if l==[] then T.empty else CCG.toText $ head l) . CP.bestOnly) (reverse nodes0)
+      mapM_ ((\l -> if l==[] then return () else T.putStrLn . CCG.toText $ head l) . L.sort) (reverse nodes0)
       return (i,j+1)
 
 percent :: (Int,Int) -> String
