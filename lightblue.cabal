@@ -4,7 +4,7 @@
 name:                lightblue
 version:             0.1.2.0
 synopsis:            A CCG parser for Japanese with DTS-representation
---description:
+--description:         
 license:             AllRightsReserved
 license-file:        LICENSE
 copyright:           Copyright: (c) Daisuke Bekki

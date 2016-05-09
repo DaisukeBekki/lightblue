@@ -303,16 +303,16 @@ myLexicon = concat $ [
   mylex ["蹴ろ","けろ"] "(152)" ((defS [V1] [Imper] `BS` NP [F[Ga]]) `BS` NP [F[O]]) (verbSR 2 "蹴る"),
   mylex ["捻ろ","ひねろ"] "(153)" ((defS [V1] [Imper] `BS` NP [F[Ga]]) `BS` NP [F[O]]) (verbSR 2 "捻る"),
   --- カ変動詞
-  mylex ["来"] "(155)" ((defS [VK] [Neg,Cont,ModM,EuphT,NegL] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
-  mylex ["こ"] "(155)" ((defS [VK] [Neg,NegL] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
-  mylex ["き"] "(155)" ((defS [VK] [Cont,ModM,EuphT] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
-  mylex ["来ら","こら"] "(155)" ((defS [VK] [VoR] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
-  mylex ["来さ","こさ"] "(155)" ((defS [VK] [VoS] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
-  mylex ["来る","くる"] "(155)" ((defS [VK] [Term,Attr] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
-  mylex ["来れ","くれ"] "(155)" ((defS [VK] [Hyp] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
-  mylex ["来い","こい"] "(155)" ((defS [VK] [Imper] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
-  mylex ["来よ","こよ"] "(155)" ((defS [VK] [ModU] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
-  mylex ["来ん","くん"] "(155)" (S ([F[VK], F[Term,Attr]]++mmmpm) `BS` defS [VK] [Stem]) (id,[]),
+  mylex ["来","やって来"] "(155)" ((defS [VK] [Neg,Cont,ModM,EuphT,NegL] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
+  mylex ["こ","やってこ"] "(155)" ((defS [VK] [Neg,NegL] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
+  mylex ["き","やってき"] "(155)" ((defS [VK] [Cont,ModM,EuphT] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
+  mylex ["来ら","こら","やって来ら","やってこら"] "(155)" ((defS [VK] [VoR] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
+  mylex ["来さ","こさ","やって来さ","やってこさ"] "(155)" ((defS [VK] [VoS] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
+  mylex ["来る","くる","やって来る","やってくる"] "(155)" ((defS [VK] [Term,Attr] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
+  mylex ["来れ","くれ","やって来れ","やってくれ"] "(155)" ((defS [VK] [Hyp] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
+  mylex ["来い","こい","やって来い","やってこい"] "(155)" ((defS [VK] [Imper] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
+  mylex ["来よ","こよ","やって来よ","やってこよ"] "(155)" ((defS [VK] [ModU] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "来る/くる"),
+  mylex ["来ん","くん","やって来ん","やってくん"] "(155)" (S ([F[VK], F[Term,Attr]]++mmmpm) `BS` defS [VK] [Stem]) (id,[]),
   -- 補助動詞「くる」
   mylex ["来"] "(416)" ((defS [VK] [Neg,Cont,ModM,EuphT,NegL]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
   mylex ["こ"] "(416)" ((defS [VK] [Neg,NegL]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
@@ -323,17 +323,7 @@ myLexicon = concat $ [
   mylex ["来れ","くれ"] "(416)" ((defS [VK] [Hyp]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
   mylex ["来い","こい"] "(416)" ((defS [VK] [Imper]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
   mylex ["来よ","こよ"] "(416)" ((defS [VK] [ModU]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
-  -- 動詞「やってくる」
-  mylex ["やって来"] "(416)" ((defS [VK] [Neg,Cont,ModM,EuphT,NegL]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
-  mylex ["やってこ"] "(416)" ((defS [VK] [Neg,NegL]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
-  mylex ["やってき"] "(416)" ((defS [VK] [Cont,ModM,EuphT]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
-  mylex ["やって来ら","やってこら"] "(416)" ((defS [VK] [VoR]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
-  mylex ["やって来さ","やってこさ"] "(416)" ((defS [VK] [VoS]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
-  mylex ["やって来る","やってくる"] "(416)" ((defS [VK] [Term,Attr]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
-  mylex ["やって来れ","やってくれ"] "(416)" ((defS [VK] [Hyp]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
-  mylex ["やって来い","やってこい"] "(416)" ((defS [VK] [Imper]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
-  mylex ["やって来よ","やってこよ"] "(416)" ((defS [VK] [ModU]) `BS` defS verb [TeForm]) (eventModifier "クル[ASP]"),
-  --- サ変動詞
+ --- サ変動詞
   mylex ["さ"] "(157)" ((defS [VS] [VoR,VoS] `BS` NP [F[Ga]]) `BS` NP [F[O]]) (verbSR 2 "する/する"),
   mylex ["し"] "(157)" ((defS [VS] [Neg,Cont,ModM,EuphT] `BS` NP [F[Ga]]) `BS` NP [F[O]]) (verbSR 2 "する/する"),
   mylex ["する"] "(157)" ((defS [VS] [Term,Attr] `BS` NP [F[Ga]]) `BS` NP [F[O]]) (verbSR 2 "する/する"),
@@ -416,11 +406,11 @@ myLexicon = concat $ [
   conjNSuffix "なら" "(221)" [Nda] [NegL],
   conjNSuffix "なり" "(221)" [Nda] [Term],
   conjNSuffix "なる" "(221)" [Nda] [Attr],
-  conjNSuffix "なれ" "(221)" [Nda] [Hyp,Imper],
+  conjNSuffix "なれ" "(221)" [Nda] [Imper],
   conjNSuffix "たら" "(222)" [Ntar] [NegL],
   conjNSuffix "たり" "(222)" [Ntar] [Term],
   conjNSuffix "たる" "(222)" [Ntar] [Attr],
-  conjNSuffix "たれ" "(222)" [Ntar] [Hyp,Imper],
+  conjNSuffix "たれ" "(222)" [Ntar] [Imper],
   -- 助動詞（過去）
   mylex ["たり"] "(308)" (S [SF 1 anyPos, F[Cont] ,F[P], SF 2 [P,M], SF 3 [P,M],F[M],F[M]] `BS` S [SF 1 anyPos, F[EuphT], F[M],SF 2 [P,M],SF 3 [P,M],F[M],F[M]]) (eventModifier "タ[MCN]"),
   mylex ["た"] "(308)"  (S [SF 1 anyPos, F[Term,Attr], F[P],SF 2 [P,M],SF 3 [P,M],F[M],F[M]] `BS` S [SF 1 anyPos, F[EuphT], F[M],SF 2 [P,M],SF 3 [P,M],F[M],F[M]]) (eventModifier "タ[MCN]"),
@@ -627,8 +617,9 @@ myLexicon = concat $ [
   mylex ["の","ん"] "(511)" (S [F[Nda], F[NStem],SF 1 [P,M],SF 2 [P,M],SF 3 [P,M],F[M],F[M]] `BS` S [F anyPos,F[Attr],SF 1 [P,M],SF 2 [P,M],SF 3 [P,M],F[P,M],F[M]])           (modalSR "ノダ[MCN]"),
   mylex ["筈","はず","ハズ"] "(511)" (defS [Nda] [NStem] `BS` defS anyPos [Attr]) (modalSR "ハズダ[MCN]"),
   mylex ["訳","わけ","ワケ"] "(511)" (defS [Nda] [NStem] `BS` defS anyPos [Attr]) (modalSR "ワケダ[MCN]"),
-  mylex ["つもり"] "new" (defS [Nda] [NStem] `BS` defS anyPos [Attr])            (modalSR "ツモリ[MCN]"),
+  mylex ["つもり"] "new" (defS [Nda] [NStem] `BS` defS anyPos [Attr])            (modalSR "ツモリダ[MCN]"),
   mylex ["もの","もん"] "(511)" (defS [Nda] [NStem] `BS` defS anyPos [Attr])      (modalSR "モノダ[MCN]"),
+  mylex ["等","など"] "new" (defS [Nda,Nno] [NStem] `BS` defS anyPos [Term,NStem]) (modalSR "ナド[MCN]"),
   -- べきだ
   -- ふうだ
   -- ことだ
@@ -717,10 +708,12 @@ myLexicon = concat $ [
   mylex ["まま"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
         ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
   -- きり,っきり（エントリなし）
-  -- つつ
+  -- コントロール構文
   mylex ["ながら"] "new" (((T False 1 modifiableS `BS` NP[F[Ga]]) `SL` (T False 1 modifiableS `BS` NP[F[Ga]])) `BS` (S [F verb, F[Cont], F[M],F[M],F[M],F[M],F[M]] `BS` NP[F[Ga]])) 
-        ((Lam (Lam (Lam (Lam (Sigma (App (App (Var 3) (Var 0)) (Lam Top)) (App (App (Var 2) (Var 1)) (Var 0))))))),[]),
-  -- がてら
+        ((Lam (Lam (Lam (Lam (Sigma (App (App (Var 3) (Var 1)) (Lam Top)) (App (App (Var 3) (Var 2)) (Var 1))))))), []),
+  mylex ["でもって"] "new" (((T False 1 modifiableS `BS` NP[F[Ga]]) `SL` (T False 1 modifiableS `BS` NP[F[Ga]])) `BS` (defS nomPred [NStem] `BS` NP[F[Ga]]))
+        ((Lam (Lam (Lam (Lam (Sigma (App (App (Var 3) (Var 1)) (Lam Top)) (App (App (Var 3) (Var 2)) (Var 1))))))), []),
+  -- つつ、がてら
   -- やいなや
   -- ど,ども
   -- きや
@@ -852,11 +845,12 @@ myLexicon = concat $ [
   mylex ["則ち"] "PB10-11" (defS [Nemp] [NStem] `BS` NP [F[Ga]]) (predSR 1 "すなわち/すなわち"),
   mylex ["まっ先"] "PB10-11" (defS [Nni] [NStem] `BS` NP [F[Ga]]) (predSR 1 "真っ先/まっさき"),
   mylex ["引返","引き返","引きかえ","ひき返","ひきかえ"] "PB10-11" (defS [V5s] [Stem] `BS` NP [F[Ga]]) (verbSR 1 "引き返す/ひきかえす"),
-  mylex ["殪"] "PB10-?" ((defS [V5s] [Stem] `BS` NP [F[Ga]]) `BS` NP [F[O]]) (verbSR 2 "殪す"),
+  mylex ["からから"] "PB10-12" (defS [Nda,Nemp,Nto] [NStem] `BS` NP[F[Ga]]) (predSR 1 "カラカラ/からから"),
+  mylex ["殪"] "PB10-13" ((defS [V5s] [Stem] `BS` NP [F[Ga]]) `BS` NP [F[O]]) (verbSR 2 "殪す"),
+  mylex ["沃え"] "PB10-14" (defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP[F[Ga]]) (verbSR 1 "沃える/こえる"),
   mylex ["名を得"] "PB10-15" ((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP[F[Ga]]) `BS` NP[F[Ni]]) (verbSR 2 "名を得る/なをえる"),
   mylex ["ずっぷり"] "PB10-18" (defS [Nda,Nemp,Nto] [NStem] `BS` NP[F[Ga]]) (predSR 1 "ずっぷり/ずっぷり"),
   mylex ["まっすぐ"] "PB10-18" (defS [Nda,Nna,Nni,Nemp] [NStem] `BS` NP[F[Ga]]) (predSR 1 "真っ直ぐ/まっすぐ"),
-  mylex ["からから"] "PB10-22" (defS [Nda,Nemp,Nto] [NStem] `BS` NP[F[Ga]]) (predSR 1 "カラカラ/からから"),
   mylex ["ユーカㇻ"] "PB10-25" (NP [F[Nc]]) (properNameSR "ユーカラ/ユーカラ"),
   mylex ["先"] "PB10-25" (defS [Nda,Nni,Nno] [NStem] `BS` NP [F[Ga]]) (predSR 1 "先/さき"),
   mylex ["アイヌユーカㇻ"] "PB10-30" (NP [F[Nc]]) (properNameSR "アイヌユーカラ/アイヌユーカラ"),
