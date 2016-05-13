@@ -96,7 +96,7 @@ $ echo 太郎がパンを食べた。 | lightblue -text
 or equivalently,
 ```
 #!shell
-$ ./parse 太郎がパンを食べた。
+$ ./parse -text 太郎がパンを食べた。
 ```
 
 If you want an XML output, do
