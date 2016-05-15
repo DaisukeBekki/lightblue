@@ -17,6 +17,7 @@ module DTS.DependentTypes (
   Selector(..),
   Signature,
   printSignatures,
+  toTextDeBruijn,
   -- * De Bruijn notation <-> Variable-name notation
   fromDeBruijn,
   toDeBruijn,
@@ -175,7 +176,7 @@ fromDeBruijn2 vnames i preterm = case preterm of
   Appvec j m -> let vname = if j < (length vnames) 
                                    then vnames!!j
                                    else T.concat ["error: var+ ", T.pack (show j)] in
-                    DTSWVN.Appvec vname (fromDeBruijn2 (vname:vnames) (i+1) m)
+                    DTSWVN.Appvec vname (fromDeBruijn2 (vname:vnames) i m)
   Unit       -> DTSWVN.Unit
   Top        -> DTSWVN.Top
   Bot        -> DTSWVN.Bot
