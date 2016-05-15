@@ -18,6 +18,7 @@ import qualified Data.Text.Lazy as T
 import qualified Data.Maybe as Maybe
 import qualified System.IO as S        --base
 import DTS.DependentTypes
+--import qualified DTS.DependentTypesWVN as VN
 import Parser.CombinatoryCategorialGrammar as CCG
 
 -- | `Typeset` is a class of types whose terms can be translated into a TeX source (in Data.Text.Lazy). 
@@ -32,6 +33,7 @@ instance Typeset Selector where
 
 -- | Each `Preterm` is translated by the `toTeX` method into a representation \"with variable names\" in a TeX source code.
 instance Typeset Preterm where
+--  toTeX preterm = toTeXWithVN [] 0 $ VN.fromDeBruijn preterm
   toTeX = toTeXWithVN [] 0
 
 toTeXWithVN :: [T.Text] -> Int -> Preterm -> T.Text
@@ -117,6 +119,92 @@ toTeXWithVNEmbedded vlist i preterm = case preterm of
               T.concat ["\\left(\\lambda\\vec{", varname, "}.", toTeXWithVN (varname:vlist) (i+1) m, "\\right)"]
 --  Appvec j m -> T.concat ["\\left(\\APP{", toTeXWithVNEmbedded vlist i m, "}{\\vec{x}_", T.pack (show j), "}\\right)"]
   m          -> toTeXWithVN vlist i m
+
+
+{-
+instance Typeset VN.Preterm where
+  toTeX = toTeXWithVN [] 0
+
+toTeXWithVN :: [T.Text] -> Int -> Preterm -> T.Text
+toTeXWithVN vlist i preterm = case preterm of
+    VN.Var vname -> vname
+    VN.Con cname -> T.concat["\\pred{", T.replace "~" "\\~{}" cname, "}"]
+    VN.Type  -> "\\type{type}"
+    VN.Kind  -> "\\type{kind}"
+    VN.Pi vname a b ->
+
+                              App _ _ -> T.concat ["u_{", T.pack (show i), "}"] 
+                              Sigma _ _ -> T.concat ["u_{", T.pack (show i), "}"] 
+                              Pi _ _ -> T.concat ["u_{", T.pack (show i), "}"] 
+                              Not _  -> T.concat ["u_{", T.pack (show i), "}"] 
+                              Appvec _ _ -> T.concat ["u_{", T.pack (show i), "}"] 
+                              Type -> T.concat ["p_{", T.pack (show i), "}"] 
+                              Kind -> T.concat ["p_{", T.pack (show i), "}"] 
+                              Eq _ _ _ -> T.concat ["s_{", T.pack (show i), "}"] 
+                              Nat -> T.concat ["k_{", T.pack (show i), "}"] 
+                              _ -> T.concat ["x_{", T.pack (show i), "}"] in
+              T.concat["\\dPi[", varname , "]{", (toTeXWithVN vlist (i+1) a), "}{", (toTeXWithVN (varname:vlist) (i+1) b), "}"]
+    Not a  -> T.concat["\\neg ", toTeXWithVNEmbedded vlist i a]
+    Lam m  -> let varname = case m of
+                              Sigma _ _ -> T.concat ["x_{", T.pack (show i), "}"] 
+                              Pi _ _ -> T.concat ["x_{", T.pack (show i), "}"] 
+                              _ -> T.concat ["x_{", T.pack (show i), "}"] in
+              T.concat["\\LAM[", varname, "]", (toTeXWithVN (varname:vlist) (i+1) m)]
+    (App (App (Con c) y) x) -> T.concat ["\\APP{", toTeXWithVNEmbedded vlist i (Con c), "}{\\left(", toTeXWithVN vlist i x, ",", toTeXWithVN vlist i y, "\\right)}" ]
+    (App (App (App (Con c) z) y) x) -> T.concat ["\\APP{", toTeXWithVNEmbedded vlist i (Con c), "}{\\left(", toTeXWithVN vlist i x, ",", toTeXWithVN vlist i y, ",", toTeXWithVN vlist i z, "\\right)}" ]
+    (App (App (App (App (Con c) u) z) y) x) -> T.concat ["\\APP{", toTeXWithVNEmbedded vlist i (Con c), "}{\\left(", toTeXWithVN vlist i x, ",", toTeXWithVN vlist i y, ",", toTeXWithVN vlist i z, ",", toTeXWithVN vlist i u, "\\right)}" ]
+    App m n -> case n of
+                 (Var _) -> T.concat ["\\APP{", (toTeXWithVNEmbedded vlist i m), "}{(", toTeXWithVN vlist i n, ")}"]
+                 (Con _) -> T.concat ["\\APP{", (toTeXWithVNEmbedded vlist i m), "}{(", toTeXWithVN vlist i n, ")}"]
+                 (Proj _ _) -> T.concat ["\\APP{", (toTeXWithVNEmbedded vlist i m), "}{\\left(", toTeXWithVN vlist i n, "\\right)}"]
+                 (Asp _ _) -> T.concat ["\\APP{", (toTeXWithVNEmbedded vlist i m), "}{\\left(", toTeXWithVN vlist i n,"\\right)}"]
+                 _ -> T.concat["\\APP{", toTeXWithVNEmbedded vlist i m, "}{", toTeXWithVNEmbedded vlist i n, "}"]
+    Sigma a b -> let varname = case a of
+                                 Con "entity" -> T.concat ["x_{", T.pack (show i), "}"] 
+                                 Con "event" -> T.concat ["e_{", T.pack (show i), "}"] 
+                                 Con "state" -> T.concat ["s_{", T.pack (show i), "}"] 
+                                 App _ _ -> T.concat ["u_{", T.pack (show i), "}"] 
+                                 Sigma _ _ -> T.concat ["u_{", T.pack (show i), "}"] 
+                                 Pi _ _ -> T.concat ["u_{", T.pack (show i), "}"] 
+                                 Not _  -> T.concat ["u_{", T.pack (show i), "}"] 
+                                 Appvec _ _ -> T.concat ["u_{", T.pack (show i), "}"] 
+                                 Type -> T.concat ["p_{", T.pack (show i), "}"] 
+                                 Kind -> T.concat ["p_{", T.pack (show i), "}"] 
+                                 Eq _ _ _ -> T.concat ["s_{", T.pack (show i), "}"] 
+                                 Nat -> T.concat ["k_{", T.pack (show i), "}"] 
+                                 _ -> T.concat ["x_{", T.pack (show i), "}"] in
+                 case b of
+                   Top -> toTeXWithVN vlist (i+1) a
+                   _ -> T.concat["\\dSigma[", varname, "]{", toTeXWithVN vlist (i+1) a, "}{", toTeXWithVN (varname:vlist) (i+1) b, "}"]
+    Pair m n  -> T.concat["\\left(", toTeXWithVN vlist i m, ",", toTeXWithVN vlist i n, "\\right)"]
+    Proj s m  -> T.concat["\\pi_", toTeX s, "\\left(", toTeXWithVN vlist i m, "\\right)"] 
+    Lamvec m   -> let varname = T.concat ["x_{", T.pack (show i), "}"] in
+                  T.concat ["\\lambda\\vec{", varname, "}.", toTeXWithVN (varname:vlist) (i+1) m]
+    Appvec j m -> if j < (length vlist)
+                  then T.concat ["\\APP{", (toTeXWithVNEmbedded vlist i m), "}{\\vec{", vlist!!j, "}}"]
+                  else T.concat ["\\APP{", (toTeXWithVNEmbedded vlist i m), "}{\\vec{error:", T.pack (show j), " in ", T.pack (show vlist), "}}"]
+    Unit      -> "()"
+    Top       -> "\\top"
+    Bot       -> "\\bot"
+    Asp j m   -> T.concat ["@_{", T.pack (show j), "}:", (toTeXWithVN vlist i m)]
+    Nat       -> "\\Set{N}"
+    Zero      -> "0"
+    Succ n    -> T.concat ["\\type{s}", (toTeXWithVN vlist i n)]
+    Natrec n e f -> T.concat ["\\type{natrec}\\left(", (toTeXWithVN vlist i n), ",", (toTeXWithVN vlist i e), ",", (toTeXWithVN vlist i f), "\\right)"]
+    Eq a m n  -> T.concat [(toTeXWithVN vlist i m),"=_{",(toTeXWithVN vlist i a),"}",(toTeXWithVN vlist i n)]
+    Refl a m  -> T.concat ["\\type{refl}_{",(toTeXWithVN vlist i a),"}\\left(",(toTeXWithVN vlist i m),"\\right)"]
+    Idpeel m n -> T.concat ["\\type{idpeel}\\left(", (toTeXWithVN vlist i m), ",", (toTeXWithVN vlist i n), "\\right)"]
+
+toTeXWithVNEmbedded :: [T.Text] -> Int -> Preterm -> T.Text  
+toTeXWithVNEmbedded vlist i preterm = case preterm of
+  Lam m -> let varname = T.concat ["x_{", T.pack (show i), "}"] in
+           T.concat["\\left(\\LAM[", varname, "]", toTeXWithVN (varname:vlist) (i+1) m, "\\right)"]
+  --App m n -> T.concat["\\left(\\APP{", toTeXWithVNEmbedded vlist i m, "}{", toTeXWithVNEmbedded vlist i n, "}\\right)"]
+  Lamvec m -> let varname = T.concat ["x_{", T.pack (show i), "}"] in
+              T.concat ["\\left(\\lambda\\vec{", varname, "}.", toTeXWithVN (varname:vlist) (i+1) m, "\\right)"]
+--  Appvec j m -> T.concat ["\\left(\\APP{", toTeXWithVNEmbedded vlist i m, "}{\\vec{x}_", T.pack (show j), "}\\right)"]
+  m          -> toTeXWithVN vlist i m
+-}
 
 {-  
   toTeX preterm = case preterm of
