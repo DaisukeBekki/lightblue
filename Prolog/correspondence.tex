@@ -1,0 +1,100 @@
+\documentclass{article}
+
+\pagestyle{empty}
+
+\newcommand{\dPi}[3][x]{\ensuremath{%
+  \left( 
+%  \begin{array}{l}
+  #1{:}#2 
+%  \end{array}
+  \right) \to #3
+  }}
+
+\newcommand{\dSigma}[3][x]{\ensuremath{%
+  \left[\kern-0.3em
+  \begin{array}{l}
+  #1{:}#2 \\
+  #3
+  \end{array}
+  \kern-0.3em\right]
+  }}
+
+\newcommand{\dConj}[3][x]{\ensuremath{%
+  \left[\kern-0.3em
+  \begin{array}{l}
+  #2 \\
+  #3
+  \end{array}
+  \kern-0.3em\right]
+  }}
+
+\newcommand{\dImp}[3][x]{\ensuremath{%
+  #2 \to #3
+  }}
+
+
+\begin{document}
+\large
+
+\begin{center}
+{\Large\textbf{対応表}}
+\end{center}
+
+\bigskip
+
+\begin{tabular}{lllll}
+\medskip
+\textbf{\LaTeX} & \textbf{lightblue} & \textbf{Prolog} & \textbf{Coq} \\
+\medskip
+Type & & \verb|type| & \verb|Type| \\
+\medskip
+\textbf{Entity} & & \verb|entity| & \verb|Entity| \\
+\medskip
+\textbf{Event} & & \verb|event| & \verb|Event| \\
+\medskip
+$\dPi[x]{A}{B}$ & & \verb|forall(x,A,B)|  & \verb|forall x:A, B| &\\
+\medskip
+$\dImp[x]{A}{B}$ & & \verb|imp(A,B)|  & \verb|A -> B| &\\
+\medskip
+$\dSigma[x]{A}{B}$ & & \verb|exists(x,A,B)| & \verb|exists x:A, B| &\\
+\medskip
+                               &  &                                & {\normalsize もしくは} \verb|{x:A & B}| \\
+\medskip
+$\dConj{A}{B}$ & & \verb|and(A,B)| & \verb|and A B| &\\
+\medskip
+$A \vee B$ & & \verb|or(A,B)| & \verb|or A B| &\\
+\medskip
+$\neg A$ & & \verb|not(A)| & \verb|not A| &\\
+\medskip
+$\lambda x : A.\, B$ & & \verb|lam(x,A,B)| & \verb|fun x:A => B| &\\
+\medskip
+$@_i : A$ & & \verb|@(i,A)| & --- &\\
+\medskip
+$\pi_1(t)$ & & \verb|pi1(t)| & \verb|projT1 t| &\\
+\medskip
+$\pi_2(t)$ & & \verb|pi2(t)| & \verb|projT2 t| &\\
+\medskip
+$t = u$ & & \verb|eq(t,u)| & \verb|eq t u| &\\
+            &  &                      & {\normalsize もしくは} \verb|t = u| & \\
+$F(x)$ & & \verb|f(x)| & \verb|f x y| \\
+$F(x,y)$ & & \verb|f(x,y)| & \verb|f x y| \\
+$F(x,y,z)$ & & \verb|f(x,y,z)| & \verb|f x y z|
+\end{tabular}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\end{document}
