@@ -62,6 +62,8 @@ $\dSigma[x]{A}{B}$ & & \verb|exists(x,A,B)| & \verb|exists x:A, B| &\\
 \medskip
 $\dConj{A}{B}$ & & \verb|and(A,B)| & \verb|and A B| &\\
 \medskip
+                               &  &                                & {\normalsize もしくは} \verb|prod A B| \\
+\medskip
 $A \vee B$ & & \verb|or(A,B)| & \verb|or A B| &\\
 \medskip
 $\neg A$ & & \verb|not(A)| & \verb|not A| &\\
@@ -70,30 +72,22 @@ $\lambda x : A.\, B$ & & \verb|lam(x,A,B)| & \verb|fun x:A => B| &\\
 \medskip
 $@_i : A$ & & \verb|@(i,A)| & --- &\\
 \medskip
+$(t, u)$ & & \verb|[t,u]| & \verb|(t,u)| &\\
+\medskip
 $\pi_1(t)$ & & \verb|pi1(t)| & \verb|projT1 t| &\\
 \medskip
 $\pi_2(t)$ & & \verb|pi2(t)| & \verb|projT2 t| &\\
 \medskip
 $t = u$ & & \verb|eq(t,u)| & \verb|eq t u| &\\
             &  &                      & {\normalsize もしくは} \verb|t = u| & \\
-$F(x)$ & & \verb|f(x)| & \verb|f x y| \\
-$F(x,y)$ & & \verb|f(x,y)| & \verb|f x y| \\
-$F(x,y,z)$ & & \verb|f(x,y,z)| & \verb|f x y z|
+\medskip
+$\top$ & & \verb|true| & \verb|True| & \\
+\medskip
+$\bot$ & & \verb|false| & \verb|False| & \\
+$F(x)$ & & \verb|f(x)| & \verb|_f x| \\
+$F(x,y)$ & & \verb|f(x,y)| & \verb|_f x y| \\
+$F(x,y,z)$ & & \verb|f(x,y,z)| & \verb|_f x y z|
 \end{tabular}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
