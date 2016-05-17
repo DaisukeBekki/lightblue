@@ -27,8 +27,8 @@ counter(M):-
 %%%%% Main predicates %%%%%
 
 resolvePresup(SR,GCxt,Form0):-
-    addType(Form0,Form1),
-    rewriteVar(Form1,Form),
+    % addType(Form0,Form1),
+    rewriteVar(Form0,Form),
     findall(PS,checkType(PS,GCxt,Form),Store),
     elimAsp(Store,GCxt,Form,SR0),
     betaConvertPi(SR0,SR1),
