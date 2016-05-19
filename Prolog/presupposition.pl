@@ -27,8 +27,8 @@ counter(M):-
 %%%%% Main predicates %%%%%
 
 resolvePresup(SR,GCxt,Form0):-
-    % addType(Form0,Form1),
-    rewriteVar(Form0,Form),
+    addType(Form0,Form1),
+    rewriteVar(Form1,Form),
     findall(PS,checkType(PS,GCxt,Form),Store),
     elimAsp(Store,GCxt,Form,SR0),
     betaConvertPi(SR0,SR1),
@@ -183,24 +183,30 @@ checkTypeInit(PS,Cxt,Form):- !,
     addType(Form,Form1),
     checkType(PS,Cxt,Form1).
 
+checkType(PS,Cxt,exists(_,Type,_)):-
+    checkType(PS,Cxt,Type).
+
 checkType(PS,Cxt1,exists(X,Type,F)):-
     append(Cxt1,[[X,Type]],Cxt2), !,
     checkType(PS,Cxt2,F).
+
+checkType(PS,Cxt,forall(_,Type,_)):-
+    checkType(PS,Cxt,Type).
 
 checkType(PS,Cxt1,forall(X,Type,F)):-
     append(Cxt1,[[X,Type]],Cxt2), !,
     checkType(PS,Cxt2,F).
 
-checkType(PS,Cxt1,and(F1,_)):-
-    checkType(PS,Cxt1,F1).
+checkType(PS,Cxt,and(F1,_)):-
+    checkType(PS,Cxt,F1).
 
 checkType(PS,Cxt1,and(F1,F2)):-
     counter(N),
     append(Cxt1,[[po(u,N),F1]],Cxt2), !,
     checkType(PS,Cxt2,F2).
 
-checkType(PS,Cxt1,imp(F1,_)):-
-    checkType(PS,Cxt1,F1).
+checkType(PS,Cxt,imp(F1,_)):-
+    checkType(PS,Cxt,F1).
 
 checkType(PS,Cxt1,imp(F1,F2)):-
     counter(N),
@@ -217,6 +223,34 @@ checkType(PS,Cxt,F):-
 
 checkType(PS,Cxt,F):-
     F =.. [_,_,T],
+    checkType(PS,Cxt,T).
+
+checkType(PS,Cxt,F):-
+    F =.. [_,T,_,_],
+    checkType(PS,Cxt,T).
+
+checkType(PS,Cxt,F):-
+    F =.. [_,_,T,_],
+    checkType(PS,Cxt,T).
+
+checkType(PS,Cxt,F):-
+    F =.. [_,_,_,T],
+    checkType(PS,Cxt,T).
+
+checkType(PS,Cxt,F):-
+    F =.. [_,T,_,_,_],
+    checkType(PS,Cxt,T).
+
+checkType(PS,Cxt,F):-
+    F =.. [_,_,T,_,_],
+    checkType(PS,Cxt,T).
+
+checkType(PS,Cxt,F):-
+    F =.. [_,_,_,T,_],
+    checkType(PS,Cxt,T).
+
+checkType(PS,Cxt,F):-
+    F =.. [_,_,_,_,T],
     checkType(PS,Cxt,T).
 
 checkType([Cxt,@(N,Type)],Cxt,@(N,Type)).
@@ -289,8 +323,27 @@ freeVar(Form,FV):-
     freeVar(Arg2,FV2),
     append(FV1,FV2,FV), !.
 
+freeVar(Form,FV):-
+    Form =.. [_,Arg1,Arg2,Arg3],
+    freeVar(Arg1,FV1),
+    freeVar(Arg2,FV2),
+    freeVar(Arg3,FV3),
+    append(FV1,FV2,X),
+    append(X,FV3,FV), !.
+
+freeVar(Form,FV):-
+    Form =.. [_,Arg1,Arg2,Arg3,Arg4],
+    freeVar(Arg1,FV1),
+    freeVar(Arg2,FV2),
+    freeVar(Arg3,FV3),
+    freeVar(Arg4,FV4),
+    append(FV1,FV2,X),
+    append(FV3,FV4,Y),
+    append(X,Y,FV), !.
+
 freeVar(entity,[]).
 freeVar(event,[]).
+freeVar(state,[]).
 
 freeVar(A,[A]):-
     atom(A), !.
@@ -339,6 +392,21 @@ addType(Form0,Form):-
     addType(A0,A),
     addType(B0,B),
     Form =.. [F,A,B], !.
+
+addType(Form0,Form):-
+    Form0 =.. [F,A0,B0,C0],
+    addType(A0,A),
+    addType(B0,B),
+    addType(C0,C),
+    Form =.. [F,A,B,C], !.
+
+addType(Form0,Form):-
+    Form0 =.. [F,A0,B0,C0,D0],
+    addType(A0,A),
+    addType(B0,B),
+    addType(C0,C),
+    addType(D0,D),
+    Form =.. [F,A,B,C,D], !.
 
 addType(A,A):-
     atomic(A).
