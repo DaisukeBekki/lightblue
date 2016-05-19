@@ -61,6 +61,9 @@ elimSigma(forall(U,and(A,B),C),O):-
     substitute(U2,pi2(U),C0,C1),
     elimSigma(forall(U1,A,forall(U2,B,C1)),O), !.
 
+elimSigma(lam(X,A),lam(X,B)):-
+    elimSigma(A,B), !.
+
 elimSigma(and(A,B),and(F1,F2)):-
     elimSigma(A,F1),
     elimSigma(B,F2), !.
