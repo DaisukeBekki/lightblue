@@ -64,6 +64,9 @@ elimSigma(forall(U,and(A,B),C),O):-
 elimSigma(lam(X,A),lam(X,B)):-
     elimSigma(A,B), !.
 
+elimSigma(lam(X,Type,A),lam(X,Type,B)):-
+    elimSigma(A,B), !.
+
 elimSigma(and(A,B),and(F1,F2)):-
     elimSigma(A,F1),
     elimSigma(B,F2), !.
