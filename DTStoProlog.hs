@@ -3,6 +3,7 @@
 
 import qualified Data.Text.Lazy as T --text
 import qualified Data.Text.Lazy.IO as T --text
+import qualified Data.List as L
 import qualified DTS.DependentTypes as DTS
 import qualified DTS.DependentTypesWVN as D
 import qualified Parser.ChartParser as CP
@@ -91,7 +92,7 @@ convcoq preterm = case preterm of
 -- sigToCoq (text, preterm) = T.concat ["Parameter _", text, " : ", (convcoq $ DTS.fromDeBruijn $ preterm), ". \n"]
 
 makeCoqSigList :: [DTS.Signature] -> T.Text
-makeCoqSigList siglist = T.concat (map (\ (text, preterm) -> T.concat ["Parameter _", (cname_f text), " : ", (convcoq $ DTS.fromDeBruijn $ preterm), ". \n"]) siglist)
+makeCoqSigList siglist = T.concat (L.nub (map (\ (text, preterm) -> T.concat ["Parameter _", (cname_f text), " : ", (convcoq $ DTS.fromDeBruijn $ preterm), ". \n"]) siglist))
 
 
 main :: IO()
@@ -130,7 +131,7 @@ main = do
 -- List Signature in Coq format
   let signature_list = CP.sig $ representative
   T.putStrLn "-- Coq signature --------"
-  T.putStrLn "Require Export coqlib."
+--  T.putStrLn "Require Export coqlib."
 --  T.putStrLn "Parameter Entity : Type.\nParameter Event : Type.\nParameter State : Type.\n"
   T.putStrLn $ makeCoqSigList $ signature_list
 
