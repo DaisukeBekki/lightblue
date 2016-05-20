@@ -8,12 +8,17 @@ import qualified DTS.DependentTypesWVN as D
 import qualified Parser.ChartParser as CP
 import qualified System.Process as S
 
+-- function: cname
+-- normalize the given constant text
+cname_f :: T.Text -> T.Text
+cname_f cname = T.replace "]" "_" $ T.replace "[" "_" $ T.replace "/" "_" $ head $ T.split (==';') cname
+
 -- function: f
 -- a function which converts DTS preterm with variable name to Prolog input formula
 f :: D.Preterm -> T.Text
 f preterm = case preterm of
   D.Var v -> v
-  D.Con c -> T.replace "[MCN]" "" c
+  D.Con c -> cname_f $ c
   D.Type  -> "type"
   D.Kind  -> "kind"
   D.Pi vname a b    -> T.concat ["forall(", vname, ",", (f $ a), ",", (f $ b), ")"]
@@ -33,21 +38,18 @@ f preterm = case preterm of
                         -> T.concat [(f $ g), "(", (f $ x1), ",", (f $ x2), ",", (f $ x3), ")"]
   D.App (D.App g x2) x1 -> T.concat [(f $ g), "(", (f $ x1), ",", (f $ x2), ")"]
   D.App g x1            -> T.concat [(f $ g), "(", (f $ x1), ")"]
---  D.Lamvec vname m -> T.concat ["lamvec(", vname, ",", f $ m, ")"]
---  D.Appvec vname m -> T.concat ["appvec(", vname, ",", f $ m, ")"]
   D.Lamvec _ m -> f $ m
   D.Appvec _ m -> f $ m
-  D.Unit         -> "true"
-  D.Nat          -> "true"
-  D.Zero         -> "true"
-  D.Succ _       -> "true"
-  D.Natrec _ _ _ -> "true"
-  D.Refl _ _     -> "true"
-  D.Idpeel _ _   -> "true"
+  D.Unit         -> "unit"
+  D.Nat          -> "nat"
+  D.Zero         -> "zero"
+  D.Succ n       -> T.concat ["succ(", (f $ n), ")"]
+  D.Natrec n e f' -> T.concat ["natrec(", (f $ n), ",", (f $ e), ",", (f $ f'), ")"]
+  D.Refl a m     -> T.concat ["refl(", (f $ a), ",", (f $ m), ")"]
+  D.Idpeel m n   -> T.concat ["idpeel(", (f $ m), ",", (f $ n), ")"]
 
 
 -- function convcoq
-
 convcoq :: D.Preterm -> T.Text
 convcoq preterm = case preterm of
   D.Var v -> v
@@ -55,43 +57,41 @@ convcoq preterm = case preterm of
              "entity" -> "Entity"
              "event"  -> "Event"
              "state"  -> "State"
-             _        -> T.concat ["_", c]
+             cname        -> "_" `T.append` (cname_f cname)
   D.Type  -> "Prop"
-  D.Kind  -> "kind"
-  D.Pi _ a b    -> T.concat [(convcoq $ a), " -> ", (convcoq $ b)]
-  D.Sigma vname a b -> T.concat ["exists(", vname, ",", (convcoq $ a), ",", (convcoq $ b), ")"]
-  D.Not a           -> T.concat ["not(", (convcoq $ a), ")"]
+  D.Kind  -> "Kind"
+  D.Pi vname a b    -> T.concat ["forall ", vname, ":", (convcoq $ a), ", ", (convcoq $ b)]
+  D.Sigma vname a b -> T.concat ["exists ", vname, ":", (convcoq $ a), ", ", (convcoq $ b)]
+  D.Not a           -> T.concat ["not ", (convcoq $ a)]
   D.Lam vname b     -> T.concat ["lam(", vname, ",", (convcoq $ b), ")"]
-  D.Asp i a         -> T.concat ["@(", (T.pack (show i)), ",", (convcoq $ a), ")"]
-  D.Pair t u        -> T.concat ["[", (convcoq $ t), ",", (convcoq $ u), "]"]
-  D.Proj D.Fst t    -> T.concat ["pi1(", (convcoq $ t), ")"]
-  D.Proj D.Snd t    -> T.concat ["pi2(", (convcoq $ t), ")"]
-  D.Eq _ m n        -> T.concat ["eq(", (convcoq $ m), ",", (convcoq $ n), ")"]
-  D.Top -> "true"
-  D.Bot -> "false"
+  D.Asp i a         -> T.concat ["asp ", (T.pack (show i)), " ", (convcoq $ a)]
+  D.Pair t u        -> T.concat ["(", (convcoq $ t), ",", (convcoq $ u), ")"]
+  D.Proj D.Fst t    -> T.concat ["projT1", (convcoq $ t)]
+  D.Proj D.Snd t    -> T.concat ["projT2", (convcoq $ t)]
+  D.Eq _ m n        -> T.concat ["eq ", (convcoq $ m), " ", (convcoq $ n)]
+  D.Top -> "True"
+  D.Bot -> "False"
   D.App (D.App (D.App (D.App g x4) x3) x2) x1
-                        -> T.concat [(convcoq $ g), "(", (convcoq $ x1), ",", (convcoq $ x2), ",", (convcoq $ x3), ",", (convcoq $ x4), ")"]
+                        -> T.concat ["_", (convcoq $ g), " ", (convcoq $ x1), " ", (convcoq $ x2), " ", (convcoq $ x3), " ", (convcoq $ x4)]
   D.App (D.App (D.App g x3) x2) x1
-                        -> T.concat [(convcoq $ g), "(", (convcoq $ x1), ",", (convcoq $ x2), ",", (convcoq $ x3), ")"]
-  D.App (D.App g x2) x1 -> T.concat [(convcoq $ g), "(", (convcoq $ x1), ",", (convcoq $ x2), ")"]
-  D.App g x1            -> T.concat [(convcoq $ g), "(", (convcoq $ x1), ")"]
---  D.Lamvec vname m -> T.concat ["lamvec(", vname, ",", f $ m, ")"]
---  D.Appvec vname m -> T.concat ["appvec(", vname, ",", f $ m, ")"]
+                        -> T.concat ["_", (convcoq $ g), " ", (convcoq $ x1), " ", (convcoq $ x2), " ", (convcoq $ x3)]
+  D.App (D.App g x2) x1 -> T.concat ["_", (convcoq $ g), " ", (convcoq $ x1), " ", (convcoq $ x2)]
+  D.App g x1            -> T.concat ["_", (convcoq $ g), " ", (convcoq $ x1)]
   D.Lamvec _ m -> convcoq $ m
   D.Appvec _ m -> convcoq $ m
-  D.Unit         -> "true"
-  D.Nat          -> "true"
-  D.Zero         -> "true"
-  D.Succ _       -> "true"
-  D.Natrec _ _ _ -> "true"
-  D.Refl _ _     -> "true"
-  D.Idpeel _ _   -> "true"
+  D.Unit         -> "Unit"
+  D.Nat          -> "Nat"
+  D.Zero         -> "Zero"
+  D.Succ n       -> T.concat ["Succ ", (convcoq $ n)]
+  D.Natrec n e f' -> T.concat ["Natec ", (convcoq $ n), " ", (convcoq $ e), " ", (convcoq $ f')]
+  D.Refl a m     -> T.concat ["Refl ", (convcoq $ a), " ", (convcoq $ m)]
+  D.Idpeel m n   -> T.concat ["Idpeel ", (convcoq $ m), " ", (convcoq $ n)]
 
 -- sigToCoq :: DTS.Signature -> T.Text
 -- sigToCoq (text, preterm) = T.concat ["Parameter _", text, " : ", (convcoq $ DTS.fromDeBruijn $ preterm), ". \n"]
 
 makeCoqSigList :: [DTS.Signature] -> T.Text
-makeCoqSigList siglist = (T.concat (map (\ (text, preterm) -> T.concat ["Parameter _", text, " : ", (convcoq $ DTS.fromDeBruijn $ preterm), ". \n"]) siglist))
+makeCoqSigList siglist = (T.concat (map (\ (text, preterm) -> T.concat ["Parameter _", (cname_f text), " : ", (convcoq $ DTS.fromDeBruijn $ preterm), ". \n"]) siglist))
 
 
 main :: IO()
@@ -120,6 +120,12 @@ main = do
   t2 <- T.hGetContents stdout2
   T.putStrLn $ "-- After elimSigma --------"
   T.putStrLn $ t2
+-- Call Prolog (Prolog to Coq)
+  let command3 = T.concat ["swipl -s Prolog/prolog2coq.pl -g main -t halt --quiet -- \"", t2, "\""]
+  _ <- S.runCommand $ T.unpack command3
+  t3 <- T.readFile "Prolog/interpretation.txt"
+  T.putStrLn $ "-- Coq formula --------"
+  T.putStrLn $ t3
 -- List Signature in Coq format
   let signature_list = CP.sig $ representative
   T.putStrLn "-- Coq signature --------"
