@@ -28,7 +28,8 @@ counter(M):-
 
 resolvePresup(SR,GCxt,Form0):-
     addType(Form0,Form1),
-    rewriteVar(Form1,Form),
+    rewriteVar(Form1,Form2),
+    elimTrue(Form2,Form),
     findall(PS,checkType(PS,GCxt,Form),Store),
     elimAsp(Store,GCxt,Form,SR0),
     betaConvertPi(SR0,SR1),
@@ -481,8 +482,75 @@ rewriteVar(Stack,Form0,Form):-
     rewriteVar(Stack,B0,B),
     Form =.. [F,A,B], !.
 
+rewriteVar(Stack,Form0,Form):-
+    Form0 =.. [F,A0,B0,C0],
+    rewriteVar(Stack,A0,A),
+    rewriteVar(Stack,B0,B),
+    rewriteVar(Stack,C0,C),
+    Form =.. [F,A,B,C], !.
+
+rewriteVar(Stack,Form0,Form):-
+    Form0 =.. [F,A0,B0,C0,D0],
+    rewriteVar(Stack,A0,A),
+    rewriteVar(Stack,B0,B),
+    rewriteVar(Stack,C0,C),
+    rewriteVar(Stack,D0,D),
+    Form =.. [F,A,B,C,D], !.
+
 rewriteVar(_,A,A):-
     atomic(A).
+
+%%% Eliminating True %%%
+
+elimTrue(forall(_,true,A),B):-
+    elimTrue(A,B), !.
+
+elimTrue(exists(_,true,A),B):-
+    elimTrue(A,B), !.
+
+elimTrue(exists(_,A,true),B):-
+    elimTrue(A,B), !.
+
+elimTrue(and(true,A),B):-
+    elimTrue(A,B), !.
+
+elimTrue(and(A,true),B):-
+    elimTrue(A,B), !.
+
+elimTrue(or(true,_),true).
+elimTrue(or(_,true),true).
+
+elimTrue(imp(true,A),B):-
+    elimTrue(A,B), !.
+
+elimTrue(A,B):-
+    A =.. [F,X],
+    elimTrue(X,Y),
+    B =.. [F,Y], !.
+
+elimTrue(A,B):-
+    A =.. [F,X1,X2],
+    elimTrue(X1,Y1),
+    elimTrue(X2,Y2),
+    B =.. [F,Y1,Y2], !.
+
+elimTrue(A,B):-
+    A =.. [F,X1,X2,X3],
+    elimTrue(X1,Y1),
+    elimTrue(X2,Y2),
+    elimTrue(X3,Y3),
+    B =.. [F,Y1,Y2,Y3], !.
+
+elimTrue(A,B):-
+    A =.. [F,X1,X2,X3,X4],
+    elimTrue(X1,Y1),
+    elimTrue(X2,Y2),
+    elimTrue(X3,Y3),
+    elimTrue(X4,Y4),
+    B =.. [F,Y1,Y2,Y3,Y4], !.
+
+elimTrue(A,A).
+
 
 containVar(Exp):-
     var(Exp), !.
