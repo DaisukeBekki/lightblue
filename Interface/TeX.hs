@@ -8,7 +8,7 @@ Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
 -}
-module Parser.TeXmodule (
+module Interface.TeX (
   Typeset(..),
   printNNodesInTeX,
   printNodesInTeX

@@ -9,7 +9,7 @@ Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
 -}
 
-module DTS.SimpleText (
+module Interface.Text (
   -- * Classes
   SimpleText(..)
   ) where

@@ -10,36 +10,35 @@ Stability   : beta
 
 -}
 module DTS.DependentTypesWVN (
-  -- * Types
   Preterm(..),
   Selector(..),
   ) where
 
 import qualified Data.Text.Lazy as T
-import DTS.SimpleText
+import Interface.Text
 
 -- | Preterms of Underspecified Dependent Type Theory (UDTT).
 data Preterm =
-  Var T.Text |               -- ^ Variable
-  Con T.Text |            -- ^ Constant symbol
-  Type |                  -- ^ The sort \"type\"
-  Kind |                  -- ^ The sort \"kind\"
+  Var T.Text |                   -- ^ Variable
+  Con T.Text |                   -- ^ Constant symbol
+  Type |                         -- ^ The sort \"type\"
+  Kind |                         -- ^ The sort \"kind\"
   Pi T.Text Preterm Preterm |    -- ^ Dependent function type (or Pi type)
-  Not Preterm |           -- ^ Negation
+  Not Preterm |                  -- ^ Negation
   Lam T.Text Preterm |           -- ^ Lambda abstraction
-  App Preterm Preterm |   -- ^ Function Application
+  App Preterm Preterm |          -- ^ Function Application
   Sigma T.Text Preterm Preterm | -- ^ Dependent product type (or Sigma type)
-  Pair Preterm Preterm |  -- ^ Pair
-  Proj Selector Preterm | -- ^ (First and second) Projections
+  Pair Preterm Preterm |         -- ^ Pair
+  Proj Selector Preterm |        -- ^ (First and second) Projections
   Lamvec T.Text Preterm |        -- ^ Variable-length lambda abstraction
-  Appvec T.Text Preterm |    -- ^ Variable-length function application
-  Unit |                  -- ^ The unit term (of type Top)
-  Top |                   -- ^ The top type
-  Bot |                   -- ^ The bottom type
-  Asp Int Preterm |       -- ^ The asperand term (or Underspesified term)
-  Nat |                   -- ^ The natural number type (Nat)
-  Zero |                  -- ^ 0 (of type Nat)
-  Succ Preterm |          -- ^ The successor function
+  Appvec T.Text Preterm |        -- ^ Variable-length function application
+  Unit |                         -- ^ The unit term (of type Top)
+  Top |                          -- ^ The top type
+  Bot |                          -- ^ The bottom type
+  Asp Int Preterm |              -- ^ The asperand term (or Underspesified term)
+  Nat |                          -- ^ The natural number type (Nat)
+  Zero |                         -- ^ 0 (of type Nat)
+  Succ Preterm |                 -- ^ The successor function
   Natrec Preterm Preterm Preterm | -- ^ natrec
   Eq Preterm Preterm Preterm |     -- ^ Intensional equality type
   Refl Preterm Preterm |           -- ^ refl

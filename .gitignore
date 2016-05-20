@@ -1,6 +1,7 @@
 *.hi
 *.o
 *~
-tex/*
+tex/
+script/
 *.txt
 *.bak*.*

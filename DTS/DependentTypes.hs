@@ -34,7 +34,7 @@ module DTS.DependentTypes (
 import qualified Data.Text.Lazy as T
 import qualified Data.List as L
 import qualified DTS.DependentTypesWVN as DTSWVN
-import DTS.SimpleText
+import Interface.Text
 
 -- | Preterms of Underspecified Dependent Type Theory (UDTT).
 data Preterm =

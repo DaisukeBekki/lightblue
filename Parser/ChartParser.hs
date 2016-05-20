@@ -36,7 +36,7 @@ import qualified System.IO as S        --base
 import qualified Parser.CombinatoryCategorialGrammar as CCG --(Node, unaryRules, binaryRules, trinaryRules, isCONJ, cat, SimpleText)
 import qualified Parser.Japanese.Lexicon as L (LexicalItems, lookupLexicon, setupLexicon, emptyCategories)
 import qualified Parser.Japanese.Templates as LT
-import qualified Parser.TeXmodule as TEX
+import qualified Interface.TeX as TEX
 
 -- | The type for CYK-charts.
 type Chart = M.Map (Int,Int) [CCG.Node]

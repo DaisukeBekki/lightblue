@@ -7,7 +7,7 @@ import qualified System.IO as S           --base
 import qualified System.Environment as S  --base
 import qualified Parser.ChartParser as CP
 import qualified Parser.Japanese.Lexicon as LEX
-import qualified Parser.XMLmodule as XML
+import qualified Interface.XML as XML
 
 main :: IO()
 main = do

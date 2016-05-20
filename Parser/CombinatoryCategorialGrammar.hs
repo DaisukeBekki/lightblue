@@ -43,7 +43,7 @@ import qualified Data.Maybe as Maybe --base
 import Data.Fixed                    --base
 import Data.Ratio                    --base
 import DTS.DependentTypes
-import DTS.SimpleText
+import Interface.Text
 
 -- | A node in CCG derivation tree.
 data Node = Node {

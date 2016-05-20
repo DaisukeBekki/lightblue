@@ -8,12 +8,12 @@ Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
 -}
-module Parser.XMLmodule (
+module Interface.XML (
   render
   ) where
 
 import qualified Parser.CombinatoryCategorialGrammar as CCG
-import qualified DTS.SimpleText as D
+import qualified Interface.Text as D
 import qualified Data.Text.Lazy as T   --text
 import qualified Data.Map as M         --container
 import qualified Text.XML as X         --xml-conduit
