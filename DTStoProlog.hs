@@ -121,12 +121,14 @@ main = do
   T.putStrLn $ "-- After elimSigma --------"
   T.putStrLn $ t2
 -- Call Prolog (Prolog to Coq)
-  let command3 = T.concat ["swipl -s Prolog/prolog2coq.pl -g main -t halt --quiet -- \"", t2, "\""]
-  _ <- S.runCommand $ T.unpack command3
-  t3 <- T.readFile "Prolog/interpretation.txt"
+  let command3 = T.concat ["swipl -s Prolog/prolog2coq.pl -g main -t halt --quiet -- \"", t2, "\" ; cat interpretation.txt"]
+  (_, stdout3, _, _) <- S.runInteractiveCommand $ T.unpack command3
+  -- file "interpretation.txt" is created in the current directory
+  t3 <- T.hGetContents stdout3
   T.putStrLn $ "-- Coq formula --------"
   T.putStrLn $ t3
 -- List Signature in Coq format
   let signature_list = CP.sig $ representative
   T.putStrLn "-- Coq signature --------"
   T.putStrLn $ makeCoqSigList $ signature_list
+
