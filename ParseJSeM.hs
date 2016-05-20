@@ -62,7 +62,7 @@ processData jsemdata = do
   Lazy.putStr $ Lazy.concat ["H: ", hypothesis jsemdata, "\n"]
   psems <- mapM parseText $ premise jsemdata
   hsem <- parseText $ hypothesis jsemdata
-  let sem = DTS.betaReduce $ currying psems hsem
+  let sem = DTS.betaReduce $ DTS.currying psems hsem
   Lazy.putStrLn $ CP.toText sem
   Lazy.putStrLn ""
 
@@ -73,10 +73,6 @@ parseText text = do
   if nodes == []
      then return $ DTS.Con "No parse"
      else return $ CP.sem $ head $ nodes
-
-currying :: [DTS.Preterm] -> DTS.Preterm -> DTS.Preterm
-currying [] preterm = DTS.App preterm (DTS.Lam DTS.Top)
-currying (p:ps) preterm = DTS.Pi (DTS.App p (DTS.Lam DTS.Top)) (currying ps preterm)
 
 callCoq :: Lazy.Text -> IO()
 callCoq _ = do

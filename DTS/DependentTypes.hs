@@ -28,7 +28,9 @@ module DTS.DependentTypes (
   -- * Computations
   betaReduce,
   add,
-  multiply
+  multiply,
+  -- * Utility
+  currying
   ) where
 
 import qualified Data.Text.Lazy as T
@@ -433,3 +435,6 @@ deleteLambda i preterm = case preterm of
   Asp j m    -> Asp j (deleteLambda i m)
   t -> t
 
+currying :: [Preterm] -> Preterm -> Preterm
+currying [] preterm = App preterm (Lam Top)
+currying (p:ps) preterm = Pi (App p (Lam Top)) (currying ps preterm)
