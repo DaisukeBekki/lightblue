@@ -3,13 +3,17 @@
 
 main :-
     current_prolog_flag(os_argv, AllArgs),
-    append(_, [-- |[Args]], AllArgs),
-    term_string(X,Args),
-    fol2file(X).
+    append(_, [-- |[Args1,Args2,Args3]], AllArgs),
+    term_string(X1,Args1),
+    term_string(X2,Args2),
+    term_string(X3,Args3),
+    fol2file(X1,X2,X3).
 
-fol2file(F):-
+fol2file(F1,F2,F3):-
     open('test.tex',write,Stream,[encoding(utf8)]),
-    write(Stream,'\\documentclass{article}'),
+    write(Stream,'\\documentclass{jsarticle}'),
+    nl(Stream),
+    write(Stream,'%\\usepackage{lscape}'),
     nl(Stream),
     write(Stream,'\\newcommand{\\dConj}[2]{\\left[\\kern-0.3em\\begin{array}{l}\\vspace{0.1mm}#1\\\\#2\\end{array}\\kern-0.3em\\right]}'),
     nl(Stream),
@@ -22,14 +26,47 @@ fol2file(F):-
     nl(Stream),
     write(Stream,'\\begin{document}'),
     nl(Stream),
-    numbervars(F,0,_),
+    write(Stream,'%\\begin{landscape}'),
+    nl(Stream),
+    write(Stream,'\\scriptsize'),
+    nl(Stream),
+    nl(Stream),
+    write(Stream,'\\noindent\\textsc{Input:}'),
+    nl(Stream),
+    nl(Stream),
+    write(Stream,'\\medskip'),
+    numbervars(F1,0,_),
     write(Stream,'$'),
-    fol2latex(F,Stream),
+    fol2latex(F1,Stream),
     write(Stream,'$'),
+    nl(Stream),
+    nl(Stream),
+    write(Stream,'\\bigskip'),
+    write(Stream,'\\noindent\\textsc{Presupposition resolved:}'),
+    nl(Stream),
+    nl(Stream),
+    write(Stream,'\\medskip'),
+    numbervars(F2,0,_),
+    write(Stream,'$'),
+    fol2latex(F2,Stream),
+    write(Stream,'$'),
+    nl(Stream),
+    nl(Stream),
+    write(Stream,'\\bigskip'),
+    write(Stream,'\\noindent\\textsc{Normalized:}'),
+    nl(Stream),
+    nl(Stream),
+    write(Stream,'\\medskip'),
+    numbervars(F3,0,_),
+    write(Stream,'$'),
+    fol2latex(F3,Stream),
+    write(Stream,'$'),
+    nl(Stream),
+    write(Stream,'%\\end{landscape}'),
     nl(Stream),
     write(Stream,'\\end{document}'),
     nl(Stream),
-    close(Stream).
+    close(Stream), !.
 
 % fol2file(F):-
 %     open('test.tex',append,Stream,[encoding(utf8)]),
@@ -159,6 +196,8 @@ fol2latex(entity,Stream):-
 fol2latex(event,Stream):-
     write(Stream,'\\mbox{\\textbf{event}}').
 
+fol2latex(state,Stream):-
+    write(Stream,'\\mbox{\\textbf{state}}').
 
 fol2latex([A,B],Stream):-
     write(Stream,'('),
@@ -221,5 +260,19 @@ fol2latex(F,Stream):-
     fol2latex(Arg2,Stream),
     write(Stream,','),
     fol2latex(Arg3,Stream),
+    write(Stream,')').
+
+fol2latex(F,Stream):-
+    F =.. [Symbol,Arg1,Arg2,Arg3,Arg4],
+    write(Stream,'\\mbox{\\textbf{'),
+    write_term(Stream,Symbol,[numbervars(true)]),
+    write(Stream,'}}('),
+    fol2latex(Arg1,Stream),
+    write(Stream,','),
+    fol2latex(Arg2,Stream),
+    write(Stream,','),
+    fol2latex(Arg3,Stream),
+    write(Stream,','),
+    fol2latex(Arg4,Stream),
     write(Stream,')').
 
