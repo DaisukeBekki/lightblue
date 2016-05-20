@@ -18,7 +18,7 @@ cname_f cname = T.replace "]" "_" $ T.replace "[" "_" $ T.replace "/" "_" $ head
 f :: D.Preterm -> T.Text
 f preterm = case preterm of
   D.Var v -> v
-  D.Con c -> cname_f $ c
+  D.Con c -> cname_f $ c 
   D.Type  -> "type"
   D.Kind  -> "kind"
   D.Pi vname a b    -> T.concat ["forall(", vname, ",", (f $ a), ",", (f $ b), ")"]
@@ -32,11 +32,11 @@ f preterm = case preterm of
   D.Eq _ m n        -> T.concat ["eq(", (f $ m), ",", (f $ n), ")"]
   D.Top -> "true"
   D.Bot -> "false"
-  D.App (D.App (D.App (D.App g x4) x3) x2) x1
+  D.App (D.App (D.App (D.App g x1) x2) x3) x4
                         -> T.concat [(f $ g), "(", (f $ x1), ",", (f $ x2), ",", (f $ x3), ",", (f $ x4), ")"]
-  D.App (D.App (D.App g x3) x2) x1
+  D.App (D.App (D.App g x1) x2) x3
                         -> T.concat [(f $ g), "(", (f $ x1), ",", (f $ x2), ",", (f $ x3), ")"]
-  D.App (D.App g x2) x1 -> T.concat [(f $ g), "(", (f $ x1), ",", (f $ x2), ")"]
+  D.App (D.App g x1) x2 -> T.concat [(f $ g), "(", (f $ x1), ",", (f $ x2), ")"]
   D.App g x1            -> T.concat [(f $ g), "(", (f $ x1), ")"]
   D.Lamvec _ m -> f $ m
   D.Appvec _ m -> f $ m
@@ -71,11 +71,11 @@ convcoq preterm = case preterm of
   D.Eq _ m n        -> T.concat ["eq ", (convcoq $ m), " ", (convcoq $ n)]
   D.Top -> "True"
   D.Bot -> "False"
-  D.App (D.App (D.App (D.App g x4) x3) x2) x1
+  D.App (D.App (D.App (D.App g x1) x2) x3) x4
                         -> T.concat ["_", (convcoq $ g), " ", (convcoq $ x1), " ", (convcoq $ x2), " ", (convcoq $ x3), " ", (convcoq $ x4)]
-  D.App (D.App (D.App g x3) x2) x1
+  D.App (D.App (D.App g x1) x2) x3
                         -> T.concat ["_", (convcoq $ g), " ", (convcoq $ x1), " ", (convcoq $ x2), " ", (convcoq $ x3)]
-  D.App (D.App g x2) x1 -> T.concat ["_", (convcoq $ g), " ", (convcoq $ x1), " ", (convcoq $ x2)]
+  D.App (D.App g x1) x2 -> T.concat ["_", (convcoq $ g), " ", (convcoq $ x1), " ", (convcoq $ x2)]
   D.App g x1            -> T.concat ["_", (convcoq $ g), " ", (convcoq $ x1)]
   D.Lamvec _ m -> convcoq $ m
   D.Appvec _ m -> convcoq $ m
@@ -91,7 +91,7 @@ convcoq preterm = case preterm of
 -- sigToCoq (text, preterm) = T.concat ["Parameter _", text, " : ", (convcoq $ DTS.fromDeBruijn $ preterm), ". \n"]
 
 makeCoqSigList :: [DTS.Signature] -> T.Text
-makeCoqSigList siglist = (T.concat (map (\ (text, preterm) -> T.concat ["Parameter _", (cname_f text), " : ", (convcoq $ DTS.fromDeBruijn $ preterm), ". \n"]) siglist))
+makeCoqSigList siglist = T.concat (map (\ (text, preterm) -> T.concat ["Parameter _", (cname_f text), " : ", (convcoq $ DTS.fromDeBruijn $ preterm), ". \n"]) siglist)
 
 
 main :: IO()
@@ -130,5 +130,7 @@ main = do
 -- List Signature in Coq format
   let signature_list = CP.sig $ representative
   T.putStrLn "-- Coq signature --------"
+  T.putStrLn "Require Export coqlib."
+--  T.putStrLn "Parameter Entity : Type.\nParameter Event : Type.\nParameter State : Type.\n"
   T.putStrLn $ makeCoqSigList $ signature_list
 
