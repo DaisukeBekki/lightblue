@@ -27,13 +27,22 @@ counter(M):-
 %%%%% Main predicates %%%%%
 
 resolvePresup(SR,GCxt,Form0):-
-    addType(Form0,Form1),
+    elimCont(Form0,FormE), %%% temporary repair
+    addType(FormE,Form1),
     rewriteVar(Form1,Form2),
     elimTrue(Form2,Form),
     findall(PS,checkType(PS,GCxt,Form),Store),
     elimAsp(Store,GCxt,Form,SR0),
     betaConvertPi(SR0,SR1),
     betaConvert(SR1,SR).
+
+%%% temporary repair %%%
+elimCont(lam(x0,A),B):-
+    subterm(x0(X),A),
+    substitute(true,x0(X),A,B), !.
+
+elimCont(A,A).
+%%%%%%%
 
 addToStore(_,[],[]).
 
