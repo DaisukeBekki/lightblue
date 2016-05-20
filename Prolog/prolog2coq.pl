@@ -70,7 +70,7 @@ prolog2coq(lam(X,Type,F),Stream):- !,
     write_term(Stream,X,[numbervars(true)]),
     write(Stream,' : '),
     prolog2coq(Type,Stream),
-    write(Stream,','),
+    write(Stream,' => '),
     prolog2coq(F,Stream),
     write(Stream,')').
 
@@ -182,6 +182,20 @@ prolog2coq(F,Stream):-
     prolog2coq(Arg2,Stream),
     write(Stream,' '),
     prolog2coq(Arg3,Stream),
+    write(Stream,')').
+
+prolog2coq(F,Stream):-
+    F =.. [Symbol,Arg1,Arg2,Arg3,Arg4],
+    write(Stream,'(_'),
+    write_term(Stream,Symbol,[numbervars(true)]),
+    write(Stream,' '),
+    prolog2coq(Arg1,Stream),
+    write(Stream,' '),
+    prolog2coq(Arg2,Stream),
+    write(Stream,' '),
+    prolog2coq(Arg3,Stream),
+    write(Stream,' '),
+    prolog2coq(Arg4,Stream),
     write(Stream,')').
 
 prolog2coq(F,Stream):-
