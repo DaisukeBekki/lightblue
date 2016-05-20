@@ -203,14 +203,14 @@ prolog2coq(F,Stream):-
     atom_length(F,L),
     L is 1,
     sub_atom(F,0,1,_,X),
-    member(X,[t,u,v,w,x,y,z]),
+    member(X,[e,s,t,u,v,w,x,y,z]),
     write_term(Stream,F,[numbervars(true)]).
 
 prolog2coq(F,Stream):-
     atom(F),
     sub_atom(F,0,1,_,X),
     sub_atom(F,1,1,_,Y),
-    member(X,[t,u,v,w,x,y,z]),
+    member(X,[e,s,t,u,v,w,x,y,z]),
     atom_number(Y,N),
     number(N),
     write_term(Stream,F,[numbervars(true)]).
