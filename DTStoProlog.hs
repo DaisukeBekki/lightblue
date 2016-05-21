@@ -8,6 +8,7 @@ import qualified DTS.DependentTypes as DTS
 import qualified DTS.DependentTypesWVN as D
 import qualified Parser.ChartParser as CP
 import qualified System.Process as S
+import qualified Interface.Text as T
 
 -- function: cname
 -- normalize the given constant text
@@ -105,7 +106,7 @@ main = do
       representative = head $ CP.bestOnly $ top'
   let formula = DTS.fromDeBruijn $ CP.sem $ representative
   T.putStrLn "-- Preterm ---------"
-  T.putStrLn $ CP.toText $ formula
+  T.putStrLn $ T.toText $ formula
   let proformula = f $ formula ;
   T.putStrLn "-- Prolog input ---------"
   T.putStrLn $ proformula
