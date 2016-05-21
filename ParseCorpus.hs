@@ -10,8 +10,8 @@ import qualified Data.Ratio as R
 import qualified Data.Fixed as F
 import qualified System.IO as S                      --base
 import qualified System.Environment as S             --base
-import qualified Parser.CombinatoryCategorialGrammar as CCG
 import qualified Parser.ChartParser as CP
+import qualified Interface.Text as T
 
 main :: IO()
 main = do
@@ -43,13 +43,13 @@ f score s =
       S.putStrLn $ percent (i+1,j+1) ++ "%)\n"
       let topbox = CP.topBox chart0;
           sonly = filter CP.isS topbox
-      T.putStrLn $ CCG.toText $ head $ CP.bestOnly $ if sonly == [] then topbox else sonly
+      T.putStrLn $ T.toText $ head $ CP.bestOnly $ if sonly == [] then topbox else sonly
       return (i+1,j+1)
     else
       do
       T.putStr $ T.concat ["Failed (", T.pack (show $ i), "/", T.pack (show $ j+1), " = "]
       S.putStrLn $ percent (i,j+1) ++ "%), showing parsed segments:\n"
-      mapM_ ((\l -> if l==[] then return () else T.putStrLn . CCG.toText $ head l) . L.sort) (reverse nodes0)
+      mapM_ ((\l -> if l==[] then return () else T.putStrLn . T.toText $ head l) . L.sort) (reverse nodes0)
       return (i,j+1)
 
 percent :: (Int,Int) -> String
