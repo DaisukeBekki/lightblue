@@ -7,6 +7,7 @@ import qualified System.IO as S           --base
 import qualified System.Environment as S  --base
 import qualified Parser.ChartParser as CP
 import qualified Parser.Japanese.Lexicon as LEX
+import qualified Interface.Text as T
 import qualified Interface.XML as XML
 
 main :: IO()
@@ -26,7 +27,7 @@ main = do
           | op == "-text" = CP.printChartInSimpleText S.stderr $ topbox
           | op == "-xml"  = XML.render S.stderr $ topbox
           | op == "-postag"  = CP.posTagger S.stdout $ topbox
-          | op == "-numeration" = do {numeration <- LEX.setupLexicon sentence; mapM_ (T.putStrLn . CP.toText) numeration}
+          | op == "-numeration" = do {numeration <- LEX.setupLexicon sentence; mapM_ (T.putStrLn . T.toText) numeration}
           | op == "-debug" = CP.printChart S.stdout chart
           | op == "-time" = S.hPutStrLn S.stderr $ "Total Execution Time: " ++ show time
           | otherwise = return ()

@@ -20,7 +20,6 @@ module Parser.ChartParser (
   posTagger,
   -- * Data structures for CCG derivations
   CCG.Node(..),
-  CCG.SimpleText(..),
   -- * Utilities to filter the parsing results
   topBox,
   bestOnly,
@@ -36,6 +35,7 @@ import qualified System.IO as S        --base
 import qualified Parser.CombinatoryCategorialGrammar as CCG --(Node, unaryRules, binaryRules, trinaryRules, isCONJ, cat, SimpleText)
 import qualified Parser.Japanese.Lexicon as L (LexicalItems, lookupLexicon, setupLexicon, emptyCategories)
 import qualified Parser.Japanese.Templates as LT
+import qualified Interface.Text as T
 import qualified Interface.TeX as TEX
 
 -- | The type for CYK-charts.
@@ -55,7 +55,7 @@ printChartInSimpleText :: S.Handle -> [CCG.Node] -> IO()
 printChartInSimpleText handle nodes = 
   do
   S.hPutStrLn handle (take 100 $ repeat '-')
-  mapM_ (\node -> do S.hPutStr handle $ T.unpack $ CCG.toText node
+  mapM_ (\node -> do S.hPutStr handle $ T.unpack $ T.toText node
                      S.hPutStrLn handle $ take 100 $ repeat '-'
         ) nodes
   S.hPutStrLn handle $ "Number of nodes: " ++ show (length nodes)
@@ -71,7 +71,7 @@ posTagger handle nodes =
 node2PosTags :: CCG.Node -> [T.Text]
 node2PosTags node@(CCG.Node _ _ _ _ _ _ _ _) =
   case CCG.daughters node of
-    [] -> [T.concat [CCG.pf node, "\t", CCG.toText (CCG.cat node), " \t", CCG.toText (CCG.sem node), "\t", CCG.source node, "\t[", T.pack (show ((fromRational $ CCG.score node)::Fixed E2)), "]"]]
+    [] -> [T.concat [CCG.pf node, "\t", T.toText (CCG.cat node), " \t", T.toText (CCG.sem node), "\t", CCG.source node, "\t[", T.pack (show ((fromRational $ CCG.score node)::Fixed E2)), "]"]]
     dtrs -> [t | dtr <- dtrs, t <- node2PosTags dtr]
 
 -- | picks up the nodes in the "top" box in the chart.

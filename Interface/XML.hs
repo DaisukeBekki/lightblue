@@ -13,7 +13,7 @@ module Interface.XML (
   ) where
 
 import qualified Parser.CombinatoryCategorialGrammar as CCG
-import qualified Interface.Text as D
+import qualified Interface.Text as T
 import qualified Data.Text.Lazy as T   --text
 import qualified Data.Map as M         --container
 import qualified Text.XML as X         --xml-conduit
@@ -34,8 +34,8 @@ toXML node@(CCG.Node _ _ _ _ _ _ _ _) =
                               (myname $ T.pack $ show $ CCG.rs node)
                               (M.fromList [
                                 ("pf", T.toStrict $ CCG.pf node),          
-                                ("cat", T.toStrict $ CCG.toText $ CCG.cat node),
-                                ("dts", T.toStrict $ D.toText $ CCG.sem node),
+                                ("cat", T.toStrict $ T.toText $ CCG.cat node),
+                                ("dts", T.toStrict $ T.toText $ CCG.sem node),
                                 ("score", T.toStrict $ T.pack $ show ((fromRational $ CCG.score node)::F.Fixed F.E2)),
                                 ("source", T.toStrict $ CCG.source node)
                                 ]) 
@@ -44,8 +44,8 @@ toXML node@(CCG.Node _ _ _ _ _ _ _ _) =
                                 (myname $ T.pack $ show $ CCG.rs node)
                                 (M.fromList [
                                 --("pf", T.toStrict $ CCG.pf (node)),          
-                                 ("cat", T.toStrict $ CCG.toText $ CCG.cat node),
-                                 ("dts", T.toStrict $ D.toText $ CCG.sem node),
+                                 ("cat", T.toStrict $ T.toText $ CCG.cat node),
+                                 ("dts", T.toStrict $ T.toText $ CCG.sem node),
                                  ("score", T.toStrict $ T.pack $ show ((fromRational $ CCG.score node)::F.Fixed F.E2))
                                  ]) 
                                 (map toXML dtrs)

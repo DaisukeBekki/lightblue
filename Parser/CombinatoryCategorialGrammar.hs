@@ -18,7 +18,7 @@ module Parser.CombinatoryCategorialGrammar (
   Feature(..),
   FeatureValue(..),
   -- * Classes
-  SimpleText(..),
+--  SimpleText(..),
   printF,
   printPMFs,
   -- * Tests
