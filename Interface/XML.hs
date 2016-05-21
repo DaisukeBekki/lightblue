@@ -12,7 +12,7 @@ module Interface.XML (
   render
   ) where
 
-import qualified Parser.CombinatoryCategorialGrammar as CCG
+import qualified Parser.CCG as CCG
 import qualified Interface.Text as T
 import qualified Data.Text.Lazy as T   --text
 import qualified Data.Map as M         --container

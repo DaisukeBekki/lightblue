@@ -60,7 +60,7 @@ module Parser.Japanese.Templates (
 import Prelude hiding (id)
 import qualified Data.Text.Lazy as T -- text
 import Data.Ratio
-import Parser.CombinatoryCategorialGrammar
+import Parser.CCG
 import DTS.DependentTypes
 
 {- Some Macros for defining lexical items -}

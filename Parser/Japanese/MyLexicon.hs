@@ -17,7 +17,7 @@ module Parser.Japanese.MyLexicon (
 import Prelude hiding (id)
 import qualified Data.Text.Lazy as T
 import Data.Ratio
-import Parser.CombinatoryCategorialGrammar
+import Parser.CCG
 import Parser.Japanese.Templates
 import DTS.DependentTypes
 

@@ -25,7 +25,7 @@ import qualified Data.Text.Lazy.IO as T --text
 import qualified Data.List as L         -- base
 import qualified Data.Map as M          -- base
 import qualified System.Environment as E -- base
-import Parser.CombinatoryCategorialGrammar
+import Parser.CCG
 import qualified Parser.Japanese.CallJuman as JU
 import qualified Parser.Japanese.MyLexicon as LEX
 import Parser.Japanese.Templates

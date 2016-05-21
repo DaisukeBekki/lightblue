@@ -19,7 +19,7 @@ import qualified Data.Maybe as Maybe
 import qualified System.IO as S        --base
 import DTS.DependentTypes
 --import qualified DTS.DependentTypesWVN as VN
-import Parser.CombinatoryCategorialGrammar as CCG
+import Parser.CCG as CCG
 
 -- | `Typeset` is a class of types whose terms can be translated into a TeX source (in Data.Text.Lazy). 
 class Typeset a where

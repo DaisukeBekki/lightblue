@@ -10,7 +10,7 @@ Stability   : beta
 
 Syntactic categories, syntactic features and combinatory rules of CCG.
 -}
-module Parser.CombinatoryCategorialGrammar (
+module Parser.CCG (
   -- * Types
   Node(..),
   RuleSymbol(..),

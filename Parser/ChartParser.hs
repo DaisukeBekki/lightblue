@@ -32,7 +32,7 @@ import Data.Fixed                      --base
 import qualified Data.Text.Lazy as T   --text
 import qualified Data.Map as M         --container
 import qualified System.IO as S        --base
-import qualified Parser.CombinatoryCategorialGrammar as CCG --(Node, unaryRules, binaryRules, trinaryRules, isCONJ, cat, SimpleText)
+import qualified Parser.CCG as CCG --(Node, unaryRules, binaryRules, trinaryRules, isCONJ, cat, SimpleText)
 import qualified Parser.Japanese.Lexicon as L (LexicalItems, lookupLexicon, setupLexicon, emptyCategories)
 import qualified Parser.Japanese.Templates as LT
 import qualified Interface.Text as T

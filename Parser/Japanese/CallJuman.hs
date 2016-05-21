@@ -17,7 +17,7 @@ import Prelude as P
 import qualified Data.Text.Lazy as T                 --text
 import qualified Data.Text.Lazy.IO as T              --text
 import qualified System.Process as S                 --process
-import Parser.CombinatoryCategorialGrammar
+import Parser.CCG
 import qualified Parser.Japanese.Templates as TPL
 
 {-
