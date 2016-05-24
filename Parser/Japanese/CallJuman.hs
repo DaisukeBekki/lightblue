@@ -12,7 +12,7 @@ Stability   : beta
 module Parser.Japanese.CallJuman (
   jumanCompoundNouns
   ) where
-  
+
 import Prelude as P
 import qualified Data.Text.Lazy as T                 --text
 import qualified Data.Text.Lazy.IO as T              --text
