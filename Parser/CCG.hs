@@ -32,7 +32,7 @@ module Parser.CCG (
   parenthesisRule,
   -- test
   unifyCategory,
-  unifyWithHead  
+  unifyWithHead
   ) where
 
 import Prelude hiding (id)
@@ -765,15 +765,15 @@ transvec c preterm = case c of
   S _ -> case preterm of
                Lam (Lamvec m) -> Lam (deleteLambda 0 m)
                Lamvec (Lam m) -> deleteLambda 0 (Lam m)
-               Lamvec m -> Lam (deleteLambda 0 (addLambda 0 m))
+               Lamvec m -> Lam (replaceLambda 0 m)
                m        -> m
   N -> case preterm of
               Lam (Lam (Lamvec m)) -> Lam (Lam (deleteLambda 0 m))
               Lam (Lamvec (Lam m)) -> Lam (deleteLambda 0 (Lam m))
               Lamvec (Lam (Lam m)) -> deleteLambda 0 (Lam (Lam m))
-              Lamvec (Lam m) -> Lam (deleteLambda 0 (addLambda 0 (Lam m)))
-              Lam (Lamvec m) -> Lam (Lam (deleteLambda 0 (addLambda 0 m)))
-              Lamvec m -> Lam (Lam (deleteLambda 0 (addLambda 0 (addLambda 0 m))))
+              Lamvec (Lam m) -> Lam (replaceLambda 0 (Lam m))
+              Lam (Lamvec m) -> Lam (Lam (replaceLambda 0 m))
+              Lamvec m -> Lam (Lam (replaceLambda 0 (addLambda 0 m)))
               m        -> m
   _ -> preterm
 

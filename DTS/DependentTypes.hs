@@ -25,6 +25,7 @@ module DTS.DependentTypes (
   subst,
   addLambda,
   deleteLambda,
+  replaceLambda,
   -- * Computations
   betaReduce,
   add,
@@ -399,7 +400,7 @@ addLambda :: Int -> Preterm -> Preterm
 addLambda i preterm = case preterm of
   Var j | j > i     -> Var (j+1)
         | j < i     -> Var j
-        | otherwise -> Con $ T.concat [" Error: var ", T.pack (show j)]
+        | otherwise -> Con $ T.concat [" Error in addLambda: var ", T.pack (show j)]
   Pi a b     -> Pi (addLambda i a) (addLambda (i+1) b)
   Not a      -> Not (addLambda (i+1) a)
   Lam m      -> Lam (addLambda (i+1) m)
@@ -420,7 +421,7 @@ deleteLambda :: Int -> Preterm -> Preterm
 deleteLambda i preterm = case preterm of
   Var j | j > i     -> Var (j-1)
         | j < i     -> Var j
-        | otherwise -> Con $ T.concat ["Error: var ", T.pack (show j)]
+        | otherwise -> Con $ T.concat ["Error in deleteLambda: var ", T.pack (show j)]
   Pi a b     -> Pi (deleteLambda i a) (deleteLambda (i+1) b)
   Not a      -> Not (deleteLambda (i+1) a)
   Lam m      -> Lam (deleteLambda (i+1) m)
@@ -433,6 +434,21 @@ deleteLambda i preterm = case preterm of
              | j < i     -> Appvec j (deleteLambda i m)
              | otherwise -> deleteLambda i m
   Asp j m    -> Asp j (deleteLambda i m)
+  t -> t
+
+replaceLambda :: Int -> Preterm -> Preterm
+replaceLambda i preterm = case preterm of
+  Pi a b     -> Pi (replaceLambda i a) (replaceLambda (i+1) b)
+  Not a      -> Not (replaceLambda (i+1) a)
+  Lam m      -> Lam (replaceLambda (i+1) m)
+  App m n    -> App (replaceLambda i m) (replaceLambda i n)
+  Sigma a b  -> Sigma (replaceLambda i a) (replaceLambda (i+1) b)
+  Pair m n   -> Pair (replaceLambda i m) (replaceLambda i n)
+  Proj s m   -> Proj s (replaceLambda i m)
+  Lamvec m   -> Lamvec (replaceLambda (i+1) m)
+  Appvec j m | i == j    -> App (replaceLambda i m) (Var j)
+             | otherwise -> Appvec j (replaceLambda i m)
+  Asp j m    -> Asp j (replaceLambda i m)
   t -> t
 
 currying :: [Preterm] -> Preterm -> Preterm
