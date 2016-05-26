@@ -3,4 +3,9 @@
 *~
 *.txt
 *.bak*.*
-/tex/*.*
+\#*
+tex/
+dist/
+script/
+testsuits/
+tools/

@@ -602,6 +602,8 @@ myLexicon = concat $ [
   mylex ["くさ"] "(478)" (defS [Ai] [Stem] `BS` S [F(verb++adjective),F[Term],F[P,M],F[M],F[P,M],F[M],F[M]])         (modalSR "クサイ[MCN]"),
   mylex ["くさ"] "(478)" (defS [Ai] [Stem] `BS` defS [Nda] [NStem])       (modalSR "クサイ[MCN]"),
   mylex ["べき"] "(488)" (defS [Nda] [Attr] `BS` defS verb [Term])       (modalSR "ベキ[MCN]"),
+  mylex ["かもしれな"] "new" (defS [Aauo] [Stem] `BS` S [F(verb++adjective),F[Term],F[P,M],F[P,M],F[P,M],F[M],F[M]]) (modalSR "カモシレナイ[MCN]"),
+  mylex ["かもしれな"] "new" (defS [Aauo] [Stem] `BS` S [F[Nda],F[NStem],F[P,M],F[M],F[M],F[M],F[M]]) (modalSR "カモシレナイ[MCN]"),
   -- 状詞性接尾語
   mylex ["よう"] "(493)" (defS [Nda,Nna,Nni] [NStem] `BS` defS anyPos [Attr]) (modalSR "ヨウダ[MCN]"),
   mylex ["そう"] "(497)" (defS [Nda] [NStem] `BS` defS anyPos [Term])         (modalSR "ソウダ伝聞[MCN]"),
@@ -745,9 +747,11 @@ myLexicon = concat $ [
   mylex ["ものの"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Attr], F[P,M], F[P,M], F[P,M], F[M], F[M]]) ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 1) (Var 0)))))),[]),
   -- 理由節
   mylex ["から"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Term,NStem], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
-        ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
+        (conjunctionSR "kara"),
+        --((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (Sigma (App (Var 2) (Var 1)) ()))))),[]),
   mylex ["ので"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
-        ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
+        (conjunctionSR "node"),
+        --((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
   -- 条件節
   mylex ["ば"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F anyPos,F[NegL,Hyp],F[P,M],F[P,M],F[P,M],F[M],F[M]])) 
         ((Lam (Lam (Lam (Pi (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
