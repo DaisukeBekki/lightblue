@@ -49,7 +49,7 @@ type JumanPair = (T.Text, T.Text, T.Text, T.Text) -- (表層,品詞,品詞細分
 -- | Call Juman as an external process and returns a list of juman pos-tags
 callJuman :: T.Text -> IO([JumanCompNoun])
 callJuman sentence = do
-  (_, stdout, _, _) <- S.runInteractiveCommand $ T.unpack $ T.concat ["echo ", sentence, " | juman ]
+  (_, stdout, _, _) <- S.runInteractiveCommand $ T.unpack $ T.concat ["echo ", sentence, " | juman"]
   t <- T.hGetContents stdout
   --terminateProcess processhandle
   --mapped <- see $ map ((\l -> ((l!!0),(l!!3),(l!!5),(l!!9))) . (T.split (==' '))) $ filter (\x -> not (T.isPrefixOf "@" x)) $ P.takeWhile (/= "EOS") $ T.lines t 
