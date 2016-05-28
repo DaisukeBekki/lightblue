@@ -30,8 +30,7 @@ $ sudo apt-get install haskell-mode
 ### Prerequisite: command-line tools
 The followint tools must be installed before executing *lightblue*.
 
-  1. juman (>= version 7.0)
-    [日本語形態素解析システム JUMAN](http://nlp.ist.i.kyoto-u.ac.jp/index.php?JUMAN)
+  1. [JUMAN (a User-Extensible Morphological Analyzer for Japanese)](http://nlp.ist.i.kyoto-u.ac.jp/EN/index.php?JUMAN) (>= version 7.0)
   1. tidy (only for prettyprinting XML outputs)
     * Debian: `sudo apt-get install tidy`
     * Mac: `sudo port install tidy`
