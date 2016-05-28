@@ -125,8 +125,8 @@ fromDeBruijn = fromDeBruijn2 [] 0
 fromDeBruijn2 :: [T.Text] -> Int -> Preterm -> DTSWVN.Preterm
 fromDeBruijn2 vnames i preterm = case preterm of
   Var j -> if j < length vnames
-                  then DTSWVN.Var (vnames!!j)
-                  else DTSWVN.Var $ T.concat ["error: var ",T.pack (show j), " in ", T.pack (show vnames)]
+              then DTSWVN.Var (vnames!!j)
+              else DTSWVN.Var $ T.concat ["error: var ",T.pack (show j), " in ", T.pack (show vnames)]
   Con cname -> DTSWVN.Con cname
   Type -> DTSWVN.Type
   Kind -> DTSWVN.Kind
@@ -177,8 +177,8 @@ fromDeBruijn2 vnames i preterm = case preterm of
   Lamvec m  -> let vname = T.concat ["x", T.pack (show i)] in
                    DTSWVN.Lamvec vname (fromDeBruijn2 (vname:vnames) (i+1) m)
   Appvec j m -> let vname = if j < (length vnames) 
-                                   then vnames!!j
-                                   else T.concat ["error: var+ ", T.pack (show j)] in
+                               then vnames!!j
+                               else T.concat ["error: var+ ", T.pack (show j)] in
                     DTSWVN.Appvec vname (fromDeBruijn2 (vname:vnames) i m)
   Unit       -> DTSWVN.Unit
   Top        -> DTSWVN.Top
@@ -292,8 +292,8 @@ toTextWithVNLoop vlist preterm i = case preterm of
 subst :: Preterm -> Preterm -> Int -> Preterm
 subst preterm l i = case preterm of
   Var j  -> if i == j
-            then l
-            else (Var j)
+               then l
+               else Var j
   Con c  -> Con c
   Type   -> Type
   Kind   -> Kind
@@ -319,12 +319,12 @@ subst preterm l i = case preterm of
   Idpeel m n -> Idpeel (subst m l i) (subst n l i)
 
 -- | shiftIndices m d i
---   add d to all the indices more than i within m (=d-place shift)
+-- add d to all the indices more than i within m (=d-place shift)
 shiftIndices :: Preterm -> Int -> Int -> Preterm
 shiftIndices preterm d i = case preterm of
   Var j      -> if j >= i 
-                then Var (j+d)
-                else Var j
+                   then Var (j+d)
+                   else Var j
   Pi a b     -> Pi (shiftIndices a d i) (shiftIndices b d (i+1))
   Not m      -> Not (shiftIndices m d (i+1))
   Lam m      -> Lam (shiftIndices m d (i+1))
@@ -334,8 +334,8 @@ shiftIndices preterm d i = case preterm of
   Proj s m   -> Proj s (shiftIndices m d i)
   Lamvec m   -> Lamvec (shiftIndices m d (i+1))
   Appvec j m -> if j >= i
-                then Appvec (j+d) (shiftIndices m d i)
-                else Appvec j (shiftIndices m d i)
+                   then Appvec (j+d) (shiftIndices m d i)
+                   else Appvec j (shiftIndices m d i)
   Asp j m    -> Asp j (shiftIndices m d i)
   Succ n     -> Succ (shiftIndices n d i)
   Natrec n e f -> Natrec (shiftIndices n d i) (shiftIndices e d i) (shiftIndices f d i)
