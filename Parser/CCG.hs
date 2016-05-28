@@ -125,7 +125,7 @@ data FeatureValue =
   Nda | Nna | Nno | Ntar | Nni | Nemp | Nto |
   Exp | -- Error |
   Stem | UStem | NStem |
-  Neg | Cont | Term | Attr | Hyp | Imper | Pre |
+  Neg | Cont | Term | Attr | Hyp | Imper | Pre | NTerm | 
   NegL | TeForm | NiForm |
   EuphT | EuphD |
   ModU | ModD | ModS | ModM |
@@ -182,6 +182,7 @@ instance Show FeatureValue where
   show Hyp = "hyp"
   show Imper = "imp"
   show Pre = "pre"
+  show NTerm = "nterm"
   show NegL = "neg+l"
   show TeForm = "te"
   show NiForm = "ni"
@@ -315,7 +316,7 @@ isBunsetsu c = case c of
   S (_:(f:_)) -> let katsuyo = case f of 
                                  F feat -> feat
                                  SF _ feat -> feat in
-                 if L.intersect katsuyo [Cont,Term,Attr,Hyp,Imper,Pre,NStem,TeForm,NiForm] == []
+                 if L.intersect katsuyo [Cont,Term,Attr,Hyp,Imper,Pre,NTerm,NStem,TeForm,NiForm] == []
                     then False
                     else True
   _ -> True
