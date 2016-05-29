@@ -31,7 +31,8 @@ module DTS.DependentTypes (
   add,
   multiply,
   -- * Utility
-  currying
+  currying,
+  renumber
   ) where
 
 import qualified Data.Text.Lazy as T
@@ -454,3 +455,34 @@ replaceLambda i preterm = case preterm of
 currying :: [Preterm] -> Preterm -> Preterm
 currying [] preterm = App preterm (Lam Top)
 currying (p:ps) preterm = Pi (App p (Lam Top)) (currying ps preterm)
+
+{- Renumbering of @ -}
+
+newtype Renumber a = Renum { runRenumber :: Int -> (a,Int) }
+
+instance Monad Renumber where
+  return x = Renum (\i -> (x,i))
+  (Renum m) >>= f = Renum (\i -> let (a,j) = m i;
+                                     (Renum n) = f a in
+                                 n j)
+
+newindex :: Renumber Int
+newindex = Renum (\i -> (i,i+1))
+
+-- | re-assigns sequential indices to all @s that appear in a given preterm.
+renumber :: Preterm -> Preterm
+renumber preterm = fst $ (runRenumber $ renumber2 preterm) 1
+
+renumber2 :: Preterm -> Renumber Preterm
+renumber2 preterm = case preterm of
+  Pi a b -> do {a' <- renumber2 a; b' <- renumber2 b; return $ Pi a' b'}
+  Not a -> do {a' <- renumber2 a; return $ Not a'}
+  Lam m -> do {m' <- renumber2 m; return $ Lam m'}
+  App m n -> do {m' <- renumber2 m; n' <- renumber2 n; return $ App m' n'}
+  Sigma a b -> do {a' <- renumber2 a; b' <- renumber2 b; return $ Sigma a' b'}
+  Pair m n -> do {m' <- renumber2 m; n' <- renumber2 n; return $ Pair m' n'}
+  Proj s m -> do {m' <- renumber2 m; return $ Proj s m'}
+  Lamvec m -> do {m' <- renumber2 m; return $ Lamvec m'}
+  Appvec j m -> do {m' <- renumber2 m; return $ Appvec j m'}
+  Asp _ m -> do {j <- newindex; m' <- renumber2 m; return $ Asp j m'}
+  m -> return m

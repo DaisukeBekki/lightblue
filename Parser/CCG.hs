@@ -69,7 +69,7 @@ instance SimpleText Node where
     where toTextLoop indent node =
             case daughters node of 
               [] -> T.concat [(T.pack indent), toText (rs node), " ", pf node, " ", toText (cat node), " ", toText (sem node), " ", source node, " [", T.pack (show ((fromRational $ score node)::Fixed E2)), "]\n"]
-              dtrs -> T.concat $ [(T.pack indent), toText (rs node), " ", toText (cat node), " ", toText (sem node), " [", T.pack (show ((fromRational $ score node)::Fixed E2)), "]\n"] ++ (map (\d -> toTextLoop (indent++"  ") d) dtrs)
+              dtrs -> T.concat $ [(T.pack indent), toText (rs node), " ", toText (cat node), " ", toText (renumber $ sem node), " [", T.pack (show ((fromRational $ score node)::Fixed E2)), "]\n"] ++ (map (\d -> toTextLoop (indent++"  ") d) dtrs)
 
 -- | Syntactic categories of CCG.
 data Cat =
