@@ -11,15 +11,17 @@ Stability   : beta
 module Interface.TeX (
   Typeset(..),
   printNNodesInTeX,
-  printNodesInTeX
+  printNodesInTeX,
+  printChartInTeX
   ) where
 
 import qualified Data.Text.Lazy as T
 import qualified Data.Maybe as Maybe
+import qualified Data.Map as M         --container
 import qualified System.IO as S        --base
 import DTS.DependentTypes
---import qualified DTS.DependentTypesWVN as VN
 import Parser.CCG as CCG
+import Parser.ChartParser as CP
 
 -- | `Typeset` is a class of types whose terms can be translated into a TeX source (in Data.Text.Lazy). 
 class Typeset a where
@@ -109,6 +111,8 @@ toTeXWithVN vlist i preterm = case preterm of
     Eq a m n  -> T.concat [(toTeXWithVN vlist i m),"=_{",(toTeXWithVN vlist i a),"}",(toTeXWithVN vlist i n)]
     Refl a m  -> T.concat ["\\type{refl}_{",(toTeXWithVN vlist i a),"}\\left(",(toTeXWithVN vlist i m),"\\right)"]
     Idpeel m n -> T.concat ["\\type{idpeel}\\left(", (toTeXWithVN vlist i m), ",", (toTeXWithVN vlist i n), "\\right)"]
+    DRel j t m n -> T.concat ["\\pred{DRel}_{", T.pack (show j), "}[", t, "]\\left(", toTeXWithVN vlist i m, ",", toTeXWithVN vlist i n, "\\right)"]
+
 
 toTeXWithVNEmbedded :: [T.Text] -> Int -> Preterm -> T.Text  
 toTeXWithVNEmbedded vlist i preterm = case preterm of
@@ -327,11 +331,19 @@ instance Typeset RuleSymbol where
     PAREN -> "PAREN"
     -- CNP -> "CNP"
 
--- | prints n-nodes from given list of CCG nodes (=a parsing result) as a TeX source code.
+-- | prints n-nodes (n is a natural number) from given list of CCG nodes (=a parsing result) as a TeX source code.
 printNNodesInTeX :: S.Handle -> Int -> [CCG.Node] -> IO()
 printNNodesInTeX handle n nodes = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-2em\\scalebox{.2}{" ++ T.unpack (toTeX node) ++ "\\\\}\\par\\medskip") $ take n nodes
 
 -- | prints CCG nodes (=a parsing result) as a TeX source code.
 printNodesInTeX :: S.Handle -> [CCG.Node] -> IO()
 printNodesInTeX handle = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-2em\\scalebox{.2}{" ++ T.unpack (toTeX node) ++ "\\\\}\\par\\medskip")
+
+-- | prints every box in the (parsed) CYK chart as a TeX source code.
+printChartInTeX :: S.Handle -> CP.Chart -> IO()
+printChartInTeX handle chart = mapM_ printList $ M.toList $ M.filter (/= []) chart
+  where printList (key,nodes) = do -- list化したChartを画面表示する。
+          S.hPutStr handle $ "\\subsubsection*{" ++ show key ++ ": ノード数 " ++ (show $ length nodes) ++ "}"
+          printNodesInTeX handle nodes
+
 

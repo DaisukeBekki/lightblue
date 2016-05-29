@@ -280,4 +280,4 @@ orSR :: (Preterm, [Signature])
 orSR = ((Lam (Lam (Pi (Not (Var 1)) (Var 1)))), [])
 
 conjunctionSR :: T.Text -> (Preterm, [Signature])
-conjunctionSR c = ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (Sigma (App (Var 2) (Var 1)) (App (App (Con $ T.concat [c,"[DRel]"]) (Var 0)) (Var 1))))))), [])
+conjunctionSR c = ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (Sigma (App (Var 2) (Var 1)) (DRel 0 c (Var 0) (Var 1))))))), [])

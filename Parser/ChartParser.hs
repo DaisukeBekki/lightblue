@@ -11,11 +11,13 @@ Stability   : beta
 -}
 
 module Parser.ChartParser (
+  -- * Types
+  Chart,
   -- * Main parsing function
   parse,
   -- * Printing (in Text) functions
-  printChart,
-  TEX.printNodesInTeX,
+  --printChart,
+  --TEX.printNodesInTeX,
   printChartInSimpleText,
   posTagger,
   -- * Data structures for CCG derivations
@@ -36,19 +38,11 @@ import qualified Parser.CCG as CCG --(Node, unaryRules, binaryRules, trinaryRule
 import qualified Parser.Japanese.Lexicon as L (LexicalItems, lookupLexicon, setupLexicon, emptyCategories)
 import qualified Parser.Japanese.Templates as LT
 import qualified Interface.Text as T
-import qualified Interface.TeX as TEX
 
 -- | The type for CYK-charts.
 type Chart = M.Map (Int,Int) [CCG.Node]
 
 {- Come functions for pretty printing Chart/Nodes -}
-
--- | prints every box in the (parsed) CYK chart as a TeX source code.
-printChart :: S.Handle -> Chart -> IO()
-printChart handle chart = mapM_ printList $ M.toList $ M.filter (/= []) chart
-  where printList (key,nodes) = do -- list化したChartを画面表示する。
-          S.hPutStr handle $ "\\subsubsection*{" ++ show key ++ ": ノード数 " ++ (show $ length nodes) ++ "}"
-          TEX.printNodesInTeX handle nodes
 
 -- | prints CCG nodes (=a parsing result) as a plain text.
 printChartInSimpleText :: S.Handle -> [CCG.Node] -> IO()

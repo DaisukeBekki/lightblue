@@ -65,7 +65,8 @@ data Preterm =
   Natrec Preterm Preterm Preterm | -- ^ natrec
   Eq Preterm Preterm Preterm |     -- ^ Intensional equality type
   Refl Preterm Preterm |           -- ^ refl
-  Idpeel Preterm Preterm           -- ^ idpeel
+  Idpeel Preterm Preterm |         -- ^ idpeel
+  DRel Int T.Text Preterm Preterm  -- ^ Discourse relation
     deriving (Eq, Show)
 
 -- | translates a term into a simple text notation.
@@ -119,6 +120,7 @@ toTextDeBruijn preterm = case preterm of
     Eq a m n -> T.concat [toText m, "=[", toText a, "]", toText n]
     Refl a m -> T.concat ["refl", toText a, "(", toText m, ")"]
     Idpeel m n -> T.concat ["idpeel(", toText m, ",", toText n, ")"]
+    DRel i t m n -> T.concat ["DRel", T.pack (show i), "[", t, "](", toText m, ",", toText n, ")"]
 
 fromDeBruijn :: Preterm -> DTSWVN.Preterm
 fromDeBruijn = fromDeBruijn2 [] 0
@@ -192,6 +194,7 @@ fromDeBruijn2 vnames i preterm = case preterm of
   Eq a m n -> DTSWVN.Eq (fromDeBruijn2 vnames i a) (fromDeBruijn2 vnames i m) (fromDeBruijn2 vnames i n)
   Refl a m -> DTSWVN.Refl (fromDeBruijn2 vnames i a) (fromDeBruijn2 vnames i m)
   Idpeel m n -> DTSWVN.Idpeel (fromDeBruijn2 vnames i m) (fromDeBruijn2 vnames i n)
+  DRel j t m n -> DTSWVN.App (DTSWVN.App (DTSWVN.Con (T.concat ["DRel",T.pack $ show j,"[",t,"]"])) (fromDeBruijn2 vnames i m)) (fromDeBruijn2 vnames i n)
 
 toDeBruijn :: DTSWVN.Preterm -> Preterm
 toDeBruijn = toDeBruijn2 []
@@ -318,6 +321,7 @@ subst preterm l i = case preterm of
   Eq a m n -> Eq (subst a l i) (subst m l i) (subst n l i)
   Refl a m -> Refl (subst a l i) (subst m l i)
   Idpeel m n -> Idpeel (subst m l i) (subst n l i)
+  DRel j t m n -> DRel j t (subst m l i) (subst n l i)
 
 -- | shiftIndices m d i
 -- add d to all the indices more than i within m (=d-place shift)
@@ -343,6 +347,7 @@ shiftIndices preterm d i = case preterm of
   Eq a m n   -> Eq (shiftIndices a d i) (shiftIndices m d i) (shiftIndices n d i)
   Refl a m   -> Refl (shiftIndices a d i) (shiftIndices m d i)
   Idpeel m n -> Idpeel (shiftIndices m d i) (shiftIndices n d i)
+  DRel j t m n -> DRel j t (shiftIndices m d i) (shiftIndices n d i)
   t -> t
 
 -- | Beta reduction
@@ -383,6 +388,7 @@ betaReduce preterm = case preterm of
   Idpeel m n -> case betaReduce m of
                   Refl _ m' -> betaReduce $ (App n m')
                   m' -> Idpeel m' (betaReduce n)
+  DRel i t m n -> DRel i t (betaReduce m) (betaReduce n)
 
 -- | adds two preterms (of type `Nat`).
 add :: Preterm -> Preterm -> Preterm
@@ -414,6 +420,7 @@ addLambda i preterm = case preterm of
              | j < i     -> Appvec j (addLambda i m)
              | otherwise -> Appvec j (App (addLambda i m) (Var (j+1)))
   Asp j m    -> Asp j (addLambda i m)
+  DRel j t m n -> DRel j t (addLambda i m) (addLambda i n)
   t -> t
 
 -- | deleteLambda i preterm: the second subroutine for 'transvec' function.
@@ -435,6 +442,7 @@ deleteLambda i preterm = case preterm of
              | j < i     -> Appvec j (deleteLambda i m)
              | otherwise -> deleteLambda i m
   Asp j m    -> Asp j (deleteLambda i m)
+  DRel j t m n -> DRel j t (deleteLambda i m) (deleteLambda i n)
   t -> t
 
 replaceLambda :: Int -> Preterm -> Preterm
@@ -450,6 +458,7 @@ replaceLambda i preterm = case preterm of
   Appvec j m | i == j    -> App (replaceLambda i m) (Var j)
              | otherwise -> Appvec j (replaceLambda i m)
   Asp j m    -> Asp j (replaceLambda i m)
+  DRel j t m n -> DRel j t (replaceLambda i m) (replaceLambda i n)
   t -> t
 
 currying :: [Preterm] -> Preterm -> Preterm
@@ -458,20 +467,23 @@ currying (p:ps) preterm = Pi (App p (Lam Top)) (currying ps preterm)
 
 {- Renumbering of @ -}
 
-newtype Renumber a = Renum { runRenumber :: Int -> (a,Int) }
+newtype Renumber a = Renum { runRenumber :: Int -> Int -> (a,Int,Int) }
 
 instance Monad Renumber where
-  return x = Renum (\i -> (x,i))
-  (Renum m) >>= f = Renum (\i -> let (a,j) = m i;
-                                     (Renum n) = f a in
-                                 n j)
+  return x = Renum (\i j -> (x,i,j))
+  (Renum m) >>= f = Renum (\i j -> let (a,i',j') = m i j;
+                                       (Renum n) = f a in
+                                   n i' j')
 
-newindex :: Renumber Int
-newindex = Renum (\i -> (i,i+1))
+aspIndex :: Renumber Int
+aspIndex = Renum (\i j -> (i,i+1,j))
+
+dRelIndex :: Renumber Int
+dRelIndex = Renum (\i j -> (j,i,j+1))
 
 -- | re-assigns sequential indices to all @s that appear in a given preterm.
 renumber :: Preterm -> Preterm
-renumber preterm = fst $ (runRenumber $ renumber2 preterm) 1
+renumber preterm = let (preterm',_,_) = (runRenumber $ renumber2 preterm) 1 1 in preterm'
 
 renumber2 :: Preterm -> Renumber Preterm
 renumber2 preterm = case preterm of
@@ -484,5 +496,6 @@ renumber2 preterm = case preterm of
   Proj s m -> do {m' <- renumber2 m; return $ Proj s m'}
   Lamvec m -> do {m' <- renumber2 m; return $ Lamvec m'}
   Appvec j m -> do {m' <- renumber2 m; return $ Appvec j m'}
-  Asp _ m -> do {j <- newindex; m' <- renumber2 m; return $ Asp j m'}
+  Asp _ m -> do {j <- aspIndex; m' <- renumber2 m; return $ Asp j m'}
+  DRel _ t m n -> do {j <- dRelIndex; m' <- renumber2 m; n' <- renumber2 n; return $ DRel j t m' n'}
   m -> return m
