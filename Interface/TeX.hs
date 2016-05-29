@@ -36,7 +36,7 @@ instance Typeset Selector where
 -- | Each `Preterm` is translated by the `toTeX` method into a representation \"with variable names\" in a TeX source code.
 instance Typeset Preterm where
 --  toTeX preterm = toTeXWithVN [] 0 $ VN.fromDeBruijn preterm
-  toTeX = toTeXWithVN [] 0
+  toTeX preterm = toTeXWithVN [] 0 $ renumber preterm
 
 toTeXWithVN :: [T.Text] -> Int -> Preterm -> T.Text
 toTeXWithVN vlist i preterm = case preterm of

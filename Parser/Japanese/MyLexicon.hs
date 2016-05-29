@@ -397,9 +397,9 @@ myLexicon = concat $ [
   -- 形容詞派生形
   mylex ["さ","み"] "new" (N `BS` (defS adjective [Stem] `BS` NP [F[Ga]])) (id,[]),
   -- 状詞語幹
-  conjNSuffix "だ" "(218)" [Nda] [Term],
+  conjNSuffix "だ" "(218)" [Nda] [NTerm],
   conjNSuffix "だっ" "(218)" [Nda] [EuphT],
-  mylex ["です"] "(219)" (S ([F[Nda], F[Term]]++mpmmm) `BS` defS [Nda] [NStem]) (id,[]),
+  mylex ["です"] "(219)" (S ([F[Nda], F[NTerm]]++mpmmm) `BS` defS [Nda] [NStem]) (id,[]),
   mylex ["でし"] "(219)" (S ([F[Nda], F[EuphT]]++mpmmm) `BS` defS [Nda] [NStem]) (id,[]),
   conjNSuffix "な" "(220)" [Nna] [Attr],
   conjNSuffix "の" "(220)" [Nno] [Attr],
@@ -450,11 +450,8 @@ myLexicon = concat $ [
    -- 助動詞（推量）
   mylex ["う"] "(349)" (S [SF 1 anyPos, F[Pre], SF 2 [P,M],SF 3 [P,M],SF 4 [P,M],F[M],F[M]] `BS` S [SF 1 anyPos, F[ModU], SF 2 [P,M],SF 3 [P,M],SF 4 [P,M],F[M],F[M]]) (modalSR "ウ[MCN]"),
   mylex ["ん"] "(353)" (T False 1 (S ([SF 1 anyPos, F[Pre]]++m5)) `BS` T False 1 (S ([SF 1 anyPos, F[NegL]]++m5))) (modalSR "ン[MCN]"),
-  mylex ["だろう","であろう","だろ"] "(357)" (S [SF 1 (verb++adjective), F[Pre], SF 2 [P,M],F[M],F[M],F[M],F[M]] `BS` S [SF 1 (verb++adjective), F[Term], SF 2 [P,M],F[M],F[P,M],F[M],F[M]]) (modalSR "ダロウ[MCN]"), -- ここから作業再開 (3/8)
-  mylex ["だろう","であろう","だろ"] "(357)" (S [F[Nda], F[Pre], SF 1 [P,M],F[M],F[M],F[M],F[M]] `BS` S [F[Nda], F[NStem], SF 1 [P,M],F[M],F[M],F[M],F[M]]) (modalSR "ダロウ[MCN]"),
-  mylex ["でしょう","でしょ"] "(357)" (S [SF 1 (verb++adjective), F[Pre], SF 2 [P,M],F[P],F[M],F[M],F[M]] `BS` S [SF 1 (verb++adjective), F[Term], SF 2 [P,M],F[P,M],F[P,M],F[M],F[M]]) (modalSR "ダロウ[MCN]"),
-  mylex ["でしょう","でしょ"] "(357)" (S [F[Nda], F[Pre], F[M],F[P],F[M],F[M],F[M]] `BS` S [F[Nda], F[NStem], F[M],F[P,M],F[P,M],F[M],F[M]]) (modalSR "ダロウ[MCN]"),
-  mylex ["でしょう","でしょ"] "(357)+" (S [F[Nda], F[Pre], F[P],F[P],F[M],F[M],F[M]] `BS` S [F[Nda], F[Term], F[P],F[P,M],F[P,M],F[M],F[M]]) (modalSR "ダロウ[MCN]"),
+  mylex ["だろう","であろう","だろ"] "(357)" (S [SF 1 anyPos, F[Pre], SF 2 [P,M],F[M],F[M],F[M],F[M]] `BS` S [SF 1 anyPos, F[Term,NStem], SF 2 [P,M],F[M],F[P,M],F[M],F[M]]) (modalSR "ダロウ[MCN]"), -- ここから作業再開 (3/8)
+  mylex ["でしょう","でしょ"] "(357)" (S [SF 1 anyPos, F[Pre], SF 2 [P,M],F[P],F[M],F[M],F[M]] `BS` S [SF 1 anyPos, F[Term,NStem], SF 2 [P,M],F[P,M],F[P,M],F[M],F[M]]) (modalSR "ダロウ[MCN]"),
   mylex ["まい"] "(359a)" (S [SF 1 verb, F[Pre], F[M],SF 2 [P,M],F[P],F[M],F[M]] `BS` S [SF 1 verb, F[Term], F[M],SF 2 [P,M],F[M],F[M],F[M]])
                          ((Lam (Lam (App (Con "ダロウ[MCN]") (Not (App (Var 1) (Var 0)))))),[]),
   mylex ["まい"] "(359b)" (S [SF 1 [V1,VK,VS,VSN,VZ], F[Pre], F[M],SF 2 [P,M],F[P],F[M],F[M]] `BS` S [SF 1 [V1,VK,VS,VSN,VZ], F[Neg], F[M],SF 2 [P,M],F[M],F[M],F[M]])
@@ -595,15 +592,12 @@ myLexicon = concat $ [
   mylex ["易","やす"] "(476a)" ((defS [Aauo] [Stem] `BS` NP [F[Ga]]) `BS` (defS verb [Cont] `BS` NP [F[Ga]])) (intensionalState 1 "ヤスイ"),
   mylex ["易","やす"] "(476b)" (((defS [Aauo] [Stem] `BS` NP [F[Ni,Ga]]) `BS` NP [F[Ga]]) `BS` ((defS verb [Cont] `BS` NP [F[Ga]])) `BS` NP [F[O]]) (intensionalState 2 "易"),
   -- 6.2.3-6.2.6
-  mylex ["らし"] "(478)" (defS [Ai] [Stem] `BS` S [F (verb++adjective),F[Term],F[P,M],F[M],F[P,M],F[M],F[M]])      (modalSR "ラシイ[MCN]"),
-  mylex ["らし"] "(478)" (defS [Ai] [Stem] `BS` S [F[Nda],F[Term],F[P],F[M],F[M],F[M],F[M]])     (modalSR "ラシイ[MCN]"),
+  mylex ["らし"] "(478)" (defS [Ai] [Stem] `BS` S [F anyPos,F[Term,NStem],F[P,M],F[M],F[P,M],F[M],F[M]])      (modalSR "ラシイ[MCN]"),
   mylex ["らし"] "(478)" (defS [Ai] [Stem] `BS` defS [Nda] [NStem])     (modalSR "ラシイ[MCN]"),
   mylex ["っぽ"] "(480)" (defS [Aauo] [Stem] `BS` defS [Aauo,Nda] [Stem,NStem]) (modalSR "ポイ[MCN]"),
-  mylex ["くさ"] "(478)" (defS [Ai] [Stem] `BS` S [F(verb++adjective),F[Term],F[P,M],F[M],F[P,M],F[M],F[M]])         (modalSR "クサイ[MCN]"),
-  mylex ["くさ"] "(478)" (defS [Ai] [Stem] `BS` defS [Nda] [NStem])       (modalSR "クサイ[MCN]"),
+  mylex ["くさ"] "(478)" (defS [Ai] [Stem] `BS` S [F anyPos,F[Term,NStem],F[P,M],F[M],F[P,M],F[M],F[M]])         (modalSR "クサイ[MCN]"),
   mylex ["べき"] "(488)" (defS [Nda] [Attr] `BS` defS verb [Term])       (modalSR "ベキ[MCN]"),
-  mylex ["かもしれな"] "new" (defS [Aauo] [Stem] `BS` S [F(verb++adjective),F[Term],F[P,M],F[P,M],F[P,M],F[M],F[M]]) (modalSR "カモシレナイ[MCN]"),
-  mylex ["かもしれな"] "new" (defS [Aauo] [Stem] `BS` S [F[Nda],F[NStem],F[P,M],F[M],F[M],F[M],F[M]]) (modalSR "カモシレナイ[MCN]"),
+  mylex ["かもしれな"] "new" (defS [Aauo] [Stem] `BS` S [F anyPos,F[Term,NStem],F[P,M],F[P,M],F[P,M],F[M],F[M]]) (modalSR "カモシレナイ[MCN]"),
   -- 状詞性接尾語
   mylex ["よう"] "(493)" (defS [Nda,Nna,Nni] [NStem] `BS` defS anyPos [Attr]) (modalSR "ヨウダ[MCN]"),
   mylex ["そう"] "(497)" (defS [Nda] [NStem] `BS` defS anyPos [Term])         (modalSR "ソウダ伝聞[MCN]"),
@@ -647,9 +641,7 @@ myLexicon = concat $ [
   mylex ["このよう","あのよう","そのよう","どのよう"] "new" (defS [Nna,Nni] [NStem] `BS` NP [F[Ga]]) (id,[]),
   mylex ["こういう","ああいう","そういう","どういう"] "new" (N `SL` N) (id,[]),
   -- カ節
-  mylex ["か","かどうか"] "(603)" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]) `BS` defS (verb++adjective) [Term]) 
-        ((Lam (Lam (App (Var 0) (App (Con "ドウカ") (Var 1))))),[]), 
-  mylex ["か","かどうか"] "(603)" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]) `BS` defS [Nda] [NStem]) 
+  mylex ["か","かどうか"] "(603)" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]) `BS` defS anyPos [Term,NStem]) 
         ((Lam (Lam (App (Var 0) (App (Con "ドウカ") (Var 1))))),[]), 
   -- 受動態・使役態
   mylex ["れ"] "(607)" (((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) `BS` (defS anyPos [VoR] `BS` NP [F[Ga]])) 
@@ -733,19 +725,17 @@ myLexicon = concat $ [
   mylex ["何故","なぜ"] "new" (defS [Nda,Nemp] [NStem] `BS` NP [F[Ga]]) (predSR 1 "何故/なぜ"),
   -- 従属節導入表現
   mylex ["に"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (defS [Nni] [NStem])) (conjunctionSR "ni"),
-  mylex ["と","とは","とも"] "new" (Sbar [F[ToCL]] `BS` S [F anyPos, F[Term,Imper,Pre,NStem],F[P,M],F[P,M],F[P,M],F[M],F[M]]) (conjunctionSR "to"), -- ダロウ接続形なので後で正確に書きなおす
+  mylex ["と","とは","とも"] "new" (Sbar [F[ToCL]] `BS` S [F anyPos, F[Term,Imper,Pre,NStem,NTerm],F[P,M],F[P,M],F[P,M],F[M],F[M]]) (conjunctionSR "to"), -- ダロウ接続形なので後で正確に書きなおす -- この辺の接続条件要検証
   mylex ["ように","ようには","ようにも"] "new" (Sbar [F[YooniCL]] `BS` S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]]) (id,[]),
-  mylex ["という"] "toiu1" (S [F[V1], F[Attr], F[M],F[M],F[M],F[M],F[M]] `BS` S [F anyPos, F[Term,Pre,Imper], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
-  ((Lam (Lam (Lam (Lam (Sigma (App (Var 3) (Lam Top)) (App (App (Var 3) (Var 2)) (Lam (Sigma (App (App (Con "content") (Var 1)) (Var 3)) (App (Var 3) (Var 1)))))))))), [("content",nPlaceEventType 1)]),
-  mylex ["という"] "toiu2" (S [F[V1], F[Attr], F[M],F[M],F[M],F[M],F[M]] `BS` S [F[Nda], F[NStem], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
+  mylex ["という"] "toiu1" ((N `SL` N) `BS` S [F anyPos, F[Term,Pre,NStem,NTerm,Imper], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
   ((Lam (Lam (Lam (Lam (Sigma (App (Var 3) (Lam Top)) (App (App (Var 3) (Var 2)) (Lam (Sigma (App (App (Con "content") (Var 1)) (Var 3)) (App (Var 3) (Var 1)))))))))), [("content",nPlaceEventType 1)]),
   mylex ["という"] "toiu3" ((N `SL` N) `BS` N) (Lam (Lam (Lam (Lam (Sigma (App (App (Var 3) (Var 1)) (Lam Top)) (App (App (Var 2) (Var 1)) (Var 0)))))),[]),
-  mylex ["とともに"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Term], F[P,M], F[P,M], F[P,M], F[M], F[M]]) ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 1) (Var 0)))))),[]),
+  mylex ["とともに"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Term,NTerm], F[P,M], F[P,M], F[P,M], F[M], F[M]]) ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 1) (Var 0)))))),[]),
   mylex ["のを"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Attr], F[P,M], F[P,M], F[P,M], F[P,M], F[M]]) ((Lam (Lam (Lam (App (Var 2) (Lam (Sigma (App (Var 1) (Var 0)) (App (App (Con "トコロ") (Var 0)) (Var 1)))))))),[]),
   mylex ["だけで"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Attr], F[P,M], F[P,M], F[P,M], F[M], F[M]]) ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 1) (Var 0)))))),[]),
   mylex ["ものの"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Attr], F[P,M], F[P,M], F[P,M], F[M], F[M]]) ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 1) (Var 0)))))),[]),
   -- 理由節
-  mylex ["から"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Term,NStem], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
+  mylex ["から"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Term,NTerm], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
         (conjunctionSR "kara"),
         --((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (Sigma (App (Var 2) (Var 1)) ()))))),[]),
   mylex ["ので"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
@@ -762,7 +752,7 @@ myLexicon = concat $ [
         ((Lam (Lam (Lam (Pi (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
   mylex ["だら","だらば"] "(781)" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F anyPos,F[EuphD],F[M],F[P,M],F[P,M],F[M],F[M]])) 
         ((Lam (Lam (Lam (Pi (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
-  mylex ["と"] "(785)" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F anyPos,F[Term],F[P,M],F[P,M],F[P,M],F[M],F[M]])) 
+  mylex ["と"] "(785)" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F anyPos,F[Term,NTerm],F[P,M],F[P,M],F[P,M],F[M],F[M]])) 
         ((Lam (Lam (Lam (Pi (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
   mylex ["にせよ"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F anyPos,F[Term,NStem],F[P,M],F[M],F[P,M],F[M],F[M]])) 
         ((Lam (Lam (Lam (Pi (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
@@ -772,7 +762,7 @@ myLexicon = concat $ [
   --- とする
   mylex ["と"] "new" ((defS [VS] [Stem]) `BS` (S [F anyPos, F[Pre], F[P,M],F[P,M],F[P,M],F[M],F[M]])) (modalSR "トスル[MCN]"),
   -- 終助詞
-  mylex ["か"] "new" (S [SF 1 anyPos, F[Term], F[P,M],F[P,M],F[P,M],F[M],F[M]] `BS` S [SF 1 anyPos, F[Term], F[P,M],F[P,M],F[P,M],F[M],F[M]]) (id,[]),
+  mylex ["か"] "new" (S [SF 1 anyPos, F[Term], F[P,M],F[P,M],F[P,M],F[M],F[M]] `BS` S [SF 1 anyPos, F[Term,NStem], F[P,M],F[P,M],F[P,M],F[M],F[M]]) (id,[]),
   --mylex ["ね","ねえ","ねー","ネ"] "new" (defS anyPos, F[Term]] `BS` defS anyPos [Term]) (id,[]),
   --mylex ["よ","ヨ"] "new" (defS anyPos [Term] `BS` defS anyPos [Term]) (id,[]),
   --mylex ["さ","さあ","さー","サ"] "new" (defS anyPos [Term] `BS` defS anyPos [Term]) (id,[]),

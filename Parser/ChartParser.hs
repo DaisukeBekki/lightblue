@@ -16,9 +16,7 @@ module Parser.ChartParser (
   -- * Main parsing function
   parse,
   -- * Printing (in Text) functions
-  --printChart,
-  --TEX.printNodesInTeX,
-  printChartInSimpleText,
+  printChartInText,
   posTagger,
   -- * Data structures for CCG derivations
   CCG.Node(..),
@@ -45,8 +43,8 @@ type Chart = M.Map (Int,Int) [CCG.Node]
 {- Come functions for pretty printing Chart/Nodes -}
 
 -- | prints CCG nodes (=a parsing result) as a plain text.
-printChartInSimpleText :: S.Handle -> [CCG.Node] -> IO()
-printChartInSimpleText handle nodes = 
+printChartInText :: S.Handle -> [CCG.Node] -> IO()
+printChartInText handle nodes = 
   do
   S.hPutStrLn handle (take 100 $ repeat '-')
   mapM_ (\node -> do S.hPutStr handle $ T.unpack $ T.toText node

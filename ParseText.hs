@@ -25,7 +25,7 @@ main = do
   mapM_ (action sentence chart (CP.bestOnly top') time) args
   where action sentence chart topbox time op
           | op == "-tex" = TeX.printNodesInTeX S.stdout $ topbox
-          | op == "-text" = CP.printChartInSimpleText S.stderr $ topbox
+          | op == "-text" = CP.printChartInText S.stderr $ topbox
           | op == "-xml"  = XML.render S.stderr $ topbox
           | op == "-postag"  = CP.posTagger S.stdout $ topbox
           | op == "-numeration" = do {numeration <- LEX.setupLexicon sentence; mapM_ (T.putStrLn . T.toText) numeration}
