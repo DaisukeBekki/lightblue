@@ -410,7 +410,7 @@ addLambda i preterm = case preterm of
         | j < i     -> Var j
         | otherwise -> Con $ T.concat [" Error in addLambda: var ", T.pack (show j)]
   Pi a b     -> Pi (addLambda i a) (addLambda (i+1) b)
-  Not a      -> Not (addLambda (i+1) a)
+  Not a      -> Not (addLambda i a)
   Lam m      -> Lam (addLambda (i+1) m)
   App m n    -> App (addLambda i m) (addLambda i n)
   Sigma a b  -> Sigma (addLambda i a) (addLambda (i+1) b)
@@ -432,7 +432,7 @@ deleteLambda i preterm = case preterm of
         | j < i     -> Var j
         | otherwise -> Con $ T.concat ["Error in deleteLambda: var ", T.pack (show j)]
   Pi a b     -> Pi (deleteLambda i a) (deleteLambda (i+1) b)
-  Not a      -> Not (deleteLambda (i+1) a)
+  Not a      -> Not (deleteLambda i a)
   Lam m      -> Lam (deleteLambda (i+1) m)
   App m n    -> App (deleteLambda i m) (deleteLambda i n)
   Sigma a b  -> Sigma (deleteLambda i a) (deleteLambda (i+1) b)
@@ -449,7 +449,7 @@ deleteLambda i preterm = case preterm of
 replaceLambda :: Int -> Preterm -> Preterm
 replaceLambda i preterm = case preterm of
   Pi a b     -> Pi (replaceLambda i a) (replaceLambda (i+1) b)
-  Not a      -> Not (replaceLambda (i+1) a)
+  Not a      -> Not (replaceLambda i a)
   Lam m      -> Lam (replaceLambda (i+1) m)
   App m n    -> App (replaceLambda i m) (replaceLambda i n)
   Sigma a b  -> Sigma (replaceLambda i a) (replaceLambda (i+1) b)
