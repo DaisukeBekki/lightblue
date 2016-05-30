@@ -10,6 +10,8 @@ import qualified Parser.ChartParser as CP
 import qualified System.Process as S
 import qualified Interface.Text as T
 
+
+
 -- function: cname
 -- normalize the given constant text
 cname_f :: T.Text -> T.Text
@@ -89,22 +91,17 @@ convcoq preterm = case preterm of
   D.Refl a m     -> T.concat ["Refl ", (convcoq $ a), " ", (convcoq $ m)]
   D.Idpeel m n   -> T.concat ["Idpeel ", (convcoq $ m), " ", (convcoq $ n)]
 
--- sigToCoq :: DTS.Signature -> T.Text
--- sigToCoq (text, preterm) = T.concat ["Parameter _", text, " : ", (convcoq $ DTS.fromDeBruijn $ preterm), ". \n"]
 
 makeCoqSigList :: [DTS.Signature] -> T.Text
 makeCoqSigList siglist = T.concat (L.nub (map (\ (text, preterm) -> T.concat ["Parameter _", (cname_f text), " : ", (convcoq $ DTS.fromDeBruijn $ preterm), ". \n"]) siglist))
 
+pairsList2listsPair :: [(a, b)] -> ([a], [b])
+pairsList2listsPair [] = ([], [])
+pairsList2listsPair (p:plist) = ((fst $ p):(fst $ resultPair), (snd $ p):(snd $ resultPair))
+  where resultPair = pairsList2listsPair $ plist
 
-main :: IO()
-main = do
-  sentence <- T.getLine
-  (chart,_) <- CP.parse 24 sentence
-  let top = CP.topBox chart;
-      sonly = filter CP.isS top;
-      top' = if sonly == [] then top else sonly
-      representative = head $ CP.bestOnly $ top'
-  let formula = DTS.fromDeBruijn $ CP.sem $ representative
+conv2CoqTheorem :: D.Preterm -> IO T.Text
+conv2CoqTheorem formula = do
   T.putStrLn "-- Preterm ---------"
   T.putStrLn $ T.toText $ formula
   let proformula = f $ formula ;
@@ -129,10 +126,52 @@ main = do
   t3 <- T.hGetContents stdout3
   T.putStrLn $ "-- Coq formula --------"
   T.putStrLn $ t3
--- List Signature in Coq format
-  let signature_list = CP.sig $ representative
-  T.putStrLn "-- Coq signature --------"
---  T.putStrLn "Require Export coqlib."
---  T.putStrLn "Parameter Entity : Type.\nParameter Event : Type.\nParameter State : Type.\n"
-  T.putStrLn $ makeCoqSigList $ signature_list
+  return t3
 
+
+proveEntailment :: D.Preterm -> T.Text -> IO Bool
+proveEntailment formula coqsig = do
+  t3 <- conv2CoqTheorem formula
+  let coqcode = T.concat ["Require Export coqlib.\n",
+                          coqsig,
+                          "Theorem trm : ", t3, ".\n",
+                          "Proof. firstorder. Qed. Check trm. Print trm."]
+  T.putStrLn "-- Coq code --------"
+  T.putStrLn coqcode
+  let command4 = T.concat ["echo \"", coqcode, "\" | coqtop"]
+--  T.putStrLn "-- Coq command --------"
+  T.putStrLn command4
+  (_, stdout4, _, _) <- S.runInteractiveCommand $ T.unpack command4
+  t4 <- T.hGetContents stdout4
+--  T.putStrLn "-- Result --------"
+  T.putStrLn t4
+  if (T.isInfixOf "No more subgoals." t4) then return True else return False
+
+
+--- 暫定的
+neg_currying :: [DTS.Preterm] -> DTS.Preterm -> DTS.Preterm
+neg_currying [] preterm = DTS.Not (DTS.App preterm (DTS.Lam DTS.Top))
+neg_currying (p:ps) preterm = DTS.Pi (DTS.App p (DTS.Lam DTS.Top)) (neg_currying ps preterm)
+
+
+main :: IO()
+main = do
+  sentences <- T.getContents
+  pairsList <- mapM (\t -> do
+                              (chart,_) <- CP.parse 24 t
+                              let top = CP.topBox $ chart;
+                                  sonly = filter CP.isS top;
+                                  top' = if sonly == [] then top else sonly;
+                                  representative = head $ CP.bestOnly $ top'
+                              return ((CP.sem $ representative), (CP.sig $ representative))) (T.lines sentences)
+  let listsPair = pairsList2listsPair $ pairsList
+  let srlist = fst $ listsPair
+  let siglists = snd $ listsPair
+  let formula = DTS.fromDeBruijn (DTS.betaReduce $ DTS.currying (L.init $ srlist) (L.last $ srlist))
+  let neg_formula = DTS.fromDeBruijn (DTS.betaReduce $ neg_currying (L.init $ srlist) (L.last $ srlist))
+  let coqsig = makeCoqSigList (L.concat siglists)
+  (proveEntailment formula coqsig) >>=
+   (\entails -> if entails then T.putStrLn "-- Answer--------\n yes"
+                else (proveEntailment neg_formula coqsig) >>=
+                     (\contradicts -> if contradicts then T.putStrLn "-- Answer--------\n no"
+                                      else T.putStrLn "-- Answer--------\n unknown"))
