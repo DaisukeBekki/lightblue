@@ -35,8 +35,10 @@ module DTS.DependentTypes (
   renumber
   ) where
 
-import qualified Data.Text.Lazy as T
-import qualified Data.List as L
+import qualified Control.Applicative as M -- base
+import qualified Control.Monad as M    -- base
+import qualified Data.Text.Lazy as T   -- text
+import qualified Data.List as L        -- base
 import qualified DTS.DependentTypesWVN as DTSWVN
 import Interface.Text
 
@@ -474,6 +476,13 @@ instance Monad Renumber where
   (Renum m) >>= f = Renum (\i j -> let (a,i',j') = m i j;
                                        (Renum n) = f a in
                                    n i' j')
+
+instance Functor Renumber where
+  fmap = M.liftM
+
+instance M.Applicative Renumber where
+  pure = return
+  (<*>) = M.ap
 
 aspIndex :: Renumber Int
 aspIndex = Renum (\i j -> (i,i+1,j))

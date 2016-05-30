@@ -814,7 +814,7 @@ myLexicon = concat $ [
   mylex ["あ"] "new" (defS [V5ARU] [Stem] `BS` NP [F[Ga]]) ((Lam (Lam (Sigma (Con "entity") (Sigma (Eq (Con "entity") (Var 0) (Var 2)) (App (Var 2) (Var 0)))))),[]),
   -- 状詞
   mylex ["多分"] "(Adv)" (defS [Nna,Nni] [NStem] `BS` NP [F[Ga]]) (predSR 1 "多分に/たぶんに"),
-  mylex ["多分"] "(Adv)" (defS [Nemp] [NStem] `BS` NP [F[Ga]]) (modalSR "多分/たぶｎ"),
+  mylex ["多分"] "(Adv)" (defS [Nemp] [NStem] `BS` NP [F[Ga]]) (modalSR "多分/たぶん"),
   -- 慣用的副詞
   mylex ["どういうわけか"] "new" (T False 1 modifiableS `SL` T False 1 modifiableS) (id,[]),
   mylex ["それはさておき"] "new" (T False 1 modifiableS `SL` T False 1 modifiableS) (id,[]),
@@ -829,20 +829,24 @@ myLexicon = concat $ [
   mylex ["世界最高"] "new" (defS [Nda,Nno,Nni,Ntar] [NStem] `BS` NP [F[Ga]]) (predSR 1 "世界最高"),
   -- BCCWJ語彙
   -- PB10_00047
-  mylex ["死","し"] "PB10-3" ((defS [V5s] [Stem] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "死す/しす"),
+  mylex ["死"] "PB10-3" ((defS [V5s] [Stem] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "死す/しす"),
   mylex ["もののふ"] "PB10-10" N (commonNounSR "武士/もののふ"),
   mylex ["則ち"] "PB10-11" (defS [Nemp] [NStem] `BS` NP [F[Ga]]) (predSR 1 "すなわち/すなわち"),
-  mylex ["まっ先"] "PB10-11" (defS [Nni] [NStem] `BS` NP [F[Ga]]) (predSR 1 "真っ先/まっさき"),
+  mylex ["まっ先"] "PB10-11" (defS [Nno,Nni] [NStem] `BS` NP [F[Ga]]) (predSR 1 "真っ先/まっさき"),
   mylex ["引返","引き返","引きかえ","ひき返","ひきかえ"] "PB10-11" (defS [V5s] [Stem] `BS` NP [F[Ga]]) (verbSR 1 "引き返す/ひきかえす"),
-  mylex ["からから"] "PB10-12" (defS [Nda,Nemp,Nto] [NStem] `BS` NP[F[Ga]]) (predSR 1 "カラカラ/からから"),
+  mylex ["からから"] "PB10-12" (defS [Nda,Nno,Nemp,Nto] [NStem] `BS` NP[F[Ga]]) (predSR 1 "カラカラ/からから"),
   mylex ["殪"] "PB10-13" ((defS [V5s] [Stem] `BS` NP [F[Ga]]) `BS` NP [F[O]]) (verbSR 2 "殪す"),
   mylex ["沃え"] "PB10-14" (defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP[F[Ga]]) (verbSR 1 "沃える/こえる"),
   mylex ["名を得"] "PB10-15" ((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP[F[Ga]]) `BS` NP[F[Ni]]) (verbSR 2 "名を得る/なをえる"),
   mylex ["ずっぷり"] "PB10-18" (defS [Nda,Nemp,Nto] [NStem] `BS` NP[F[Ga]]) (predSR 1 "ずっぷり/ずっぷり"),
-  mylex ["まっすぐ"] "PB10-18" (defS [Nda,Nna,Nni,Nemp] [NStem] `BS` NP[F[Ga]]) (predSR 1 "真っ直ぐ/まっすぐ"),
+  mylex ["まっすぐ"] "PB10-18" (defS [Nda,Nna,Nno,Nni,Nemp] [NStem] `BS` NP[F[Ga]]) (predSR 1 "真っ直ぐ/まっすぐ"),
   mylex ["ユーカㇻ"] "PB10-25" (NP [F[Nc]]) (properNameSR "ユーカラ/ユーカラ"),
-  mylex ["先"] "PB10-25" (defS [Nda,Nni,Nno] [NStem] `BS` NP [F[Ga]]) (predSR 1 "先/さき"),
+  mylex ["先"] "PB10-25" (defS [Nda,Nno,Nni] [NStem] `BS` NP [F[Ga]]) (predSR 1 "先/さき"),
   mylex ["アイヌユーカㇻ"] "PB10-30" (NP [F[Nc]]) (properNameSR "アイヌユーカラ/アイヌユーカラ"),
+  mylex ["とっく"] "PB10-39" (defS [Nni] [NStem] `BS` NP[F[Ga]]) (predSR 1 "疾っく/とっく"),
+  mylex ["とっくの昔"] "PB10-39" (defS [Nda,Nni,Nno] [NStem] `BS` NP[F[Ga]]) (predSR 1 "疾っくの昔/とっくのむかし"),
+  mylex ["不死"] "PB10-44" N (commonNounSR "不死/ふし"),
+  mylex ["不死"] "PB10-44" (defS [Nda,Nno] [NStem] `BS` NP[F[Ga]]) (predSR 1 "不死/ふじ"),
   -- PB12_00001
   mylex ["思い付","思いつ","おもい付","おもいつ"] "PB12-26" ((defS [V5k] [Stem] `BS` NP [F[Ga]]) `BS` NP [F[O]]) (verbSR 1 "思い付く/おもいつく"), -- 二次アスペクトは規則で生成？
   mylex ["暇","ひま","ヒマ"] "PB12-37" N (commonNounSR "暇/ひま"), -- ナ形容詞のエントリは存在
