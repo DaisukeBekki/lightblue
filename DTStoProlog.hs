@@ -37,10 +37,10 @@ f preterm = case preterm of
   D.Top -> "true"
   D.Bot -> "false"
   D.App (D.App (D.App (D.App g x1) x2) x3) x4
-                        -> T.concat [(f $ g), "(", (f $ x1), ",", (f $ x2), ",", (f $ x3), ",", (f $ x4), ")"]
+                        -> T.concat [(f $ g), "(", (f $ x4), ",", (f $ x3), ",", (f $ x2), ",", (f $ x1), ")"]
   D.App (D.App (D.App g x1) x2) x3
-                        -> T.concat [(f $ g), "(", (f $ x1), ",", (f $ x2), ",", (f $ x3), ")"]
-  D.App (D.App g x1) x2 -> T.concat [(f $ g), "(", (f $ x1), ",", (f $ x2), ")"]
+                        -> T.concat [(f $ g), "(", (f $ x3), ",", (f $ x2), ",", (f $ x1), ")"]
+  D.App (D.App g x1) x2 -> T.concat [(f $ g), "(", (f $ x2), ",", (f $ x1), ")"]
   D.App g x1            -> T.concat [(f $ g), "(", (f $ x1), ")"]
   D.Lamvec _ m -> f $ m
   D.Appvec _ m -> f $ m
@@ -76,10 +76,10 @@ convcoq preterm = case preterm of
   D.Top -> "True"
   D.Bot -> "False"
   D.App (D.App (D.App (D.App g x1) x2) x3) x4
-                        -> T.concat ["_", (convcoq $ g), " ", (convcoq $ x1), " ", (convcoq $ x2), " ", (convcoq $ x3), " ", (convcoq $ x4)]
+                        -> T.concat ["_", (convcoq $ g), " ", (convcoq $ x4), " ", (convcoq $ x3), " ", (convcoq $ x2), " ", (convcoq $ x1)]
   D.App (D.App (D.App g x1) x2) x3
-                        -> T.concat ["_", (convcoq $ g), " ", (convcoq $ x1), " ", (convcoq $ x2), " ", (convcoq $ x3)]
-  D.App (D.App g x1) x2 -> T.concat ["_", (convcoq $ g), " ", (convcoq $ x1), " ", (convcoq $ x2)]
+                        -> T.concat ["_", (convcoq $ g), " ", (convcoq $ x3), " ", (convcoq $ x2), " ", (convcoq $ x1)]
+  D.App (D.App g x1) x2 -> T.concat ["_", (convcoq $ g), " ", (convcoq $ x2), " ", (convcoq $ x1)]
   D.App g x1            -> T.concat ["_", (convcoq $ g), " ", (convcoq $ x1)]
   D.Lamvec _ m -> convcoq $ m
   D.Appvec _ m -> convcoq $ m
