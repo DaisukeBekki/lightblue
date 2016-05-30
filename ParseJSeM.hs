@@ -27,9 +27,13 @@ processJSeMData jsemdata = do
   T.putStr $ T.concat ["H: ", J.hypothesis jsemdata, "\n"]
   psems <- mapM parseText $ J.premise jsemdata
   hsem <- parseText $ J.hypothesis jsemdata
-  let sem = DTS.betaReduce $ DTS.currying psems hsem
+  let sem = DTS.betaReduce $ currying psems hsem
   T.putStrLn $ T.toText sem
   T.putStrLn ""
+
+currying :: [DTS.Preterm] -> DTS.Preterm -> DTS.Preterm
+currying [] preterm = DTS.App preterm (DTS.Lam DTS.Top)
+currying (p:ps) preterm = DTS.Pi (DTS.App p (DTS.Lam DTS.Top)) (currying ps preterm)
 
 parseText :: T.Text -> IO(DTS.Preterm)
 parseText text = do

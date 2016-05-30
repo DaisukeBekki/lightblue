@@ -149,6 +149,10 @@ proveEntailment formula coqsig = do
 
 
 --- 暫定的
+currying :: [DTS.Preterm] -> DTS.Preterm -> DTS.Preterm
+currying [] preterm = DTS.App preterm (DTS.Lam DTS.Top)
+currying (p:ps) preterm = DTS.Pi (DTS.App p (DTS.Lam DTS.Top)) (currying ps preterm)
+
 neg_currying :: [DTS.Preterm] -> DTS.Preterm -> DTS.Preterm
 neg_currying [] preterm = DTS.Not (DTS.App preterm (DTS.Lam DTS.Top))
 neg_currying (p:ps) preterm = DTS.Pi (DTS.App p (DTS.Lam DTS.Top)) (neg_currying ps preterm)
@@ -167,7 +171,7 @@ main = do
   let listsPair = pairsList2listsPair $ pairsList
   let srlist = fst $ listsPair
   let siglists = snd $ listsPair
-  let formula = DTS.fromDeBruijn (DTS.betaReduce $ DTS.currying (L.init $ srlist) (L.last $ srlist))
+  let formula = DTS.fromDeBruijn (DTS.betaReduce $ currying (L.init $ srlist) (L.last $ srlist))
   let neg_formula = DTS.fromDeBruijn (DTS.betaReduce $ neg_currying (L.init $ srlist) (L.last $ srlist))
   let coqsig = makeCoqSigList (L.concat siglists)
   (proveEntailment formula coqsig) >>=

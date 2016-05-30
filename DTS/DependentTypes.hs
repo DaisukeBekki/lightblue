@@ -31,7 +31,6 @@ module DTS.DependentTypes (
   add,
   multiply,
   -- * Utility
-  currying,
   renumber
   ) where
 
@@ -462,10 +461,6 @@ replaceLambda i preterm = case preterm of
   Asp j m    -> Asp j (replaceLambda i m)
   DRel j t m n -> DRel j t (replaceLambda i m) (replaceLambda i n)
   t -> t
-
-currying :: [Preterm] -> Preterm -> Preterm
-currying [] preterm = App preterm (Lam Top)
-currying (p:ps) preterm = Pi (App p (Lam Top)) (currying ps preterm)
 
 {- Renumbering of @ -}
 
