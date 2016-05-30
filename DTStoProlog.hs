@@ -15,7 +15,7 @@ import qualified Interface.Text as T
 -- function: cname
 -- normalize the given constant text
 cname_f :: T.Text -> T.Text
-cname_f cname = T.replace "]" "_" $ T.replace "[" "_" $ T.replace "/" "_" $ head $ T.split (==';') cname
+cname_f cname =  T.replace "~" "" $ T.replace "]" "_" $ T.replace "[" "_" $ T.replace "/" "_" $ head $ T.split (==';') cname
 
 -- function: f
 -- a function which converts DTS preterm with variable name to Prolog input formula
@@ -140,11 +140,11 @@ proveEntailment formula coqsig = do
   T.putStrLn coqcode
   let command4 = T.concat ["echo \"", coqcode, "\" | coqtop"]
 --  T.putStrLn "-- Coq command --------"
-  T.putStrLn command4
+--  T.putStrLn command4
   (_, stdout4, _, _) <- S.runInteractiveCommand $ T.unpack command4
   t4 <- T.hGetContents stdout4
 --  T.putStrLn "-- Result --------"
-  T.putStrLn t4
+--  T.putStrLn t4
   if (T.isInfixOf "No more subgoals." t4) then return True else return False
 
 
@@ -158,6 +158,9 @@ neg_currying [] preterm = DTS.Not (DTS.App preterm (DTS.Lam DTS.Top))
 neg_currying (p:ps) preterm = DTS.Pi (DTS.App p (DTS.Lam DTS.Top)) (neg_currying ps preterm)
 
 
+
+
+
 main :: IO()
 main = do
   sentences <- T.getContents
@@ -169,11 +172,11 @@ main = do
                                   representative = head $ CP.bestOnly $ top'
                               return ((CP.sem $ representative), (CP.sig $ representative))) (T.lines sentences)
   let listsPair = pairsList2listsPair $ pairsList
-  let srlist = fst $ listsPair
-  let siglists = snd $ listsPair
-  let formula = DTS.fromDeBruijn (DTS.betaReduce $ currying (L.init $ srlist) (L.last $ srlist))
-  let neg_formula = DTS.fromDeBruijn (DTS.betaReduce $ neg_currying (L.init $ srlist) (L.last $ srlist))
-  let coqsig = makeCoqSigList (L.concat siglists)
+      srlist = fst $ listsPair
+      siglists = snd $ listsPair
+      formula = DTS.fromDeBruijn (DTS.renumber (DTS.betaReduce $ currying (L.init $ srlist) (L.last $ srlist)))
+      neg_formula = DTS.fromDeBruijn (DTS.renumber (DTS.betaReduce $ neg_currying (L.init $ srlist) (L.last $ srlist)))
+      coqsig = makeCoqSigList (L.concat siglists)
   (proveEntailment formula coqsig) >>=
    (\entails -> if entails then T.putStrLn "-- Answer--------\n yes"
                 else (proveEntailment neg_formula coqsig) >>=
