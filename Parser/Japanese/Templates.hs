@@ -151,6 +151,16 @@ verbCat caseframe posF conjF = case caseframe of
            | cf == "によって" -> (verbCat cfs posF conjF) `BS` NP [F[Niyotte]]
            | otherwise -> (verbCat cfs posF conjF)
 
+caseframeAbbrev :: [T.Text] -> T.Text
+caseframeAbbrev caseframe = case caseframe of
+  [] -> T.empty
+  (cf:cfs) | cf == "ガ格" -> T.append "ガ" (caseframeAbbrev cfs)
+           | cf == "ヲ格" -> T.append "ヲ" (caseframeAbbrev cfs)
+           | cf == "ニ格" -> T.append "ニ" (caseframeAbbrev cfs)
+           | cf == "ト節" -> T.append "ト" (caseframeAbbrev cfs)
+           | cf == "によって" -> T.append "ヨ" (caseframeAbbrev cfs)
+           | otherwise -> caseframeAbbrev cfs
+
 verbSR :: Int -> T.Text -> (Preterm, [Signature])
 verbSR i daihyo 
   | i == 1 =           ((Lam (Lam (Sigma (Con "event") (Sigma           (App (App (Con daihyo) (Var 2)) (Var 0))                   (App (Var 2) (Var 1)))))), [(daihyo,nPlaceEventType 1)])
@@ -159,7 +169,9 @@ verbSR i daihyo
   | otherwise = (Con $ T.concat ["verbSR: verb ",daihyo," of ", T.pack (show i), " arguments"], [])
 
 verbSR' :: T.Text -> T.Text -> [T.Text] -> (Preterm, [Signature])
-verbSR' daihyo eventuality caseframe = (verbSR'' daihyo caseframe caseframe, [(daihyo, nPlaceVerbType eventuality caseframe)])
+verbSR' daihyo eventuality caseframe = 
+  let predname = T.concat [daihyo, "/", T.reverse $ caseframeAbbrev caseframe] in
+  (verbSR'' predname caseframe caseframe, [(predname, nPlaceVerbType eventuality caseframe)])
 
 verbSR'' :: T.Text      -- ^ daihyo
           -> [T.Text] -- ^ A case frame
