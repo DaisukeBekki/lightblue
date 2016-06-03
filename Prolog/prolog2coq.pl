@@ -157,6 +157,8 @@ prolog2coq(F,Stream):-
 prolog2coq(F,Stream):-
     F =.. [Symbol,Form],
     write(Stream,'(_'),
+    % atom_concat(p_,A,Symbol),
+    % write_term(Stream,A,[numbervars(true)]),
     write_term(Stream,Symbol,[numbervars(true)]),
     write(Stream,' '),
     prolog2coq(Form,Stream),
@@ -165,6 +167,8 @@ prolog2coq(F,Stream):-
 prolog2coq(F,Stream):-
     F =.. [Symbol,Arg1,Arg2],
     write(Stream,'(_'),
+    % atom_concat(p_,A,Symbol),
+    % write_term(Stream,A,[numbervars(true)]),
     write_term(Stream,Symbol,[numbervars(true)]),
     write(Stream,' '),
     prolog2coq(Arg1,Stream),
@@ -175,6 +179,8 @@ prolog2coq(F,Stream):-
 prolog2coq(F,Stream):-
     F =.. [Symbol,Arg1,Arg2,Arg3],
     write(Stream,'(_'),
+    % atom_concat(p_,A,Symbol),
+    % write_term(Stream,A,[numbervars(true)]),
     write_term(Stream,Symbol,[numbervars(true)]),
     write(Stream,' '),
     prolog2coq(Arg1,Stream),
@@ -187,6 +193,8 @@ prolog2coq(F,Stream):-
 prolog2coq(F,Stream):-
     F =.. [Symbol,Arg1,Arg2,Arg3,Arg4],
     write(Stream,'(_'),
+    % atom_concat(p_,A,Symbol),
+    % write_term(Stream,A,[numbervars(true)]),
     write_term(Stream,Symbol,[numbervars(true)]),
     write(Stream,' '),
     prolog2coq(Arg1,Stream),
@@ -214,6 +222,13 @@ prolog2coq(F,Stream):-
     atom_number(Y,N),
     number(N),
     write_term(Stream,F,[numbervars(true)]).
+
+% prolog2coq(F,Stream):-
+%     atomic(F),
+%     atom_concat(p_,A,F),
+%     % sub_atom(A,0,2,_,B),
+%     write(Stream,'_'),
+%     write_term(Stream,A,[numbervars(true)]).
 
 prolog2coq(F,Stream):-
     atomic(F),

@@ -13,6 +13,8 @@ fol2file(F1,F2,F3):-
     open('test.tex',write,Stream,[encoding(utf8)]),
     write(Stream,'\\documentclass{jsarticle}'),
     nl(Stream),
+    write(Stream,'\\pagestyle{empty}'),
+    nl(Stream),
     write(Stream,'%\\usepackage{lscape}'),
     nl(Stream),
     write(Stream,'\\newcommand{\\dConj}[2]{\\left[\\kern-0.3em\\begin{array}{l}\\vspace{0.1mm}#1\\\\#2\\end{array}\\kern-0.3em\\right]}'),
@@ -245,9 +247,9 @@ fol2latex(F,Stream):-
     write(Stream,'\\mbox{\\textbf{'),
     write_term(Stream,Symbol,[numbervars(true)]),
     write(Stream,'}}('),
-    fol2latex(Arg1,Stream),
-    write(Stream,','),
     fol2latex(Arg2,Stream),
+    write(Stream,','),
+    fol2latex(Arg1,Stream),
     write(Stream,')').
 
 fol2latex(F,Stream):-
@@ -255,11 +257,11 @@ fol2latex(F,Stream):-
     write(Stream,'\\mbox{\\textbf{'),
     write_term(Stream,Symbol,[numbervars(true)]),
     write(Stream,'}}('),
-    fol2latex(Arg1,Stream),
+    fol2latex(Arg3,Stream),
     write(Stream,','),
     fol2latex(Arg2,Stream),
     write(Stream,','),
-    fol2latex(Arg3,Stream),
+    fol2latex(Arg1,Stream),
     write(Stream,')').
 
 fol2latex(F,Stream):-
@@ -267,12 +269,12 @@ fol2latex(F,Stream):-
     write(Stream,'\\mbox{\\textbf{'),
     write_term(Stream,Symbol,[numbervars(true)]),
     write(Stream,'}}('),
-    fol2latex(Arg1,Stream),
-    write(Stream,','),
-    fol2latex(Arg2,Stream),
+    fol2latex(Arg4,Stream),
     write(Stream,','),
     fol2latex(Arg3,Stream),
     write(Stream,','),
-    fol2latex(Arg4,Stream),
+    fol2latex(Arg2,Stream),
+    write(Stream,','),
+    fol2latex(Arg1,Stream),
     write(Stream,')').
 

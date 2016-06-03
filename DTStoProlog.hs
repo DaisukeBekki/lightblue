@@ -15,14 +15,18 @@ import qualified Interface.Text as T
 -- function: cname
 -- normalize the given constant text
 cname_f :: T.Text -> T.Text
-cname_f cname =  T.replace "~" "" $ T.replace "]" "_" $ T.replace "[" "_" $ T.replace "/" "_" $ head $ T.split (==';') cname
+cname_f cname = T.concat ["prd_",  (T.replace "~" "" $ T.replace "]" "_" $ T.replace "[" "_" $ T.replace "/" "_" $ head $ T.split (==';') cname)]
 
 -- function: f
 -- a function which converts DTS preterm with variable name to Prolog input formula
 f :: D.Preterm -> T.Text
 f preterm = case preterm of
   D.Var v -> v
-  D.Con c -> cname_f $ c 
+  D.Con c -> case c of
+             "entity" -> "entity"
+             "event"  -> "event"
+             "state"  -> "state"
+             cname    -> cname_f $ cname
   D.Type  -> "type"
   D.Kind  -> "kind"
   D.Pi vname a b    -> T.concat ["forall(", vname, ",", (f $ a), ",", (f $ b), ")"]
@@ -136,7 +140,7 @@ proveEntailment formula coqsig = do
   let coqcode = T.concat ["Require Export coqlib.\n",
                           coqsig,
                           "Theorem trm : ", t3, ".\n",
-                          "Proof. firstorder. Qed. Check trm. Print trm."]
+                          "Proof. firstorder. Qed. Print trm."]
   T.putStrLn "-- Coq code --------"
   T.putStrLn coqcode
   let command4 = T.concat ["echo \"", coqcode, "\" | coqtop"]

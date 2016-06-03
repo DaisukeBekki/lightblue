@@ -27,11 +27,14 @@ counter(M):-
 %%%%% Main predicates %%%%%
 
 resolvePresup(SR,GCxt,Form0):-
-    elimCont(Form0,FormE), %%% temporary repair
-    addType(FormE,Form1),
+    % elimCont(Form0,FormE), %%% temporary repair
+    % elimSigma(FormE,FormF),
+    addType(Form0,Form1),
+    % write(Form1),nl,
     rewriteVar(Form1,Form2),
     elimTrue(Form2,Form),
     findall(PS,checkType(PS,GCxt,Form),Store),
+    % write(Store),
     elimAsp(Store,GCxt,Form,SR0),
     betaConvertPi(SR0,SR1),
     betaConvert(SR1,SR).
@@ -132,6 +135,16 @@ violateConditionB(Form1,Form2):-
     subterm(Pred,Form2),
     Pred =.. [_,X,X],
     \+ subterm(Pred,Form1), !.
+
+% violateConditionB(Form1,Form2):-
+%     subterm(Pred,Form2),
+%     Pred =.. [_,X,X,_],
+%     \+ subterm(Pred,Form1), !.
+
+% violateConditionB(Form1,Form2):-
+%     subterm(Pred,Form2),
+%     Pred =.. [_,X,X,_,_],
+%     \+ subterm(Pred,Form1), !.
 
 violateConditionB(Form1,Form2):-
     subterm(Pred1,Form2),
@@ -351,6 +364,7 @@ freeVar(Form,FV):-
     append(FV3,FV4,Y),
     append(X,Y,FV), !.
 
+freeVar(type,[]).
 freeVar(entity,[]).
 freeVar(event,[]).
 freeVar(state,[]).
@@ -420,6 +434,7 @@ addType(Form0,Form):-
 
 addType(A,A):-
     atomic(A).
+
 
 rewriteVar(Form1,Form2):-
     rewriteVar([],Form1,Form2).
