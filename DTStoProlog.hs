@@ -1,16 +1,16 @@
 {-# OPTIONS -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-import qualified Data.Text.Lazy as T --text
-import qualified Data.Text.Lazy.IO as T --text
-import qualified Data.List as L
+import qualified Data.Text.Lazy as T     -- text
+import qualified Data.Text.Lazy.IO as T  -- text
+import qualified Data.List as L          -- base
+import qualified System.Process as S     -- process
+import qualified System.Environment as E -- base
+import qualified Control.Monad as M      -- base
 import qualified DTS.DependentTypes as DTS
 import qualified DTS.DependentTypesWVN as D
 import qualified Parser.ChartParser as CP
-import qualified System.Process as S
 import qualified Interface.Text as T
-
-
 
 -- function: cname
 -- normalize the given constant text
@@ -102,25 +102,26 @@ pairsList2listsPair (p:plist) = ((fst $ p):(fst $ resultPair), (snd $ p):(snd $ 
 
 conv2CoqTheorem :: D.Preterm -> IO T.Text
 conv2CoqTheorem formula = do
+  lightbluepath <- M.liftM T.pack $ E.getEnv "LIGHTBLUE"
   T.putStrLn "-- Preterm ---------"
   T.putStrLn $ T.toText $ formula
   let proformula = f $ formula ;
   T.putStrLn "-- Prolog input ---------"
   T.putStrLn $ proformula
 -- Call Prolog (@-elimination)
-  let command1 = T.concat ["swipl -s Prolog/presupposition.pl -g main -t halt --quiet -- \"", proformula, "\""]
+  let command1 = T.concat ["swipl -s ", lightbluepath, "/Prolog/presupposition.pl -g main -t halt --quiet -- \"", proformula, "\""]
   (_, stdout1, _, _) <- S.runInteractiveCommand $ T.unpack command1
   t1 <- T.hGetContents stdout1
   T.putStrLn $ "-- After resolving @ --------"
   T.putStrLn $ t1
 -- Call Prolog (Sigma-elimination)
-  let command2 = T.concat ["swipl -s Prolog/elimSigma.pl -g main -t halt --quiet -- \"", t1, "\""]
+  let command2 = T.concat ["swipl -s ", lightbluepath, "/Prolog/elimSigma.pl -g main -t halt --quiet -- \"", t1, "\""]
   (_, stdout2, _, _) <- S.runInteractiveCommand $ T.unpack command2
   t2 <- T.hGetContents stdout2
   T.putStrLn $ "-- After elimSigma --------"
   T.putStrLn $ t2
 -- Call Prolog (Prolog to Coq)
-  let command3 = T.concat ["swipl -s Prolog/prolog2coq.pl -g main -t halt --quiet -- \"", t2, "\" ; cat interpretation.txt"]
+  let command3 = T.concat ["swipl -s ", lightbluepath, "/Prolog/prolog2coq.pl -g main -t halt --quiet -- \"", t2, "\" ; cat interpretation.txt"]
   (_, stdout3, _, _) <- S.runInteractiveCommand $ T.unpack command3
   -- file "interpretation.txt" is created in the current directory
   t3 <- T.hGetContents stdout3
