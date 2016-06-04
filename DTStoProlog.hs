@@ -138,10 +138,10 @@ proveEntailment :: D.Preterm -> T.Text -> IO Bool
 proveEntailment formula coqsig = do
   lightbluepath <- M.liftM T.pack $ E.getEnv "LIGHTBLUE"
   t3 <- conv2CoqTheorem formula
-  let coqcode = T.concat ["Add LoadPath \\\"", lightbluepath, "\\\".\n Require Export coqlib.\n",
+  let coqcode = T.concat ["Add LoadPath \\\"", lightbluepath, "\\\".\nRequire Export coqlib.\n",
                           coqsig,
                           "Theorem trm : ", t3, ".\n",
-                          "Proof. firstorder. Qed. Print trm."]
+                          "Proof. firstorder. Qed. Print trm.\n"]
   T.putStrLn "-- Coq code --------"
   T.putStrLn coqcode
   let command4 = T.concat ["echo \"", coqcode, "\" | coqtop"]
@@ -180,7 +180,7 @@ main = do
       neg_formula = DTS.fromDeBruijn (DTS.renumber (DTS.betaReduce $ neg_currying (L.init $ srlist) (L.last $ srlist)))
       coqsig = makeCoqSigList (L.concat siglists)
   (proveEntailment formula coqsig) >>=
-   (\entails -> if entails then T.putStrLn "-- Answer--------\n yes"
+   (\entails -> if entails then T.putStrLn "-- Answer --------\nyes"
                 else (proveEntailment neg_formula coqsig) >>=
-                     (\contradicts -> if contradicts then T.putStrLn "-- Answer--------\n no"
-                                      else T.putStrLn "-- Answer--------\n unknown"))
+                     (\contradicts -> if contradicts then T.putStrLn "-- Answer --------\nno"
+                                      else T.putStrLn "-- Answer --------\nunknown"))

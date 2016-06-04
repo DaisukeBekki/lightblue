@@ -94,7 +94,8 @@ for f in `cat ${plain_dir}/jsem.files`; do
   # echo "--- Evaluating ${f}..."
   echo "Evaluating ${f}... ("${count}"/"${total}")"
   count=$((count + 1))
-  cat ${plain_dir}/${f} | .././DTStoProlog > ${results_dir}/${f/.txt/}.results
+  cat ${plain_dir}/${f} > ${results_dir}/${f/.txt/}.results
+  cat ${plain_dir}/${f} | .././DTStoProlog >> ${results_dir}/${f/.txt/}.results
 
 results=`cat ${results_dir}/${f/.txt/}.results \
   | sed 's/-- Preterm ---------/##/g' \
@@ -103,7 +104,7 @@ results=`cat ${results_dir}/${f/.txt/}.results \
   | sed 's/-- After elimSigma --------/##/g' \
   | sed 's/-- Coq formula --------/##/g' \
   | sed 's/-- Coq code --------/##/g' \
-  | sed 's/-- Answer--------/##/g'`
+  | sed 's/-- Answer --------/##/g'`
 
 coqformula=`echo $results | awk -F"##" '{print $6}' | awk '{print $1}'`
 answer=`echo $results | awk -F"##" '{print $NF}'`
