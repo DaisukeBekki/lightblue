@@ -15,7 +15,7 @@ import qualified Interface.Text as T
 -- function: cname
 -- normalize the given constant text
 cname_f :: T.Text -> T.Text
-cname_f cname = T.concat ["prd_",  (T.replace "~" "" $ T.replace "]" "_" $ T.replace "[" "_" $ T.replace "/" "_" $ head $ T.split (==';') cname)]
+cname_f cname = T.concat ["c_",  (T.replace "~" "" $ T.replace "]" "_" $ T.replace "[" "_" $ T.replace "/" "_" $ head $ T.split (==';') cname)]
 
 -- function: f
 -- a function which converts DTS preterm with variable name to Prolog input formula
@@ -136,8 +136,9 @@ conv2CoqTheorem formula = do
 
 proveEntailment :: D.Preterm -> T.Text -> IO Bool
 proveEntailment formula coqsig = do
+  lightbluepath <- M.liftM T.pack $ E.getEnv "LIGHTBLUE"
   t3 <- conv2CoqTheorem formula
-  let coqcode = T.concat ["Require Export coqlib.\n",
+  let coqcode = T.concat ["Add LoadPath \\\"", lightbluepath, "\\\".\n Require Export coqlib.\n",
                           coqsig,
                           "Theorem trm : ", t3, ".\n",
                           "Proof. firstorder. Qed. Print trm."]
@@ -153,7 +154,6 @@ proveEntailment formula coqsig = do
   if (T.isInfixOf "No more subgoals." t4) then return True else return False
 
 
---- 暫定的
 currying :: [DTS.Preterm] -> DTS.Preterm -> DTS.Preterm
 currying [] preterm = DTS.App preterm (DTS.Lam DTS.Top)
 currying (p:ps) preterm = DTS.Pi (DTS.App p (DTS.Lam DTS.Top)) (currying ps preterm)
@@ -161,9 +161,6 @@ currying (p:ps) preterm = DTS.Pi (DTS.App p (DTS.Lam DTS.Top)) (currying ps pret
 neg_currying :: [DTS.Preterm] -> DTS.Preterm -> DTS.Preterm
 neg_currying [] preterm = DTS.Not (DTS.App preterm (DTS.Lam DTS.Top))
 neg_currying (p:ps) preterm = DTS.Pi (DTS.App p (DTS.Lam DTS.Top)) (neg_currying ps preterm)
-
-
-
 
 
 main :: IO()
