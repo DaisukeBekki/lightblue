@@ -7,6 +7,7 @@ from lxml import etree
 import os
 import re
 import sys
+sys.stdout = codecs.getwriter("utf-8")(sys.stdout)
 
 # Read the FraCaS or JSeM xml file into a tree and return it.
 def ReadFracasFile(fracas_filename):
