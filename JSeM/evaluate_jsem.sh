@@ -6,8 +6,6 @@
 # ./evaluate_jsem.sh <tag_1> <tag_2> ... <tag_n>
 #
 # Python3 and lxml library are required to run the extraction script ("extract_jsem_problems.py").
-# Or, the set of extracted problems can be downloaded here:
-# https://www.dropbox.com/sh/3cxtw7zx9b179aw/AABl-lBkZSdzg9TuinEbjedNa?dl=0
 #
 # To ignore some phenomena-type or inference-type, attach "-" in front of a tag.
 #
@@ -63,7 +61,9 @@ tags=""
   done
 
 cat temp_jsem_problems_list | tr '+' '\t' > temp2_jsem_problems_list
-mv temp2_jsem_problems_list temp_jsem_problems_list
+cat temp2_jsem_problems_list > temp_jsem_problems_list
+rm temp2_jsem_problems_list
+# mv temp2_jsem_problems_list temp_jsem_problems_list
 
 # Set the name of a result directory
 results_dir="jsem_results${tags}"
