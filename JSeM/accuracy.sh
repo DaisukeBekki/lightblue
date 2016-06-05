@@ -1,6 +1,10 @@
 #!/bin/bash
 
 # This script calculates the statistics (total accuracy, recall and precision) for the "jsem_main.html" file, and creating the confusion matrix.
+#
+# Usage:
+#   ./accuracy.sh main_jsem.html
+#
 
 input=$1
 
@@ -51,8 +55,10 @@ gold_yes_no=$((yes_gold_total + no_gold_total))
 noerror=`echo "scale=4; $correct_parsing / $total_number" | bc -l`
 accuracy=`echo "scale=4; $correct_answer / $total_number" | bc -l`
 recall=`echo "scale=4; $system_correct_answer / $gold_yes_no" | bc -l`
-precision=`echo "scale=4; $system_correct_answer / $system_yes_no" | bc -l`
-fone=`echo "scale=4; 2 * (($precision * $recall) / ($precision + $recall))" | bc -l`
+if [ $system_yes_no -eq 0 ]; then precision=0
+  else precision=`echo "scale=4; $system_correct_answer / $system_yes_no" | bc -l`; fi
+if [ $system_yes_no -eq 0 ]; then fone=0
+  else fone=`echo "scale=4; 2 * (($precision * $recall) / ($precision + $recall))" | bc -l`; fi
 
 echo -e "Correct parsing: "${noerror}" ("$correct_parsing"/"$total_number")\n"\
 "Accuracy: "${accuracy}" ("$correct_answer"/"$total_number")\n"\
@@ -73,10 +79,3 @@ echo -e "Correct parsing: "${noerror}" ("$correct_parsing"/"$total_number")\n"\
 "----------------------------------------------------------------"
 
 rm base_results.txt
-
-
-
-
-
-
-

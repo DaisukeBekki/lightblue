@@ -151,7 +151,7 @@ proveEntailment formula coqsig = do
   t4 <- T.hGetContents stdout4
 --  T.putStrLn "-- Result --------"
 --  T.putStrLn t4
-  if (T.isInfixOf "No more subgoals." t4) then return True else return False
+  if (T.isInfixOf "trm is defined" t4) then return True else return False
 
 
 currying :: [DTS.Preterm] -> DTS.Preterm -> DTS.Preterm
