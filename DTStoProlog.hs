@@ -114,19 +114,22 @@ conv2CoqTheorem formula = do
   T.putStrLn $ proformula
 -- Call Prolog (@-elimination)
   let command1 = T.concat ["swipl -s ", lightbluepath, "/Prolog/presupposition.pl -g main -t halt --quiet -- \"", proformula, "\""]
-  (_, stdout1, _, _) <- S.runInteractiveCommand $ T.unpack command1
+  (_, stdout1, _, procHandle1) <- S.runInteractiveCommand $ T.unpack command1
+  _ <- S.waitForProcess procHandle1
   t1 <- T.hGetContents stdout1
   T.putStrLn $ "-- After resolving @ --------"
   T.putStrLn $ t1
 -- Call Prolog (Sigma-elimination)
   let command2 = T.concat ["swipl -s ", lightbluepath, "/Prolog/elimSigma.pl -g main -t halt --quiet -- \"", t1, "\""]
-  (_, stdout2, _, _) <- S.runInteractiveCommand $ T.unpack command2
+  (_, stdout2, _, procHandle2) <- S.runInteractiveCommand $ T.unpack command2
+  _ <- S.waitForProcess procHandle2
   t2 <- T.hGetContents stdout2
   T.putStrLn $ "-- After elimSigma --------"
   T.putStrLn $ t2
 -- Call Prolog (Prolog to Coq)
   let command3 = T.concat ["swipl -s ", lightbluepath, "/Prolog/prolog2coq.pl -g main -t halt --quiet -- \"", t2, "\" ; cat interpretation.txt"]
-  (_, stdout3, _, _) <- S.runInteractiveCommand $ T.unpack command3
+  (_, stdout3, _, procHandle3) <- S.runInteractiveCommand $ T.unpack command3
+  _ <- S.waitForProcess procHandle3
   -- file "interpretation.txt" is created in the current directory
   t3 <- T.hGetContents stdout3
   T.putStrLn $ "-- Coq formula --------"
@@ -147,10 +150,11 @@ proveEntailment formula coqsig = do
   let command4 = T.concat ["echo \"", coqcode, "\" | coqtop"]
 --  T.putStrLn "-- Coq command --------"
 --  T.putStrLn command4
-  (_, stdout4, _, _) <- S.runInteractiveCommand $ T.unpack command4
+  (_, stdout4, _, procHandle4) <- S.runInteractiveCommand $ T.unpack command4
+  _ <- S.waitForProcess procHandle4
   t4 <- T.hGetContents stdout4
 --  T.putStrLn "-- Result --------"
---  T.putStrLn t4
+  --T.putStrLn t4
   if (T.isInfixOf "trm is defined" t4) then return True else return False
 
 
