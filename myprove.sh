@@ -2,10 +2,11 @@
 
 # Usage:
 # Parse and prove a sentence:
-#   ./myprove.sh <sentence> [OPTION]
+#   ./myprove.sh <input> [OPTION]
 #
 # Example:
 #   ./myprove.sh "太郎がロンドンに住んでいるなら、太郎はロンドンに住んでいる" -latex -show 
+#   ./myprove.sh <file> -latex -show 
 #
 # -latex
 #     Create a latex output file named "test.tex":
@@ -16,7 +17,11 @@ input=$1
 arg2=${2:-"none"}
 arg3=${3:-"none"}
 
-all_results=`echo $input | ./DTStoProlog`
+if [ -e $input ];then
+  all_results=`cat $input | ./DTStoProlog`
+else
+  all_results=`echo $input | ./DTStoProlog`
+fi
 
 results=`echo $all_results \
   | sed 's/-- Preterm ---------/##/g' \
@@ -24,7 +29,8 @@ results=`echo $all_results \
   | sed 's/-- After resolving @ --------/##/g' \
   | sed 's/-- After elimSigma --------/##/g' \
   | sed 's/-- Coq formula --------/##/g' \
-  | sed 's/-- Coq signature --------/##/g'`
+  | sed 's/-- Coq code --------/##/g' \
+  | sed 's/-- Answer --------/##/g'`
 
 preterm=`echo $results | awk -F"##" '{print $2;}'`
 prolog=`echo $results | awk -F"##" '{print $3;}'`
@@ -34,20 +40,13 @@ coqformula=`echo $results | awk -F"##" '{print $6;}'`
 signatureLine=`echo $results | awk -F"##" '{print $7;}'`
 signature=`echo $signatureLine | sed 's/\./\.#/g' | tr '#' '\n' | sed 's/^ //g'`
 
-output=`echo -e "Require Export coqlib.\n \
-  $signature\n \
-  Theorem trm: ${coqformula}. \
-  firstorder. Qed." | coqtop 2>/dev/null`
+answer=`echo $results | awk -F"##" '{print $NF;}'`
+echo "answer:${answer}"
 
-# echo $output | awk '{if ($NF == "defined") {print "yes"} else {print "no"}}'
-
-echo $output | awk '{if ( $0 ~ /is defined/ ) {print "yes"} else {print "no"}}'
-
-# if [[ `echo ${output} | grep 'is defined'` ]] ; then
-#   echo 'yes'
-# else
-#   echo 'no'
-# fi
+# output=`echo -e "Require Export coqlib.\n \
+#   $signature\n \
+#   Theorem trm: ${coqformula}. \
+#   firstorder. Qed." | coqtop 2>/dev/null`
 
 coqscript="Require Export coqlib.\n$signature\nTheorem trm: ${coqformula}. firstorder. Qed."
 
@@ -58,8 +57,12 @@ echo -e "--- Resolving @ ---\n${resolved}"
 echo -e "--- Normalized ---\n${normal}"
 # echo -e "--- Coq formula ---\n${coqformula}"
 # echo -e "--- Coq signature ---\n${signature}"
-echo -e "--- Coq script ---\n${coqscript}"
+echo -e "--- Coq script ---\n${signature}"
+# echo -e "--- Coq script ---\n${coqscript}"
 fi
+
+# echo $output | awk '{if ($NF == "defined") {print "yes"} else {print "no"}}'
+# echo $output | awk '{if ( $0 ~ /is defined/ ) {print "yes"} else {print "no"}}'
 
 g1=`echo $prolog | sed 's/_//g'`
 g2=`echo $resolved | sed 's/_//g'`

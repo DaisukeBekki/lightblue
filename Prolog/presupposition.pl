@@ -73,7 +73,8 @@ elimAsp([[LCxt,@(N,Type)]|Store0],GCxt,Form0,SR):-
 
 %%% Accommodation %%%
 
-accomPresup(_,[V,Type],Store0,Store1,Binder,Form,exists(V,Type,Form)):-
+% Pi-accommodation
+accomPresup(_,[V,Type],Store0,Store1,Binder,Form,forall(V,Type,Form)):-
     freeVar(Type,FV),
     subtract(FV,[V],Unbound),
     subset(Unbound,Binder),

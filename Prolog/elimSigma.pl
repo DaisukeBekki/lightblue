@@ -17,25 +17,29 @@ subterm(T1,T2):-
     member(A,As),
     subterm(T1,A).
 
-elimSigma(exists(X,A,B),exists(X,A,C)):-
+elimSigma(exists(X,A,B),exists(X,C,D)):-
     nonSigma(A),
     subterm(X,B),
-    elimSigma(B,C), !.
+    elimSigma(A,C),
+    elimSigma(B,D), !.
 
-elimSigma(exists(X,A,B),and(A,C)):-
+elimSigma(exists(X,A,B),and(C,D)):-
     nonSigma(A),
     \+ subterm(X,B),
-    elimSigma(B,C), !.
+    elimSigma(A,C),
+    elimSigma(B,D), !.
 
-elimSigma(forall(X,A,B),forall(X,A,C)):-
+elimSigma(forall(X,A,B),forall(X,C,D)):-
     nonSigma(A),
     subterm(X,B),
-    elimSigma(B,C), !.
+    elimSigma(A,C),
+    elimSigma(B,D), !.
 
-elimSigma(forall(X,A,B),imp(A,C)):-
+elimSigma(forall(X,A,B),imp(C,D)):-
     nonSigma(A),
     \+ subterm(X,B),
-    elimSigma(B,C), !.
+    elimSigma(A,C),
+    elimSigma(B,D), !.
 
 elimSigma(exists(U,exists(T,A,B),C),O):-
     substitute(T,pi1(U),C,C0),
