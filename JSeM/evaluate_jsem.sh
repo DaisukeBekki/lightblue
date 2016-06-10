@@ -63,13 +63,22 @@ tags=""
 cat temp_jsem_problems_list | tr '+' '\t' > temp2_jsem_problems_list
 cat temp2_jsem_problems_list > temp_jsem_problems_list
 rm temp2_jsem_problems_list
-# mv temp2_jsem_problems_list temp_jsem_problems_list
 
 # Set the name of a result directory
-results_dir="jsem_results${tags}"
+results_dir="jsem_results/${tags/_/}"
+
+# ymdt=`date '+%Y%m%d.%H%M'`
+# results_dir="jsem_results/${tags/_/}_${ymdt}"
 
 # Creat a result directory
-if [ ! -d ${results_dir} ]; then
+if [ -d jsem_results ]; then
+  mkdir -p jsem_results
+fi
+if [ -d ${results_dir} ]; then
+  echo -e "Error: The directory \"${results_dir}\" already exists"
+  echo "Please delete or rename it"
+  exit 1
+else
   mkdir -p ${results_dir}
 fi
 
@@ -91,7 +100,6 @@ count=1
 
 # Parse and prove each problem
 for f in `cat ${plain_dir}/jsem.files`; do
-  # echo "--- Evaluating ${f}..."
   echo "Evaluating ${f}... ("${count}"/"${total}")"
   count=$((count + 1))
   cat ${plain_dir}/${f} > ${results_dir}/${f/.txt/}.results
@@ -108,6 +116,30 @@ results=`cat ${results_dir}/${f/.txt/}.results \
 
 coqformula=`echo $results | awk -F"##" '{print $6}' | awk '{print $1}'`
 answer=`echo $results | awk -F"##" '{print $NF}'`
+
+# Create LaTeX outputs
+prolog=`echo $results | awk -F"##" '{print $3;}'`
+resolved=`echo $results | awk -F"##" '{print $4;}'`
+normal=`echo $results | awk -F"##" '{print $5;}'`
+
+# Delete the existing "test.tex" file
+if [ -f test.tex ]; then
+  rm test.tex
+fi
+
+g1=`echo $prolog | sed 's/_//g'`
+g2=`echo $resolved | sed 's/_//g'`
+g3=`echo $normal | sed 's/_//g'`
+swipl -s ../Prolog/prolog2latex.pl -g main -t halt --quiet -- "${g1}" "${g2}" "${g3}"
+
+if [ -f test.tex ]; then
+  platex -interaction=nonstopmode test.tex > /dev/null 2>&1
+  # platex -interaction=nonstopmode -halt-on-error test.tex > /dev/null 2>&1
+  dvipdfmx test.dvi > /dev/null 2>&1
+  mv test.pdf ${results_dir}/${f/.txt/}_sr.pdf
+  mv test.tex ${results_dir}/${f/.txt/}_sr.tex
+  rm test.aux test.dvi test.log 
+fi
 
 # Output a system answer
 # Handling parse errors
@@ -129,15 +161,6 @@ done
 # signatureLine=`echo $results | awk -F"##" '{print $7;}'`
 # signature=`echo $signatureLine | sed 's/\./\.#/g' | tr '#' '\n' | sed 's/^ //g'`
 # sys_answer=`echo $results | awk -F"##" '{print $14;}'`
-
-# g1=`echo $prolog | sed 's/_//g'`
-# g2=`echo $resolved | sed 's/_//g'`
-# g3=`echo $normal | sed 's/_//g'`
-# swipl -s Prolog/prolog2latex.pl -g main -t halt --quiet -- "${g1}" "${g2}" "${g3}"
-# platex test.tex > /dev/null 2>&1
-# dvipdfmx test.dvi > /dev/null 2>&1
-# mv test.pdf ${results_dir}/${f}.sr.pdf
-# rm test.tex
 
 # Creat a "main_jsem.html" file for the summary of results
 echo "Summarizing."
@@ -198,7 +221,7 @@ for system_filename in `ls -v ${results_dir}/jsem_*.answer`; do
 <tr>
   <td><a style="background-color:'$color';" href="'${base_filename/.answer/.results}'">'${base_filename/.answer/}'</a></td>
   <td>'$gold_answer'</td>
-  <td>'$system_answer'</td>
+  <td><a href="'${base_filename/.answer/_sr.pdf}'">'$system_answer'</a></td>
   <td>'$proving_time's</td>
 </tr>' >> $results_dir/main_jsem.html
 done
@@ -209,6 +232,8 @@ echo "
 </body>
 </html>
 " >> $results_dir/main_jsem.html
+
+# <td><a href="'${base_filename/.answer/_sr.pdf}'">'${base_filename/.answer/}'</a></td>
 
 # <h4><font color="red">Accuracy: "$accuracy" ("${correct_recognitions}"/"${total_observations}") </font></h4>
 # <h4><font color="red">Average proving time: "${average_proving_time}" </font></h4>

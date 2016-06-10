@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script calculates the statistics (total accuracy, recall and precision) for the "jsem_main.html" file, and creating the confusion matrix.
+# This script calculates the statistics (total accuracy, recall and precision) for the "jsem_main.html" file, and creates the confusion matrix.
 #
 # Usage:
 #   ./accuracy.sh main_jsem.html
@@ -15,13 +15,14 @@ cat $input | \
   sed 's/</ /g' | \
   sed 's/>/ /g' | \
   grep href | \
-  awk '{print $6" "$10" "$13}' \
+  # awk '{print $6" "$10" "$13}' \
+  awk '{print $6" "$10" "$15}' \
   > base_results.txt
 
 total_number_with_undef=`cat base_results.txt | wc -l`
 total_number=`cat base_results.txt | grep -v undef | wc -l`
-noanswer=`cat base_results.txt | grep -v undef | awk '$3 == "/td" || $3 == "error"' | wc -l`
-correct_parsing=`cat base_results.txt | grep -v undef | awk '$3 != "/td"' | awk '$3 != "error"' | wc -l`
+noanswer=`cat base_results.txt | grep -v undef | awk '$3 == "/td" || $3 == "error" || $3 == "/a"' | wc -l`
+correct_parsing=`cat base_results.txt | grep -v undef | awk '$3 != "/td"' | awk '$3 != "error"' | awk '$3 != "/a"' | wc -l`
 # counting timeout cases as "unknown"
 correct_answer=`cat base_results.txt | awk '$2 == $3 || ($2 == "unknown" && $3 == "/td")' | wc -l`
 # correct_answer=`cat base_results.txt | awk '$2 == $3' | wc -l`
@@ -30,21 +31,21 @@ correct_answer=`cat base_results.txt | awk '$2 == $3 || ($2 == "unknown" && $3 =
 yes_yes=`cat base_results.txt | awk '$2 == "yes" && $3 == "yes"' | wc -l`
 yes_no=`cat base_results.txt | awk '$2 == "yes" && $3 == "no"' | wc -l`
 yes_unk=`cat base_results.txt | awk '$2 == "yes" && $3 == "unknown"' | wc -l`
-yes_error=`cat base_results.txt | awk '$2 == "yes" && ($3 == "/td" || $3 == "error")' | wc -l`
+yes_error=`cat base_results.txt | awk '$2 == "yes" && ($3 == "/td" || $3 == "error" || $3 == "/a")' | wc -l`
 yes_gold_total=`cat base_results.txt | awk '$2 == "yes"' | wc -l`
 yes_system_total=`cat base_results.txt | grep -v undef | awk '$3 == "yes"' | wc -l`
 
 no_yes=`cat base_results.txt | awk '$2 == "no" && $3 == "yes"' | wc -l`
 no_no=`cat base_results.txt | awk '$2 == "no" && $3 == "no"' | wc -l`
 no_unk=`cat base_results.txt | awk '$2 == "no" && $3 == "unknown"' | wc -l`
-no_error=`cat base_results.txt | awk '$2 == "no" && ($3 == "/td" || $3 == "error")' | wc -l`
+no_error=`cat base_results.txt | awk '$2 == "no" && ($3 == "/td" || $3 == "error" || $3 == "/a")' | wc -l`
 no_gold_total=`cat base_results.txt | awk '$2 == "no"' | wc -l`
 no_system_total=`cat base_results.txt | grep -v undef | awk '$3 == "no"' | wc -l`
 
 unk_yes=`cat base_results.txt | awk '$2 == "unknown" && $3 == "yes"' | wc -l`
 unk_no=`cat base_results.txt | awk '$2 == "unknown" && $3 == "no"' | wc -l`
 unk_unk=`cat base_results.txt | awk '$2 == "unknown" && $3 == "unknown"' | wc -l`
-unk_error=`cat base_results.txt | awk '$2 == "unknown" && ($3 == "/td" || $3 == "error")' | wc -l`
+unk_error=`cat base_results.txt | awk '$2 == "unknown" && ($3 == "/td" || $3 == "error" || $3 == "/a")' | wc -l`
 unk_gold_total=`cat base_results.txt | awk '$2 == "unknown"' | wc -l`
 unk_system_total=`cat base_results.txt | grep -v undef | awk '$3 == "unknown"' | wc -l`
 
@@ -78,4 +79,5 @@ echo -e "Correct parsing: "${noerror}" ("$correct_parsing"/"$total_number")\n"\
 "     |   total| $yes_system_total| $no_system_total| $unk_system_total| $noanswer| $total_number\n"\
 "----------------------------------------------------------------"
 
-rm base_results.txt
+# rm base_results.txt
+

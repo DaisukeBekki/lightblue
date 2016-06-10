@@ -19,9 +19,10 @@ fol2file(F1,F2,F3):-
     nl(Stream),
     write(Stream,'\\newcommand{\\dConj}[2]{\\left[\\kern-0.3em\\begin{array}{l}\\vspace{0.1mm}#1\\\\#2\\end{array}\\kern-0.3em\\right]}'),
     nl(Stream),
-    write(Stream,'\\newcommand{\\dPi}[2]{\\left(\\kern-0.3em\\begin{array}{l}#1\\end{array}\\kern-0.3em\\right) \\to #2}'),
+    write(Stream,'\\newcommand{\\dPi}[2]{\\left(\\kern-0.3em\\begin{array}{l}#1\\end{array}\\kern-0.3em\\right)\\\\ \\qquad \\to #2.}'),
     nl(Stream),
-    write(Stream,'\\newcommand{\\dImp}[2]{#1 \\to #2}'),
+    write(Stream,'\\newcommand{\\dImp}[2]{#1\\\\ \\qquad \\to #2.}'),
+    nl(Stream),
     write(Stream,'\\newcommand{\\Entity}{\\ensuremath{\\mathbf{entity}}}'),
     nl(Stream),
     write(Stream,'\\newcommand{\\Event}{\\ensuremath{\\mathbf{event}}}'),
@@ -191,7 +192,6 @@ fol2latex(not(F),Stream):- !,
     write(Stream,'\\neg'),
     fol2latex(F,Stream).
 
-
 fol2latex(entity,Stream):-
     write(Stream,'\\mbox{\\textbf{entity}}').
 
@@ -207,6 +207,12 @@ fol2latex([A,B],Stream):-
     write(Stream,','),
     fol2latex(B,Stream),
     write(Stream,')').
+
+% fol2latex(F,Stream):-
+%     atomic(F),
+%     sub_atom(F,0,1,_,c),
+%     sub_atom(F,1,_,0,G),
+%     write_term(Stream,G,[numbervars(true)]), !.
 
 fol2latex(F,Stream):-
     atomic(F),
@@ -227,6 +233,24 @@ fol2latex(F,Stream):-
     write(Stream,'\\right)').
 
 fol2latex(F,Stream):-
+    F =.. [@,N,T],
+    write(Stream,'@'),
+    write_term(Stream,N,[numbervars(true)]),
+    write(Stream,' : '),
+    fol2latex(T,Stream).
+
+% fol2latex(F,Stream):-
+%     F =.. [CSymbol,Form],
+%     write(Stream,'\\mbox{\\textbf{'),
+%     sub_atom(CSymbol,0,1,_,c),
+%     sub_atom(CSymbol,1,_,0,Symbol),
+%     write_term(Stream,Symbol,[numbervars(true)]),
+%     write(Stream,'}}'),
+%     write(Stream,'\\left('),
+%     fol2latex(Form,Stream),
+%     write(Stream,'\\right)'), !.
+
+fol2latex(F,Stream):-
     F =.. [Symbol,Form],
     write(Stream,'\\mbox{\\textbf{'),
     write_term(Stream,Symbol,[numbervars(true)]),
@@ -235,12 +259,17 @@ fol2latex(F,Stream):-
     fol2latex(Form,Stream),
     write(Stream,'\\right)').
 
-fol2latex(F,Stream):-
-    F =.. [@,N,T],
-    write(Stream,'@'),
-    write_term(Stream,N,[numbervars(true)]),
-    write(Stream,' : '),
-    fol2latex(T,Stream).
+% fol2latex(F,Stream):-
+%     F =.. [CSymbol,Arg1,Arg2],
+%     write(Stream,'\\mbox{\\textbf{'),
+%     sub_atom(CSymbol,0,1,_,c),
+%     sub_atom(CSymbol,1,_,0,Symbol),
+%     write_term(Stream,Symbol,[numbervars(true)]),
+%     write(Stream,'}}('),
+%     fol2latex(Arg2,Stream),
+%     write(Stream,','),
+%     fol2latex(Arg1,Stream),
+%     write(Stream,')'), !.
 
 fol2latex(F,Stream):-
     F =.. [Symbol,Arg1,Arg2],
@@ -251,6 +280,20 @@ fol2latex(F,Stream):-
     write(Stream,','),
     fol2latex(Arg1,Stream),
     write(Stream,')').
+
+% fol2latex(F,Stream):-
+%     F =.. [CSymbol,Arg1,Arg2,Arg3],
+%     write(Stream,'\\mbox{\\textbf{'),
+%     sub_atom(CSymbol,0,1,_,c),
+%     sub_atom(CSymbol,1,_,0,Symbol),
+%     write_term(Stream,Symbol,[numbervars(true)]),
+%     write(Stream,'}}('),
+%     fol2latex(Arg3,Stream),
+%     write(Stream,','),
+%     fol2latex(Arg2,Stream),
+%     write(Stream,','),
+%     fol2latex(Arg1,Stream),
+%     write(Stream,')'), !.
 
 fol2latex(F,Stream):-
     F =.. [Symbol,Arg1,Arg2,Arg3],
@@ -263,6 +306,22 @@ fol2latex(F,Stream):-
     write(Stream,','),
     fol2latex(Arg1,Stream),
     write(Stream,')').
+
+% fol2latex(F,Stream):-
+%     F =.. [CSymbol,Arg1,Arg2,Arg3,Arg4],
+%     write(Stream,'\\mbox{\\textbf{'),
+%     sub_atom(CSymbol,0,1,_,c),
+%     sub_atom(CSymbol,1,_,0,Symbol),
+%     write_term(Stream,Symbol,[numbervars(true)]),
+%     write(Stream,'}}('),
+%     fol2latex(Arg4,Stream),
+%     write(Stream,','),
+%     fol2latex(Arg3,Stream),
+%     write(Stream,','),
+%     fol2latex(Arg2,Stream),
+%     write(Stream,','),
+%     fol2latex(Arg1,Stream),
+%     write(Stream,')'), !.
 
 fol2latex(F,Stream):-
     F =.. [Symbol,Arg1,Arg2,Arg3,Arg4],
