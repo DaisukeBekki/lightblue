@@ -4,6 +4,7 @@
 import qualified Data.Text.Lazy as T     -- text
 import qualified Data.Text.Lazy.IO as T  -- text
 import qualified Data.List as L          -- base
+import qualified Data.Time as Time       -- time
 import qualified System.Process as S     -- process
 import qualified System.Environment as E -- base
 import qualified Control.Monad as M      -- base
@@ -15,7 +16,17 @@ import qualified Interface.Text as T
 -- function: cname
 -- normalize the given constant text
 cname_f :: T.Text -> T.Text
-cname_f cname = T.concat ["c_",  (T.replace "~" "" $ T.replace "]" "_" $ T.replace "[" "_" $ T.replace "/" "_" $ head $ T.split (==';') cname)]
+cname_f cname = T.concat ["c_",  (T.replace "ー" "xmdashx" $
+                                  T.replace "（" "lpar" $
+                                  T.replace "）" "rpar" $
+                                  T.replace "・" "middot" $
+                                  T.replace "々" "ono" $
+                                  T.replace "£"  "pound" $
+                                  T.replace "~" "" $
+                                  T.replace "]" "_" $
+                                  T.replace "[" "_" $
+                                  T.replace "/" "_" $
+                                  head $ T.split (==';') cname)]
 
 -- function: f
 -- a function which converts DTS preterm with variable name to Prolog input formula
@@ -137,8 +148,10 @@ conv2CoqTheorem formula = do
   return t3
 
 
-proveEntailment :: D.Preterm -> T.Text -> IO Bool
-proveEntailment formula coqsig = do
+proveEntailment :: T.Text -> D.Preterm -> T.Text -> IO Bool
+proveEntailment flag formula coqsig = do
+  if flag == "e" then T.putStrLn "*** Result: Entailment"
+                 else T.putStrLn "*** Result: Contradiction"
   lightbluepath <- M.liftM T.pack $ E.getEnv "LIGHTBLUE"
   t3 <- conv2CoqTheorem formula
   let coqcode = T.concat ["Add LoadPath \\\"", lightbluepath, "\\\".\nRequire Export coqlib.\n",
@@ -170,6 +183,7 @@ neg_currying (p:ps) preterm = DTS.Pi (DTS.App p (DTS.Lam DTS.Top)) (neg_currying
 main :: IO()
 main = do
   sentences <- T.getContents
+  parse_start <- Time.getCurrentTime
   pairsList <- mapM (\t -> do
                               (chart,_) <- CP.parse 24 t
                               let top = CP.topBox $ chart;
@@ -177,14 +191,22 @@ main = do
                                   top' = if sonly == [] then top else sonly;
                                   representative = head $ CP.bestOnly $ top'
                               return ((CP.sem $ representative), (CP.sig $ representative))) (T.lines sentences)
+  parse_stop <- Time.getCurrentTime
   let listsPair = pairsList2listsPair $ pairsList
       srlist = fst $ listsPair
       siglists = snd $ listsPair
       formula = DTS.fromDeBruijn (DTS.renumber (DTS.betaReduce $ currying (L.init $ srlist) (L.last $ srlist)))
       neg_formula = DTS.fromDeBruijn (DTS.renumber (DTS.betaReduce $ neg_currying (L.init $ srlist) (L.last $ srlist)))
       coqsig = makeCoqSigList (L.concat siglists)
-  (proveEntailment formula coqsig) >>=
+  proof_start <- Time.getCurrentTime
+  (proveEntailment "e" formula coqsig) >>=
    (\entails -> if entails then T.putStrLn "-- Answer --------\nyes"
-                else (proveEntailment neg_formula coqsig) >>=
+                else (proveEntailment "c" neg_formula coqsig) >>=
                      (\contradicts -> if contradicts then T.putStrLn "-- Answer --------\nno"
                                       else T.putStrLn "-- Answer --------\nunknown"))
+  proof_stop <- Time.getCurrentTime
+  let parse_time = Time.diffUTCTime parse_stop parse_start
+      proof_time = Time.diffUTCTime proof_stop proof_start
+  T.putStrLn "-- Time --------"
+  T.putStrLn $ T.concat ["Parsing Time: ", T.pack (show parse_time)]
+  T.putStrLn $ T.concat ["Proving Time: ", T.pack (show proof_time)]
