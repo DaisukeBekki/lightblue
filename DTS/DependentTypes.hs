@@ -31,13 +31,15 @@ module DTS.DependentTypes (
   add,
   multiply,
   -- * Utility
-  renumber
+  Renumber(..),
+  renumber,
+  renumber2,
   ) where
 
+import qualified Data.Text.Lazy as T      -- text
+import qualified Data.List as L           -- base
 import qualified Control.Applicative as M -- base
-import qualified Control.Monad as M    -- base
-import qualified Data.Text.Lazy as T   -- text
-import qualified Data.List as L        -- base
+import qualified Control.Monad as M       -- base
 import qualified DTS.DependentTypesWVN as DTSWVN
 import Interface.Text
 
@@ -54,12 +56,12 @@ data Preterm =
   Sigma Preterm Preterm | -- ^ Dependent product type (or Sigma type)
   Pair Preterm Preterm |  -- ^ Pair
   Proj Selector Preterm | -- ^ (First and second) Projections
-  Lamvec Preterm |        -- ^ Variable-length lambda abstraction
-  Appvec Int Preterm |    -- ^ Variable-length function application
+  Asp Int Preterm |       -- ^ Underspesified term
+  Lamvec Preterm |        -- ^ Lambda abstraction of variable vector
+  Appvec Int Preterm |    -- ^ Function application of variable vector
   Unit |                  -- ^ The unit term (of type Top)
   Top |                   -- ^ The top type
   Bot |                   -- ^ The bottom type
-  Asp Int Preterm |       -- ^ The asperand term (or Underspesified term)
   Nat |                   -- ^ The natural number type (Nat)
   Zero |                  -- ^ 0 (of type Nat)
   Succ Preterm |          -- ^ The successor function
@@ -68,20 +70,20 @@ data Preterm =
   Refl Preterm Preterm |           -- ^ refl
   Idpeel Preterm Preterm |         -- ^ idpeel
   DRel Int T.Text Preterm Preterm  -- ^ Discourse relation
-    deriving (Eq, Show)
+  deriving (Eq, Show)
 
 -- | translates a term into a simple text notation.
 instance SimpleText Preterm where
   toText = toText . fromDeBruijn
 
--- | 'Proj' 'Fst' m is the first projection of m, while 'Proj' 'Snd' m is the second projection of m.
-data Selector = Fst | Snd
-  deriving (Eq, Show)
+-- | 'Proj' 'Fst' m is the first projection of m, 
+-- while 'Proj' 'Snd' m is the second projection of m.
+data Selector = Fst | Snd deriving (Eq, Show)
 
 -- | translates a selector into either 1 or 2.
 instance SimpleText Selector where
-  toText Fst = "1"  -- `Proj` `Fst` m is the first projection of m
-  toText Snd = "2" -- `Proj` `Snd` m is the second projection of m
+  toText Fst = "1"
+  toText Snd = "2"
 
 -- | A type of an element of a type signature, that is, a list of pairs of a preterm and a type.
 -- ex. [entity:type, state:type, event:type, student:entity->type]
@@ -296,8 +298,8 @@ toTextWithVNLoop vlist preterm i = case preterm of
 --   "subst M L i" = M[L/i]
 subst :: Preterm -> Preterm -> Int -> Preterm
 subst preterm l i = case preterm of
-  Var j  -> if i == j
-               then l
+  Var j  -> if i == j 
+               then l 
                else Var j
   Con c  -> Con c
   Type   -> Type
@@ -309,18 +311,18 @@ subst preterm l i = case preterm of
   Sigma a b  -> Sigma (subst a l i) (subst b (shiftIndices l 1 0) (i+1))
   Pair m n   -> Pair (subst m l i) (subst n l i)
   Proj s m   -> Proj s (subst m l i)
+  Asp j m    -> Asp j (subst m l i)
   Lamvec m   -> Lamvec (subst m (shiftIndices l 1 0) (i+1))
   Appvec j m -> Appvec j (subst m l i)
-  Unit    -> Unit
-  Top     -> Top
-  Bot     -> Bot
-  Asp j m -> Asp j (subst m l i)
-  Nat     -> Nat
-  Zero    -> Zero
-  Succ n  -> Succ (subst n l i)
+  Unit       -> Unit
+  Top        -> Top
+  Bot        -> Bot
+  Nat        -> Nat
+  Zero       -> Zero
+  Succ n     -> Succ (subst n l i)
   Natrec n e f -> Natrec (subst n l i) (subst e l i) (subst f l i)
-  Eq a m n -> Eq (subst a l i) (subst m l i) (subst n l i)
-  Refl a m -> Refl (subst a l i) (subst m l i)
+  Eq a m n   -> Eq (subst a l i) (subst m l i) (subst n l i)
+  Refl a m   -> Refl (subst a l i) (subst m l i)
   Idpeel m n -> Idpeel (subst m l i) (subst n l i)
   DRel j t m n -> DRel j t (subst m l i) (subst n l i)
 
@@ -329,7 +331,7 @@ subst preterm l i = case preterm of
 shiftIndices :: Preterm -> Int -> Int -> Preterm
 shiftIndices preterm d i = case preterm of
   Var j      -> if j >= i 
-                   then Var (j+d)
+                   then Var (j+d) 
                    else Var j
   Pi a b     -> Pi (shiftIndices a d i) (shiftIndices b d (i+1))
   Not m      -> Not (shiftIndices m d (i+1))
@@ -338,18 +340,18 @@ shiftIndices preterm d i = case preterm of
   Sigma a b  -> Sigma (shiftIndices a d i) (shiftIndices b d (i+1))
   Pair m n   -> Pair (shiftIndices m d i) (shiftIndices n d i)
   Proj s m   -> Proj s (shiftIndices m d i)
+  Asp j m    -> Asp j (shiftIndices m d i)
   Lamvec m   -> Lamvec (shiftIndices m d (i+1))
   Appvec j m -> if j >= i
                    then Appvec (j+d) (shiftIndices m d i)
                    else Appvec j (shiftIndices m d i)
-  Asp j m    -> Asp j (shiftIndices m d i)
   Succ n     -> Succ (shiftIndices n d i)
   Natrec n e f -> Natrec (shiftIndices n d i) (shiftIndices e d i) (shiftIndices f d i)
   Eq a m n   -> Eq (shiftIndices a d i) (shiftIndices m d i) (shiftIndices n d i)
   Refl a m   -> Refl (shiftIndices a d i) (shiftIndices m d i)
   Idpeel m n -> Idpeel (shiftIndices m d i) (shiftIndices n d i)
   DRel j t m n -> DRel j t (shiftIndices m d i) (shiftIndices n d i)
-  t -> t
+  m -> m
 
 -- | Beta reduction
 betaReduce :: Preterm -> Preterm
@@ -416,11 +418,11 @@ addLambda i preterm = case preterm of
   Sigma a b  -> Sigma (addLambda i a) (addLambda (i+1) b)
   Pair m n   -> Pair (addLambda i m) (addLambda i n)
   Proj s m   -> Proj s (addLambda i m)
+  Asp j m    -> Asp j (addLambda i m)
   Lamvec m   -> Lamvec (addLambda (i+1) m)
   Appvec j m | j > i     -> Appvec (j+1) (addLambda i m)
              | j < i     -> Appvec j (addLambda i m)
              | otherwise -> Appvec j (App (addLambda i m) (Var (j+1)))
-  Asp j m    -> Asp j (addLambda i m)
   DRel j t m n -> DRel j t (addLambda i m) (addLambda i n)
   t -> t
 
@@ -438,13 +440,13 @@ deleteLambda i preterm = case preterm of
   Sigma a b  -> Sigma (deleteLambda i a) (deleteLambda (i+1) b)
   Pair m n   -> Pair (deleteLambda i m) (deleteLambda i n)
   Proj s m   -> Proj s (deleteLambda i m)
+  Asp j m    -> Asp j (deleteLambda i m)
   Lamvec m   -> Lamvec (deleteLambda (i+1) m)
   Appvec j m | j > i     -> Appvec (j-1) (deleteLambda i m)
              | j < i     -> Appvec j (deleteLambda i m)
              | otherwise -> deleteLambda i m
-  Asp j m    -> Asp j (deleteLambda i m)
   DRel j t m n -> DRel j t (deleteLambda i m) (deleteLambda i n)
-  t -> t
+  m -> m
 
 replaceLambda :: Int -> Preterm -> Preterm
 replaceLambda i preterm = case preterm of
@@ -455,12 +457,12 @@ replaceLambda i preterm = case preterm of
   Sigma a b  -> Sigma (replaceLambda i a) (replaceLambda (i+1) b)
   Pair m n   -> Pair (replaceLambda i m) (replaceLambda i n)
   Proj s m   -> Proj s (replaceLambda i m)
+  Asp j m    -> Asp j (replaceLambda i m)
   Lamvec m   -> Lamvec (replaceLambda (i+1) m)
   Appvec j m | i == j    -> App (replaceLambda i m) (Var j)
              | otherwise -> Appvec j (replaceLambda i m)
-  Asp j m    -> Asp j (replaceLambda i m)
   DRel j t m n -> DRel j t (replaceLambda i m) (replaceLambda i n)
-  t -> t
+  m -> m
 
 {- Renumbering of @ -}
 
@@ -498,8 +500,8 @@ renumber2 preterm = case preterm of
   Sigma a b -> do {a' <- renumber2 a; b' <- renumber2 b; return $ Sigma a' b'}
   Pair m n -> do {m' <- renumber2 m; n' <- renumber2 n; return $ Pair m' n'}
   Proj s m -> do {m' <- renumber2 m; return $ Proj s m'}
+  Asp _ m -> do {j <- aspIndex; m' <- renumber2 m; return $ Asp j m'}
   Lamvec m -> do {m' <- renumber2 m; return $ Lamvec m'}
   Appvec j m -> do {m' <- renumber2 m; return $ Appvec j m'}
-  Asp _ m -> do {j <- aspIndex; m' <- renumber2 m; return $ Asp j m'}
   DRel _ t m n -> do {j <- dRelIndex; m' <- renumber2 m; n' <- renumber2 n; return $ DRel j t m' n'}
   m -> return m
