@@ -1,7 +1,7 @@
 .SUFFIXES:	.tex .dvi .ps .pdf .aux .log .toc .lof .lot .bbl .bib .blg
 
 ### プログラム ###
-TEX=		platex
+TEX=		platex -kanji=utf8
 BIBTEX=		jbibtex -min-crossrefs=0 
 DVIOUT=		/usr/share/dviout/dviout.exe
 DVIPS=		dvipsk
@@ -21,12 +21,12 @@ view:		$(NAME).dvi
 			$(DVIOUT) $< &
 
 ### 依存関係 ###
-$(NAME).dvi:	$(NAME).tex outjis.txt
-$(NAME).ps:		$(NAME).dvi 
+$(NAME).dvi:	$(NAME).tex # outjis.txt
+$(NAME).ps:		$(NAME).dvi
 $(NAME).pdf:	$(NAME).ps
 $(NAME).aux:	$(NAME).log
-outjis.txt:		out.txt
-			nkf -W8 -s out.txt > outjis.txt
+#outjis.txt:		out.txt
+#			nkf -W8 -s out.txt > outjis.txt
 
 ### サフィクス・ルール ###
 .tex.dvi:
@@ -59,7 +59,7 @@ outjis.txt:		out.txt
 .ps.pdf:
 			start $^
 do:
-			nkf -W8 -s out.txt > outjis.txt
+#			nkf -W8 -s out.txt > outjis.txt
 			$(TEX) $(NAME).tex
 clean:
 			$(RM) *~
