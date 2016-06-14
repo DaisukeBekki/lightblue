@@ -389,23 +389,23 @@ addType(forall(X,A),forall(X,event,Form)):-
 addType(forall(X,A),forall(X,entity,Form)):-
     addType(A,Form), !.
 
-addType(lam(X,A),lam(X,event,Form)):-
-    X == v,
-    addType(A,Form), !.
+% addType(lam(X,A),lam(X,event,Form)):-
+%     X == v,
+%     addType(A,Form), !.
 
-addType(lam(X,A),lam(X,entity,Form)):-
-    addType(A,Form), !.
+% addType(lam(X,A),lam(X,entity,Form)):-
+%     addType(A,Form), !.
        
-addType(and(A0,B0),and(A,B)):-
-    addType(A0,A),
-    addType(B0,B), !.
+% addType(and(A0,B0),and(A,B)):-
+%     addType(A0,A),
+%     addType(B0,B), !.
 
-addType(imp(A0,B0),imp(A,B)):-
-    addType(A0,A),
-    addType(B0,B), !.
+% addType(imp(A0,B0),imp(A,B)):-
+%     addType(A0,A),
+%     addType(B0,B), !.
 
-addType(not(A0),not(A)):-
-    addType(A0,A), !.
+% addType(not(A0),not(A)):-
+%     addType(A0,A), !.
 
 addType(Form0,Form):-
     Form0 =.. [F,A0],
@@ -527,26 +527,35 @@ rewriteVar(_,A,A):-
 
 %%% Eliminating True %%%
 
-elimTrue(forall(_,true,A),B):-
-    elimTrue(A,B), !.
+elimTrue(forall(_,A,B),C):-
+    elimTrue(A,true),
+    elimTrue(B,C), !.
 
-elimTrue(exists(_,true,A),B):-
-    elimTrue(A,B), !.
+elimTrue(exists(_,A,B),C):-
+    elimTrue(A,true),
+    elimTrue(B,C), !.
 
-elimTrue(exists(_,A,true),B):-
-    elimTrue(A,B), !.
+elimTrue(exists(_,A,B),C):-
+    elimTrue(B,true),
+    elimTrue(A,C), !.
 
-elimTrue(and(true,A),B):-
-    elimTrue(A,B), !.
+elimTrue(and(A,B),C):-
+    elimTrue(A,true),
+    elimTrue(B,C), !.
 
-elimTrue(and(A,true),B):-
-    elimTrue(A,B), !.
+elimTrue(and(A,B),C):-
+    elimTrue(A,C),
+    elimTrue(B,true), !.
 
-elimTrue(or(true,_),true).
-elimTrue(or(_,true),true).
+elimTrue(or(A,_),true):-
+    elimTrue(A,true), !.
 
-elimTrue(imp(true,A),B):-
-    elimTrue(A,B), !.
+elimTrue(or(_,A),true):-
+    elimTrue(A,true), !.
+
+elimTrue(imp(A,B),C):-
+    elimTrue(A,true),
+    elimTrue(B,C), !.
 
 elimTrue(A,B):-
     A =.. [F,X],
