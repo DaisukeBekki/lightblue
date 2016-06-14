@@ -30,7 +30,8 @@ results=`echo $all_results \
   | sed 's/-- After elimSigma --------/##/g' \
   | sed 's/-- Coq formula --------/##/g' \
   | sed 's/-- Coq code --------/##/g' \
-  | sed 's/-- Answer --------/##/g'`
+  | sed 's/-- Answer --------/##/g' \
+  | sed 's/-- Time --------/##/g'`
 
 preterm=`echo $results | awk -F"##" '{print $2;}'`
 prolog=`echo $results | awk -F"##" '{print $3;}'`
@@ -40,7 +41,7 @@ coqformula=`echo $results | awk -F"##" '{print $6;}'`
 signatureLine=`echo $results | awk -F"##" '{print $7;}'`
 signature=`echo $signatureLine | sed 's/\./\.#/g' | tr '#' '\n' | sed 's/^ //g'`
 
-answer=`echo $results | awk -F"##" '{print $NF;}'`
+answer=`echo $results | awk -F"##" '{print $(NF - 1)}'`
 echo "answer:${answer}"
 
 # output=`echo -e "Require Export coqlib.\n \

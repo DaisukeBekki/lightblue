@@ -79,5 +79,5 @@ echo -e "Correct parsing: "${noerror}" ("$correct_parsing"/"$total_number")\n"\
 "     |   total| $yes_system_total| $no_system_total| $unk_system_total| $noanswer| $total_number\n"\
 "----------------------------------------------------------------"
 
-# rm base_results.txt
+rm base_results.txt
 
