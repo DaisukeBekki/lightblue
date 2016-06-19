@@ -23,15 +23,12 @@ main = do
     let totaltime = Time.diffUTCTime stop start
     S.hPutStrLn S.stdout $ "Results: " ++ (show i) ++ "/" ++ (show j) ++ " (" ++ (show $ ((fromRational ((toEnum i R.% toEnum j)*100))::F.Fixed F.E3)) ++ "%)"
     S.hPutStrLn S.stdout $ "Execution Time: " ++ show totaltime ++ " (average: " ++ (show $ ((fromRational ((toEnum (fromEnum totaltime)) R.% toEnum (j*1000000000000)))::F.Fixed F.E3)) ++ "s/sentence)"
-
-isSentence :: T.Text -> Bool
-isSentence t = not (t == T.empty || "☎" `T.isPrefixOf` t || "（" `T.isSuffixOf` t)
+    where isSentence t = not (t == T.empty || "☎" `T.isPrefixOf` t || "（" `T.isSuffixOf` t)
 
 f :: IO(Int,Int) -- ^ (The number of succeeded parses, the number of processed sentences)
      -> T.Text      -- ^ A next sentence to parse
      -> IO(Int,Int)
-f score s =
-  do
+f score s = do
   (i,j) <- score
   S.putStr $ "[" ++ show (j+1) ++ "] "
   T.putStrLn s

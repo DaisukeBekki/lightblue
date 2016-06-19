@@ -45,31 +45,31 @@ import Interface.Text
 
 -- | Preterms of Underspecified Dependent Type Theory (UDTT).
 data Preterm =
-  Var Int |               -- ^ Variable
-  Con T.Text |            -- ^ Constant symbol
+  Var Int |               -- ^ Variables
+  Con T.Text |            -- ^ Constant symbols
   Type |                  -- ^ The sort \"type\"
   Kind |                  -- ^ The sort \"kind\"
-  Pi Preterm Preterm |    -- ^ Dependent function type (or Pi type)
-  Not Preterm |           -- ^ Negation
-  Lam Preterm |           -- ^ Lambda abstraction
-  App Preterm Preterm |   -- ^ Function Application
-  Sigma Preterm Preterm | -- ^ Dependent product type (or Sigma type)
-  Pair Preterm Preterm |  -- ^ Pair
+  Pi Preterm Preterm |    -- ^ Dependent function types (or Pi types)
+  Not Preterm |           -- ^ Negations
+  Lam Preterm |           -- ^ Lambda abstractions
+  App Preterm Preterm |   -- ^ Function Applications
+  Sigma Preterm Preterm | -- ^ Dependent product types (or Sigma types)
+  Pair Preterm Preterm |  -- ^ Pairs
   Proj Selector Preterm | -- ^ (First and second) Projections
-  Asp Int Preterm |       -- ^ Underspesified term
-  Lamvec Preterm |        -- ^ Lambda abstraction of variable vector
-  Appvec Int Preterm |    -- ^ Function application of variable vector
+  Asp Int Preterm |       -- ^ Underspesified terms
+  Lamvec Preterm |        -- ^ Lambda abstractions of a variable vector
+  Appvec Int Preterm |    -- ^ Function applications of a variable vector
   Unit |                  -- ^ The unit term (of type Top)
   Top |                   -- ^ The top type
   Bot |                   -- ^ The bottom type
-  Nat |                   -- ^ The natural number type (Nat)
+  Nat |                   -- ^ Natural number type (Nat)
   Zero |                  -- ^ 0 (of type Nat)
   Succ Preterm |          -- ^ The successor function
   Natrec Preterm Preterm Preterm | -- ^ natrec
-  Eq Preterm Preterm Preterm |     -- ^ Intensional equality type
+  Eq Preterm Preterm Preterm |     -- ^ Intensional equality types
   Refl Preterm Preterm |           -- ^ refl
   Idpeel Preterm Preterm |         -- ^ idpeel
-  DRel Int T.Text Preterm Preterm  -- ^ Discourse relation
+  DRel Int T.Text Preterm Preterm  -- ^ Discourse relations
   deriving (Eq, Show)
 
 -- | translates a term into a simple text notation.
@@ -424,7 +424,7 @@ addLambda i preterm = case preterm of
              | j < i     -> Appvec j (addLambda i m)
              | otherwise -> Appvec j (App (addLambda i m) (Var (j+1)))
   DRel j t m n -> DRel j t (addLambda i m) (addLambda i n)
-  t -> t
+  m -> m
 
 -- | deleteLambda i preterm: the second subroutine for 'transvec' function.
 -- this function takes an index and a preterm, transforms the latter in a way that the Var/Appvec with an index j 

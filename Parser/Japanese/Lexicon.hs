@@ -42,8 +42,8 @@ lookupLexicon word lexicon = filter (\l -> (pf l) == word) lexicon
 setupLexicon :: T.Text -> IO(LexicalItems)
 setupLexicon sentence = do
   --  1. Setting up lexical items provided by JUMAN++
-  jumandicpath <- E.getEnv "LIGHTBLUE"
-  jumandic <- T.readFile $ jumandicpath ++ "Parser/Japanese/Juman.dic"
+  lightbluepath <- E.getEnv "LIGHTBLUE"
+  jumandic <- T.readFile $ lightbluepath ++ "Parser/Japanese/Juman.dic"
   let jumandicFiltered = filter (\l -> (head l) `T.isInfixOf` sentence) $ map (T.split (=='\t')) (T.lines jumandic)
   let (jumandicParsed,(cn,pn)) = L.foldl' parseJumanLine ([],(M.empty,M.empty)) $ jumandicFiltered
   --  2. Setting up private lexicon
@@ -150,5 +150,5 @@ constructConjunction daihyo =
   [
   (((T False 1 (S [F anyPos, F[Term,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]]))
     `SL` (T False 1 (S [F anyPos, F[Term,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]]))), 
-    ((Lam (Lam (Sigma (App (Var 1) (Lam Top)) (App (App (Con $ T.concat [daihyo,"[DRel]"]) (Proj Snd $ Asp 1 (Sigma Type (Var 0)))) (Var 0))))), []))
+    ((Lam (Lam (Sigma (App (Var 1) (Lam Top)) (DRel 0 daihyo (Proj Snd $ Asp 1 (Sigma Type (Var 0))) (Var 0))))), []))
     ]
