@@ -16,20 +16,18 @@ main = do
   text <- T.readFile $ head args
   let sentences = filter (/= T.empty) $ T.lines text
   srs <- mapM sentence2DTS sentences
-  let (sr,_,_) = (DTS.runRenumber (mapM DTS.renumber2 $ srs)) 1 1
-  mapM_ (\(s,r) -> do
-                   T.hPutStrLn S.stderr s
-                   T.putStrLn s
+  let (srs',_,_) = (DTS.runRenumber (mapM DTS.renumber2 $ srs)) 1 1
+  mapM_ (\(sentence,sr) -> do
+                   T.hPutStrLn S.stderr sentence
+                   T.putStrLn sentence
                    T.putStrLn "\\ \\begin{center}\\scalebox{.8}{$"
-                   T.putStrLn $ TEX.toTeX r
+                   T.putStrLn $ TEX.toTeX sr
                    T.putStrLn "$}\\end{center}\\newpage"
-                   ) $ zip sentences sr
+                   ) $ zip sentences srs'
 
 sentence2DTS :: T.Text -> IO(DTS.Preterm)
 sentence2DTS sentence = do
-  (chart0,_) <- CP.parse 24 sentence
-  let topbox = CP.topBox chart0
-      sonly = filter CP.isS topbox
-  if topbox /= []
-     then return $ CP.sem $ head $ if sonly == [] then topbox else sonly
-     else return DTS.Top
+  chart <- CP.parse 32 sentence
+  case CP.extractBestParse chart of
+    Just node -> return $ CP.sem node
+    Nothing -> return $ DTS.Con "parse error"

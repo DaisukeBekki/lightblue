@@ -28,25 +28,22 @@ main = do
 f :: IO(Int,Int) -- ^ (The number of succeeded parses, the number of processed sentences)
      -> T.Text      -- ^ A next sentence to parse
      -> IO(Int,Int)
-f score s = do
+f score sentence = do
   (i,j) <- score
   S.putStr $ "[" ++ show (j+1) ++ "] "
-  T.putStrLn s
-  (chart0,nodes0) <- CP.parse 32 s
-  if CP.topBox chart0 /= []
-    then
+  T.putStrLn sentence
+  chart <- CP.parse 32 sentence
+  case CP.extractBestParse chart of
+    Just node -> 
       do
       T.putStr $ T.concat ["Succeeded (", T.pack (show $ i+1), "/", T.pack (show $ j+1)," = "] 
       S.putStrLn $ percent (i+1,j+1) ++ "%)\n"
-      let topbox = CP.topBox chart0;
-          sonly = filter CP.isS topbox
-      T.putStrLn $ T.toText $ head $ CP.bestOnly $ if sonly == [] then topbox else sonly
+      T.putStrLn $ T.toText $ node
       return (i+1,j+1)
-    else
+    Nothing -> 
       do
       T.putStr $ T.concat ["Failed (", T.pack (show $ i), "/", T.pack (show $ j+1), " = "]
-      S.putStrLn $ percent (i,j+1) ++ "%), showing parsed segments:\n"
-      mapM_ ((\l -> if l==[] then return () else T.putStrLn . T.toText $ head l) . L.sort) (reverse nodes0)
+      S.putStrLn $ percent (i,j+1) ++ "%)\n"
       return (i,j+1)
 
 percent :: (Int,Int) -> String

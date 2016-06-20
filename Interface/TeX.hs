@@ -329,6 +329,9 @@ instance Typeset RuleSymbol where
     FFSx  -> ">S_{\\times}"
     COORD -> "\\langle\\Phi\\rangle"
     PAREN -> "PAREN"
+    WRAP  -> "WRAP"
+    DC    -> "DC"
+    DREL  -> "DREL"
     -- CNP -> "CNP"
 
 -- | prints n-nodes (n is a natural number) from given list of CCG nodes (=a parsing result) as a TeX source code.

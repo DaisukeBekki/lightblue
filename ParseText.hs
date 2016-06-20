@@ -16,7 +16,7 @@ main = do
   start    <- Time.getCurrentTime
   args     <- S.getArgs
   sentence <- T.getLine
-  (chart,_) <- CP.parse 24 sentence
+  chart    <- CP.parse 24 sentence
   let top = CP.topBox chart;
       sonly = filter CP.isS top;
       top' = if sonly == [] then top else sonly
@@ -31,4 +31,7 @@ main = do
           | op == "-numeration" = do {numeration <- LEX.setupLexicon sentence; mapM_ (T.putStrLn . T.toText) numeration}
           | op == "-debug" = TeX.printChartInTeX S.stdout chart
           | op == "-time" = S.hPutStrLn S.stderr $ "Total Execution Time: " ++ show time
+          | op == "-partial" = case CP.extractBestParse chart of
+                                 Just node -> T.putStrLn $ T.toText $ node
+                                 Nothing -> T.putStrLn "Parse error"
           | otherwise = return ()

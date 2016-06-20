@@ -32,7 +32,12 @@ module Parser.CCG (
   parenthesisRule,
   -- test
   unifyCategory,
-  unifyWithHead
+  unifyWithHead,
+  -- * Partial Parsing
+  wrapNode,
+  conjoinNodes,
+  drel,
+  numberOfArgs
   ) where
 
 import Prelude hiding (id)
@@ -132,7 +137,8 @@ data FeatureValue =
   VoR | VoS | VoE |
   P | M |
   Nc | Ga | O | Ni | To | Niyotte | No |
-  ToCL | YooniCL
+  ToCL | YooniCL |
+  Decl 
   deriving (Eq)
 
 instance Show FeatureValue where
@@ -198,6 +204,7 @@ instance Show FeatureValue where
   -- 
   show ToCL = "to"
   show YooniCL = "yooni"
+  show Decl = "decl"
   --
   show P = "+"
   show M = "-"
@@ -352,6 +359,9 @@ data RuleSymbol =
   | FFSx  -- ^ Forward function crossed substitution rule
   | COORD -- ^ Coordination rule
   | PAREN -- ^ Parenthesis rule
+  | WRAP  -- ^ Wrap rule
+  | DC    -- ^ Dynamic conjunction rule
+  | DREL  -- ^ Discourse Relation rule
   deriving (Eq, Show)
 
 -- | The simple-text representation of the rule symbols.
@@ -372,6 +382,9 @@ instance SimpleText RuleSymbol where
     FFSx  -> ">Sx"
     COORD -> "<Phi>"
     PAREN -> "PAREN"
+    WRAP  -> "WRAP"
+    DC    -> "DC"
+    DREL  -> "DREL"
     -- CNP -> "CNP"
 
 {- Classes of Combinatory Rules -}
@@ -1007,3 +1020,80 @@ unifyFeatures fsub f1 f2 = case (f1,f2) of
                            return ((f3h:f3t), fsub3)
   _ -> Nothing
 
+{- Functions for partial parsing -}
+
+category2type :: Cat -> Preterm
+category2type ct = case ct of
+  S _ -> Pi (Pi (Con "event") Type) Type
+  NP _ -> Con "entity"
+  N   -> Pi (Con "entity") (Pi (Con "state") (Pi (Pi (Con "state") Type) Type))
+  Sbar _ -> Type
+  SL x y -> Pi (category2type y) (category2type x)
+  BS x y -> Pi (category2type y) (category2type x)
+  T _ _ c -> category2type c
+  _ -> Unit
+
+preterm2prop :: Cat -> Preterm -> Preterm
+preterm2prop ct preterm = case ct of
+  S _ -> App preterm (Lam Top)
+  NP _ -> Sigma (Pi (Con "entity") Type) (App preterm (Var 0))
+  N -> Sigma (Con "entity") (App (App preterm (Var 0)) (Lam Top))
+  Sbar _ -> preterm
+  SL x y -> Sigma (category2type y) (preterm2prop x (App preterm (Var 0)))
+  BS x y -> Sigma (category2type y) (preterm2prop x (App preterm (Var 0)))
+  T _ _ c -> preterm2prop c (transvec c preterm)
+  _ -> Unit
+
+wrapNode :: Node -> Node
+wrapNode node =
+  Node {
+    rs = WRAP,
+    pf = pf node,
+    cat = Sbar [F[Decl]],
+    sem = betaReduce $ preterm2prop (cat node) (sem node),
+          --takes a CCG node and returns a semantic reprentation of type Type, obtained by existentially quantifying empty slots.
+    daughters = [node],
+    score = (score node)*0.9,
+    source = "",
+    sig = sig node
+    }
+
+conjoinNodes :: Node -> Node -> Node
+conjoinNodes lnode rnode =
+  Node {
+    rs = DC,
+    pf = pf(lnode) `T.append` pf(rnode),
+    cat = Sbar [F[Decl]],
+    sem = Sigma (sem lnode) (sem rnode),
+    daughters = [lnode,rnode],
+    score = score(lnode)*score(rnode),
+    source = "",
+    sig = sig(lnode) ++ sig(rnode)
+    }
+
+drel :: Node -> Node
+drel node =
+  Node {
+    rs = DREL,
+    pf = pf node,
+    cat = Sbar [F[Decl]],
+    sem = Sigma (sem node) (DRel 0 "S" (Proj Snd $ Asp 1 (Sigma Type (Var 0))) (Var 0)),
+    daughters = [node],
+    score = (score node)*0.9,
+    source = "",
+    sig = sig node
+    }
+
+numberOfArgs :: Cat -> Int
+numberOfArgs node = case node of
+  SL x _   -> (numberOfArgs x) + 1
+  BS x _   -> (numberOfArgs x) + 1
+  T _ _ c  -> numberOfArgs c
+  S _      -> 1
+  NP _     -> 10
+  Sbar _   -> 0
+  N        -> 2
+  CONJ     -> 10
+  LPAREN   -> 10
+  RPAREN   -> 10
+  

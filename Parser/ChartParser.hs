@@ -23,12 +23,15 @@ module Parser.ChartParser (
   -- * Utilities to filter the parsing results
   topBox,
   bestOnly,
-  isS
+  isS,
+  -- * Partial parsing
+  extractBestParse
   ) where
 
-import Data.List
+import Data.List as L
 import Data.Char                       --base
 import Data.Fixed                      --base
+import Data.Ord as O                   --base
 import qualified Data.Text.Lazy as T   --text
 import qualified Data.Map as M         --container
 import qualified System.IO as S        --base
@@ -95,14 +98,14 @@ isS node = case CCG.cat node of
 -- | Main parsing function to parse a Japanees sentence and generates a CYK-chart.
 parse :: Int           -- ^ The beam width
          -> T.Text     -- ^ A sentence to be parsed
-         -> IO(Chart, [[CCG.Node]]) -- ^ A pair of the resulting CYK-chart and a list of CYK-charts for segments
+         -> IO(Chart) -- ^ A pair of the resulting CYK-chart and a list of CYK-charts for segments
 parse beam sentence 
-  | sentence == T.empty = return (M.empty,[]) -- foldl returns a runtime error when text is empty
+  | sentence == T.empty = return M.empty -- foldl returns a runtime error when text is empty
   | otherwise =
       do
       lexicon <- L.setupLexicon (T.replace "―" "。" sentence)
-      let (chart,_,_,_,nodes) = T.foldl' (chartAccumulator beam lexicon) (M.empty,[0],0,T.empty,[]) (purifyText sentence)
-      return (chart,nodes)
+      let (chart,_,_,_) = T.foldl' (chartAccumulator beam lexicon) (M.empty,[0],0,T.empty) (purifyText sentence)
+      return chart
 
 -- | removes occurrences of non-letters from an input text.
 purifyText :: T.Text -> T.Text
@@ -119,7 +122,7 @@ purifyText text = case T.uncons text of -- remove a non-literal symbol at the be
 -- the pivot (=the current parsing position),
 -- the revsersed list of chars that has been parsed
 -- the list of partial parse results
-type PartialChart = (Chart,[Int],Int,T.Text,[[CCG.Node]])
+type PartialChart = (Chart,[Int],Int,T.Text)
 
 -- | The 'chartAccumulator' function
 chartAccumulator :: Int             -- ^ beam width
@@ -127,17 +130,17 @@ chartAccumulator :: Int             -- ^ beam width
                     -> PartialChart -- ^ accumulated result (Chart, Int, Text)
                     -> Char         -- ^ next char of a unparsed text
                     -> PartialChart
-chartAccumulator beam lexicon (chart,seplist,i,stack,parsed) c =
+chartAccumulator beam lexicon (chart,seplist,i,stack) c =
   let newstack = (T.cons c stack);
       (sep:seps) = seplist in
   if c == '、' -- Each seperator is an end of a phase
     then let newchart = M.fromList $ ((i,i+1),[andCONJ (T.singleton c), emptyCM (T.singleton c)]):(foldl' (punctFilter sep i) [] $ M.toList chart)
-         in (newchart, ((i+1):seps), (i+1), newstack, (take 1 (sort (lookupChart sep (i+1) newchart)):parsed))
+         in (newchart, ((i+1):seps), (i+1), newstack) --, (take 1 (sort (lookupChart sep (i+1) newchart)):parsed))
     else let (newchart,_,_,_) = T.foldl' (boxAccumulator beam lexicon) (chart,T.empty,i,i+1) newstack;
              newseps | c `elem` ['「','『'] = (i+1:seplist)
                      | c `elem` ['」','』'] = seps
                      | otherwise = seplist 
-         in (newchart,newseps,(i+1),newstack,parsed)
+         in (newchart,newseps,(i+1),newstack)
 
 punctFilter :: Int -> Int -> [((Int,Int),[CCG.Node])] -> ((Int,Int),[CCG.Node]) -> [((Int,Int),[CCG.Node])]
 punctFilter sep i charList e@((from,to),nodes) 
@@ -243,4 +246,32 @@ checkParenthesisRule i j chart prevlist
 checkEmptyCategories :: [CCG.Node] -> [CCG.Node]
 checkEmptyCategories prevlist =
   foldl' (\p ec -> foldl' (\list node -> (CCG.binaryRules node ec) $ (CCG.binaryRules ec node) list) p p) prevlist L.emptyCategories
+
+{- Partial Parse -}
+
+-- | takes a (parse result) chart and returns a list consisting of nodes, partially parsed substrings.
+extractBestParse :: Chart -> Maybe CCG.Node
+extractBestParse chart = 
+  f $ L.sortBy isLessPrivilegedThan $ filter (\((_,_),n) -> not (L.null n)) $ M.toList $ chart
+  where f [] = Nothing
+        f (((i,_),n):cs) = g (CCG.wrapNode $ head $ (L.sortBy (O.comparing (CCG.numberOfArgs . CCG.cat)) n)) $ filter (\((_,j),_) -> j < i) cs
+        g nodes [] = Just $ CCG.drel nodes
+        g nodes (((i,_),n):cs) = g (CCG.conjoinNodes (CCG.wrapNode $ head $ (L.sortBy (O.comparing (CCG.numberOfArgs . CCG.cat)) n)) nodes) $ filter (\((_,j),_) -> j < i) cs
+
+--test1 :: [((Int,Int),Int)]
+--test1 = L.sortBy isLessPrivilegedThan [((1,2),1),((2,3),2),((1,3),3),((2,3),4),((1,4),5)]
+
+-- | a `isLessPriviledgedThan` b means that b is more important parse result than a.
+isLessPrivilegedThan :: ((Int,Int),a) -> ((Int,Int),a) -> Ordering
+isLessPrivilegedThan ((i1,j1),_) ((i2,j2),_) | i1 == i2 && j1 == j2 = EQ
+                                             | j2 > j1 = GT
+                                             | j1 == j2 && i2 < i1 = GT
+                                             | otherwise = LT
+
+
+
+--partialProp :: [CCG.Node] -> D.Preterm
+--partialProp list prop = case list of
+--  [] -> prop
+--  (n:ns) -> partialProp ns $ Sigma (CCG.node2prop n) prop
 
