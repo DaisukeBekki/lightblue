@@ -28,12 +28,14 @@ module DTS.DependentTypes (
   replaceLambda,
   -- * Computations
   betaReduce,
+  strongBetaReduce,
   add,
   multiply,
   -- * Utility
   Renumber(..),
   renumber,
   renumber2,
+  seqRenumber
   ) where
 
 import qualified Data.Text.Lazy as T      -- text
@@ -185,7 +187,7 @@ fromDeBruijn2 vnames i preterm = case preterm of
   Appvec j m -> let vname = if j < (length vnames) 
                                then vnames!!j
                                else T.concat ["error: var+ ", T.pack (show j)] in
-                    DTSWVN.Appvec vname (fromDeBruijn2 (vname:vnames) i m)
+                    DTSWVN.Appvec vname (fromDeBruijn2 vnames i m)
   Unit       -> DTSWVN.Unit
   Top        -> DTSWVN.Top
   Bot        -> DTSWVN.Bot
@@ -393,6 +395,50 @@ betaReduce preterm = case preterm of
                   m' -> Idpeel m' (betaReduce n)
   DRel i t m n -> DRel i t (betaReduce m) (betaReduce n)
 
+-- | strong Beta reduction
+strongBetaReduce :: Int -> Preterm -> Preterm
+strongBetaReduce t preterm = case preterm of
+  Var i  -> Var i
+  Con c  -> Con c
+  Type   -> Type
+  Kind   -> Kind
+  Pi a b -> Pi (strongBetaReduce 0 a) (strongBetaReduce 0 b)
+  Not a  -> Not (strongBetaReduce 0 a)
+  Lam m  -> if t > 0
+               then Lam (strongBetaReduce (t-1) m)
+               else Lam (strongBetaReduce 0 m)
+  App m n -> case strongBetaReduce (t+1) m of
+    Lam v -> strongBetaReduce t (shiftIndices (subst v (shiftIndices n 1 0) 0) (-1) 0)
+    e -> App e (strongBetaReduce 0 n)
+  Sigma a b -> Sigma (strongBetaReduce 0 a) (strongBetaReduce 0 b)
+  Pair m n  -> Pair (strongBetaReduce 0 m) (strongBetaReduce 0 n)
+  Proj s m  -> case strongBetaReduce 0 m of
+    Pair x y -> case s of
+                  Fst -> x
+                  Snd -> y
+    e -> Proj s e
+  Lamvec m   -> if t > 0
+                   then Lam (strongBetaReduce (t-1) $ Lamvec (addLambda 0 m))
+                   else strongBetaReduce 0 (deleteLambda 0 m)
+  Appvec i m -> Appvec i (strongBetaReduce 0 m)
+  Unit -> Unit
+  Top  -> Top
+  Bot  -> Bot
+  Asp i m -> Asp i (strongBetaReduce 0 m)
+  Nat  -> Nat
+  Zero -> Zero
+  Succ n -> Succ (strongBetaReduce 0 n)
+  Natrec n e f -> case strongBetaReduce 0 n of
+                    Zero -> strongBetaReduce 0 e
+                    Succ m -> strongBetaReduce 0 $ (App (App f m) (Natrec m e f))
+                    m -> Natrec m (strongBetaReduce 0 e) (strongBetaReduce 0 f) -- Con $ T.concat ["Error in beta-reduction of Natrec: ", toText n]
+  Eq a m n -> Eq (strongBetaReduce 0 a) (strongBetaReduce 0 m) (strongBetaReduce 0 n)
+  Refl a m -> Refl (strongBetaReduce 0 a) (strongBetaReduce 0 m)
+  Idpeel m n -> case strongBetaReduce 0 m of
+                  Refl _ m' -> strongBetaReduce 0 (App n m')
+                  m' -> Idpeel m' (strongBetaReduce 0 n)
+  DRel i text m n -> DRel i text (strongBetaReduce 0 m) (strongBetaReduce 0 n)
+
 -- | adds two preterms (of type `Nat`).
 add :: Preterm -> Preterm -> Preterm
 add m n = Natrec m n (Lam (Lam (Succ (Var 0))))
@@ -505,3 +551,11 @@ renumber2 preterm = case preterm of
   Appvec j m -> do {m' <- renumber2 m; return $ Appvec j m'}
   DRel _ t m n -> do {j <- dRelIndex; m' <- renumber2 m; n' <- renumber2 n; return $ DRel j t m' n'}
   m -> return m
+
+seqRenumber :: [Renumber Preterm] -> Renumber [Preterm]
+seqRenumber list = case list of
+  [] -> return []
+  (r:rs) -> do
+            x <- r
+            xs <- seqRenumber rs
+            return (x:xs)
