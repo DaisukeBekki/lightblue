@@ -171,16 +171,17 @@ proveEntailment flag formula coqsig = do
   t4 <- T.hGetContents stdout4
 --  T.putStrLn "-- Result --------"
   --T.putStrLn t4
-  if (T.isInfixOf "trm is defined" t4) then return True else return False
+  --if (T.isInfixOf "trm is defined" t4) then return True else return False
+  return (T.isInfixOf "trm is defined" t4)
 
 
 currying :: [DTS.Preterm] -> DTS.Preterm -> DTS.Preterm
-currying [] preterm = DTS.App preterm (DTS.Lam DTS.Top)
-currying (p:ps) preterm = DTS.Pi (DTS.App p (DTS.Lam DTS.Top)) (currying ps preterm)
+currying [] preterm = preterm
+currying (p:ps) preterm = DTS.Pi p (currying ps preterm)
 
 neg_currying :: [DTS.Preterm] -> DTS.Preterm -> DTS.Preterm
-neg_currying [] preterm = DTS.Not (DTS.App preterm (DTS.Lam DTS.Top))
-neg_currying (p:ps) preterm = DTS.Pi (DTS.App p (DTS.Lam DTS.Top)) (neg_currying ps preterm)
+neg_currying [] preterm = DTS.Not preterm
+neg_currying (p:ps) preterm = DTS.Pi p (neg_currying ps preterm)
 
 
 main :: IO()
@@ -188,12 +189,9 @@ main = do
   sentences <- T.getContents
   parse_start <- Time.getCurrentTime
   pairsList <- mapM (\t -> do
-                              (chart,_) <- CP.parse 24 t
-                              let top = CP.topBox $ chart;
-                                  sonly = filter CP.isS top;
-                                  top' = if sonly == [] then top else sonly;
-                                  representative = head $ CP.bestOnly $ top'
-                              return ((CP.sem $ representative), (CP.sig $ representative))) (T.lines sentences)
+                           chart <- CP.parse 24 t
+                           let representative = head $ CP.extractBestParse $ chart
+                           return ((CP.sem $ representative), (CP.sig $ representative))) (T.lines sentences)
   parse_stop <- Time.getCurrentTime
   let listsPair = pairsList2listsPair $ pairsList
       srlist = fst $ listsPair
