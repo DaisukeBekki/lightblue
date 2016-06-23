@@ -32,7 +32,7 @@ f score sentence = do
   (i,j) <- score
   S.putStr $ "[" ++ show (j+1) ++ "] "
   T.putStrLn sentence
-  chart <- CP.parse 32 sentence
+  chart <- CP.parse 24 sentence
   case CP.extractBestParse chart of
     CP.Full nodes -> 
        do
