@@ -32,7 +32,7 @@ module DTS.DependentTypes (
   strongBetaReduce,
   add,
   multiply,
-  -- * Utility
+  -- * Renumbering of @ and DRel
   Renumber(..),
   renumber,
   renumber2
