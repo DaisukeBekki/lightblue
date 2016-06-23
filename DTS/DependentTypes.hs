@@ -23,6 +23,7 @@ module DTS.DependentTypes (
   toDeBruijn,
   -- * Syntactic Operations
   subst,
+  shiftIndices,
   addLambda,
   deleteLambda,
   replaceLambda,
@@ -34,8 +35,7 @@ module DTS.DependentTypes (
   -- * Utility
   Renumber(..),
   renumber,
-  renumber2,
-  seqRenumber
+  renumber2
   ) where
 
 import qualified Data.Text.Lazy as T      -- text
@@ -329,7 +329,7 @@ subst preterm l i = case preterm of
   DRel j t m n -> DRel j t (subst m l i) (subst n l i)
 
 -- | shiftIndices m d i
--- add d to all the indices more than i within m (=d-place shift)
+-- add d to all the indices that is greater than or equal to i within m (=d-place shift)
 shiftIndices :: Preterm -> Int -> Int -> Preterm
 shiftIndices preterm d i = case preterm of
   Var j      -> if j >= i 
@@ -514,6 +514,9 @@ replaceLambda i preterm = case preterm of
 
 newtype Renumber a = Renum { runRenumber :: Int -> Int -> (a,Int,Int) }
 
+instance Show a => Show (Renumber a) where
+  show (Renum b) = show (b 0 0)
+
 instance Monad Renumber where
   return x = Renum (\i j -> (x,i,j))
   (Renum m) >>= f = Renum (\i j -> let (a,i',j') = m i j;
@@ -552,6 +555,7 @@ renumber2 preterm = case preterm of
   DRel _ t m n -> do {j <- dRelIndex; m' <- renumber2 m; n' <- renumber2 n; return $ DRel j t m' n'}
   m -> return m
 
+{-
 seqRenumber :: [Renumber Preterm] -> Renumber [Preterm]
 seqRenumber list = case list of
   [] -> return []
@@ -559,3 +563,4 @@ seqRenumber list = case list of
             x <- r
             xs <- seqRenumber rs
             return (x:xs)
+-}

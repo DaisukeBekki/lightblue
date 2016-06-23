@@ -33,18 +33,19 @@ f score sentence = do
   S.putStr $ "[" ++ show (j+1) ++ "] "
   T.putStrLn sentence
   chart <- CP.parse 32 sentence
-  case CP.extractBestParse chart of
-    Just node -> 
-      do
-      T.putStr $ T.concat ["Succeeded (", T.pack (show $ i+1), "/", T.pack (show $ j+1)," = "] 
-      S.putStrLn $ percent (i+1,j+1) ++ "%)\n"
-      T.putStrLn $ T.toText $ node
-      return (i+1,j+1)
-    Nothing -> 
-      do
-      T.putStr $ T.concat ["Failed (", T.pack (show $ i), "/", T.pack (show $ j+1), " = "]
-      S.putStrLn $ percent (i,j+1) ++ "%)\n"
-      return (i,j+1)
+  let nodes = CP.extractBestParse chart
+  if nodes /= []
+     then
+       do
+       T.putStr $ T.concat ["Succeeded (", T.pack (show $ i+1), "/", T.pack (show $ j+1)," = "] 
+       S.putStrLn $ percent (i+1,j+1) ++ "%)\n"
+       T.putStrLn $ T.toText $ head $ nodes
+       return (i+1,j+1)
+     else
+       do
+       T.putStr $ T.concat ["Failed (", T.pack (show $ i), "/", T.pack (show $ j+1), " = "]
+       S.putStrLn $ percent (i,j+1) ++ "%)\n"
+       return (i,j+1)
 
 percent :: (Int,Int) -> String
 percent (i,j) = if j == 0

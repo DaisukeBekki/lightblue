@@ -11,27 +11,25 @@ Stability   : beta
 -}
 
 module Parser.ChartParser (
-  -- * Types
-  Chart,
-  -- * Main parsing function
-  parse,
-  -- * Printing (in Text) functions
-  printChartInText,
-  posTagger,
   -- * Data structures for CCG derivations
+  Chart,
   CCG.Node(..),
+  -- * Main parsing functions
+  parse,
+  posTagger,
+  -- * Printing (in Text) functions
+  printNodesInText,
   -- * Utilities to filter the parsing results
   topBox,
   bestOnly,
   isS,
-  -- * Partial parsing
+  -- * Partial parsing function(s)
   extractBestParse
   ) where
 
 import Data.List as L
 import Data.Char                       --base
 import Data.Fixed                      --base
-import Data.Ord as O                   --base
 import qualified Data.Text.Lazy as T   --text
 import qualified Data.Map as M         --container
 import qualified System.IO as S        --base
@@ -46,8 +44,8 @@ type Chart = M.Map (Int,Int) [CCG.Node]
 {- Come functions for pretty printing Chart/Nodes -}
 
 -- | prints CCG nodes (=a parsing result) as a plain text.
-printChartInText :: S.Handle -> [CCG.Node] -> IO()
-printChartInText handle nodes = 
+printNodesInText :: S.Handle -> [CCG.Node] -> IO()
+printNodesInText handle nodes = 
   do
   S.hPutStrLn handle (take 100 $ repeat '-')
   mapM_ (\node -> do S.hPutStr handle $ T.unpack $ T.toText node
@@ -81,10 +79,6 @@ bestOnly :: [CCG.Node] -> [CCG.Node]
 bestOnly nodes = case sort nodes of
   [] -> []
   (firstnode:ns) -> firstnode:(takeWhile (\node -> CCG.score(node) >= CCG.score(firstnode)) ns)
-
---`sOnly` 
---sOnly :: [CCG.Node] -> [CCG.Node]
---sOnly = filter isS
 
 -- | checks if a given node's category is `S` or `Sbar`.
 isS :: CCG.Node -> Bool
@@ -247,16 +241,29 @@ checkEmptyCategories :: [CCG.Node] -> [CCG.Node]
 checkEmptyCategories prevlist =
   foldl' (\p ec -> foldl' (\list node -> (CCG.binaryRules node ec) $ (CCG.binaryRules ec node) list) p p) prevlist L.emptyCategories
 
-{- Partial Parse -}
+{- Partial Parsing -}
 
 -- | takes a (parse result) chart and returns a list consisting of nodes, partially parsed substrings.
-extractBestParse :: Chart -> Maybe CCG.Node
+extractBestParse :: Chart -> [CCG.Node]
 extractBestParse chart = 
-  f $ L.sortBy isLessPrivilegedThan $ filter (\((_,_),n) -> not (L.null n)) $ M.toList $ chart
-  where f [] = Nothing
-        f (((i,_),n):cs) = g (CCG.wrapNode $ head $ (L.sortBy (O.comparing (CCG.numberOfArgs . CCG.cat)) n)) $ filter (\((_,j),_) -> j < i) cs
-        g nodes [] = Just $ CCG.drel nodes
-        g nodes (((i,_),n):cs) = g (CCG.conjoinNodes (CCG.wrapNode $ head $ (L.sortBy (O.comparing (CCG.numberOfArgs . CCG.cat)) n)) nodes) $ filter (\((_,j),_) -> j < i) cs
+  f $ L.sortBy isLessPrivilegedThan $ filter (\((_,_),nodes) -> not (L.null nodes)) $ M.toList $ chart
+  where f [] = []
+        f (((i,_),nodes):cs) = g (map CCG.wrapNode (sortByNumberOfArgs $ bestOnly $ L.sort nodes)) $ filter (\((_,j),_) -> j < i) cs
+        g [] _ = []
+        g results [] = map CCG.drel results
+        g results (((i,_),nodes):cs) = g [CCG.conjoinNodes (CCG.wrapNode $ head $ sortByNumberOfArgs $ bestOnly $ L.sort nodes) (head results)] $ filter (\((_,j),_) -> j < i) cs
+
+sortByNumberOfArgs :: [CCG.Node] -> [CCG.Node]
+sortByNumberOfArgs = sortByNumberOfArgs2 20 []
+
+sortByNumberOfArgs2 :: Int -> [CCG.Node] -> [CCG.Node] -> [CCG.Node]
+sortByNumberOfArgs2 i selected nodes = case nodes of
+  [] -> selected
+  (n:ns) -> let j = (CCG.numberOfArgs . CCG.cat) n in
+            case () of
+              _ | j < i  -> sortByNumberOfArgs2 j [n] ns
+                | i < j  -> sortByNumberOfArgs2 i selected ns
+                | otherwise -> sortByNumberOfArgs2 j (n:selected) ns
 
 --test1 :: [((Int,Int),Int)]
 --test1 = L.sortBy isLessPrivilegedThan [((1,2),1),((2,3),2),((1,3),3),((2,3),4),((1,4),5)]
@@ -268,10 +275,4 @@ isLessPrivilegedThan ((i1,j1),_) ((i2,j2),_) | i1 == i2 && j1 == j2 = EQ
                                              | j1 == j2 && i2 < i1 = GT
                                              | otherwise = LT
 
-
-
---partialProp :: [CCG.Node] -> D.Preterm
---partialProp list prop = case list of
---  [] -> prop
---  (n:ns) -> partialProp ns $ Sigma (CCG.node2prop n) prop
 

@@ -62,6 +62,7 @@ data Node = Node {
   source :: T.Text    -- ^ The source of the lexical entry
   } deriving (Eq, Show)
 
+-- | A node with a larger score is less than the one with a smaller score, thus larger comes earlier in [Node]
 instance Ord Node where
   (Node {score=i}) `compare` (Node {score=j})
     | i < j  = GT
@@ -733,6 +734,7 @@ coordinationRule lnode@(Node {rs=r, cat=x1, sem=s1}) cnode@(Node {cat=CONJ, sem=
               pf = T.concat [pf(lnode),pf(cnode),pf(rnode)],
               cat = x2,
               sem = betaReduce $ transvec x2 $ betaReduce $ Lamvec (App (App conj (Appvec 0 s1)) (Appvec 0 s2)),
+              --sem = betaReduce $ transvec x2 $ betaReduce $ Lamvec (Lam (App (App conj (App (Appvec 1 s1) (Var 0))) (App (Appvec 1 s2) (Var 0)))),
               daughters = [lnode,cnode,rnode],
               score = score(lnode)*score(rnode),
               source = "",
@@ -1026,7 +1028,7 @@ category2type :: Cat -> Preterm
 category2type ct = case ct of
   S _ -> Pi (Pi (Con "event") Type) Type
   NP _ -> Con "entity"
-  N   -> Pi (Con "entity") (Pi (Con "state") (Pi (Pi (Con "state") Type) Type))
+  N   -> Pi (Con "entity") (Pi (Pi (Con "state") Type) Type)
   Sbar _ -> Type
   SL x y -> Pi (category2type y) (category2type x)
   BS x y -> Pi (category2type y) (category2type x)
@@ -1036,12 +1038,12 @@ category2type ct = case ct of
 preterm2prop :: Cat -> Preterm -> Preterm
 preterm2prop ct preterm = case ct of
   S _ -> App preterm (Lam Top)
-  NP _ -> Sigma (Pi (Con "entity") Type) (App preterm (Var 0))
-  N -> Sigma (Con "entity") (App (App preterm (Var 0)) (Lam Top))
+  NP _ -> Sigma (Pi (Con "entity") Type) (App (shiftIndices preterm 1 0) (Var 0))
+  N -> Sigma (Con "entity") (App (App (shiftIndices preterm 1 0) (Var 0)) (Lam Top))
   Sbar _ -> preterm
-  SL x y -> Sigma (category2type y) (preterm2prop x (App preterm (Var 0)))
-  BS x y -> Sigma (category2type y) (preterm2prop x (App preterm (Var 0)))
-  T _ _ c -> preterm2prop c (transvec c preterm)
+  SL x y -> Sigma (category2type y) (preterm2prop x (App (shiftIndices preterm 1 0) (Var 0)))
+  BS x y -> Sigma (category2type y) (preterm2prop x (App (shiftIndices preterm 1 0) (Var 0)))
+  T _ _ c -> preterm2prop c preterm
   _ -> Unit
 
 wrapNode :: Node -> Node
@@ -1050,7 +1052,7 @@ wrapNode node =
     rs = WRAP,
     pf = pf node,
     cat = Sbar [F[Decl]],
-    sem = betaReduce $ preterm2prop (cat node) (sem node),
+    sem = strongBetaReduce 0 $ preterm2prop (cat node) (sem node),
           --takes a CCG node and returns a semantic reprentation of type Type, obtained by existentially quantifying empty slots.
     daughters = [node],
     score = (score node)*0.9,
@@ -1077,7 +1079,7 @@ drel node =
     rs = DREL,
     pf = pf node,
     cat = Sbar [F[Decl]],
-    sem = Sigma (sem node) (DRel 0 "S" (Proj Snd $ Asp 1 (Sigma Type (Var 0))) (Var 0)),
+    sem = renumber $ Sigma (sem node) (DRel 0 "S" (Proj Snd $ Asp 1 (Sigma Type (Var 0))) (Var 0)),
     daughters = [node],
     score = (score node)*0.9,
     source = "",
