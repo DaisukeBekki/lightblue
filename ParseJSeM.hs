@@ -36,12 +36,9 @@ currying [] preterm = preterm
 currying (p:ps) preterm = DTS.Pi p (currying ps preterm)
 
 parseText :: T.Text -> IO(DTS.Preterm)
-parseText text = do
-  chart <- CP.parse 16 text
-  let nodes = CP.extractBestParse chart
-  if nodes == []
-     then return $ DTS.Con "No parse"
-     else return $ DTS.renumber $ CP.sem $ head $ nodes
+parseText sentence = do
+  nodes <- CP.simpleParse 16 sentence
+  return $ DTS.renumber $ CP.sem $ head $ nodes
 
 callCoq :: T.Text -> IO()
 callCoq _ = do

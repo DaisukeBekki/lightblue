@@ -189,10 +189,8 @@ main = do
   sentences <- T.getContents
   parse_start <- Time.getCurrentTime
   pairsList <- mapM (\t -> do
-                           chart <- CP.parse 24 t
-                           let representative = case CP.extractBestParse chart of
-                                                  CP.Full nodes -> head nodes
-                                                  CP.Partial nodes -> head nodes
+                           nodes <- CP.simpleParse 24 t
+                           let representative = head nodes
                            return ((CP.sem $ representative), (CP.sig $ representative))) (T.lines sentences)
   parse_stop <- Time.getCurrentTime
   let listsPair = pairsList2listsPair $ pairsList

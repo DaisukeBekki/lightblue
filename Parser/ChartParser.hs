@@ -16,13 +16,10 @@ module Parser.ChartParser (
   CCG.Node(..),
   -- * Main parsing functions
   parse,
+  simpleParse,
   posTagger,
   -- * Printing (in Text) functions
   printNodesInText,
-  -- * Utilities to filter the parsing results
-  topBox,
-  bestOnly,
-  isS,
   -- * Partial parsing function(s)
   ParseResult(..),
   extractBestParse
@@ -68,6 +65,7 @@ node2PosTags node@(CCG.Node _ _ _ _ _ _ _ _) =
     [] -> [T.concat [CCG.pf node, "\t", T.toText (CCG.cat node), " \t", T.toText (CCG.sem node), "\t", CCG.source node, "\t[", T.pack (show ((fromRational $ CCG.score node)::Fixed E2)), "]"]]
     dtrs -> [t | dtr <- dtrs, t <- node2PosTags dtr]
 
+{-
 -- | picks up the nodes in the "top" box in the chart.
 topBox :: Chart -> [CCG.Node]
 topBox chart = let ((_,k),_) = M.findMax chart in
@@ -75,18 +73,13 @@ topBox chart = let ((_,k),_) = M.findMax chart in
                    Just nodes -> sort nodes
                    Nothing    -> []
 
--- | takes only the nodes with the best score.
-bestOnly :: [CCG.Node] -> [CCG.Node]
-bestOnly nodes = case sort nodes of
-  [] -> []
-  (firstnode:ns) -> firstnode:(takeWhile (\node -> CCG.score(node) >= CCG.score(firstnode)) ns)
-
 -- | checks if a given node's category is `S` or `Sbar`.
 isS :: CCG.Node -> Bool
 isS node = case CCG.cat node of
              CCG.S _ -> True
              CCG.Sbar _ -> True
              _ -> False
+-}
 
 {- Main functions -}
 
@@ -110,6 +103,14 @@ purifyText text = case T.uncons text of -- remove a non-literal symbol at the be
                                | c `elem` ['！','？','!','?','…','「','」','◎','○','●','▲','△','▼','▽','■','□','◆','◇','★','☆','※','†','‡'] -> purifyText t -- ignore some symbols as meaningless
                                | c `elem` ['，',',','-','―','?','。','．','／','＼'] -> T.cons '、' $ purifyText t          -- punctuations
                                | otherwise -> T.cons c $ purifyText t
+
+-- | Simple parsing function to return just the best node for a given sentence
+simpleParse :: Int -> T.Text -> IO([CCG.Node])
+simpleParse beam sentence = do
+  chart <- parse beam sentence
+  case extractBestParse chart of
+    Full nodes -> return nodes
+    Partial nodes -> return nodes
 
 -- | triples representing a state during parsing:
 -- the parsed result (=chart) of the left of the pivot,
@@ -256,6 +257,12 @@ extractBestParse chart =
         g results [] = map CCG.drel results
         g results (((i,_),nodes):cs) = g [CCG.conjoinNodes (CCG.wrapNode $ head $ sortByNumberOfArgs $ bestOnly $ L.sort nodes) (head results)] $ filter (\((_,j),_) -> j < i) cs
 
+-- | takes only the nodes with the best score.
+bestOnly :: [CCG.Node] -> [CCG.Node]
+bestOnly nodes = case sort nodes of
+  [] -> []
+  (firstnode:ns) -> firstnode:(takeWhile (\node -> CCG.score(node) >= CCG.score(firstnode)) ns)
+
 sortByNumberOfArgs :: [CCG.Node] -> [CCG.Node]
 sortByNumberOfArgs = sortByNumberOfArgs2 20 []
 
@@ -267,9 +274,6 @@ sortByNumberOfArgs2 i selected nodes = case nodes of
               _ | j < i  -> sortByNumberOfArgs2 j [n] ns
                 | i < j  -> sortByNumberOfArgs2 i selected ns
                 | otherwise -> sortByNumberOfArgs2 j (n:selected) ns
-
---test1 :: [((Int,Int),Int)]
---test1 = L.sortBy isLessPrivilegedThan [((1,2),1),((2,3),2),((1,3),3),((2,3),4),((1,4),5)]
 
 -- | a `isLessPriviledgedThan` b means that b is more important parse result than a.
 isLessPrivilegedThan :: ((Int,Int),a) -> ((Int,Int),a) -> Ordering

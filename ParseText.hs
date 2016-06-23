@@ -16,18 +16,18 @@ main = do
   start    <- Time.getCurrentTime
   args     <- S.getArgs
   sentence <- T.getLine
-  chart    <- CP.parse 24 sentence
-  let topbox = case CP.extractBestParse chart of
-                 CP.Full box -> box
-                 CP.Partial box -> box
+  chart <- CP.parse 24 sentence
+  let nodes = case CP.extractBestParse chart of
+                CP.Full ns -> ns
+                CP.Partial ns -> ns
   stop     <- Time.getCurrentTime
   let time = Time.diffUTCTime stop start
-  mapM_ (action sentence chart topbox time) args
-  where action sentence chart topbox time op
-          | op == "-tex" = TeX.printNodesInTeX S.stdout $ topbox
-          | op == "-text" = CP.printNodesInText S.stderr $ topbox
-          | op == "-xml"  = XML.render S.stderr $ topbox
-          | op == "-postag"  = CP.posTagger S.stdout $ topbox
+  mapM_ (action sentence chart nodes time) args
+  where action sentence chart nodes time op
+          | op == "-tex" = TeX.printNodesInTeX S.stdout $ nodes
+          | op == "-text" = CP.printNodesInText S.stderr $ nodes
+          | op == "-xml"  = XML.render S.stderr $ nodes
+          | op == "-postag"  = CP.posTagger S.stdout $ nodes
           | op == "-numeration" = do {numeration <- LEX.setupLexicon sentence; mapM_ (T.putStrLn . T.toText) numeration}
           | op == "-debug" = TeX.printChartInTeX S.stdout chart
           | op == "-time" = S.hPutStrLn S.stderr $ "Total Execution Time: " ++ show time
