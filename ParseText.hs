@@ -17,9 +17,12 @@ main = do
   args     <- S.getArgs
   sentence <- T.getLine
   chart    <- CP.parse 24 sentence
+  let topbox = case CP.extractBestParse chart of
+                 CP.Full box -> box
+                 CP.Partial box -> box
   stop     <- Time.getCurrentTime
   let time = Time.diffUTCTime stop start
-  mapM_ (action sentence chart (CP.extractBestParse chart) time) args
+  mapM_ (action sentence chart topbox time) args
   where action sentence chart topbox time op
           | op == "-tex" = TeX.printNodesInTeX S.stdout $ topbox
           | op == "-text" = CP.printNodesInText S.stderr $ topbox

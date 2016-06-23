@@ -23,7 +23,7 @@ main = do
     let totaltime = Time.diffUTCTime stop start
     S.hPutStrLn S.stdout $ "Results: " ++ (show i) ++ "/" ++ (show j) ++ " (" ++ (show $ ((fromRational ((toEnum i R.% toEnum j)*100))::F.Fixed F.E3)) ++ "%)"
     S.hPutStrLn S.stdout $ "Execution Time: " ++ show totaltime ++ " (average: " ++ (show $ ((fromRational ((toEnum (fromEnum totaltime)) R.% toEnum (j*1000000000000)))::F.Fixed F.E3)) ++ "s/sentence)"
-    where isSentence t = not (t == T.empty || "☎" `T.isPrefixOf` t || "（" `T.isSuffixOf` t)
+    where isSentence t = not (t == T.empty || "（" `T.isSuffixOf` t)
 
 f :: IO(Int,Int) -- ^ (The number of succeeded parses, the number of processed sentences)
      -> T.Text      -- ^ A next sentence to parse
@@ -33,18 +33,18 @@ f score sentence = do
   S.putStr $ "[" ++ show (j+1) ++ "] "
   T.putStrLn sentence
   chart <- CP.parse 32 sentence
-  let nodes = CP.extractBestParse chart
-  if nodes /= []
-     then
+  case CP.extractBestParse chart of
+    CP.Full nodes -> 
        do
-       T.putStr $ T.concat ["Succeeded (", T.pack (show $ i+1), "/", T.pack (show $ j+1)," = "] 
+       T.putStr $ T.concat ["Fully parsed (", T.pack (show $ i+1), "/", T.pack (show $ j+1)," = "] 
        S.putStrLn $ percent (i+1,j+1) ++ "%)\n"
        T.putStrLn $ T.toText $ head $ nodes
        return (i+1,j+1)
-     else
+    CP.Partial nodes -> 
        do
-       T.putStr $ T.concat ["Failed (", T.pack (show $ i), "/", T.pack (show $ j+1), " = "]
+       T.putStr $ T.concat ["Partially parsed (", T.pack (show $ i), "/", T.pack (show $ j+1), " = "]
        S.putStrLn $ percent (i,j+1) ++ "%)\n"
+       T.putStrLn $ T.toText $ head $ nodes
        return (i,j+1)
 
 percent :: (Int,Int) -> String

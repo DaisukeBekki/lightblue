@@ -860,5 +860,7 @@ myLexicon = concat $ [
   mylex ["三分の一"] "PB12-51" N (commonNounSR "三分の一/１／３"), --- これは後で数詞をちゃんとやる。
   mylex ["必要"] "PB12-67" N (commonNounSR "必要/ひつよう"), -- ナ形容詞のエントリ有り
   mylex ["時には"] "PB12-86" (defS [Nemp] [NStem] `BS` NP[F[Ga]]) (commonNounSR "時には/ときには"), -- 「時に」は副詞エントリがあるが意味が異なる
-  mylex ["真っ暗闇"] "PB12-86" N (commonNounSR "真っ暗闇/まっくらやみ") -- 「真っ」は接頭語のエントリ有り？
+  mylex ["真っ暗闇"] "PB12-86" N (commonNounSR "真っ暗闇/まっくらやみ"), -- 「真っ」は接頭語のエントリ有り？
+  -- PB
+  mylex ["☎"] "PB" (NP [F[Nc]]) (properNameSR "電話番号")
   ]

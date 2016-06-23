@@ -27,4 +27,7 @@ main = do
 sentence2DTS :: T.Text -> IO(DTS.Renumber DTS.Preterm)
 sentence2DTS sentence = do
   chart <- CP.parse 32 sentence
-  return $ DTS.renumber2 $ CP.sem $ head $ CP.extractBestParse chart
+  let nodes = case CP.extractBestParse chart of
+                CP.Full ns -> ns
+                CP.Partial ns -> ns
+  return $ DTS.renumber2 $ CP.sem $ head nodes

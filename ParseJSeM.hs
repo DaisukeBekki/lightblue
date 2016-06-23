@@ -32,16 +32,16 @@ processJSeMData jsemdata = do
   T.putStrLn ""
 
 currying :: [DTS.Preterm] -> DTS.Preterm -> DTS.Preterm
-currying [] preterm = DTS.App preterm (DTS.Lam DTS.Top)
-currying (p:ps) preterm = DTS.Pi (DTS.App p (DTS.Lam DTS.Top)) (currying ps preterm)
+currying [] preterm = preterm
+currying (p:ps) preterm = DTS.Pi p (currying ps preterm)
 
 parseText :: T.Text -> IO(DTS.Preterm)
 parseText text = do
-  (chart,_) <- CP.parse 16 text
-  let nodes = CP.topBox chart
+  chart <- CP.parse 16 text
+  let nodes = CP.extractBestParse chart
   if nodes == []
      then return $ DTS.Con "No parse"
-     else return $ CP.sem $ head $ nodes
+     else return $ DTS.renumber $ CP.sem $ head $ nodes
 
 callCoq :: T.Text -> IO()
 callCoq _ = do

@@ -24,6 +24,7 @@ module Parser.ChartParser (
   bestOnly,
   isS,
   -- * Partial parsing function(s)
+  ParseResult(..),
   extractBestParse
   ) where
 
@@ -243,13 +244,15 @@ checkEmptyCategories prevlist =
 
 {- Partial Parsing -}
 
+data ParseResult = Full [CCG.Node] | Partial [CCG.Node] deriving (Eq,Show)
+
 -- | takes a (parse result) chart and returns a list consisting of nodes, partially parsed substrings.
-extractBestParse :: Chart -> [CCG.Node]
+extractBestParse :: Chart -> ParseResult
 extractBestParse chart = 
   f $ L.sortBy isLessPrivilegedThan $ filter (\((_,_),nodes) -> not (L.null nodes)) $ M.toList $ chart
-  where f [] = []
-        f (((i,_),nodes):cs) = g (map CCG.wrapNode (sortByNumberOfArgs $ bestOnly $ L.sort nodes)) $ filter (\((_,j),_) -> j < i) cs
-        g [] _ = []
+  where f [] = Partial []
+        f [((_,_),nodes)] = Full $ map CCG.wrapNode (sortByNumberOfArgs $ bestOnly $ L.sort nodes)
+        f (((i,_),nodes):cs) = Partial $ g (map CCG.wrapNode (sortByNumberOfArgs $ bestOnly $ L.sort nodes)) (filter (\((_,j),_) -> j < i) cs)
         g results [] = map CCG.drel results
         g results (((i,_),nodes):cs) = g [CCG.conjoinNodes (CCG.wrapNode $ head $ sortByNumberOfArgs $ bestOnly $ L.sort nodes) (head results)] $ filter (\((_,j),_) -> j < i) cs
 
