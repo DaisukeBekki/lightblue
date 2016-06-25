@@ -18,9 +18,6 @@ module DTS.DependentTypes (
   Signature,
   printSignatures,
   toTextDeBruijn,
-  -- * De Bruijn notation <-> Variable-name notation
-  fromDeBruijn,
-  toDeBruijn,
   -- * Syntactic Operations
   subst,
   shiftIndices,
@@ -32,18 +29,34 @@ module DTS.DependentTypes (
   strongBetaReduce,
   add,
   multiply,
-  -- * Renumbering of @ and DRel
-  Renumber(..),
-  renumber,
-  renumber2
+  -- * De Bruijn notation <-> Variable-name notation
+  fromDeBruijn,
+  toDeBruijn,
+  Indexed(..),
+  sentenceIndex,
+  initializeIndex
   ) where
 
 import qualified Data.Text.Lazy as T      -- text
 import qualified Data.List as L           -- base
 import qualified Control.Applicative as M -- base
 import qualified Control.Monad as M       -- base
-import qualified DTS.DependentTypesWVN as DTSWVN
+import qualified DTS.DTSwithVarName as VN
 import Interface.Text
+import Interface.TeX
+
+-- | 'Proj' 'Fst' m is the first projection of m, 
+-- while 'Proj' 'Snd' m is the second projection of m.
+data Selector = Fst | Snd deriving (Eq, Show)
+
+-- | translates a selector into either 1 or 2.
+instance SimpleText Selector where
+  toText Fst = "1"
+  toText Snd = "2"
+
+-- | `Fst` is translated into \"1\", and `Snd` is into \"2\".
+instance Typeset Selector where
+  toTeX = toText
 
 -- | Preterms of Underspecified Dependent Type Theory (UDTT).
 data Preterm =
@@ -72,20 +85,47 @@ data Preterm =
   Refl Preterm Preterm |           -- ^ refl
   Idpeel Preterm Preterm |         -- ^ idpeel
   DRel Int T.Text Preterm Preterm  -- ^ Discourse relations
-  deriving (Eq, Show)
+  deriving (Eq)
 
--- | translates a term into a simple text notation.
+instance Show Preterm where
+  show = T.unpack . toTextDeBruijn
+
+-- | translates a DTS preterm into a simple text notation.
 instance SimpleText Preterm where
-  toText = toText . fromDeBruijn
+  toText = toText . initializeIndex . fromDeBruijn
 
--- | 'Proj' 'Fst' m is the first projection of m, 
--- while 'Proj' 'Snd' m is the second projection of m.
-data Selector = Fst | Snd deriving (Eq, Show)
+-- | translates a DTS preterm into a tex source code.
+instance Typeset Preterm where
+  toTeX = toTeX . initializeIndex . fromDeBruijn
 
--- | translates a selector into either 1 or 2.
-instance SimpleText Selector where
-  toText Fst = "1"
-  toText Snd = "2"
+-- | prints a preterm in text, in the De Bruijn style.
+toTextDeBruijn :: Preterm -> T.Text
+toTextDeBruijn preterm = case preterm of
+    Var i   -> T.pack (show i)
+    Con c   -> c
+    Type    -> "type"
+    Kind    -> "kind"
+    Pi a b  -> T.concat["(Π ", toTextDeBruijn a, ")", toTextDeBruijn b]
+    Not m   -> T.concat["¬", toTextDeBruijn m]
+    Lam m   -> T.concat["λ.", toTextDeBruijn m]
+    App m n -> T.concat["(", toTextDeBruijn m, " ", toTextDeBruijn n, ")"]
+    Sigma a b  -> T.concat["(Σ ", toTextDeBruijn a, ")", toTextDeBruijn b]
+    Pair m n   -> T.concat["(", toTextDeBruijn m, ",", toTextDeBruijn n, ")"]
+    Proj s m   -> T.concat["π", toText s, "(", toTextDeBruijn m, ")"] 
+    Lamvec m   -> T.concat ["λ+.", toTextDeBruijn m]
+    Appvec i m -> T.concat ["(", toTextDeBruijn m, " ", T.pack (show i), "+)"]
+    Unit  -> "()"
+    Top   -> "T"
+    Bot   -> "⊥"
+    Asp i m -> T.concat["@", T.pack (show i), ":", toTextDeBruijn m]
+    Nat   -> "N"
+    Zero  -> "0"
+    Succ n -> T.concat ["s", toTextDeBruijn n]
+    Natrec n e f -> T.concat ["natrec(", toTextDeBruijn n, ",", toTextDeBruijn e, ",", toTextDeBruijn f, ")"]
+    Eq a m n -> T.concat [toTextDeBruijn m, "=[", toTextDeBruijn a, "]", toTextDeBruijn n]
+    Refl a m -> T.concat ["refl", toTextDeBruijn a, "(", toTextDeBruijn m, ")"]
+    Idpeel m n -> T.concat ["idpeel(", toTextDeBruijn m, ",", toTextDeBruijn n, ")"]
+    DRel i t m n -> T.concat ["DRel", T.pack (show i), "[", t, "](", toTextDeBruijn m, ",", toTextDeBruijn n, ")"]
 
 -- | A type of an element of a type signature, that is, a list of pairs of a preterm and a type.
 -- ex. [entity:type, state:type, event:type, student:entity->type]
@@ -98,203 +138,7 @@ instance SimpleText Signature where
 printSignatures :: [Signature] -> T.Text
 printSignatures sigs = T.concat ["[", (T.intercalate ", " $ map toText sigs), "]"]
 
--- | prints a preterm in text, in the De Bruijn style.
-toTextDeBruijn :: Preterm -> T.Text
-toTextDeBruijn preterm = case preterm of
-    Var i   -> T.pack (show i)
-    Con c   -> c
-    Type    -> "type"
-    Kind    -> "kind"
-    Pi a b  -> T.concat["(Π ", toText a, ")", toText b]
-    Not m   -> T.concat["¬", toText m]
-    Lam m   -> T.concat["λ.", toText m]
-    App m n -> T.concat["(", toText m, " ", toText n, ")"]
-    Sigma a b  -> T.concat["(Σ ", toText a, ")", toText b]
-    Pair m n   -> T.concat["(", toText m, ",", toText n, ")"]
-    Proj s m   -> T.concat["π", toText s, "(", toText m, ")"] 
-    Lamvec m   -> T.concat ["λ+.", toText m]
-    Appvec i m -> T.concat ["(", toText m, " ", T.pack (show i), "+)"]
-    Unit  -> "()"
-    Top   -> "T"
-    Bot   -> "⊥"
-    Asp i m -> T.concat["@", T.pack (show i), ":", toText m]
-    Nat   -> "N"
-    Zero  -> "0"
-    Succ n -> T.concat ["s", toText n]
-    Natrec n e f -> T.concat ["natrec(", toText n, ",", toText e, ",", toText f, ")"]
-    Eq a m n -> T.concat [toText m, "=[", toText a, "]", toText n]
-    Refl a m -> T.concat ["refl", toText a, "(", toText m, ")"]
-    Idpeel m n -> T.concat ["idpeel(", toText m, ",", toText n, ")"]
-    DRel i t m n -> T.concat ["DRel", T.pack (show i), "[", t, "](", toText m, ",", toText n, ")"]
-
-fromDeBruijn :: Preterm -> DTSWVN.Preterm
-fromDeBruijn = fromDeBruijn2 [] 0
-
-fromDeBruijn2 :: [T.Text] -> Int -> Preterm -> DTSWVN.Preterm
-fromDeBruijn2 vnames i preterm = case preterm of
-  Var j -> if j < length vnames
-              then DTSWVN.Var (vnames!!j)
-              else DTSWVN.Var $ T.concat ["error: var ",T.pack (show j), " in ", T.pack (show vnames)]
-  Con cname -> DTSWVN.Con cname
-  Type -> DTSWVN.Type
-  Kind -> DTSWVN.Kind
-  Pi a b -> 
-    let vname = case a of
-                  Con cname | cname == "entity" -> T.concat ["x", T.pack (show i)] 
-                                | cname == "event" -> T.concat ["e", T.pack (show i)] 
-                                | cname == "state" -> T.concat ["s", T.pack (show i)] 
-                  Type -> T.concat ["p", T.pack (show i)] 
-                  Kind -> T.concat ["p", T.pack (show i)] 
-                  App _ _ -> T.concat ["u", T.pack (show i)] 
-                  Sigma _ _ -> T.concat ["u", T.pack (show i)] 
-                  Pi _ _ -> T.concat ["u", T.pack (show i)] 
-                  Not _  -> T.concat ["u", T.pack (show i)] 
-                  Appvec _ _ -> T.concat ["u", T.pack (show i)] 
-                  Eq _ _ _ -> T.concat ["s", T.pack (show i)] 
-                  Nat -> T.concat ["k", T.pack (show i)] 
-                  _ -> T.concat ["x", T.pack (show i)] in
-    DTSWVN.Pi vname (fromDeBruijn2 vnames (i+1) a) (fromDeBruijn2 (vname:vnames) (i+1) b)
-  Not a   -> DTSWVN.Not (fromDeBruijn2 vnames i a)
-  Lam m   -> 
-    let vname = case m of
-                  Sigma _ _ -> T.concat ["x", T.pack (show i)] 
-                  Pi _ _ -> T.concat ["x", T.pack (show i)] 
-                  _ -> T.concat ["x", T.pack (show i)] in
-    DTSWVN.Lam vname (fromDeBruijn2 (vname:vnames) (i+1) m)
-  App m n -> DTSWVN.App (fromDeBruijn2 vnames i m) (fromDeBruijn2 vnames i n)
-  Sigma a b -> 
-    let vname = case a of
-                  Con cname | cname == "entity" -> T.concat ["x", T.pack (show i)] 
-                                | cname == "event" -> T.concat ["e", T.pack (show i)] 
-                                | cname == "state" -> T.concat ["s", T.pack (show i)] 
-                  App _ _ -> T.concat ["u", T.pack (show i)] 
-                  Sigma _ _ -> T.concat ["u", T.pack (show i)] 
-                  Pi _ _ -> T.concat ["u", T.pack (show i)] 
-                  Not _  -> T.concat ["u", T.pack (show i)] 
-                  Appvec _ _ -> T.concat ["u", T.pack (show i)] 
-                  Type -> T.concat ["p", T.pack (show i)] 
-                  Kind -> T.concat ["p", T.pack (show i)] 
-                  Eq _ _ _ -> T.concat ["s", T.pack (show i)] 
-                  Nat -> T.concat ["k", T.pack (show i)] 
-                  _ -> T.concat ["x", T.pack (show i)] in
-    DTSWVN.Sigma vname (fromDeBruijn2 vnames (i+1) a) (fromDeBruijn2 (vname:vnames) (i+1) b)
-  Pair m n  -> DTSWVN.Pair (fromDeBruijn2 vnames i m) (fromDeBruijn2 vnames i n)
-  Proj s m  -> case s of
-                 Fst -> DTSWVN.Proj DTSWVN.Fst (fromDeBruijn2 vnames i m)
-                 Snd -> DTSWVN.Proj DTSWVN.Snd (fromDeBruijn2 vnames i m)
-  Lamvec m  -> let vname = T.concat ["x", T.pack (show i)] in
-                   DTSWVN.Lamvec vname (fromDeBruijn2 (vname:vnames) (i+1) m)
-  Appvec j m -> let vname = if j < (length vnames) 
-                               then vnames!!j
-                               else T.concat ["error: var+ ", T.pack (show j)] in
-                    DTSWVN.Appvec vname (fromDeBruijn2 vnames i m)
-  Unit       -> DTSWVN.Unit
-  Top        -> DTSWVN.Top
-  Bot        -> DTSWVN.Bot
-  Asp j m    -> DTSWVN.Asp j (fromDeBruijn2 vnames i m)
-  Nat    -> DTSWVN.Nat
-  Zero   -> DTSWVN.Zero
-  Succ n -> DTSWVN.Succ (fromDeBruijn2 vnames i n)
-  Natrec n e f -> DTSWVN.Natrec (fromDeBruijn2 vnames i n) (fromDeBruijn2 vnames i e) (fromDeBruijn2 vnames i f)
-  Eq a m n -> DTSWVN.Eq (fromDeBruijn2 vnames i a) (fromDeBruijn2 vnames i m) (fromDeBruijn2 vnames i n)
-  Refl a m -> DTSWVN.Refl (fromDeBruijn2 vnames i a) (fromDeBruijn2 vnames i m)
-  Idpeel m n -> DTSWVN.Idpeel (fromDeBruijn2 vnames i m) (fromDeBruijn2 vnames i n)
-  DRel j t m n -> DTSWVN.App (DTSWVN.App (DTSWVN.Con (T.concat ["DRel",T.pack $ show j,"[",t,"]"])) (fromDeBruijn2 vnames i m)) (fromDeBruijn2 vnames i n)
-
-toDeBruijn :: DTSWVN.Preterm -> Preterm
-toDeBruijn = toDeBruijn2 []
-
-toDeBruijn2 :: [T.Text] -> DTSWVN.Preterm -> Preterm
-toDeBruijn2 vnames preterm = case preterm of
-  DTSWVN.Var vname -> case L.elemIndex vname vnames of
-                        Just i -> Var i
-                        Nothing -> Type
-  DTSWVN.Con cname -> Con cname
-  DTSWVN.Type -> Type
-  DTSWVN.Kind -> Kind
-  DTSWVN.Pi vname a b -> Pi (toDeBruijn2 (vname:vnames) a) (toDeBruijn2 (vname:vnames) b)
-  DTSWVN.Not a -> Not (toDeBruijn2 vnames a)
-  DTSWVN.Lam vname m -> Lam (toDeBruijn2 (vname:vnames) m)
-  DTSWVN.App m n -> App (toDeBruijn2 vnames m) (toDeBruijn2 vnames n)
-  DTSWVN.Sigma vname a b -> Sigma (toDeBruijn2 (vname:vnames) a) (toDeBruijn2 (vname:vnames) b)
-  DTSWVN.Pair m n -> Pair (toDeBruijn2 vnames m) (toDeBruijn2 vnames n)
-  _ -> Type
-
-{-
--- | translates a term, given a context (=a list of variable names), into a non-de-Bruijn notation (i.e. each variable is printed with a variable name).
-toTextWithVN :: [T.Text] -> Preterm -> T.Text
-toTextWithVN varlist term = toTextWithVNLoop varlist term 0
-
--- | 
-toTextWithVNLoop :: [T.Text] -> Preterm -> Int -> T.Text
-toTextWithVNLoop vlist preterm i = case preterm of
-  Var j -> if j < (length vlist)
-           then vlist!!j
-           else  T.concat ["error: var ",T.pack (show j), " in ", T.pack (show vlist)]
-  Con c -> c
-  Type  -> "type"
-  Kind  -> "kind"
-  Pi a b  -> let varname = case a of
-                             Con "entity" -> T.concat ["x", T.pack (show i)] 
-                             Con "event" -> T.concat ["e", T.pack (show i)] 
-                             Con "state" -> T.concat ["s", T.pack (show i)] 
-                             App _ _ -> T.concat ["u", T.pack (show i)] 
-                             Sigma _ _ -> T.concat ["u", T.pack (show i)] 
-                             Pi _ _ -> T.concat ["u", T.pack (show i)] 
-                             Not _  -> T.concat ["u", T.pack (show i)] 
-                             Appvec _ _ -> T.concat ["u", T.pack (show i)] 
-                             Type -> T.concat ["p", T.pack (show i)] 
-                             Kind -> T.concat ["p", T.pack (show i)] 
-                             Eq _ _ _ -> T.concat ["s", T.pack (show i)] 
-                             Nat -> T.concat ["k", T.pack (show i)] 
-                             _ -> T.concat ["x", T.pack (show i)] in
-             T.concat ["(", varname, ":", toTextWithVNLoop vlist a (i+1), ")→ ", toTextWithVNLoop (varname:vlist) b (i+1)]
-  Not a   -> T.concat["¬", toTextWithVNLoop vlist a i]
-  Lam m   -> let varname = case m of
-                              Sigma _ _ -> T.concat ["x", T.pack (show i)] 
-                              Pi _ _ -> T.concat ["x", T.pack (show i)] 
-                              _ -> T.concat ["x", T.pack (show i)] in
-             T.concat ["λ", varname, ".", toTextWithVNLoop (varname:vlist) m (i+1)]
-  (App (App (Con c) y) x) -> T.concat [c, "(", toTextWithVNLoop vlist x i, ",", toTextWithVNLoop vlist y i,")"]
-  (App (App (App (Con c) z) y) x) -> T.concat [c, "(", toTextWithVNLoop vlist x i, ",", toTextWithVNLoop vlist y i,",",toTextWithVNLoop vlist z i,")"]
-  (App (App (App (App (Con c) u) z) y) x) -> T.concat [c, "(", toTextWithVNLoop vlist x i, ",", toTextWithVNLoop vlist y i,",",toTextWithVNLoop vlist z i,",", toTextWithVNLoop vlist u i, ")"]
-  App m n -> T.concat [toTextWithVNLoop vlist m i, "(", toTextWithVNLoop vlist n i, ")"]
-  Sigma a b -> let varname = case a of
-                               Con "entity" -> T.concat ["x", T.pack (show i)] 
-                               Con "event" -> T.concat ["e", T.pack (show i)] 
-                               Con "state" -> T.concat ["s", T.pack (show i)] 
-                               App _ _ -> T.concat ["u", T.pack (show i)] 
-                               Sigma _ _ -> T.concat ["u", T.pack (show i)] 
-                               Pi _ _ -> T.concat ["u", T.pack (show i)] 
-                               Not _  -> T.concat ["u", T.pack (show i)] 
-                               Appvec _ _ -> T.concat ["u", T.pack (show i)] 
-                               Type -> T.concat ["p", T.pack (show i)] 
-                               Kind -> T.concat ["p", T.pack (show i)] 
-                               Eq _ _ _ -> T.concat ["s", T.pack (show i)] 
-                               Nat -> T.concat ["k", T.pack (show i)] 
-                               _ -> T.concat ["x", T.pack (show i)] in
-               case b of 
-                 Top -> T.concat ["(", toTextWithVNLoop vlist a (i+1), ")"]
-                 _   -> T.concat ["(", varname, ":", toTextWithVNLoop vlist a (i+1), ")× ", toTextWithVNLoop (varname:vlist) b (i+1)]
-  Pair m n  -> T.concat ["(", toTextWithVNLoop vlist m i, ",", toTextWithVNLoop vlist n i, ")"]
-  Proj s m  -> T.concat ["π", toText s, "(", toTextWithVNLoop vlist m i, ")"]
-  Lamvec m  -> let varname = T.concat ["x", T.pack (show i)] in
-               T.concat ["λ", varname, "+.", toTextWithVNLoop (varname:vlist) m (i+1)]
-  Appvec j m -> if j < (length vlist)
-                then T.concat ["(", toTextWithVNLoop vlist m i, " ", vlist!!j, "+)"]
-                else T.concat ["(", toTextWithVNLoop vlist m i, " error: var+ ", T.pack (show j), "+)"]
-  Unit       -> "()"
-  Top        -> "T"
-  Bot        -> "⊥"
-  Asp j m    -> T.concat["@", T.pack (show j), ":", toTextWithVNLoop vlist m i]
-  Nat    -> "N"
-  Zero   -> "0"
-  Succ n -> T.concat ["s", toTextWithVNLoop vlist n i]
-  Natrec n e f -> T.concat ["natrec(", toTextWithVNLoop vlist n i, ",", toTextWithVNLoop vlist e i, ",", toTextWithVNLoop vlist f i, ")"]
-  Eq a m n -> T.concat [toTextWithVNLoop vlist m i, "=[", toTextWithVNLoop vlist a i, "]", toTextWithVNLoop vlist n i]
-  Refl a m -> T.concat ["refl", toTextWithVNLoop vlist a i, "(", toTextWithVNLoop vlist m i, ")"]
-  Idpeel m n -> T.concat ["idpeel(", toTextWithVNLoop vlist m i, ",", toTextWithVNLoop vlist n i, ")"]
--}
+{- Syntactic Operations -}
 
 -- | Substitution of the variable i in a preterm M with a preterm L
 --   "subst M L i" = M[L/i]
@@ -510,57 +354,173 @@ replaceLambda i preterm = case preterm of
   DRel j t m n -> DRel j t (replaceLambda i m) (replaceLambda i n)
   m -> m
 
-{- Renumbering of @ -}
+{- Initializing or Re-indexing of vars, @s and DRels -}
 
-newtype Renumber a = Renum { runRenumber :: Int -> Int -> (a,Int,Int) }
+newtype Indexed a = Indexed { indexing :: Int -> Int -> Int -> Int -> (a,Int,Int,Int,Int) }
 
-instance Show a => Show (Renumber a) where
-  show (Renum b) = show (b 0 0)
+instance Monad Indexed where
+  return m = Indexed (\s x a d -> (m,s,x,a,d))
+  (Indexed m) >>= f = Indexed (\s x a d -> let (m',s',x',a',d') = m s x a d;
+                                               (Indexed n) = f m' in
+                                           n s' x' a' d')
 
-instance Monad Renumber where
-  return x = Renum (\i j -> (x,i,j))
-  (Renum m) >>= f = Renum (\i j -> let (a,i',j') = m i j;
-                                       (Renum n) = f a in
-                                   n i' j')
-
-instance Functor Renumber where
+instance Functor Indexed where
   fmap = M.liftM
 
-instance M.Applicative Renumber where
+instance M.Applicative Indexed where
   pure = return
   (<*>) = M.ap
 
-aspIndex :: Renumber Int
-aspIndex = Renum (\i j -> (i,i+1,j))
+sentenceIndex :: Indexed Int
+sentenceIndex = Indexed (\s x a d -> (s,s+1,x,a,d))
 
-dRelIndex :: Renumber Int
-dRelIndex = Renum (\i j -> (j,i,j+1))
+varIndex :: Indexed Int
+varIndex = Indexed (\s x a d -> (x,s,x+1,a,d))
 
--- | re-assigns sequential indices to all @s that appear in a given preterm.
-renumber :: Preterm -> Preterm
-renumber preterm = let (preterm',_,_) = (runRenumber $ renumber2 preterm) 1 1 in preterm'
+aspIndex :: Indexed Int
+aspIndex = Indexed (\s x a d -> (a,s,x,a+1,d))
 
-renumber2 :: Preterm -> Renumber Preterm
-renumber2 preterm = case preterm of
-  Pi a b -> do {a' <- renumber2 a; b' <- renumber2 b; return $ Pi a' b'}
-  Not a -> do {a' <- renumber2 a; return $ Not a'}
-  Lam m -> do {m' <- renumber2 m; return $ Lam m'}
-  App m n -> do {m' <- renumber2 m; n' <- renumber2 n; return $ App m' n'}
-  Sigma a b -> do {a' <- renumber2 a; b' <- renumber2 b; return $ Sigma a' b'}
-  Pair m n -> do {m' <- renumber2 m; n' <- renumber2 n; return $ Pair m' n'}
-  Proj s m -> do {m' <- renumber2 m; return $ Proj s m'}
-  Asp _ m -> do {j <- aspIndex; m' <- renumber2 m; return $ Asp j m'}
-  Lamvec m -> do {m' <- renumber2 m; return $ Lamvec m'}
-  Appvec j m -> do {m' <- renumber2 m; return $ Appvec j m'}
-  DRel _ t m n -> do {j <- dRelIndex; m' <- renumber2 m; n' <- renumber2 n; return $ DRel j t m' n'}
-  m -> return m
+dRelIndex :: Indexed Int
+dRelIndex = Indexed (\s x a d -> (d,s,x,a,d+1))
 
-{-
-seqRenumber :: [Renumber Preterm] -> Renumber [Preterm]
-seqRenumber list = case list of
-  [] -> return []
-  (r:rs) -> do
-            x <- r
-            xs <- seqRenumber rs
-            return (x:xs)
--}
+-- | re-assigns sequential indices to all asperands that appear in a given preterm.
+initializeIndex :: Indexed a -> a
+initializeIndex (Indexed m) = let (m',_,_,_,_) = m 1 1 1 1 in m'
+
+fromDeBruijn :: Preterm -> Indexed VN.Preterm
+fromDeBruijn = fromDeBruijn2 []
+
+fromDeBruijn2 :: [VN.VName] -> Preterm -> Indexed VN.Preterm
+fromDeBruijn2 vnames preterm = case preterm of
+  Var j -> if j < length vnames
+              then return $ VN.Var (vnames!!j)
+              else return $ VN.Con $ T.concat ["error: var ",T.pack (show j), " in ", T.pack (show vnames)]
+  Con cname -> return $ VN.Con cname
+  Type -> return VN.Type
+  Kind -> return VN.Kind
+  Pi a b -> do
+    i <- varIndex
+    let vname = case a of
+                  Con cname | cname == "entity" -> ('x',i)
+                            | cname == "event"  -> ('e',i)
+                            | cname == "state"  -> ('s',i)
+                  Type -> ('p',i)
+                  Kind -> ('p',i)
+                  App _ _   -> ('u',i)
+                  Sigma _ _ -> ('u',i)
+                  Pi _ _    -> ('u',i)
+                  Not _     -> ('u',i)
+                  Appvec _ _ -> ('u',i)
+                  Eq _ _ _ -> ('s',i)
+                  Nat -> ('k',i)
+                  _ -> ('x',i)
+    a' <- fromDeBruijn2 vnames a
+    b' <- fromDeBruijn2 (vname:vnames) b
+    return $ VN.Pi vname a' b'
+  Not a   -> do
+    a' <- fromDeBruijn2 vnames a
+    return $ VN.Not a'
+  Lam m   -> do
+    i <- varIndex
+    let vname = case m of
+                  Sigma _ _ -> ('x',i)
+                  Pi _ _    -> ('x',i)
+                  _         -> ('x',i)
+    m' <- fromDeBruijn2 (vname:vnames) m
+    return $ VN.Lam vname m'
+  App m n -> do
+    m' <- fromDeBruijn2 vnames m
+    n' <- fromDeBruijn2 vnames n
+    return $ VN.App m' n'
+  Sigma a b -> do
+    i <- varIndex
+    let vname = case a of
+                  Con cname | cname == "entity" -> ('x',i)
+                                | cname == "event"  -> ('e',i)
+                                | cname == "state"  -> ('s',i)
+                  Type -> ('p',i)
+                  Kind -> ('p',i)
+                  App _ _   -> ('u',i)
+                  Sigma _ _ -> ('u',i)
+                  Pi _ _    -> ('u',i)
+                  Not _     -> ('u',i)
+                  Appvec _ _ -> ('u',i)
+                  Eq _ _ _ -> ('s',i)
+                  Nat -> ('k',i)
+                  _ -> ('x',i)
+    a' <- fromDeBruijn2 vnames a
+    b' <- fromDeBruijn2 (vname:vnames) b
+    return $ VN.Sigma vname a' b'
+  Pair m n  -> do
+    m' <- fromDeBruijn2 vnames m
+    n' <- fromDeBruijn2 vnames n
+    return $ VN.Pair m' n'
+  Proj s m  -> do
+    m' <- fromDeBruijn2 vnames m
+    return $ case s of
+               Fst -> VN.Proj VN.Fst m'
+               Snd -> VN.Proj VN.Snd m'
+  Lamvec m  -> do
+    i <- varIndex
+    let vname = ('x',i)
+    m' <- fromDeBruijn2 (vname:vnames) m
+    return $ VN.Lamvec vname m'
+  Appvec j m -> do
+    let vname = vnames!!j
+    m' <- fromDeBruijn2 vnames m
+    return $ VN.Appvec vname m'
+  Unit    -> return VN.Unit
+  Top     -> return VN.Top
+  Bot     -> return VN.Bot
+  Asp _ m -> do
+    j' <- aspIndex
+    m' <- fromDeBruijn2 vnames m
+    return $ VN.Asp j' m'
+  Nat    -> return VN.Nat
+  Zero   -> return VN.Zero
+  Succ n -> do
+    n' <- fromDeBruijn2 vnames n
+    return $ VN.Succ n'
+  Natrec n e f -> do
+    n' <- fromDeBruijn2 vnames n
+    e' <- fromDeBruijn2 vnames e
+    f' <- fromDeBruijn2 vnames f
+    return $ VN.Natrec n' e' f'
+  Eq a m n -> do
+    a' <- fromDeBruijn2 vnames a
+    m' <- fromDeBruijn2 vnames m
+    n' <- fromDeBruijn2 vnames n
+    return $ VN.Eq a' m' n'
+  Refl a m -> do
+    a' <- fromDeBruijn2 vnames a
+    m' <- fromDeBruijn2 vnames m
+    return $ VN.Refl a' m'
+  Idpeel m n -> do
+    m' <- fromDeBruijn2 vnames m
+    n' <- fromDeBruijn2 vnames n
+    return $ VN.Idpeel m' n'
+  DRel _ t m n -> do
+    j' <- dRelIndex
+    m' <- fromDeBruijn2 vnames m
+    n' <- fromDeBruijn2 vnames n
+    return $ VN.DRel j' t m' n'
+    -- App (App (Con (T.concat ["DRel",T.pack $ show j',"[",t,"]"])) m') n'
+
+toDeBruijn :: VN.Preterm -> Preterm
+toDeBruijn = toDeBruijn2 []
+
+toDeBruijn2 :: [VN.VName] -> VN.Preterm -> Preterm
+toDeBruijn2 vnames preterm = case preterm of
+  VN.Var vname -> case L.elemIndex vname vnames of
+                    Just i -> Var i
+                    Nothing -> Type
+  VN.Con cname -> Con cname
+  VN.Type -> Type
+  VN.Kind -> Kind
+  VN.Pi vname a b -> Pi (toDeBruijn2 (vname:vnames) a) (toDeBruijn2 (vname:vnames) b)
+  VN.Not a -> Not (toDeBruijn2 vnames a)
+  VN.Lam vname m -> Lam (toDeBruijn2 (vname:vnames) m)
+  VN.App m n -> App (toDeBruijn2 vnames m) (toDeBruijn2 vnames n)
+  VN.Sigma vname a b -> Sigma (toDeBruijn2 (vname:vnames) a) (toDeBruijn2 (vname:vnames) b)
+  VN.Pair m n -> Pair (toDeBruijn2 vnames m) (toDeBruijn2 vnames n)
+  _ -> Type

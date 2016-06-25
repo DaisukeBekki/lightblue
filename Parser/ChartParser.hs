@@ -18,8 +18,11 @@ module Parser.ChartParser (
   parse,
   simpleParse,
   posTagger,
-  -- * Printing (in Text) functions
+  -- * Text and TeX interfaces
+  printChartInTeX,
   printNodesInText,
+  printNNodesInTeX,
+  printNodesInTeX,
   -- * Partial parsing function(s)
   ParseResult(..),
   extractBestParse
@@ -35,11 +38,19 @@ import qualified Parser.CCG as CCG --(Node, unaryRules, binaryRules, trinaryRule
 import qualified Parser.Japanese.Lexicon as L (LexicalItems, lookupLexicon, setupLexicon, emptyCategories)
 import qualified Parser.Japanese.Templates as LT
 import qualified Interface.Text as T
+import qualified Interface.TeX as TEX
 
 -- | The type for CYK-charts.
 type Chart = M.Map (Int,Int) [CCG.Node]
 
 {- Come functions for pretty printing Chart/Nodes -}
+
+-- | prints every box in the (parsed) CYK chart as a TeX source code.
+printChartInTeX :: S.Handle -> Chart -> IO()
+printChartInTeX handle chart = mapM_ printList $ M.toList $ M.filter (/= []) chart
+  where printList (key,nodes) = do -- list化したChartを画面表示する。
+          S.hPutStr handle $ "\\subsubsection*{" ++ show key ++ ": ノード数 " ++ (show $ length nodes) ++ "}"
+          printNodesInTeX handle nodes
 
 -- | prints CCG nodes (=a parsing result) as a plain text.
 printNodesInText :: S.Handle -> [CCG.Node] -> IO()
@@ -50,6 +61,14 @@ printNodesInText handle nodes =
                      S.hPutStrLn handle $ take 100 $ repeat '-'
         ) nodes
   S.hPutStrLn handle $ "Number of nodes: " ++ show (length nodes)
+
+-- | prints n-nodes (n is a natural number) from given list of CCG nodes (=a parsing result) as a TeX source code.
+printNNodesInTeX :: S.Handle -> Int -> [CCG.Node] -> IO()
+printNNodesInTeX handle n nodes = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-2em\\scalebox{.2}{" ++ T.unpack (TEX.toTeX node) ++ "\\\\}\\par\\medskip") $ take n nodes
+
+-- | prints CCG nodes (=a parsing result) as a TeX source code.
+printNodesInTeX :: S.Handle -> [CCG.Node] -> IO()
+printNodesInTeX handle = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-2em\\scalebox{.2}{" ++ T.unpack (TEX.toTeX node) ++ "\\\\}\\par\\medskip")
 
 -- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style
 posTagger :: S.Handle -> [CCG.Node] -> IO()

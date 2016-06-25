@@ -15,16 +15,10 @@ main = do
   args <- S.getArgs
   text <- T.readFile $ head args
   let sentences = filter (/= T.empty) $ T.lines text
-  srs <- mapM sentence2DTS sentences
-  let (srs',_,_) = (DTS.runRenumber $ sequence srs) 1 1
-  mapM_ (\(sentence,sr) -> do
-                   T.putStrLn sentence
+  nodes <- mapM (CP.simpleParse 32) sentences
+  mapM_ (\(i,sentence,sr) -> do
+                   T.putStrLn $ T.concat ["[", T.pack (show i), "] ", sentence]
                    T.putStrLn "\\ \\begin{center}\\scalebox{.8}{$"
-                   T.putStrLn $ TEX.toTeX sr
+                   T.putStrLn $ T.concat ["s_{", T.pack (show i), "}: ", TEX.toTeX sr]
                    T.putStrLn "$}\\end{center}\\newpage"
-                   ) $ zip sentences srs'
-
-sentence2DTS :: T.Text -> IO(DTS.Renumber DTS.Preterm)
-sentence2DTS sentence = do
-  nodes <- CP.simpleParse 32 sentence
-  return $ DTS.renumber2 $ CP.sem $ head $ nodes
+                   ) $ zip3 [1..] sentences (DTS.initializeIndex $ mapM (DTS.fromDeBruijn . CP.sem . head) nodes)

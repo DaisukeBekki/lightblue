@@ -9,7 +9,7 @@ import qualified System.Process as S     -- process
 import qualified System.Environment as E -- base
 import qualified Control.Monad as M      -- base
 import qualified DTS.DependentTypes as DTS
-import qualified DTS.DependentTypesWVN as D
+import qualified DTS.DTSwithVarName as D
 import qualified Parser.ChartParser as CP
 import qualified Interface.Text as T
 
@@ -32,7 +32,7 @@ cname_f cname = T.concat ["c_",  (T.replace "ー" "xmdashx" $
 -- a function which converts DTS preterm with variable name to Prolog input formula
 f :: D.Preterm -> T.Text
 f preterm = case preterm of
-  D.Var v -> v
+  D.Var v -> T.toText v
   D.Con c -> case c of
              "entity" -> "entity"
              "event"  -> "event"
@@ -40,10 +40,10 @@ f preterm = case preterm of
              cname    -> cname_f $ cname
   D.Type  -> "type"
   D.Kind  -> "kind"
-  D.Pi vname a b    -> T.concat ["forall(", vname, ",", (f $ a), ",", (f $ b), ")"]
-  D.Sigma vname a b -> T.concat ["exists(", vname, ",", (f $ a), ",", (f $ b), ")"]
+  D.Pi vname a b    -> T.concat ["forall(", T.toText vname, ",", (f $ a), ",", (f $ b), ")"]
+  D.Sigma vname a b -> T.concat ["exists(", T.toText vname, ",", (f $ a), ",", (f $ b), ")"]
   D.Not a           -> T.concat ["not(", (f $ a), ")"]
-  D.Lam vname b     -> T.concat ["lam(", vname, ",", (f $ b), ")"]
+  D.Lam vname b     -> T.concat ["lam(", T.toText vname, ",", (f $ b), ")"]
   D.Asp i a         -> T.concat ["@(", (T.pack (show i)), ",", (f $ a), ")"]
   D.Pair t u        -> T.concat ["[", (f $ t), ",", (f $ u), "]"]
   D.Proj D.Fst t    -> T.concat ["pi1(", (f $ t), ")"]
@@ -68,13 +68,13 @@ f preterm = case preterm of
   D.Natrec n e f' -> T.concat ["natrec(", (f $ n), ",", (f $ e), ",", (f $ f'), ")"]
   D.Refl a m     -> T.concat ["refl(", (f $ a), ",", (f $ m), ")"]
   D.Idpeel m n   -> T.concat ["idpeel(", (f $ m), ",", (f $ n), ")"]
-
+  D.DRel _ _ _ _ -> "true"
 
 
 -- function convcoq
 convcoq :: D.Preterm -> T.Text
 convcoq preterm = case preterm of
-  D.Var v -> v
+  D.Var v -> T.toText v
   D.Con c -> case c of
              "entity" -> "Entity"
              "event"  -> "Event"
@@ -82,10 +82,10 @@ convcoq preterm = case preterm of
              cname        -> "_" `T.append` (cname_f cname)
   D.Type  -> "Prop"
   D.Kind  -> "Kind"
-  D.Pi vname a b    -> T.concat ["forall ", vname, ":", (convcoq $ a), ", ", (convcoq $ b)]
-  D.Sigma vname a b -> T.concat ["exists ", vname, ":", (convcoq $ a), ", ", (convcoq $ b)]
+  D.Pi vname a b    -> T.concat ["forall ", T.toText vname, ":", (convcoq $ a), ", ", (convcoq $ b)]
+  D.Sigma vname a b -> T.concat ["exists ", T.toText vname, ":", (convcoq $ a), ", ", (convcoq $ b)]
   D.Not a           -> T.concat ["not ", (convcoq $ a)]
-  D.Lam vname b     -> T.concat ["lam(", vname, ",", (convcoq $ b), ")"]
+  D.Lam vname b     -> T.concat ["lam(", T.toText vname, ",", (convcoq $ b), ")"]
   D.Asp i a         -> T.concat ["asp ", (T.pack (show i)), " ", (convcoq $ a)]
   D.Pair t u        -> T.concat ["(", (convcoq $ t), ",", (convcoq $ u), ")"]
   D.Proj D.Fst t    -> T.concat ["projT1", (convcoq $ t)]
@@ -108,10 +108,10 @@ convcoq preterm = case preterm of
   D.Natrec n e f' -> T.concat ["Natec ", (convcoq $ n), " ", (convcoq $ e), " ", (convcoq $ f')]
   D.Refl a m     -> T.concat ["Refl ", (convcoq $ a), " ", (convcoq $ m)]
   D.Idpeel m n   -> T.concat ["Idpeel ", (convcoq $ m), " ", (convcoq $ n)]
-
+  D.DRel _ _ _ _ -> "True"
 
 makeCoqSigList :: [DTS.Signature] -> T.Text
-makeCoqSigList siglist = T.concat (L.nub (map (\ (text, preterm) -> T.concat ["Parameter _", (cname_f text), " : ", (convcoq $ DTS.fromDeBruijn $ preterm), ". \n"]) siglist))
+makeCoqSigList siglist = T.concat (L.nub (map (\ (text, preterm) -> T.concat ["Parameter _", (cname_f text), " : ", (convcoq $ DTS.initializeIndex $ DTS.fromDeBruijn $ preterm), ". \n"]) siglist))
 
 pairsList2listsPair :: [(a, b)] -> ([a], [b])
 pairsList2listsPair [] = ([], [])
@@ -196,8 +196,8 @@ main = do
   let listsPair = pairsList2listsPair $ pairsList
       srlist = fst $ listsPair
       siglists = snd $ listsPair
-      formula = DTS.fromDeBruijn (DTS.renumber (DTS.betaReduce $ currying (L.init $ srlist) (L.last $ srlist)))
-      neg_formula = DTS.fromDeBruijn (DTS.renumber (DTS.betaReduce $ neg_currying (L.init $ srlist) (L.last $ srlist)))
+      formula = DTS.initializeIndex (DTS.fromDeBruijn (DTS.betaReduce $ currying (L.init $ srlist) (L.last $ srlist)))
+      neg_formula = DTS.initializeIndex (DTS.fromDeBruijn (DTS.betaReduce $ neg_currying (L.init $ srlist) (L.last $ srlist)))
       coqsig = makeCoqSigList (L.concat siglists)
   proof_start <- Time.getCurrentTime
   (proveEntailment "e" formula coqsig) >>=

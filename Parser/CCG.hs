@@ -8,7 +8,7 @@ Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
 
-Syntactic categories, syntactic features and combinatory rules of CCG.
+Syntactic categories, syntactic features and combinatory rules of 
 -}
 module Parser.CCG (
   -- * Types
@@ -17,8 +17,7 @@ module Parser.CCG (
   Cat(..),
   Feature(..),
   FeatureValue(..),
-  -- * Classes
---  SimpleText(..),
+  -- * Text and TeX interface
   printF,
   printPMFs,
   -- * Tests
@@ -49,6 +48,7 @@ import Data.Fixed                    --base
 import Data.Ratio                    --base
 import DTS.DependentTypes
 import Interface.Text
+import Interface.TeX
 
 -- | A node in CCG derivation tree.
 data Node = Node {
@@ -60,7 +60,10 @@ data Node = Node {
   daughters :: [Node], -- ^ The daughter nodes
   score :: Rational,   -- ^ The score (between 0.00 to 1.00, larger the better)
   source :: T.Text    -- ^ The source of the lexical entry
-  } deriving (Eq, Show)
+  } deriving (Eq)
+
+instance Show Node where
+  show = T.unpack . toText
 
 -- | A node with a larger score is less than the one with a smaller score, thus larger comes earlier in [Node]
 instance Ord Node where
@@ -75,9 +78,21 @@ instance SimpleText Node where
     where toTextLoop indent node =
             case daughters node of 
               [] -> T.concat [(T.pack indent), toText (rs node), " ", pf node, " ", toText (cat node), " ", toText (sem node), " ", source node, " [", T.pack (show ((fromRational $ score node)::Fixed E2)), "]\n"]
-              dtrs -> T.concat $ [(T.pack indent), toText (rs node), " ", toText (cat node), " ", toText (renumber $ sem node), " [", T.pack (show ((fromRational $ score node)::Fixed E2)), "]\n"] ++ (map (\d -> toTextLoop (indent++"  ") d) dtrs)
+              dtrs -> T.concat $ [(T.pack indent), toText (rs node), " ", toText (cat node), " ", toText (sem node), " [", T.pack (show ((fromRational $ score node)::Fixed E2)), "]\n"] ++ (map (\d -> toTextLoop (indent++"  ") d) dtrs)
 
--- | Syntactic categories of CCG.
+instance Typeset Node where
+  toTeX node@(Node _ _ _ _ _ _ _ _) =
+    case daughters node of 
+      [] -> T.concat ["\\vvlex[", (source node), "]{", (pf node), "}{", toTeX (cat node), "}{", toTeX $ sem node, "}"] --, "\\ensuremath{", (source node), "}"]
+      _ -> T.concat ["\\nd[", toTeX (rs node), "]{\\vvcat{", toTeX (cat node), "}{", toTeX $ sem node, "}}{", daughtersTeX, "}"] --, "\\ensuremath{", (source node), "}"]
+    where daughtersTeX =
+            case daughters node of
+              [l,c,r] -> T.concat [toTeX l, "&", toTeX c, "&", toTeX r]
+              [l,r]   -> T.concat [toTeX l, "&", toTeX r]
+              [c]     -> T.concat [toTeX c]
+              x  -> T.pack $ "(Error: daughter nodes are ill-formed: " ++ show x ++ ")"
+
+-- | Syntactic categories of 
 data Cat =
   S [Feature]        -- ^ S
   | NP [Feature]     -- ^ NP
@@ -106,23 +121,73 @@ instance Eq Cat where
   RPAREN == RPAREN = True
   _ == _ = False
 
--- | checks if two lists of features are unifiable.
-unifiable :: [Feature] -> [Feature] -> Bool
-unifiable f1 f2 = case unifyFeatures [] f1 f2 of
-                    Just _ -> True
-                    Nothing -> False
-
 -- | `toText` method is invoked.
 instance Show Cat where
   show = T.unpack . toText
 
--- | Syntactic features of CCG.
+instance SimpleText Cat where
+  toText category = case category of
+    SL x y      -> T.concat [toText x, "/", toText' y]
+    BS x y      -> T.concat [toText x, "\\", toText' y]
+--    T True i c     -> T.concat ["T[",toText c,"]<", (T.pack $ show i),">"]
+    T True i _     -> T.concat ["T", T.pack $ show i]
+    T False i c     -> T.concat [toText c, "<", (T.pack $ show i), ">"]
+    S (pos:(conj:pmf)) -> 
+              T.concat [
+                       "S[",
+                       printF pos,
+                       "][",
+                       printF conj,
+                       "][",
+                       printPMFs pmf,
+                       "]"
+                       ]
+    NP [cas]    -> T.concat ["NP[", printF cas, "]"]
+    Sbar [sf]   -> T.concat ["Sbar[", printF sf, "]"]
+    N           -> "N"
+    CONJ        -> "CONJ"
+    LPAREN      -> "LPAREN"
+    RPAREN      -> "RPAREN"
+    _ -> "Error in Simpletext Cat"
+    where -- A bracketed version of `toText'` function
+    toText' c = if isBaseCategory c
+                  then toText c
+                  else T.concat ["(", toText c, ")"]
+
+instance Typeset Cat where
+  toTeX category = case category of
+    SL x y      -> T.concat [toTeX x, "/", toTeX' y]
+    BS x y      -> T.concat [toTeX x, "{\\bs}", toTeX' y]
+    T True i u  -> T.concat ["\\vT^{\\sq{",(T.pack $ show i),"}}_{",toTeX u,"}"]
+    T False i u -> T.concat [toTeX' u, "^{\\sq{",(T.pack $ show i),"}}"]
+    S (pos:(conj:pm)) -> 
+                   T.concat [
+                     "S\\f{",
+                     f2TeX pos,",",
+                     f2TeX conj,",",
+                     pmfs2TeX pm,
+                     "}"
+                     ]
+    NP [cas]    -> T.concat ["\\np\\f{",(printF cas),"}"]
+    Sbar [sf]   -> T.concat ["\\bar{S}\\f{",(printF sf),"}"]
+    N           -> "N"
+    CONJ        -> "\\conj"
+    LPAREN      -> "LPAREN"
+    RPAREN      -> "RPAREN"
+    _ -> "Error: toTeX Cat"
+
+toTeX' :: Cat -> T.Text
+toTeX' c = if isBaseCategory c 
+           then toTeX c
+           else T.concat ["(", toTeX c, ")"]
+
+-- | Syntactic features of 
 data Feature = 
   F [FeatureValue]        -- ^ Syntactic feature
   | SF Int [FeatureValue] -- ^ Shared syntactic feature (with an index)
   deriving (Eq, Show)
 
--- | Values of syntactic features of Japanese CCG.
+-- | Values of syntactic features of Japanese 
 data FeatureValue =
   V5k | V5s | V5t | V5n | V5m | V5r | V5w | V5g | V5z | V5b |
   V5IKU | V5YUK | V5ARU | V5NAS | V5TOW |
@@ -218,34 +283,11 @@ instance Show FeatureValue where
   show Niyotte = "niyotte"
   show No = "no"
 
-instance SimpleText Cat where
-  toText category = case category of
-    SL x y      -> T.concat [toText x, "/", toText' y]
-    BS x y      -> T.concat [toText x, "\\", toText' y]
---    T True i c     -> T.concat ["T[",toText c,"]<", (T.pack $ show i),">"]
-    T True i _     -> T.concat ["T", T.pack $ show i]
-    T False i c     -> T.concat [toText c, "<", (T.pack $ show i), ">"]
-    S (pos:(conj:pmf)) -> 
-              T.concat [
-                       "S[",
-                       printF pos,
-                       "][",
-                       printF conj,
-                       "][",
-                       printPMFs pmf,
-                       "]"
-                       ]
-    NP [cas]    -> T.concat ["NP[", printF cas, "]"]
-    Sbar [sf]   -> T.concat ["Sbar[", printF sf, "]"]
-    N           -> "N"
-    CONJ        -> "CONJ"
-    LPAREN      -> "LPAREN"
-    RPAREN      -> "RPAREN"
-    _ -> "Error in Simpletext Cat"
-    where -- A bracketed version of `toText'` function
-    toText' c = if isBaseCategory c
-                  then toText c
-                  else T.concat ["(", toText c, ")"]
+-- | checks if two lists of features are unifiable.
+unifiable :: [Feature] -> [Feature] -> Bool
+unifiable f1 f2 = case unifyFeatures [] f1 f2 of
+                    Just _ -> True
+                    Nothing -> False
 
 -- | prints a syntactic feature in text.
 printF :: Feature -> T.Text
@@ -278,6 +320,36 @@ printPMFsLoop :: [T.Text] -> [Feature] -> [Maybe T.Text]
 printPMFsLoop labels pmfs = case (labels,pmfs) of
   ([],[])         -> []
   ((l:ls),(p:ps)) -> (printPMF False l p):(printPMFsLoop ls ps)
+  _ -> [Just $ T.concat ["Error: mismatch in ", T.pack (show labels), " and ", T.pack (show pmfs)]]
+
+f2TeX :: Feature -> T.Text
+f2TeX (SF i f) = T.concat [fVal2TeX f, ":\\sq{", T.pack (show i), "}"]
+f2TeX (F f) = fVal2TeX f
+
+fVal2TeX :: [FeatureValue] -> T.Text
+fVal2TeX [] = T.empty
+fVal2TeX [pos] = T.pack $ show pos
+fVal2TeX [pos1,pos2] = T.pack $ (show pos1) ++ "|" ++ (show pos2)
+fVal2TeX (pos1:(pos2:_)) = T.pack $ (show pos1) ++ "|" ++ (show pos2) ++ "|+"
+
+pmf2TeX :: Bool -> T.Text -> Feature -> Maybe T.Text
+pmf2TeX _ label pmf = case (label,pmf) of
+    (l,F [P])       -> Just $ T.concat ["{+}", l]
+    (_,F [M])       -> Nothing -- if shared then Just $ T.concat ["{-}", l] else Nothing
+    (l,F [P,M]) -> Just $ T.concat ["{\\pm}", l]
+    (l,F [M,P]) -> Just $ T.concat ["{\\pm}", l]
+    (l,SF i f) -> do
+                 x <- pmf2TeX True l (F f)
+                 return $ T.concat [x,":\\sq{",T.pack (show i),"}"]
+    _ -> return $ T.pack "Error: pmf2TeX"
+
+pmfs2TeX :: [Feature] -> T.Text
+pmfs2TeX pmfs = T.intercalate "{,}" $ Maybe.catMaybes $ pmfs2TeXLoop ["t","p","n","N","T"] pmfs
+
+pmfs2TeXLoop :: [T.Text] -> [Feature] -> [Maybe T.Text]
+pmfs2TeXLoop labels pmfs = case (labels,pmfs) of
+  ([],[])         -> []
+  ((l:ls),(p:ps)) -> (pmf2TeX False l p):(pmfs2TeXLoop ls ps)
   _ -> [Just $ T.concat ["Error: mismatch in ", T.pack (show labels), " and ", T.pack (show pmfs)]]
 
 {- Tests for syntactic -}
@@ -382,6 +454,28 @@ instance SimpleText RuleSymbol where
     FFCx2 -> ">Bx2"
     FFSx  -> ">Sx"
     COORD -> "<Phi>"
+    PAREN -> "PAREN"
+    WRAP  -> "WRAP"
+    DC    -> "DC"
+    DREL  -> "DREL"
+    -- CNP -> "CNP"
+
+instance Typeset RuleSymbol where
+  toTeX rulesymbol = case rulesymbol of 
+    LEX -> "lex"
+    EC  -> "ec"
+    FFA -> ">"
+    BFA -> "<"
+    FFC1 -> ">B"
+    BFC1 -> "<B"
+    FFC2 -> ">B^2"
+    BFC2 -> "<B^2"
+    FFC3 -> ">B^3"
+    BFC3 -> "<B^3"
+    FFCx1 -> ">B_{\\times}"
+    FFCx2 -> ">B_{\\times}^2"
+    FFSx  -> ">S_{\\times}"
+    COORD -> "\\langle\\Phi\\rangle"
     PAREN -> "PAREN"
     WRAP  -> "WRAP"
     DC    -> "DC"
@@ -1079,7 +1173,7 @@ drel node =
     rs = DREL,
     pf = pf node,
     cat = Sbar [F[Decl]],
-    sem = renumber $ Sigma (sem node) (DRel 0 "S" (Proj Snd $ Asp 1 (Sigma Type (Var 0))) (Var 0)),
+    sem = Sigma (sem node) (DRel 0 "S" (Proj Snd $ Asp 1 (Sigma Type (Var 0))) (Var 0)),
     daughters = [node],
     score = (score node)*0.9,
     source = "",

@@ -38,7 +38,7 @@ currying (p:ps) preterm = DTS.Pi p (currying ps preterm)
 parseText :: T.Text -> IO(DTS.Preterm)
 parseText sentence = do
   nodes <- CP.simpleParse 16 sentence
-  return $ DTS.renumber $ CP.sem $ head $ nodes
+  return $ CP.sem (head nodes)
 
 callCoq :: T.Text -> IO()
 callCoq _ = do

@@ -1,6 +1,3 @@
-{-# OPTIONS -Wall #-}
-{-# LANGUAGE OverloadedStrings #-}
-
 {-|
 Description : Data.Text.Lazy interface
 Copyright   : (c) Daisuke Bekki, 2016
@@ -10,7 +7,6 @@ Stability   : beta
 -}
 
 module Interface.Text (
-  -- * Classes
   SimpleText(..)
   ) where
 
