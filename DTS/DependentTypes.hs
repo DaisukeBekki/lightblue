@@ -390,7 +390,7 @@ initializeIndex (Indexed m) = let (m',_,_,_,_) = m 1 1 1 1 in m'
 fromDeBruijn :: Preterm -> Indexed VN.Preterm
 fromDeBruijn = fromDeBruijn2 []
 
-fromDeBruijn2 :: [VN.VName] -> Preterm -> Indexed VN.Preterm
+fromDeBruijn2 :: [VN.VarName] -> Preterm -> Indexed VN.Preterm
 fromDeBruijn2 vnames preterm = case preterm of
   Var j -> if j < length vnames
               then return $ VN.Var (vnames!!j)
@@ -401,19 +401,19 @@ fromDeBruijn2 vnames preterm = case preterm of
   Pi a b -> do
     i <- varIndex
     let vname = case a of
-                  Con cname | cname == "entity" -> ('x',i)
-                            | cname == "event"  -> ('e',i)
-                            | cname == "state"  -> ('s',i)
-                  Type -> ('p',i)
-                  Kind -> ('p',i)
-                  App _ _   -> ('u',i)
-                  Sigma _ _ -> ('u',i)
-                  Pi _ _    -> ('u',i)
-                  Not _     -> ('u',i)
-                  Appvec _ _ -> ('u',i)
-                  Eq _ _ _ -> ('s',i)
-                  Nat -> ('k',i)
-                  _ -> ('x',i)
+                  Con cname | cname == "entity" -> VN.VarName 'x' i
+                            | cname == "event"  -> VN.VarName 'e' i
+                            | cname == "state"  -> VN.VarName 's' i
+                  Type -> VN.VarName 'p' i
+                  Kind -> VN.VarName 'p' i
+                  App _ _   -> VN.VarName 'u' i
+                  Sigma _ _ -> VN.VarName 'u' i
+                  Pi _ _    -> VN.VarName 'u' i
+                  Not _     -> VN.VarName 'u' i
+                  Appvec _ _ -> VN.VarName 'u' i
+                  Eq _ _ _ -> VN.VarName 's' i
+                  Nat -> VN.VarName 'k' i
+                  _ -> VN.VarName 'x' i
     a' <- fromDeBruijn2 vnames a
     b' <- fromDeBruijn2 (vname:vnames) b
     return $ VN.Pi vname a' b'
@@ -423,9 +423,9 @@ fromDeBruijn2 vnames preterm = case preterm of
   Lam m   -> do
     i <- varIndex
     let vname = case m of
-                  Sigma _ _ -> ('x',i)
-                  Pi _ _    -> ('x',i)
-                  _         -> ('x',i)
+                  Sigma _ _ -> VN.VarName 'x' i
+                  Pi _ _    -> VN.VarName 'x' i
+                  _         -> VN.VarName 'x' i
     m' <- fromDeBruijn2 (vname:vnames) m
     return $ VN.Lam vname m'
   App m n -> do
@@ -435,19 +435,19 @@ fromDeBruijn2 vnames preterm = case preterm of
   Sigma a b -> do
     i <- varIndex
     let vname = case a of
-                  Con cname | cname == "entity" -> ('x',i)
-                                | cname == "event"  -> ('e',i)
-                                | cname == "state"  -> ('s',i)
-                  Type -> ('p',i)
-                  Kind -> ('p',i)
-                  App _ _   -> ('u',i)
-                  Sigma _ _ -> ('u',i)
-                  Pi _ _    -> ('u',i)
-                  Not _     -> ('u',i)
-                  Appvec _ _ -> ('u',i)
-                  Eq _ _ _ -> ('s',i)
-                  Nat -> ('k',i)
-                  _ -> ('x',i)
+                  Con cname | cname == "entity" -> VN.VarName 'x' i
+                                | cname == "event"  -> VN.VarName 'e' i
+                                | cname == "state"  -> VN.VarName 's' i
+                  Type -> VN.VarName 'p' i
+                  Kind -> VN.VarName 'p' i
+                  App _ _   -> VN.VarName 'u' i
+                  Sigma _ _ -> VN.VarName 'u' i
+                  Pi _ _    -> VN.VarName 'u' i
+                  Not _     -> VN.VarName 'u' i
+                  Appvec _ _ -> VN.VarName 'u' i
+                  Eq _ _ _ -> VN.VarName 's' i
+                  Nat -> VN.VarName 'k' i
+                  _ -> VN.VarName 'x' i
     a' <- fromDeBruijn2 vnames a
     b' <- fromDeBruijn2 (vname:vnames) b
     return $ VN.Sigma vname a' b'
@@ -462,7 +462,7 @@ fromDeBruijn2 vnames preterm = case preterm of
                Snd -> VN.Proj VN.Snd m'
   Lamvec m  -> do
     i <- varIndex
-    let vname = ('x',i)
+    let vname = VN.VarName 'x' i
     m' <- fromDeBruijn2 (vname:vnames) m
     return $ VN.Lamvec vname m'
   Appvec j m -> do
@@ -509,7 +509,7 @@ fromDeBruijn2 vnames preterm = case preterm of
 toDeBruijn :: VN.Preterm -> Preterm
 toDeBruijn = toDeBruijn2 []
 
-toDeBruijn2 :: [VN.VName] -> VN.Preterm -> Preterm
+toDeBruijn2 :: [VN.VarName] -> VN.Preterm -> Preterm
 toDeBruijn2 vnames preterm = case preterm of
   VN.Var vname -> case L.elemIndex vname vnames of
                     Just i -> Var i

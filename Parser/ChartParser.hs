@@ -130,6 +130,7 @@ simpleParse beam sentence = do
   case extractBestParse chart of
     Full nodes -> return nodes
     Partial nodes -> return nodes
+    Failed -> return []
 
 -- | triples representing a state during parsing:
 -- the parsed result (=chart) of the left of the pivot,
@@ -264,13 +265,13 @@ checkEmptyCategories prevlist =
 
 {- Partial Parsing -}
 
-data ParseResult = Full [CCG.Node] | Partial [CCG.Node] deriving (Eq,Show)
+data ParseResult = Full [CCG.Node] | Partial [CCG.Node] | Failed deriving (Eq,Show)
 
 -- | takes a (parse result) chart and returns a list consisting of nodes, partially parsed substrings.
 extractBestParse :: Chart -> ParseResult
 extractBestParse chart = 
   f $ L.sortBy isLessPrivilegedThan $ filter (\((_,_),nodes) -> not (L.null nodes)) $ M.toList $ chart
-  where f [] = Partial []
+  where f [] = Failed
         f (((i,_),nodes):cs) | i == 0 = Full $ map CCG.wrapNode (sortByNumberOfArgs $ bestOnly $ L.sort nodes)
                              | otherwise = Partial $ g (map CCG.wrapNode (sortByNumberOfArgs $ bestOnly $ L.sort nodes)) (filter (\((_,j),_) -> j < i) cs)
         g results [] = map CCG.drel results

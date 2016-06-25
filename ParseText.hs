@@ -20,6 +20,7 @@ main = do
   let nodes = case CP.extractBestParse chart of
                 CP.Full ns -> ns
                 CP.Partial ns -> ns
+                CP.Failed -> []
   stop     <- Time.getCurrentTime
   let time = Time.diffUTCTime stop start
   mapM_ (action sentence chart nodes time) args

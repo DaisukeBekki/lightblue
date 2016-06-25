@@ -19,6 +19,6 @@ main = do
   mapM_ (\(i,sentence,sr) -> do
                    T.putStrLn $ T.concat ["[", T.pack (show i), "] ", sentence]
                    T.putStrLn "\\ \\begin{center}\\scalebox{.8}{$"
-                   T.putStrLn $ T.concat ["s_{", T.pack (show i), "}: ", TEX.toTeX sr]
+                   T.putStrLn $ T.concat ["p_{", T.pack (show i), "}: ", TEX.toTeX sr]
                    T.putStrLn "$}\\end{center}\\newpage"
-                   ) $ zip3 [1..] sentences (DTS.initializeIndex $ mapM (DTS.fromDeBruijn . CP.sem . head) nodes)
+                   ) $ zip3 ([1..]::[Int]) sentences (DTS.initializeIndex $ mapM (DTS.fromDeBruijn . CP.sem . head) nodes)

@@ -51,8 +51,8 @@ f preterm = case preterm of
   D.Eq _ m n        -> T.concat ["eq(", (f $ m), ",", (f $ n), ")"]
   D.Top -> "true"
   D.Bot -> "false"
-  D.App (D.App (D.Con c) x1) x2 -> if (T.isInfixOf "DRel" c) then "true"
-                                   else T.concat [(f $ (D.Con c)), "(", (f $ x1), ",", (f $ x2), ")"]
+  --D.App (D.App (D.Con c) x1) x2 -> if (T.isInfixOf "DRel" c) then "true"
+  --                                 else T.concat [(f $ (D.Con c)), "(", (f $ x1), ",", (f $ x2), ")"]
   D.App (D.App (D.App (D.App g x1) x2) x3) x4
                         -> T.concat [(f $ g), "(", (f $ x1), ",", (f $ x2), ",", (f $ x3), ",", (f $ x4), ")"]
   D.App (D.App (D.App g x1) x2) x3

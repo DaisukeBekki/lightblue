@@ -11,7 +11,7 @@ Stability   : beta
 
 -}
 module DTS.DTSwithVarName (
-  VName,
+  VarName(..),
   Selector(..),
   Preterm(..),
   -- * indexing of variable names, @s and DRels
@@ -21,13 +21,13 @@ import qualified Data.Text.Lazy as T
 import Interface.Text
 import Interface.TeX
 
-type VName = (Char,Int)
+data VarName = VarName Char Int deriving (Eq,Show)
 
-instance SimpleText VName where
-  toText (v,i) = T.cons v $ T.pack (show i)
+instance SimpleText VarName where
+  toText (VarName v i) = T.cons v $ T.pack (show i)
 
-instance Typeset VName where
-  toTeX (v,i) = T.cons v $ T.concat ["_{", T.pack (show i), "}"]
+instance Typeset VarName where
+  toTeX (VarName v i) = T.cons v $ T.concat ["_{", T.pack (show i), "}"]
 
 -- | 'Proj' 'Fst' m is the first projection of m, while 'Proj' 'Snd' m is the second projection of m.
 data Selector = Fst | Snd
@@ -43,19 +43,19 @@ instance Typeset Selector where
 
 -- | Preterms of Underspecified Dependent Type Theory (UDTT).
 data Preterm =
-  Var VName |                      -- ^ Variable
+  Var VarName |                      -- ^ Variable
   Con T.Text |                     -- ^ Constant symbol
   Type |                           -- ^ The sort \"type\"
   Kind |                           -- ^ The sort \"kind\"
-  Pi VName Preterm Preterm |       -- ^ Dependent function type (or Pi type)
+  Pi VarName Preterm Preterm |       -- ^ Dependent function type (or Pi type)
   Not Preterm |                    -- ^ Negation
-  Lam VName Preterm |              -- ^ Lambda abstraction
+  Lam VarName Preterm |              -- ^ Lambda abstraction
   App Preterm Preterm |            -- ^ Function Application
-  Sigma VName Preterm Preterm |    -- ^ Dependent product type (or Sigma type)
+  Sigma VarName Preterm Preterm |    -- ^ Dependent product type (or Sigma type)
   Pair Preterm Preterm |           -- ^ Pair
   Proj Selector Preterm |          -- ^ (First and second) Projections
-  Lamvec VName Preterm |           -- ^ Variable-length lambda abstraction
-  Appvec VName Preterm |           -- ^ Variable-length function application
+  Lamvec VarName Preterm |           -- ^ Variable-length lambda abstraction
+  Appvec VarName Preterm |           -- ^ Variable-length function application
   Unit |                           -- ^ The unit term (of type Top)
   Top |                            -- ^ The top type
   Bot |                            -- ^ The bottom type
