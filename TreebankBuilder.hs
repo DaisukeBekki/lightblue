@@ -19,8 +19,20 @@ main = do
   let sentences = filter (/= T.empty) $ T.lines text
   nodes <- mapM (CP.simpleParse 32) sentences
   mapM_ (\(i,sentence,sr) -> do
-                   T.putStrLn $ T.concat ["[", T.pack (show i), "] ", sentence, "\n\\ \\begin{center}\\scalebox{", scaleboxsize (fromIntegral $ T.length sentence), "}{$p_{", T.pack (show i), "}: ", TEX.toTeX sr, "$}\\end{center}\\newpage"]
-                   ) $ zip3 ([1..]::[Int]) sentences (DTS.initializeIndex $ mapM (DTS.fromDeBruijn . CP.sem . head) nodes)
+          T.putStrLn $ T.concat [
+            "[", 
+            T.pack (show i), 
+            "] ", 
+            sentence, 
+            "\n\\ \\begin{center}\\scalebox{", 
+            scaleboxsize (fromIntegral $ T.length sentence), 
+            "}{$p_{", 
+            T.pack (show i), 
+            "}: ", 
+            TEX.toTeX sr, 
+            "$}\\end{center}\\newpage"
+            ]
+            ) $ zip3 ([1..]::[Int]) sentences (DTS.initializeIndex $ mapM (DTS.fromDeBruijn . CP.sem . head) nodes)
 
 scaleboxsize :: Int -> T.Text
 scaleboxsize i = T.pack $ show (fromRational (toEnum (max (100-i) 10) R.% toEnum 100)::F.Fixed F.E2)

@@ -1137,7 +1137,7 @@ preterm2prop ct preterm = case ct of
   Sbar _ -> preterm
   SL x y -> Sigma (category2type y) (preterm2prop x (App (shiftIndices preterm 1 0) (Var 0)))
   BS x y -> Sigma (category2type y) (preterm2prop x (App (shiftIndices preterm 1 0) (Var 0)))
-  T _ _ c -> preterm2prop c preterm
+  T _ _ c -> preterm2prop c $ transvec c preterm
   _ -> Unit
 
 wrapNode :: Node -> Node
@@ -1192,4 +1192,3 @@ numberOfArgs node = case node of
   CONJ     -> 10
   LPAREN   -> 10
   RPAREN   -> 10
-  
