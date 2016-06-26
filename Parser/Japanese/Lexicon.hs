@@ -143,7 +143,7 @@ constructVerb daihyo caseframe posF conjF =
                      then "ガ格"
                      else caseframe;
       caseframelist = map (T.split (==',')) $ T.split (=='#') caseframe' in
-  [(verbCat cf posF conjF, verbSR' daihyo "event" cf) | cf <- caseframelist]
+  [(verbCat cf posF conjF, verbSR' daihyo event cf) | cf <- caseframelist]
 
 constructConjunction :: T.Text -> [(Cat, (Preterm, [Signature]))]
 constructConjunction daihyo = 
