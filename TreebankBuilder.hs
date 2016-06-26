@@ -5,6 +5,8 @@ import qualified Data.Text.Lazy as T                 --text
 import qualified Data.Text.Lazy.IO as T              --text
 --import qualified System.IO as S                      --base
 import qualified System.Environment as S             --base
+import qualified Data.Ratio as R
+import qualified Data.Fixed as F
 import qualified Parser.ChartParser as CP
 import qualified DTS.DependentTypes as DTS
 --import qualified Interface.Text as T
@@ -17,8 +19,8 @@ main = do
   let sentences = filter (/= T.empty) $ T.lines text
   nodes <- mapM (CP.simpleParse 32) sentences
   mapM_ (\(i,sentence,sr) -> do
-                   T.putStrLn $ T.concat ["[", T.pack (show i), "] ", sentence]
-                   T.putStrLn "\\ \\begin{center}\\scalebox{.8}{$"
-                   T.putStrLn $ T.concat ["p_{", T.pack (show i), "}: ", TEX.toTeX sr]
-                   T.putStrLn "$}\\end{center}\\newpage"
+                   T.putStrLn $ T.concat ["[", T.pack (show i), "] ", sentence, "\n\\ \\begin{center}\\scalebox{", scaleboxsize (fromIntegral $ T.length sentence), "}{$p_{", T.pack (show i), "}: ", TEX.toTeX sr, "$}\\end{center}\\newpage"]
                    ) $ zip3 ([1..]::[Int]) sentences (DTS.initializeIndex $ mapM (DTS.fromDeBruijn . CP.sem . head) nodes)
+
+scaleboxsize :: Int -> T.Text
+scaleboxsize i = T.pack $ show (fromRational (toEnum (max (100-i) 10) R.% toEnum 100)::F.Fixed F.E2)
