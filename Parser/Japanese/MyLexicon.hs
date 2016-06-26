@@ -638,8 +638,14 @@ myLexicon = concat $ [
   mylex ["そう"] "new" (modifiableS `SL` modifiableS) (eventModifier "そう"),
   mylex ["ああ"] "new" (modifiableS `SL` modifiableS) (eventModifier "ああ"),
   mylex ["どう"] "new" (modifiableS `SL` modifiableS) (eventModifier "どう"),
-  mylex ["このよう","あのよう","そのよう","どのよう"] "new" (defS [Nna,Nni] [NStem] `BS` NP [F[Ga]]) (id,[]),
-  mylex ["こういう","ああいう","そういう","どういう"] "new" (N `SL` N) (id,[]),
+  mylex ["このよう"] "new" (defS [Nna,Nni] [NStem] `BS` NP [F[Ga]]) (predSR 1 "このよう"),
+  mylex ["そのよう"] "new" (defS [Nna,Nni] [NStem] `BS` NP [F[Ga]]) (predSR 1 "そのよう"),
+  mylex ["あのよう"] "new" (defS [Nna,Nni] [NStem] `BS` NP [F[Ga]]) (predSR 1 "あのよう"),
+  mylex ["どのよう"] "new" (defS [Nna,Nni] [NStem] `BS` NP [F[Ga]]) (predSR 1 "どのよう"),
+  mylex ["こういう"] "new" (N `SL` N) (predSR 2 "こういう"),
+  mylex ["そういう"] "new" (N `SL` N) (predSR 2 "そういう"),
+  mylex ["ああいう"] "new" (N `SL` N) (predSR 2 "あういう"),
+  mylex ["どういう"] "new" (N `SL` N) (predSR 2 "どういう"),
   -- カ節
   mylex ["か","かどうか"] "(603)" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]) `BS` defS anyPos [Term,NStem]) 
         ((Lam (Lam (App (Var 0) (App (Con "ドウカ") (Var 1))))),[]), 
@@ -812,8 +818,12 @@ myLexicon = concat $ [
   -- mylex ["全員","みな","誰も","すべて","それぞれ"]
   -- mylex ["一人","誰か"]
   -- 存在動詞
-  mylex ["い"] "new" ((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP[F[Ni]]) `BS` NP [F[Ga]]) ((Lam (Lam (Sigma (Con "entity") (Sigma (Eq (Con "entity") (Var 0) (Var 2)) (App (Var 2) (Var 0)))))),[]),
-  mylex ["あ"] "new" ((defS [V5ARU] [Stem] `BS` NP[F[Ni]]) `BS` NP [F[Ga]]) ((Lam (Lam (Sigma (Con "entity") (Sigma (Eq (Con "entity") (Var 0) (Var 2)) (App (Var 2) (Var 0)))))),[]),
+  --mylex ["い"] "new" ((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP[F[Ni]]) `BS` NP [F[Ga]]) ((Lam (Lam (Sigma (Con "entity") (Sigma (Eq (Con "entity") (Var 0) (Var 2)) (App (Var 2) (Var 0)))))),[]),
+  --mylex ["あ"] "new" ((defS [V5ARU] [Stem] `BS` NP[F[Ni]]) `BS` NP [F[Ga]]) ((Lam (Lam (Sigma (Con "entity") (Sigma (Eq (Con "entity") (Var 0) (Var 2)) (App (Var 2) (Var 0)))))),[]),
+  mylex ["い"] "new" ((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP[F[Ni]]) `BS` NP [F[Ga]]) 
+        ((Lam (Lam (Lam (Sigma (App (App (Con "exist") (Var 0)) (Var 3)) (App (Var 1) (Var 0)))))),[]),
+  mylex ["あ"] "new" ((defS [V5ARU] [Stem] `BS` NP[F[Ni]]) `BS` NP [F[Ga]]) 
+        ((Lam (Lam (Lam (Sigma (App (App (Con "exist") (Var 0)) (Var 3)) (App (Var 1) (Var 0)))))),[]),
   -- 状詞
   mylex ["多分"] "(Adv)" (defS [Nna,Nni] [NStem] `BS` NP [F[Ga]]) (predSR 1 "多分/たぶん"),
   mylex ["多分"] "(Adv)" (defS [Nemp] [NStem] `BS` NP [F[Ga]]) (modalSR "多分/たぶん"),
