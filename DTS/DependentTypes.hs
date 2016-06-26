@@ -405,8 +405,8 @@ fromDeBruijn2 vnames preterm = case preterm of
     i <- varIndex
     let vname = case a of
                   Con cname | cname == "entity" -> VN.VarName 'x' i
-                            | cname == "event"  -> VN.VarName 'e' i
-                            | cname == "state"  -> VN.VarName 's' i
+                            | cname == "evt"  -> VN.VarName 'e' i
+                            -- cname == "state"  -> VN.VarName 's' i
                   Type -> VN.VarName 'p' i
                   Kind -> VN.VarName 'p' i
                   App _ _   -> VN.VarName 'u' i
@@ -439,8 +439,8 @@ fromDeBruijn2 vnames preterm = case preterm of
     i <- varIndex
     let vname = case a of
                   Con cname | cname == "entity" -> VN.VarName 'x' i
-                                | cname == "event"  -> VN.VarName 'e' i
-                                | cname == "state"  -> VN.VarName 's' i
+                            | cname == "evt"  -> VN.VarName 'e' i
+                            -- cname == "state"  -> VN.VarName 's' i
                   Type -> VN.VarName 'p' i
                   Kind -> VN.VarName 'p' i
                   App _ _   -> VN.VarName 'u' i

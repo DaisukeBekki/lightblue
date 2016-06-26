@@ -44,19 +44,19 @@ instance Typeset Selector where
 
 -- | Preterms of Underspecified Dependent Type Theory (UDTT).
 data Preterm =
-  Var VarName |                      -- ^ Variable
+  Var VarName |                    -- ^ Variable
   Con T.Text |                     -- ^ Constant symbol
   Type |                           -- ^ The sort \"type\"
   Kind |                           -- ^ The sort \"kind\"
-  Pi VarName Preterm Preterm |       -- ^ Dependent function type (or Pi type)
+  Pi VarName Preterm Preterm |     -- ^ Dependent function type (or Pi type)
   Not Preterm |                    -- ^ Negation
-  Lam VarName Preterm |              -- ^ Lambda abstraction
+  Lam VarName Preterm |            -- ^ Lambda abstraction
   App Preterm Preterm |            -- ^ Function Application
-  Sigma VarName Preterm Preterm |    -- ^ Dependent product type (or Sigma type)
+  Sigma VarName Preterm Preterm |  -- ^ Dependent product type (or Sigma type)
   Pair Preterm Preterm |           -- ^ Pair
   Proj Selector Preterm |          -- ^ (First and second) Projections
-  Lamvec VarName Preterm |           -- ^ Variable-length lambda abstraction
-  Appvec VarName Preterm |           -- ^ Variable-length function application
+  Lamvec VarName Preterm |         -- ^ Variable-length lambda abstraction
+  Appvec VarName Preterm |         -- ^ Variable-length function application
   Unit |                           -- ^ The unit term (of type Top)
   Top |                            -- ^ The top type
   Bot |                            -- ^ The bottom type
