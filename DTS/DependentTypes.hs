@@ -34,7 +34,8 @@ module DTS.DependentTypes (
   toDeBruijn,
   Indexed(..),
   sentenceIndex,
-  initializeIndex
+  initializeIndex,
+  fromDeBruijnContext
   ) where
 
 import qualified Data.Text.Lazy as T      -- text
@@ -356,6 +357,7 @@ replaceLambda i preterm = case preterm of
 
 {- Initializing or Re-indexing of vars, @s and DRels -}
 
+-- | Indexed monad controls indices to be attached to preterms.
 newtype Indexed a = Indexed { indexing :: Int -> Int -> Int -> Int -> (a,Int,Int,Int,Int) }
 
 instance Monad Indexed where
@@ -387,6 +389,7 @@ dRelIndex = Indexed (\s x a d -> (d,s,x,a,d+1))
 initializeIndex :: Indexed a -> a
 initializeIndex (Indexed m) = let (m',_,_,_,_) = m 1 1 1 1 in m'
 
+-- | translates a preterm in de Bruijn notation into a preterm with variable name.
 fromDeBruijn :: Preterm -> Indexed VN.Preterm
 fromDeBruijn = fromDeBruijn2 []
 
@@ -506,6 +509,7 @@ fromDeBruijn2 vnames preterm = case preterm of
     return $ VN.DRel j' t m' n'
     -- App (App (Con (T.concat ["DRel",T.pack $ show j',"[",t,"]"])) m') n'
 
+-- | translates a preterm with variable name into a preterm in de Bruijn notation. 
 toDeBruijn :: VN.Preterm -> Preterm
 toDeBruijn = toDeBruijn2 []
 
@@ -524,3 +528,12 @@ toDeBruijn2 vnames preterm = case preterm of
   VN.Sigma vname a b -> Sigma (toDeBruijn2 (vname:vnames) a) (toDeBruijn2 (vname:vnames) b)
   VN.Pair m n -> Pair (toDeBruijn2 vnames m) (toDeBruijn2 vnames n)
   _ -> Type
+
+-- | translates a context in de Bruijn notation (i.e. [DTS.DependentTypes.Preterm]) into a context with variable names (i.e. [(DTS.DTSwithVarName.VarName, DTS.DTSwithVarName.Preterm)]).
+fromDeBruijnContext :: [Preterm] -> VN.Context
+fromDeBruijnContext preterms = 
+  initializeIndex $ mapM g preterms
+  where g preterm = do
+          i <- sentenceIndex
+          preterm' <- fromDeBruijn preterm
+          return (VN.VarName 'p' i, preterm')

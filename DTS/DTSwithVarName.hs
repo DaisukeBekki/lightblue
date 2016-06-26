@@ -14,6 +14,7 @@ module DTS.DTSwithVarName (
   VarName(..),
   Selector(..),
   Preterm(..),
+  Context,
   -- * indexing of variable names, @s and DRels
   ) where
 
@@ -69,6 +70,8 @@ data Preterm =
   Idpeel Preterm Preterm |         -- ^ idpeel
   DRel Int T.Text Preterm Preterm  -- ^ Discourse relations
   deriving (Eq)
+
+type Context = [(VarName,Preterm)] 
 
 {- Printing of Preterms -}
 
@@ -155,5 +158,7 @@ toTeXEmbedded preterm = case preterm of
   Lam vname m -> T.concat["\\left(\\LAM[", toTeX vname, "]", toTeX m, "\\right)"]
   Lamvec vname m -> T.concat ["\\left(\\lambda\\vec{", toTeX vname, "}.", toTeX m, "\\right)"]
   m          -> toTeX m
+
+
 
 
