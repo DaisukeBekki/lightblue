@@ -18,7 +18,7 @@ main = do
   text <- T.readFile $ head args
   let sentences = filter (/= T.empty) $ T.lines text
   nodes <- mapM (CP.simpleParse 32) sentences
-  mapM_ (\(i,sentence,(vn,sr)) -> do
+  mapM_ (\(i,sentence,(vn,sr)) -> 
           T.putStrLn $ T.concat [
             "[", 
             T.pack (show i), 
@@ -35,4 +35,4 @@ main = do
             ) $ zip3 ([1..]::[Int]) sentences (DTS.fromDeBruijnContext $ map (CP.sem . head) nodes)
 
 scaleboxsize :: Int -> T.Text
-scaleboxsize i = T.pack $ show (fromRational (toEnum (max (100-i) 10) R.% toEnum 100)::F.Fixed F.E2)
+scaleboxsize i = T.pack $ show (fromRational (toEnum (max (100-(i*0.8)) 30) R.% toEnum 100)::F.Fixed F.E2)

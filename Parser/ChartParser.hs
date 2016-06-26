@@ -32,6 +32,7 @@ import Data.List as L
 import Data.Char                       --base
 import Data.Fixed                      --base
 import qualified Data.Text.Lazy as T   --text
+import qualified Data.Text.Lazy.IO as T --text
 import qualified Data.Map as M         --container
 import qualified System.IO as S        --base
 import qualified Parser.CCG as CCG --(Node, unaryRules, binaryRules, trinaryRules, isCONJ, cat, SimpleText)
@@ -68,7 +69,13 @@ printNNodesInTeX handle n nodes = mapM_ (\node -> S.hPutStrLn handle $ "\\noinde
 
 -- | prints CCG nodes (=a parsing result) as a TeX source code.
 printNodesInTeX :: S.Handle -> [CCG.Node] -> IO()
-printNodesInTeX handle = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-2em\\scalebox{.2}{" ++ T.unpack (TEX.toTeX node) ++ "\\\\}\\par\\medskip")
+printNodesInTeX handle = 
+  mapM_ (\node -> T.hPutStrLn handle $ T.concat [
+            "\\noindent\\kern-2em\\scalebox{.4}{\\ensuremath{", 
+            TEX.toTeX node,
+            "}}\\medskip"
+            ]
+            )
 
 -- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style
 posTagger :: S.Handle -> [CCG.Node] -> IO()
@@ -272,7 +279,7 @@ extractBestParse :: Chart -> ParseResult
 extractBestParse chart = 
   f $ L.sortBy isLessPrivilegedThan $ filter (\((_,_),nodes) -> not (L.null nodes)) $ M.toList $ chart
   where f [] = Failed
-        f (((i,_),nodes):cs) | i == 0 = Full $ map CCG.wrapNode (sortByNumberOfArgs $ bestOnly $ L.sort nodes)
+        f (((i,_),nodes):cs) | i == 0 = Full $ map (CCG.drel . CCG.wrapNode) (sortByNumberOfArgs $ bestOnly $ L.sort nodes)
                              | otherwise = Partial $ g (map CCG.wrapNode (sortByNumberOfArgs $ bestOnly $ L.sort nodes)) (filter (\((_,j),_) -> j < i) cs)
         g results [] = map CCG.drel results
         g results (((i,_),nodes):cs) = g [CCG.conjoinNodes (CCG.wrapNode $ head $ sortByNumberOfArgs $ bestOnly $ L.sort nodes) (head results)] $ filter (\((_,j),_) -> j < i) cs

@@ -292,8 +292,8 @@ add m n = Natrec m n (Lam (Lam (Succ (Var 0))))
 multiply :: Preterm -> Preterm -> Preterm
 multiply m n = Natrec m Zero (Lam (Lam (add n (Var 0))))
 
--- | addLambda i preterm: the first subroutine for 'transvec' function.
--- this function takes an index and a preterm, transforms the latter in a way that the Var/Appvec with an index j that is equal or greater than i 
+-- | addLambda i preterm: the first subroutine for 'transvec' function,
+-- which takes an index and a preterm, transforms the latter in a way that the Var/Appvec with an index j that is equal or greater than i 
 -- Ex.
 -- addLambda 1 (Appvec 0 m) = Appvec 1 (addLambda 1 m)
 -- addLambda 0 (Appvec 0 m) = Appvec 0 (App () (Var 1))
@@ -317,8 +317,8 @@ addLambda i preterm = case preterm of
   DRel j t m n -> DRel j t (addLambda i m) (addLambda i n)
   m -> m
 
--- | deleteLambda i preterm: the second subroutine for 'transvec' function.
--- this function takes an index and a preterm, transforms the latter in a way that the Var/Appvec with an index j 
+-- | deleteLambda i preterm: the second subroutine for 'transvec' function,
+-- which takes an index i and a preterm p, transforms the latter in a way that the i-th variable vector within p is deleted.
 deleteLambda :: Int -> Preterm -> Preterm
 deleteLambda i preterm = case preterm of
   Var j | j > i     -> Var (j-1)
@@ -339,6 +339,8 @@ deleteLambda i preterm = case preterm of
   DRel j t m n -> DRel j t (deleteLambda i m) (deleteLambda i n)
   m -> m
 
+-- | replaceLambda i preterm: the third subroutine for 'transvec' function,
+-- which takes an index i and a preterm p, transforms the latter in a way that the i-th variable vector within p is replaced by a single variable.
 replaceLambda :: Int -> Preterm -> Preterm
 replaceLambda i preterm = case preterm of
   Pi a b     -> Pi (replaceLambda i a) (replaceLambda (i+1) b)
@@ -373,6 +375,7 @@ instance M.Applicative Indexed where
   pure = return
   (<*>) = M.ap
 
+-- | A sequential number for variable names (i.e. x_1, x_2, ...) in a context
 sentenceIndex :: Indexed Int
 sentenceIndex = Indexed (\s x a d -> (s,s+1,x,a,d))
 
@@ -536,4 +539,4 @@ fromDeBruijnContext preterms =
   where g preterm = do
           i <- sentenceIndex
           preterm' <- fromDeBruijn preterm
-          return (VN.VarName 'p' i, preterm')
+          return (VN.VarName 's' i, preterm')

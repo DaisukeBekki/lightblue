@@ -25,7 +25,7 @@ main = do
   let time = Time.diffUTCTime stop start
   mapM_ (action sentence chart nodes time) args
   where action sentence chart nodes time op
-          | op == "-tex" = CP.printNodesInTeX S.stdout $ nodes
+          | op == "-tex" = CP.printNodesInTeX S.stdout $ take 1 $ nodes
           | op == "-text" = CP.printNodesInText S.stderr $ nodes
           | op == "-xml"  = XML.render S.stderr $ nodes
           | op == "-postag"  = CP.posTagger S.stdout $ nodes

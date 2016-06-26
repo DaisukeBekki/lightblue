@@ -1,27 +1,26 @@
 {-# OPTIONS -Wall #-}
 {-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances #-}
 
-
 {-|
 Description : Underspecified Dependent Type Theory (with variable names)
 Copyright   : (c) Daisuke Bekki, 2016
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
-
 -}
+
 module DTS.DTSwithVarName (
   VarName(..),
   Selector(..),
   Preterm(..),
   Context,
-  -- * indexing of variable names, @s and DRels
   ) where
 
 import qualified Data.Text.Lazy as T
 import Interface.Text
 import Interface.TeX
 
+-- | A variable name consists of Char (e.g. 'x') and Int (e.g. 1), which is displayed as $x_{1}$ in TeX and $x1$ in Text.
 data VarName = VarName Char Int deriving (Eq,Show)
 
 instance SimpleText VarName where
@@ -71,6 +70,7 @@ data Preterm =
   DRel Int T.Text Preterm Preterm  -- ^ Discourse relations
   deriving (Eq)
 
+-- | A context is a list of pairs of a variable and a preterm.
 type Context = [(VarName,Preterm)] 
 
 {- Printing of Preterms -}

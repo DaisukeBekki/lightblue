@@ -92,6 +92,10 @@ emptyCategories = [
   ec "\\emp" "(730)" 100
               ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (defS [Nemp] [NStem] `BS` NP [F[Ga]]))
               ((Lam (Lam (Lam (App (Var 1) (Lam (Sigma entity (Sigma (App (App (Con "manner") (Var 0)) (Var 1)) (Sigma (App (App (Var 5) (Var 1)) (Lam Top)) (App (Var 4) (Var 3)))))))))), [("manner",Pi event (Pi entity Type))]),
+  -- 形容詞の様態副詞用法: 
+  ec "\\emp" "(730)+" 100
+              ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (defS [Aauo,Ai,ANAS,ATII] [Cont] `BS` NP[F[Ga]]))
+              ((Lam (Lam (Lam (App (Var 1) (Lam (Sigma entity (Sigma (App (App (Con "manner") (Var 0)) (Var 1)) (Sigma (App (App (Var 5) (Var 1)) (Lam Top)) (App (Var 4) (Var 3)))))))))), [("manner",Pi event (Pi entity Type))]),
   -- 空冠詞（存在量化）
   ec "∃ " "(544)" 99
               ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N)
@@ -381,10 +385,10 @@ myLexicon = concat $ [
   mylex ["かれ"] "(175)" (S [SF 1 [Aauo,Ai,ANAS,ATII,ABES], F[Imper], F[M],F[M],SF 2 [P,M],F[M],F[M]] `BS` 
                          S [SF 1 [Aauo,Ai,ANAS,ATII,ABES], F[Stem], F[M],F[M],SF 2 [P,M],F[M],F[M]]) (id,[]),
   -- ナシ型活用形容詞
-  mylex ["良","よ"] "(173)" (defS [ANAS] [Stem,UStem] `BS` NP [F[Ga]]) (predSR 1 "良い"),
-  mylex ["無","な"] "(173)" (S ([F[ANAS], F[Stem]]++mmpmm) `BS` NP [F[Ga]]) (predSR 1 "無い"), --  +nとした
-  mylex ["無","な"] "(173)+" ((S ([F[ANAS], F[Stem]]++mmpmm) `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (predSR 2 "無い"),
-  mylex ["無","の"] "(173)" (S ([F[ANAS], F[UStem]]++mmpmm) `BS` NP [F[Ga]]) (predSR 1 "無い"), -- +nとした
+  mylex ["良","よ"] "(173)" (defS [ANAS] [Stem,UStem] `BS` NP [F[Ga]]) (predSR 1 "良い/よい"),
+  mylex ["無","な"] "(173)" (S ([F[ANAS], F[Stem]]++mmpmm) `BS` NP [F[Ga]]) (predSR 1 "無い/ない"), --  +nとした
+  mylex ["無","な"] "(173)+" ((S ([F[ANAS], F[Stem]]++mmpmm) `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (predSR 2 "無い/ない"),
+  mylex ["無","の"] "(173)" (S ([F[ANAS], F[UStem]]++mmpmm) `BS` NP [F[Ga]]) (predSR 1 "無い/ない"), -- +nとした
   -- チイ形活用形容詞
   mylex ["弱っち","よわっち"] "(196)" (defS [ATII] [Stem] `BS` NP [F[Ga]]) (predSR 1 "弱っちい"),
   mylex ["ちゃち"]           "(196)" (defS [ATII] [Stem] `BS` NP [F[Ga]]) (predSR 1 "ちゃちい"),
