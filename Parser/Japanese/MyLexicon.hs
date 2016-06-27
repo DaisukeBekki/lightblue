@@ -171,11 +171,11 @@ myLexicon = concat $ [
   mylex ["に","へ"] "(524)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Ni]])) `BS` NP [F[Nc]]) argumentCM,
   mylex ["によって","によっては"] "(524)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Niyotte]])) `BS` NP [F[Nc]]) argumentCM,
   mylex' ["の"] "(531)?" 80 ((T True 1 N `SL` (T True 1 N `BS` NP [F[No]])) `BS` NP [F[Nc]]) argumentCM,
-  -- 格助詞（の）
-  mylex ["の"] "(531)+" ((N `SL` N) `BS` (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) 
-               ((Lam (Lam (Lam (Lam (App (Var 3) (Lam (Sigma (App (App (Var 3) (Var 2)) (Var 1)) (App (App (Con "の[MCN]") (Var 1)) (Var 3))))))))),[]),
-  mylex' ["が"] "(531)+" 80 ((N `SL` N) `BS` (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) 
-               ((Lam (Lam (Lam (Lam (App (Var 3) (Lam (Sigma (App (App (Var 3) (Var 2)) (Var 1)) (App (App (Con "の[MCN]") (Var 1)) (Var 3))))))))),[]),
+  -- 格助詞（の） T/(T\NPnc)/N\NPnc: \x.\n.\p.\vec.Sigma y:entity (Sigma ny(λT) (Sigma の(x,y) (py vec)))
+  mylex ["の"] "(531)+" (((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N) `BS` NP[F[Nc]])
+               ((Lam (Lam (Lam (Lamvec (Sigma entity (Sigma (App (App (Var 3) (Var 0)) (Lam Top)) (Sigma (App (App (Con "の[MCN]") (Var 5)) (Var 1)) (Appvec 3 (App (Var 4) (Var 2)))))))))) ,[("の[MNC]",Pi entity (Pi entity Type))]),
+  mylex' ["が"] "(531)+" 80 (((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N) `BS` NP[F[Nc]])
+               ((Lam (Lam (Lam (Lamvec (Sigma entity (Sigma (App (App (Var 3) (Var 0)) (Lam Top)) (Sigma (App (App (Con "の[MCN]") (Var 5)) (Var 1)) (Appvec 3 (App (Var 4) (Var 2)))))))))) ,[("の[MNC]",Pi entity (Pi entity Type))]),
   -- adjunct:
   mylex ["と","とは","とも","とさえ","とすら"] "(524)+" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` NP [F[Nc]]) (adjunctCM "with"),
   mylex ["へ","へは","へも","へさえ","へと"] "(516)" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` NP [F[Nc]]) (adjunctCM "goal"), -- 「へと」
