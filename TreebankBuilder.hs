@@ -5,8 +5,6 @@ import qualified Data.Text.Lazy as T                 --text
 import qualified Data.Text.Lazy.IO as T              --text
 --import qualified System.IO as S                      --base
 import qualified System.Environment as S             --base
-import qualified Data.Ratio as R
-import qualified Data.Fixed as F
 import qualified Parser.ChartParser as CP
 import qualified DTS.DependentTypes as DTS
 --import qualified Interface.Text as T
@@ -25,7 +23,7 @@ main = do
             "] ", 
             sentence, 
             "\n\\ \\begin{center}\\scalebox{", 
-            scaleboxsize (fromIntegral $ T.length sentence), 
+            TEX.scaleboxsize sentence, 
             "}{\\ensuremath{", 
             TEX.toTeX vn, 
             " : ", 
@@ -34,5 +32,3 @@ main = do
             ]
             ) $ zip3 ([1..]::[Int]) sentences (DTS.fromDeBruijnContext $ map (CP.sem . head) nodes)
 
-scaleboxsize :: Int -> T.Text
-scaleboxsize i = T.pack $ show (fromRational (toEnum (max (100-i) 30) R.% toEnum 100)::F.Fixed F.E2)

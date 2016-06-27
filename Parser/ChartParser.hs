@@ -69,13 +69,15 @@ printNNodesInTeX handle n nodes = mapM_ (\node -> S.hPutStrLn handle $ "\\noinde
 
 -- | prints CCG nodes (=a parsing result) as a TeX source code.
 printNodesInTeX :: S.Handle -> [CCG.Node] -> IO()
-printNodesInTeX handle = 
+printNodesInTeX handle nodes = 
   mapM_ (\node -> T.hPutStrLn handle $ T.concat [
-            "\\noindent\\kern-2em\\scalebox{.4}{\\ensuremath{", 
-            TEX.toTeX node,
+            "\\noindent\\kern-2em\\scalebox{",
+            TEX.scaleboxsize $ CCG.pf node,
+            "}{\\ensuremath{", 
+            TEX.toTeX $ CCG.sem node,
             "}}\\medskip"
             ]
-            )
+            ) $ take 1 nodes
 
 -- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style
 posTagger :: S.Handle -> [CCG.Node] -> IO()

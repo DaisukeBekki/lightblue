@@ -824,13 +824,13 @@ myLexicon = concat $ [
   -- 遊離数量詞
   -- mylex ["全員","みな","誰も","すべて","それぞれ"]
   -- mylex ["一人","誰か"]
-  -- 存在動詞
+  -- 存在動詞 \x.\z.\c.Sigma (s:state) (Sigma (存在(s,x)) (Sigma (場所(s,z)) cs)), 存在,場所
   --mylex ["い"] "new" ((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP[F[Ni]]) `BS` NP [F[Ga]]) ((Lam (Lam (Sigma entity (Sigma (Eq entity (Var 0) (Var 2)) (App (Var 2) (Var 0)))))),[]),
   --mylex ["あ"] "new" ((defS [V5ARU] [Stem] `BS` NP[F[Ni]]) `BS` NP [F[Ga]]) ((Lam (Lam (Sigma entity (Sigma (Eq entity (Var 0) (Var 2)) (App (Var 2) (Var 0)))))),[]),
   mylex ["い"] "new" ((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP[F[Ni]]) `BS` NP [F[Ga]]) 
-        ((Lam (Lam (Lam (Sigma (App (App (Con "exist") (Var 0)) (Var 3)) (App (Var 1) (Var 0)))))),[]),
+        ((Lam (Lam (Lam (Sigma state (Sigma (App (App (Con "ext") (Var 3)) (Var 0)) (Sigma (App (App (Con "location") (Var 3)) (Var 1)) (App (Var 3) (Var 2)))))))),[("ext",Pi state (Pi entity Type)),("location",Pi entity (Pi state Type))]),
   mylex ["あ"] "new" ((defS [V5ARU] [Stem] `BS` NP[F[Ni]]) `BS` NP [F[Ga]]) 
-        ((Lam (Lam (Lam (Sigma (App (App (Con "exist") (Var 0)) (Var 3)) (App (Var 1) (Var 0)))))),[]),
+        ((Lam (Lam (Lam (Sigma state (Sigma (App (App (Con "ext") (Var 3)) (Var 0)) (Sigma (App (App (Con "location") (Var 3)) (Var 1)) (App (Var 3) (Var 2)))))))),[("ext",Pi state (Pi entity Type)),("location",Pi entity (Pi state Type))]),
   -- 状詞
   mylex ["多分"] "(Adv)" (defS [Nna,Nni] [NStem] `BS` NP [F[Ga]]) (predSR 1 "多分/たぶん"),
   mylex ["多分"] "(Adv)" (defS [Nemp] [NStem] `BS` NP [F[Ga]]) (modalSR "多分/たぶん"),
