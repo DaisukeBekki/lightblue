@@ -13,23 +13,28 @@ import qualified DTS.DTSwithVarName as D
 import qualified Parser.ChartParser as CP
 import qualified Interface.Text as T
 
--- function: cname
--- normalize the given constant text
+-- function: cname_f
+norm_cname :: T.Text -> T.Text
+norm_cname cname = case T.uncons cname of
+  Nothing -> ""
+  Just (char, rest) -> T.concat [char', norm_cname rest]
+    where
+      char' = case char of
+        'ー' -> "xmdashx"
+        '）' -> "rpar"
+        '・' -> "middot"
+        '々' -> "ono"
+        '£'  -> "pound"
+        '~'  -> ""
+        ']'  -> "_"
+        '['  -> "_"
+        '/'  -> "_"
+        c    -> T.singleton c
+
 cname_f :: T.Text -> T.Text
-cname_f cname = T.concat ["c_",  (T.replace "ー" "xmdashx" $
-                                  T.replace "（" "lpar" $
-                                  T.replace "）" "rpar" $
-                                  T.replace "・" "middot" $
-                                  T.replace "々" "ono" $
-                                  T.replace "£"  "pound" $
-                                  T.replace "~" "" $
-                                  T.replace "]" "_" $
-                                  T.replace "[" "_" $
-                                  T.replace "/" "_" $
-                                  head $ T.split (==';') cname)]
+cname_f cname = T.concat ["c_", norm_cname (head $ T.split (==';') cname)]
 
 -- function: f
--- a function which converts DTS preterm with variable name to Prolog input formula
 f :: D.Preterm -> T.Text
 f preterm = case preterm of
   D.Var v -> T.toText v
@@ -52,8 +57,8 @@ f preterm = case preterm of
   D.Eq _ m n        -> T.concat ["eq(", (f $ m), ",", (f $ n), ")"]
   D.Top -> "true"
   D.Bot -> "false"
-  --D.App (D.App (D.Con c) x1) x2 -> if (T.isInfixOf "DRel" c) then "true"
-  --                                 else T.concat [(f $ (D.Con c)), "(", (f $ x1), ",", (f $ x2), ")"]
+  D.App (D.App (D.Con c) x1) x2 -> if (T.isInfixOf "DRel" c) then "true"
+                                   else T.concat [(f $ (D.Con c)), "(", (f $ x1), ",", (f $ x2), ")"]
   D.App (D.App (D.App (D.App g x1) x2) x3) x4
                         -> T.concat [(f $ g), "(", (f $ x1), ",", (f $ x2), ",", (f $ x3), ",", (f $ x4), ")"]
   D.App (D.App (D.App g x1) x2) x3
@@ -72,7 +77,7 @@ f preterm = case preterm of
   D.DRel _ _ _ _ -> "true"
 
 
--- function convcoq
+-- function: convcoq
 convcoq :: D.Preterm -> T.Text
 convcoq preterm = case preterm of
   D.Var v -> T.toText v
@@ -115,69 +120,69 @@ convcoq preterm = case preterm of
 makeCoqSigList :: [DTS.Signature] -> T.Text
 makeCoqSigList siglist = T.concat (L.nub (map (\ (text, preterm) -> T.concat ["Parameter _", (cname_f text), " : ", (convcoq $ DTS.initializeIndex $ DTS.fromDeBruijn $ preterm), ". \n"]) siglist))
 
-pairsList2listsPair :: [(a, b)] -> ([a], [b])
-pairsList2listsPair [] = ([], [])
-pairsList2listsPair (p:plist) = ((fst $ p):(fst $ resultPair), (snd $ p):(snd $ resultPair))
-  where resultPair = pairsList2listsPair $ plist
+runMyCommand :: T.Text -> IO T.Text
+runMyCommand command = do
+  (_, stdout, _, procHandle) <- S.runInteractiveCommand $ T.unpack command
+  _ <- S.waitForProcess procHandle
+  T.hGetContents stdout
 
-conv2CoqTheorem :: D.Preterm -> IO T.Text
-conv2CoqTheorem formula = do
-  lightbluepath <- M.liftM T.pack $ E.getEnv "LIGHTBLUE"
-  T.putStrLn "-- Preterm ---------"
-  T.putStrLn $ T.toText $ formula
-  let proformula = f $ formula ;
-  T.putStrLn "-- Prolog input ---------"
-  T.putStrLn $ proformula
--- Call Prolog (@-elimination)
-  let command1 = T.concat ["swipl -s ", lightbluepath, "/Prolog/presupposition.pl -g main -t halt --quiet -- \"", proformula, "\""]
-  (_, stdout1, _, procHandle1) <- S.runInteractiveCommand $ T.unpack command1
-  _ <- S.waitForProcess procHandle1
-  t1 <- T.hGetContents stdout1
-  T.putStrLn $ "-- After resolving @ --------"
-  T.putStrLn $ t1
--- Call Prolog (Sigma-elimination)
-  let command2 = T.concat ["swipl -s ", lightbluepath, "/Prolog/elimSigma.pl -g main -t halt --quiet -- \"", t1, "\""]
-  (_, stdout2, _, procHandle2) <- S.runInteractiveCommand $ T.unpack command2
-  _ <- S.waitForProcess procHandle2
-  t2 <- T.hGetContents stdout2
-  T.putStrLn $ "-- After elimSigma --------"
-  T.putStrLn $ t2
--- Call Prolog (Prolog to Coq)
-  let command3 = T.concat ["swipl -s ", lightbluepath, "/Prolog/prolog2coq.pl -g main -t halt --quiet -- \"", t2, "\" ; cat interpretation.txt"]
-  (_, stdout3, _, procHandle3) <- S.runInteractiveCommand $ T.unpack command3
-  _ <- S.waitForProcess procHandle3
-  -- file "interpretation.txt" is created in the current directory
-  t3 <- T.hGetContents stdout3
-  T.putStrLn $ "-- Coq formula --------"
-  T.putStrLn $ t3
-  return t3
-
-
-proveEntailment :: T.Text -> D.Preterm -> T.Text -> IO Bool
+proveEntailment :: T.Text -> D.Preterm -> T.Text -> IO (Bool, [(T.Text, Time.NominalDiffTime)])
 proveEntailment flag formula coqsig = do
   if flag == "e" then T.putStrLn "*** Result: Entailment"
                  else T.putStrLn "*** Result: Contradiction"
   lightbluepath <- M.liftM T.pack $ E.getEnv "LIGHTBLUE"
-  t3 <- conv2CoqTheorem formula
-  let coqcode = T.concat [
---        "Add LoadPath \\\"", lightbluepath, "\\\".\nRequire Export coqlib.\n",
+  conv_start <- Time.getCurrentTime
+  T.putStrLn "-- Preterm ---------"
+  T.putStrLn $ T.toText formula
+  T.putStrLn "-- Prolog input ---------"
+  let proformula = f formula
+  T.putStrLn $ proformula
+  conv_stop <- Time.getCurrentTime
+  elimasp_start <- Time.getCurrentTime
+  T.putStrLn $ "-- After resolving @ --------"
+  result1 <- runMyCommand(T.concat ["swipl -s ", lightbluepath, "/Prolog/presupposition.pl -g main -t halt --quiet -- \"", proformula, "\""])
+  T.putStrLn $ result1
+  elimasp_stop <- Time.getCurrentTime
+  elimsigma_start <- Time.getCurrentTime
+  T.putStrLn $ "-- After elimSigma --------"
+  result2 <- runMyCommand(T.concat ["swipl -s ", lightbluepath, "/Prolog/elimSigma.pl -g main -t halt --quiet -- \"", result1, "\""])
+  T.putStrLn $ result2
+  elimsigma_stop <- Time.getCurrentTime
+  coq_start <- Time.getCurrentTime
+  T.putStrLn $ "-- Coq formula --------"
+  theorem <- runMyCommand(T.concat ["swipl -s ", lightbluepath, "/Prolog/prolog2coq.pl -g main -t halt --quiet -- \"", result2, "\" ; cat interpretation.txt"])
+  T.putStrLn $ theorem
+  let coqcode = T.concat [--"Add LoadPath \\\"", lightbluepath,
+                          --"\\\".\nRequire Export coqlib.\n",
                           "Parameters Entity Evt : Type.\n",
                           coqsig,
-                          "Theorem trm : ", t3, ".\n",
-                          "Proof. firstorder. Qed. Print trm.\n"]
+                          "Theorem trm : ", theorem, ".\n",
+                          "Proof. repeat (eexists; firstorder; eauto). Qed. Print trm.\n"]
   T.putStrLn "-- Coq code --------"
   T.putStrLn coqcode
-  let command4 = T.concat ["echo \"", coqcode, "\" | coqtop"]
---  T.putStrLn "-- Coq command --------"
---  T.putStrLn command4
-  (_, stdout4, _, procHandle4) <- S.runInteractiveCommand $ T.unpack command4
-  _ <- S.waitForProcess procHandle4
-  t4 <- T.hGetContents stdout4
---  T.putStrLn "-- Result --------"
-  --T.putStrLn t4
-  --if (T.isInfixOf "trm is defined" t4) then return True else return False
-  return (T.isInfixOf "trm is defined" t4)
+  coqresult <- runMyCommand(T.concat ["echo \"", coqcode, "\" | coqtop"])
+  coq_stop <- Time.getCurrentTime
+  let conv_time = Time.diffUTCTime conv_stop conv_start
+      elimasp_time = Time.diffUTCTime elimasp_stop elimasp_start
+      elimsigma_time = Time.diffUTCTime elimsigma_stop elimsigma_start
+      coq_time = Time.diffUTCTime coq_stop coq_start
+      timelist = [("Parsing Time: ", conv_time),
+                  ("Presupposition-Resolution Time: ", elimasp_time),
+                  ("Sigma-Elimination Time: ", elimsigma_time),
+                  ("Coq Proving Time: ", coq_time)]
+  return ((T.isInfixOf "trm is defined" coqresult), timelist)
 
+printTimes :: [(T.Text, Time.NominalDiffTime)] -> T.Text
+printTimes [] = ""
+printTimes ((t, time):plist) = T.concat [t, T.pack (show time), "\n", printTimes plist]
+
+addTimesList :: [(T.Text, Time.NominalDiffTime)] -> [(T.Text, Time.NominalDiffTime)] -> [(T.Text, Time.NominalDiffTime)]
+addTimesList [] [] = []
+addTimesList ((t1, time1):plist1) ((t2, time2):plist2) =
+  if t1==t2 then (t1, time1+time2):(addTimesList plist1 plist2)
+  else [("error", 0)]
+addTimesList [] (_:_) = [("error", 0)]
+addTimesList (_:_) [] = [("error", 0)]
 
 currying :: [DTS.Preterm] -> DTS.Preterm -> DTS.Preterm
 currying [] preterm = preterm
@@ -192,26 +197,40 @@ main :: IO()
 main = do
   sentences <- T.getContents
   parse_start <- Time.getCurrentTime
-  pairsList <- mapM (\t -> do
+  parseresult <- (mapM (\t -> do
                            nodes <- CP.simpleParse 24 t
                            let representative = head nodes
-                           return ((CP.sem $ representative), (CP.sig $ representative))) (T.lines sentences)
-  parse_stop <- Time.getCurrentTime
-  let listsPair = pairsList2listsPair $ pairsList
-      srlist = fst $ listsPair
-      siglists = snd $ listsPair
-      formula = DTS.initializeIndex (DTS.fromDeBruijn (DTS.betaReduce $ currying (L.init $ srlist) (L.last $ srlist)))
-      neg_formula = DTS.initializeIndex (DTS.fromDeBruijn (DTS.betaReduce $ neg_currying (L.init $ srlist) (L.last $ srlist)))
+                           return ((CP.sem $ representative), (CP.sig $ representative))) (T.lines sentences))
+  let (srlist, siglists) = unzip parseresult
+      premises = L.init $ srlist
+      conclusion = L.last $ srlist
+      formula = DTS.initializeIndex . DTS.fromDeBruijn . DTS.betaReduce $ (currying premises conclusion)
+      neg_formula = DTS.initializeIndex . DTS.fromDeBruijn . DTS.betaReduce $ (neg_currying premises conclusion)
       coqsig = makeCoqSigList (L.concat siglists)
-  proof_start <- Time.getCurrentTime
-  (proveEntailment "e" formula coqsig) >>=
-   (\entails -> if entails then T.putStrLn "-- Answer --------\nyes"
-                else (proveEntailment "c" neg_formula coqsig) >>=
-                     (\contradicts -> if contradicts then T.putStrLn "-- Answer --------\nno"
-                                      else T.putStrLn "-- Answer --------\nunknown"))
-  proof_stop <- Time.getCurrentTime
+  parse_stop <- Time.getCurrentTime
   let parse_time = Time.diffUTCTime parse_stop parse_start
-      proof_time = Time.diffUTCTime proof_stop proof_start
-  T.putStrLn "-- Time --------"
-  T.putStrLn $ T.concat ["Parsing Time: ", T.pack (show parse_time)]
-  T.putStrLn $ T.concat ["Proving Time: ", T.pack (show proof_time)]
+  (proveEntailment "e" formula coqsig) >>=
+   (\(e_result, e_timeslist) -> if e_result
+     then let e_conv_time = snd $ head e_timeslist in
+              T.putStrLn $ T.concat ["-- Answer --------\nyes\n",
+                                     "-- Time --------\n",
+                                     "Parsing Time: ",
+                                     T.pack (show (parse_time+e_conv_time)), "\n",
+                                 (printTimes $ tail e_timeslist)]
+     else (proveEntailment "c" neg_formula coqsig) >>=
+           (\(c_result, c_timeslist) -> if c_result
+             then let e_conv_time = snd $ head e_timeslist
+                      c_conv_time = snd $ head c_timeslist in
+                  T.putStrLn $ T.concat ["-- Answer --------\nno\n",
+                                         "-- Time --------\n",
+                                         "Parsing Time: ",
+                                         T.pack (show (parse_time+e_conv_time+c_conv_time)), "\n",
+                                     (printTimes $ tail (addTimesList e_timeslist c_timeslist))]
+             else let e_conv_time = snd $ head e_timeslist
+                      c_conv_time = snd $ head c_timeslist in
+                  T.putStrLn $ T.concat ["-- Answer --------\nunknown\n",
+                                      "-- Time --------\n",
+                                      "Parsing Time: ",
+                                      T.pack (show (parse_time+e_conv_time+c_conv_time)), "\n",
+                                      (printTimes $ (addTimesList e_timeslist c_timeslist))]))
+
