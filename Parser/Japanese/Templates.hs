@@ -49,7 +49,7 @@ module Parser.Japanese.Templates (
   modalSR,
   modifierSR,
   ---
-  --mannerAdverb,
+  mannerAdverb,
   eventModifier,
   nominalModifier,
   negOperator,
@@ -271,8 +271,8 @@ intensionalState i op | i == 1 = ((Lam (Lam (Lam (Sigma state (Sigma (App (App (
   where sg = Pi (Pi entity Type) (Pi entity (Pi state Type))
 
 -- | T/T: \p.\v.\c.pv(\e.(op e) X ce)
---mannerAdverb :: T.Text -> (Preterm, [Signature])
---mannerAdverb op = ((Lam (Lamvec (Lam (App (Appvec 1 (Var 2)) (Lam (Sigma (App (Con op) (Var 0)) (App (Var 3) (Var 0)))))))), [(op, Pi entity Type)])
+mannerAdverb :: T.Text -> (Preterm, [Signature])
+mannerAdverb op = ((Lam (Lamvec (Lam (App (Appvec 1 (Var 2)) (Lam (Sigma (App (Con op) (Var 0)) (App (Var 3) (Var 0)))))))), [(op, Pi entity Type)])
 
 -- | N/N: \n.\x.\c. (nx (\s.(op x) × cs))
 nominalModifier :: T.Text -> (Preterm, [Signature])
