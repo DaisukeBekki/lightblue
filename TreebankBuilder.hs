@@ -35,4 +35,4 @@ main = do
             ) $ zip3 ([1..]::[Int]) sentences (DTS.fromDeBruijnContext $ map (CP.sem . head) nodes)
 
 scaleboxsize :: Int -> T.Text
-scaleboxsize i = T.pack $ show (fromRational (toEnum (max (100-(i*0.8)) 30) R.% toEnum 100)::F.Fixed F.E2)
+scaleboxsize i = T.pack $ show (fromRational (toEnum (max (100-i) 30) R.% toEnum 100)::F.Fixed F.E2)
