@@ -116,6 +116,9 @@ prolog2coq(event,Stream):-
 prolog2coq(state,Stream):-
     write(Stream,'State').
 
+prolog2coq(evt,Stream):-
+    write(Stream,'Evt').
+
 prolog2coq([A,B],Stream):-
     write(Stream,'(pair '),
     prolog2coq(A,Stream),

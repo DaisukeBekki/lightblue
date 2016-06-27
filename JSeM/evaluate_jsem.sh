@@ -160,13 +160,17 @@ g3=`echo $normal | sed 's/_//g'`
 swipl -s ../Prolog/prolog2latex.pl -g main -t halt --quiet -- "${g1}" "${g2}" "${g3}"
 
 if [ -f test.tex ]; then
-  platex -interaction=nonstopmode test.tex > /dev/null 2>&1
-  # platex -interaction=nonstopmode -halt-on-error test.tex > /dev/null 2>&1
-  dvipdfmx test.dvi > /dev/null 2>&1
-  mv test.pdf ${results_dir}/${f/.txt/}_sr.pdf
   mv test.tex ${results_dir}/${f/.txt/}_sr.tex
-  rm test.aux test.dvi test.log 
 fi
+
+# if [ -f test.tex ]; then
+#   platex -interaction=nonstopmode test.tex > /dev/null 2>&1
+#   # platex -interaction=nonstopmode -halt-on-error test.tex > /dev/null 2>&1
+#   dvipdfmx test.dvi > /dev/null 2>&1
+#   mv test.pdf ${results_dir}/${f/.txt/}_sr.pdf
+#   mv test.tex ${results_dir}/${f/.txt/}_sr.tex
+#   rm test.aux test.dvi test.log 
+# fi
 
 # Output a system answer
 # Handling parse errors
@@ -274,7 +278,7 @@ for system_filename in `ls -v ${results_dir}/jsem_*.answer`; do
 <tr>
   <td><a style="background-color:'$color';" href="'${base_filename/.answer/.results}'">'${base_filename/.answer/}'</a></td>
   <td>'$gold_answer'</td>
-  <td><a href="'${base_filename/.answer/_sr.pdf}'">'$system_answer'</a></td>
+  <td><a href="'${base_filename/.answer/_sr.tex}'">'$system_answer'</a></td>
 </tr>' >> $results_dir/main_jsem.html
 done
 echo "

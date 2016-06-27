@@ -35,8 +35,9 @@ f preterm = case preterm of
   D.Var v -> T.toText v
   D.Con c -> case c of
              "entity" -> "entity"
-             "event"  -> "event"
-             "state"  -> "state"
+             "evt" -> "evt"
+--             "event"  -> "event"
+--             "state"  -> "state"
              cname    -> cname_f $ cname
   D.Type  -> "type"
   D.Kind  -> "kind"
@@ -77,8 +78,9 @@ convcoq preterm = case preterm of
   D.Var v -> T.toText v
   D.Con c -> case c of
              "entity" -> "Entity"
-             "event"  -> "Event"
-             "state"  -> "State"
+             "evt" -> "Evt"
+--             "event"  -> "Event"
+--             "state"  -> "State"
              cname        -> "_" `T.append` (cname_f cname)
   D.Type  -> "Prop"
   D.Kind  -> "Kind"
@@ -157,7 +159,9 @@ proveEntailment flag formula coqsig = do
                  else T.putStrLn "*** Result: Contradiction"
   lightbluepath <- M.liftM T.pack $ E.getEnv "LIGHTBLUE"
   t3 <- conv2CoqTheorem formula
-  let coqcode = T.concat ["Add LoadPath \\\"", lightbluepath, "\\\".\nRequire Export coqlib.\n",
+  let coqcode = T.concat [
+--        "Add LoadPath \\\"", lightbluepath, "\\\".\nRequire Export coqlib.\n",
+                          "Parameters Entity Evt : Type.\n",
                           coqsig,
                           "Theorem trm : ", t3, ".\n",
                           "Proof. firstorder. Qed. Print trm.\n"]
