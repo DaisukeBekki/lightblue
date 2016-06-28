@@ -22,4 +22,4 @@ class Typeset a where
 scaleboxsize :: T.Text -> T.Text
 scaleboxsize sentence = 
   let len = (fromIntegral $ T.length sentence) in
-  T.pack $ show (fromRational (toEnum (max (1000-(len*6)) 300) R.% toEnum 1000)::F.Fixed F.E2)
+  T.pack $ show (fromRational (toEnum (max (1000-(len*7)) 300) R.% toEnum 1000)::F.Fixed F.E2)

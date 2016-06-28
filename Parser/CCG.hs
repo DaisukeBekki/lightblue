@@ -792,7 +792,7 @@ forwardFunctionCrossedComposition2Rule _ _ prevlist = prevlist
 forwardFunctionCrossedSubstitutionRule :: Node -> Node -> [Node] -> [Node]
 forwardFunctionCrossedSubstitutionRule lnode@(Node {rs=_,cat=((x `SL` y1) `BS` z1), sem=f}) rnode@(Node {cat=(y2 `BS` z2), sem=g}) prevlist =
   -- [>Sx] x/y1\z:f  y2\z:g  ==> x\z: \x.(fx)(gx)
-  if isNoncaseNP z1 -- to block CM + be-ident -- r == FFC1 || r == FFC2 || r == FFC3 || (isTNoncaseNP y1) || not (isArgumentCategory z2) || not (isArgumentCategory z1) -- Non-normal forms + Ad-hoc rule
+  if not (isArgumentCategory z1) || not (isArgumentCategory z2) -- isNoncaseNP z1 -- to block CM + be-ident -- r == FFC1 || r == FFC2 || r == FFC3 || (isTNoncaseNP y1) || not (isArgumentCategory z2) || not (isArgumentCategory z1) -- Non-normal forms + Ad-hoc rule
   then prevlist
   else
     let inc = maximumIndexC (cat rnode) in

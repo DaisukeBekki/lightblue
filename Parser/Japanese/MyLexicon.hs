@@ -173,13 +173,13 @@ myLexicon = concat $ [
   mylex' ["の"] "(531)?" 80 ((T True 1 N `SL` (T True 1 N `BS` NP [F[No]])) `BS` NP [F[Nc]]) argumentCM,
   -- 格助詞（の） T/(T\NPnc)/N\NPnc: \x.\n.\p.\vec.Sigma y:entity (Sigma ny(λT) (Sigma の(x,y) (py vec)))
   mylex ["の"] "(531)+" (((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N) `BS` NP[F[Nc]])
-               ((Lam (Lam (Lam (Lamvec (Sigma entity (Sigma (App (App (Var 3) (Var 0)) (Lam Top)) (Sigma (App (App (Con "の[MCN]") (Var 5)) (Var 1)) (Appvec 3 (App (Var 4) (Var 2)))))))))) ,[("の[MNC]",Pi entity (Pi entity Type))]),
+               ((Lam (Lam (Lam (Lamvec (Sigma entity (Sigma (App (App (Var 3) (Var 0)) (Lam Top)) (Sigma (App (App (Con "ノ[MCN]") (Var 5)) (Var 1)) (Appvec 3 (App (Var 4) (Var 2)))))))))) ,[("の[MNC]",Pi entity (Pi entity Type))]),
   mylex' ["が"] "(531)+" 80 (((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N) `BS` NP[F[Nc]])
-               ((Lam (Lam (Lam (Lamvec (Sigma entity (Sigma (App (App (Var 3) (Var 0)) (Lam Top)) (Sigma (App (App (Con "の[MCN]") (Var 5)) (Var 1)) (Appvec 3 (App (Var 4) (Var 2)))))))))) ,[("の[MNC]",Pi entity (Pi entity Type))]),
+               ((Lam (Lam (Lam (Lamvec (Sigma entity (Sigma (App (App (Var 3) (Var 0)) (Lam Top)) (Sigma (App (App (Con "ノ[MCN]") (Var 5)) (Var 1)) (Appvec 3 (App (Var 4) (Var 2)))))))))) ,[("の[MNC]",Pi entity (Pi entity Type))]),
   -- adjunct:
   mylex ["と","とは","とも","とさえ","とすら"] "(524)+" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` NP [F[Nc]]) (adjunctCM "with"),
   mylex ["へ","へは","へも","へさえ","へと"] "(516)" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` NP [F[Nc]]) (adjunctCM "goal"), -- 「へと」
-  mylex ["で","では","でも","でさえ","ですら","じゃ","じゃあ"] "(516)" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` NP [F[Nc]]) (adjunctCM "location"),
+  mylex ["で","では","でも","でさえ","ですら","じゃ","じゃあ"] "(516)" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` NP [F[Nc]]) (adjunctCM "デ[MCN]"),
   mylex ["から","からは","からも"] "(516)" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` NP [F[Nc]]) (adjunctCM "source"),
   mylex ["まで","までは","までも"] "(516)" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` NP [F[Nc]]) (adjunctCM "goal"),
   mylex ["より","よりは","よりも"] "(516)" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` NP [F[Nc]]) (adjunctCM "source"),
@@ -734,13 +734,13 @@ myLexicon = concat $ [
   --mylex ["が"] "(711)" ((T True 1 modifiableS `SL` T True 1 modifiableS) `BS` defS anyPos [Term]) 
   --      (Lam (Lam (Lamvec (Lamvec (Sigma (Appvec 0 (Var 3)) (Appvec 1 (Appvec 2 (Var 3)))))))),
   -- Wh句
-  mylex ["誰","だれ"] "new" (NP [F[Nc]]) (properNameSR "誰/だれ"),
-  mylex ["何","なに","なん"] "new" (NP [F[Nc]]) (properNameSR "何/なに"),
-  mylex ["何処","どこ"] "new" (NP [F[Nc]]) (properNameSR "何処/どこ"),
+  mylex ["誰","だれ"] "new" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) (properNameSR "誰/だれ"),
+  mylex ["何","なに","なん"] "new" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) (properNameSR "何/なに"),
+  mylex ["何処","どこ"] "new" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) (properNameSR "何処/どこ"),
   mylex ["何故","なぜ"] "new" (defS [Nda,Nemp] [NStem] `BS` NP [F[Ga]]) (predSR 1 "何故/なぜ"),
   -- 従属節導入表現
   --mylex ["に"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (defS [Nni] [NStem])) (conjunctionSR "ni"),
-  mylex ["と","とは","とも"] "new" (Sbar [F[ToCL]] `BS` S [F anyPos, F[Term,Imper,Pre,NStem,NTerm],F[M],F[P,M],F[P,M],F[M],F[M]]) (conjunctionSR "to"), -- ダロウ接続形なので後で正確に書きなおす -- この辺の接続条件要検証 -- 非過去のみ
+  mylex ["と","とは","とも","とさえ"] "new" (Sbar [F[ToCL]] `BS` S [F anyPos, F[Term,Imper,Pre,NStem,NTerm],F[P,M],F[P,M],F[P,M],F[M],F[M]]) (id,[]), -- ダロウ接続形なので後で正確に書きなおす -- この辺の接続条件要検証 -- 非過去のみ
   mylex ["ように","ようには","ようにも"] "new" (Sbar [F[YooniCL]] `BS` S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]]) (id,[]),
   mylex ["という"] "toiu1" ((N `SL` N) `BS` S [F anyPos, F[Term,Pre,NStem,NTerm,Imper], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
   ((Lam (Lam (Lam (Lam (Sigma (App (Var 3) (Lam Top)) (App (App (Var 3) (Var 2)) (Lam (Sigma (App (App (Con "content") (Var 1)) (Var 3)) (App (Var 3) (Var 1)))))))))), [("content",nPlaceEventType 1)]),
@@ -756,6 +756,8 @@ myLexicon = concat $ [
   mylex ["ので"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
         (conjunctionSR "node"),
         --((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
+  mylex ["ため","ために"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
+        (conjunctionSR "tame"),
   -- 条件節
   mylex ["ば"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F anyPos,F[NegL,Hyp],F[P,M],F[P,M],F[P,M],F[M],F[M]])) 
         ((Lam (Lam (Lam (Pi (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
@@ -767,8 +769,8 @@ myLexicon = concat $ [
         ((Lam (Lam (Lam (Pi (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
   mylex ["だら","だらば"] "(781)" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F anyPos,F[EuphD],F[M],F[P,M],F[P,M],F[M],F[M]])) 
         ((Lam (Lam (Lam (Pi (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
-  mylex ["と"] "(785)" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F anyPos,F[Term,NTerm],F[P,M],F[P,M],F[P,M],F[M],F[M]])) 
-        ((Lam (Lam (Lam (Pi (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
+  mylex ["と"] "(785)" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F anyPos,F[Term,NTerm],F[M],F[P,M],F[P,M],F[M],F[M]])) 
+        ((Lam (Lam (Lam (Pi (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]), -- 非過去のみ
   mylex ["にせよ"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F anyPos,F[Term,NStem],F[P,M],F[M],F[P,M],F[M],F[M]])) 
         ((Lam (Lam (Lam (Pi (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
   mylex ["ても"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F adjective,F[Cont],F[M],F[M],F[P,M],F[M],F[M]])) 
@@ -849,6 +851,8 @@ myLexicon = concat $ [
   -- BCCWJ用追加語彙項目
   -- PB10_00047
   mylex ["死"] "PB10-3" ((defS [V5s] [Stem] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (verbSR 2 "死す/しす"),
+  --mylex ["古代"] "PB10-4" (NP[F[Nc]] `BS` NP[F[Nc]]) ((Con "古代"),[("古代",Pi entity entity)]),
+  mylex ["日本古代"] "PB10-4" (NP[F[Nc]]) ((Con "日本古代"),[("日本古代",entity)]),
   mylex ["第一"] "PB10-10" (defS [Nda,Nno,Nni,Nemp,Ntar] [NStem] `BS` NP[F[Ga]]) (predSR 1 "第一/だいいち"),
   mylex ["もののふ"] "PB10-10" N (commonNounSR "武士/もののふ"),
   mylex ["則ち"] "PB10-11" (defS [Nemp] [NStem] `BS` NP [F[Ga]]) (predSR 1 "すなわち/すなわち"),
