@@ -5,6 +5,8 @@
 *.bak*.*
 \#*
 tex/
+JSeM/jsem*
+dictionary/*
 dist/
 script/
 testsuits/

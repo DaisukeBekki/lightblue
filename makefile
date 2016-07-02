@@ -13,6 +13,15 @@ install: Parser/Japanese/Juman.dic
 test: Parser/Japanese/Juman.dic
 	ghc --make -O2 -package text-1.2.1.1 -package containers-0.4.2.1 ParseCorpus.hs
 
+coq: Parser/Japanese/Juman.dic
+	ghc --make -O2 -package text-1.2.1.1 -package containers-0.4.2.1 DTStoProlog.hs
+
+treebank: Parser/Japanese/Juman.dic
+	ghc --make -O2 -package text-1.2.1.1 -package containers-0.4.2.1 TreebankBuilder.hs
+
+js: Parser/Japanese/Juman.dic
+	ghc --make -O2 -package text-1.2.1.1 -package containers-0.4.2.1 ParseJSeM.hs
+
 run: ParseCorpus
 	./ParseCorpus ../JSeM_beta/test.txt
 

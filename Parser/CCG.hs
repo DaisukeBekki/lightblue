@@ -1123,7 +1123,7 @@ category2type ct = case ct of
   S _ -> Pi (Pi (Con "event") Type) Type
   NP _ -> Con "entity"
   N   -> Pi (Con "entity") (Pi (Pi (Con "state") Type) Type)
-  Sbar _ -> Type
+  Sbar _ -> Pi (Pi (Con "event") Type) Type
   SL x y -> Pi (category2type y) (category2type x)
   BS x y -> Pi (category2type y) (category2type x)
   T _ _ c -> category2type c
@@ -1134,7 +1134,7 @@ preterm2prop ct preterm = case ct of
   S _ -> App preterm (Lam Top)
   NP _ -> Sigma (Pi (Con "entity") Type) (App (shiftIndices preterm 1 0) (Var 0))
   N -> Sigma (Con "entity") (App (App (shiftIndices preterm 1 0) (Var 0)) (Lam Top))
-  Sbar _ -> preterm
+  Sbar _ -> App preterm (Lam Top)
   SL x y -> Sigma (category2type y) (preterm2prop x (App (shiftIndices preterm 1 0) (Var 0)))
   BS x y -> Sigma (category2type y) (preterm2prop x (App (shiftIndices preterm 1 0) (Var 0)))
   T _ _ c -> preterm2prop c $ transvec c preterm

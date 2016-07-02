@@ -253,7 +253,7 @@ modalSR op = ((Lam (Lam (App (Con op) (App (Var 1) (Var 0))))), [(op, Pi Type Ty
 
 -- | N\N, N/N
 modifierSR :: T.Text -> (Preterm,[Signature])
-modifierSR op = ((Lam (Lam (Lam (App (App (Var 2) (Var 1)) (Lam (Sigma (App (Con op) (Var 0)) (App (Var 2) (Var 0)))))))), [(op, nPlacePredType 1)])
+modifierSR op = ((Lam (Lam (Lam (App (App (Var 2) (Var 1)) (Lam (Sigma (App (Con op) (Var 0)) (App (Var 2) (Var 1)))))))), [(op, nPlacePredType 1)])
 
 -- | 
 -- >>> S\NP\(S\NP):    \p.\x.\c.op(x,\z.(pz)c)
