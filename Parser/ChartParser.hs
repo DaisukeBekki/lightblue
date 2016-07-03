@@ -274,7 +274,12 @@ checkEmptyCategories prevlist =
 
 {- Partial Parsing -}
 
-data ParseResult = Full [CCG.Node] | Partial [CCG.Node] | Failed deriving (Eq,Show)
+-- | A data type for the parsing result.
+data ParseResult = 
+  Full [CCG.Node]      -- ^ when there are at least one node in the topmost box in the chart, returning the nodes.
+  | Partial [CCG.Node] -- ^ when the parser did not obtain the full result, it collects partially parsed segments from the chart, returning their conjunctions.
+  | Failed             -- ^ when no box in the chart contains any node.
+  deriving (Eq,Show)
 
 -- | takes a (parse result) chart and returns a list consisting of nodes, partially parsed substrings.
 extractBestParse :: Chart -> ParseResult

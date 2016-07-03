@@ -1145,6 +1145,7 @@ preterm2prop ct preterm = case ct of
   T _ _ c -> preterm2prop c $ transvec c preterm
   _ -> Unit
 
+-- | receives a node and returns an Sbar node, whose SR is obtained by existentially quantifying all the missing arguments of the SR of a given node.
 wrapNode :: Node -> Node
 wrapNode node =
   Node {
@@ -1159,6 +1160,7 @@ wrapNode node =
     sig = sig node
     }
 
+-- | receives a pair of Sbar nodes, and returns a node whose SR is their conjunction.  Note that this function does not check if given nodes are of Sbar.
 conjoinNodes :: Node -> Node -> Node
 conjoinNodes lnode rnode =
   Node {
@@ -1172,6 +1174,7 @@ conjoinNodes lnode rnode =
     sig = sig(lnode) ++ sig(rnode)
     }
 
+-- | receives an Sbar node, and returns an Sbar node with DRel between a given node and some (anaphorically determined) preceding node.
 drel :: Node -> Node
 drel node =
   Node {
@@ -1185,6 +1188,7 @@ drel node =
     sig = sig node
     }
 
+-- | receives a category and returns an integer based on the number of arguments of the category, which is used for sorting nodes with respect to which node is considered to be a better result of the parsing.  Lesser is better, but non-propositional categories (such as NP, CONJ, LPAREN and RPAREN) are the worst (=10) even if they take no arguments.
 numberOfArgs :: Cat -> Int
 numberOfArgs node = case node of
   SL x _   -> (numberOfArgs x) + 1
