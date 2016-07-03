@@ -59,7 +59,9 @@ setupLexicon sentence = do
 
 -- | Read each line in "Juman.dic" and convert it to a CCG lexical item
 -- | Meanwhile, common nouns and proper names that have a same phonetic form are to be bundled together into a single word.
-parseJumanLine :: ([Node],(M.Map T.Text (T.Text,Integer),M.Map T.Text (T.Text,Integer))) -> [T.Text] -> ([Node],(M.Map T.Text (T.Text,Integer),M.Map T.Text (T.Text,Integer)))
+parseJumanLine :: ([Node],(M.Map T.Text (T.Text,Integer), M.Map T.Text (T.Text,Integer))) 
+                  -> [T.Text]  -- ^ A line in Juman dictionary, filtered.
+                  -> ([Node],(M.Map T.Text (T.Text,Integer),M.Map T.Text (T.Text,Integer)))
 parseJumanLine (lexicalitems, (commonnouns, propernames)) jumanline = 
   case jumanline of
     (hyoki:(score':(cat':(daihyo':(yomi':(source':(caseframe:_))))))) 
@@ -82,7 +84,7 @@ jumanPos2Cat daihyo ct caseframe
   -- T.isPrefixOf "名詞:地名"        ct  = constructProperName daihyo
   -- T.isPrefixOf "名詞:組織名"      ct  = constructProperName daihyo
   -- T.isPrefixOf "名詞:固有名詞"     ct  = constructProperName daihyo
-  | T.isPrefixOf "名詞:副詞的名詞"   ct  = [((modifiableS `SL` modifiableS) `BS` (defS anyPos [Attr]), (id,[]))]
+  | T.isPrefixOf "名詞:副詞的名詞"   ct  = constructPredicate daihyo [Nda,Nno,Nni,Nemp] [NStem]
   | T.isPrefixOf "名詞:時相名詞"     ct  = constructPredicate daihyo [Nda,Nna,Nno,Nni,Nemp] [NStem]
   | T.isPrefixOf "動詞:子音動詞カ行促音便形" ct  = constructVerb daihyo caseframe [V5IKU,V5YUK] [Stem]
   | T.isPrefixOf "動詞:子音動詞カ行"  ct  = constructVerb daihyo caseframe [V5k] [Stem]
@@ -98,7 +100,8 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "動詞:子音動詞バ行"  ct  = constructVerb daihyo caseframe [V5b] [Stem]
   | T.isPrefixOf "動詞:母音動詞"     ct  = constructVerb daihyo caseframe [V1] [Stem,Neg,Cont,NegL,EuphT]
   | T.isPrefixOf "動詞:カ変動詞"     ct  = constructVerb daihyo caseframe [VK] [Stem]
-  | T.isPrefixOf "名詞:サ変名詞"     ct  = ((constructCommonNoun daihyo) ++ (constructVerb daihyo caseframe [VS,VSN] [Stem]) ++ (constructPredicate daihyo [Nda,Ntar] [NStem])) -- (262)
+  | T.isPrefixOf "名詞:サ変名詞"     ct  = ((constructCommonNoun daihyo) ++ (constructVerb daihyo caseframe [VS,VSN] [Stem]) 
+                                      ++ (constructPredicate daihyo [Nda,Ntar] [NStem])) -- (262)
   | T.isPrefixOf "動詞:サ変動詞"     ct  = constructVerb daihyo caseframe [VS] [Stem]
   | T.isPrefixOf "動詞:ザ変動詞"     ct  = constructVerb daihyo caseframe [VZ] [Stem]
   | T.isPrefixOf "動詞:動詞性接尾辞ます型" ct = constructVerb daihyo caseframe [V5NAS] [Stem]
@@ -109,17 +112,18 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "形容詞:ナ形容詞特殊"    ct = constructPredicate daihyo [Nda,Nna] [NStem] -- 同じ
   | T.isPrefixOf "形容詞:ナノ形容詞"     ct = constructPredicate daihyo [Nda,Nna,Nno,Nni] [NStem]
   | T.isPrefixOf "形容詞:タル形容詞"     ct = constructPredicate daihyo [Ntar,Nto] [Stem]
-  | T.isPrefixOf "副詞"  ct  = ((constructPredicate daihyo [Nda,Nna,Nno,Nni,Nto,Nemp] [NStem]) ++ (constructCommonNoun daihyo))
-  | T.isPrefixOf "連体詞" ct  = [(N `SL` N, modifierSR daihyo)]
+  | T.isPrefixOf "副詞"  ct  = ((constructPredicate daihyo [Nda,Nna,Nno,Nni,Nto,Nemp] [NStem]) 
+                              ++ (constructCommonNoun daihyo))
+  | T.isPrefixOf "連体詞" ct  = constructNominalModifier daihyo
   | T.isPrefixOf "接続詞" ct = constructConjunction daihyo
-  | T.isPrefixOf "接頭辞:名詞接頭辞" ct   = [(N `SL` N, modifierSR daihyo)]
+  | T.isPrefixOf "接頭辞:名詞接頭辞" ct   = constructNominalModifier daihyo
   | T.isPrefixOf "接頭辞:動詞接頭辞" ct   = [((defS verb [Stem] `SL` defS verb [Stem]), ((Lam (Lam (App (Var 1) (Lam (Sigma (App (Con daihyo) (Var 0)) (App (Var 2) (Var 1))))))), [(daihyo, nPlacePredType 1)]))]
   | T.isPrefixOf "接頭辞:イ形容詞接頭辞"  ct   = [((defS [Aauo] [Stem] `BS` NP [F[Ga]]) `SL` (defS [Aauo] [Stem] `BS` NP [F[Ga]]), (id, []))]
   | T.isPrefixOf "接頭辞:ナ形容詞接頭辞"  ct   = [((defS [Nda] [NStem] `BS` NP [F[Ga]]) `SL` (defS [Nda] [NStem] `BS` NP [F[Ga]]), (id, []))]
-  | T.isPrefixOf "接尾辞:名詞性名詞助数辞" ct  = [(N `BS` N, modifierSR daihyo)] -- 例：ビット、ヘクトパスカル
-  | T.isPrefixOf "接尾辞:名詞性名詞接尾辞" ct  = [(N `BS` N, modifierSR daihyo)]
-  | T.isPrefixOf "接尾辞:名詞性特殊接尾辞" ct  = [(N `BS` N, modifierSR daihyo)]
-  | T.isPrefixOf "接尾辞:名詞性述語接尾辞" ct  = [(N `BS` N, modifierSR daihyo)]
+  | T.isPrefixOf "接尾辞:名詞性名詞助数辞" ct  = constructNominalModifier daihyo -- 例：ビット、ヘクトパスカル
+  | T.isPrefixOf "接尾辞:名詞性名詞接尾辞" ct  = constructNominalModifier daihyo
+  | T.isPrefixOf "接尾辞:名詞性特殊接尾辞" ct  = constructNominalModifier daihyo
+  | T.isPrefixOf "接尾辞:名詞性述語接尾辞" ct  = constructNominalModifier daihyo
   --  T.isPrefixOf "特殊:句点" ct =
   --  T.isPrefixOf "特殊:読点" ct =
   | T.isPrefixOf "特殊:括弧始" ct = [(LPAREN, (Unit, []))]
@@ -140,10 +144,13 @@ constructCommonNoun daihyo = [(N, commonNounSR daihyo)]
 constructVerb :: T.Text -> T.Text -> [FeatureValue] -> [FeatureValue] -> [(Cat, (Preterm, [Signature]))]
 constructVerb daihyo caseframe posF conjF =
   let caseframe' = if caseframe == T.empty
-                     then "ガ格"
+                     then "ガ"
                      else caseframe;
-      caseframelist = map (T.split (==',')) $ T.split (=='#') caseframe' in
-  [(verbCat cf posF conjF, verbSR' daihyo event cf) | cf <- caseframelist]
+      caseframelist = T.split (=='#') caseframe' in
+  [(verbCat cf posF conjF, verbSR daihyo event cf) | cf <- caseframelist]
+
+constructNominalModifier :: T.Text -> [(Cat, (Preterm, [Signature]))]
+constructNominalModifier daihyo = [(N `BS` N, nominalModifier daihyo)]
 
 constructConjunction :: T.Text -> [(Cat, (Preterm, [Signature]))]
 constructConjunction daihyo = 
@@ -152,3 +159,12 @@ constructConjunction daihyo =
     `SL` (T False 1 (S [F anyPos, F[Term,NTerm,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]]))), 
     ((Lam (Lam (Sigma (App (Var 1) (Lam Top)) (DRel 0 daihyo (Proj Snd $ Asp 1 (Sigma Type (Var 0))) (Var 0))))), []))
     ]
+
+{-
+constructConjunction2 :: T.Text -> [(Cat, (Preterm, [Signature]))]
+constructConjunction2 daihyo = 
+  [((modifiableS `SL` modifiableS) `BS` (S [F anyPos, F[Attr], SF 7 [P,M], SF 8 [P,M], SF 9 [P,M], F[M],F[M] ]), 
+    (Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (Sigma (App (Var 2) (Var 1)) (DRel 0 daihyo (Var 1) (Var 0)))))),
+     []))
+  ]
+-}

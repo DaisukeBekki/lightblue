@@ -16,9 +16,6 @@ module Parser.Japanese.Templates (
   lexicalitem,
   -- * Templates for CCG syntactic features
   defS,
-  entity,
-  event,
-  state,
   ---
   verb,
   adjective,
@@ -34,9 +31,12 @@ module Parser.Japanese.Templates (
   mppmm,
   -- * Templates for DTS representations
   id,
+  entity,
+  event,
+  state,
+  --
   verbCat,
   verbSR,
-  verbSR',
   predSR,
   nPlaceVerbType,
   nPlaceEventType,
@@ -47,7 +47,7 @@ module Parser.Japanese.Templates (
   intensionalEvent,
   intensionalState,
   modalSR,
-  modifierSR,
+  --modifierSR,
   ---
   mannerAdverb,
   eventModifier,
@@ -154,66 +154,66 @@ id = Lam (Var 0)
 -- i==3 -> S\NP\NP\NP: \z.\y.\x.\c.(e:event)X(op(e,x,y,z)X(ce)
 -- i==4 -> error
 
-verbCat :: [T.Text] -> [FeatureValue] -> [FeatureValue] -> Cat
-verbCat caseframe posF conjF = case caseframe of
-  [] -> defS posF conjF
-  (cf:cfs) | cf == "ガ格" -> (verbCat cfs posF conjF) `BS` NP [F[Ga]]
-           | cf == "ヲ格" -> (verbCat cfs posF conjF) `BS` NP [F[O]]
-           | cf == "ニ格" -> (verbCat cfs posF conjF) `BS` NP [F[Ni]]
-           | cf == "ト節" -> (verbCat cfs posF conjF) `BS` Sbar [F[ToCL]]
-           | cf == "によって" -> (verbCat cfs posF conjF) `BS` NP [F[Niyotte]]
-           | otherwise -> (verbCat cfs posF conjF)
+verbCat :: T.Text            -- ^ a case frame (e.g. "ガヲニ")
+           -> [FeatureValue] -- ^ a part-of-speech feature value
+           -> [FeatureValue] -- ^ a conjugational feature value
+           -> Cat
+verbCat caseframe posF conjF = verbCat' caseframe (defS posF conjF)
 
-caseframeAbbrev :: [T.Text] -> T.Text
-caseframeAbbrev caseframe = case caseframe of
-  [] -> T.empty
-  (cf:cfs) | cf == "ガ格" -> T.append "ガ" (caseframeAbbrev cfs)
-           | cf == "ヲ格" -> T.append "ヲ" (caseframeAbbrev cfs)
-           | cf == "ニ格" -> T.append "ニ" (caseframeAbbrev cfs)
-           | cf == "ト節" -> T.append "ト" (caseframeAbbrev cfs)
-           | cf == "によって" -> T.append "ヨ" (caseframeAbbrev cfs)
-           | otherwise -> caseframeAbbrev cfs
+verbCat' :: T.Text         -- ^ a case frame (e.g. "ガヲニ")
+           -> Cat          -- ^ a category to return (accumulated)
+           -> Cat
+verbCat' caseframe ct = case T.uncons caseframe of
+  Just (c,cs) | c == 'ガ' -> verbCat' cs $ ct `BS` NP [F[Ga]]
+              | c == 'ヲ' -> verbCat' cs $ ct `BS` NP [F[O]]
+              | c == 'ニ' -> verbCat' cs $ ct `BS` NP [F[Ni]]
+              | c == 'ト' -> verbCat' cs $ ct `BS` Sbar [F[ToCL]]
+              | c == 'ヨ' -> verbCat' cs $ ct `BS` NP [F[Niyotte]]
+              | otherwise -> verbCat' cs ct
+  Nothing-> ct
 
+{-
 verbSR :: Int -> T.Text -> (Preterm, [Signature])
 verbSR i daihyo 
   | i == 1 =           ((Lam (Lam (Sigma event (Sigma           (App (App (Con daihyo) (Var 2)) (Var 0))                   (App (Var 2) (Var 1)))))), [(daihyo,nPlaceEventType 1)])
   | i == 2 =      ((Lam (Lam (Lam (Sigma event (Sigma      (App (App (App (Con daihyo) (Var 3)) (Var 2)) (Var 0))          (App (Var 2) (Var 1))))))), [(daihyo,nPlaceEventType 2)])
   | i == 3 = ((Lam (Lam (Lam (Lam (Sigma event (Sigma (App (App (App (App (Con daihyo) (Var 4)) (Var 3)) (Var 2)) (Var 0)) (App (Var 2) (Var 1)))))))), [(daihyo,nPlaceEventType 3)])
   | otherwise = (Con $ T.concat ["verbSR: verb ",daihyo," of ", T.pack (show i), " arguments"], [])
+-}
 
-verbSR' :: T.Text -> Preterm -> [T.Text] -> (Preterm, [Signature])
-verbSR' daihyo eventuality caseframe = 
-  let predname = T.concat [daihyo, "/", T.reverse $ caseframeAbbrev caseframe] in
-  (verbSR'' predname caseframe caseframe, [(predname, nPlaceVerbType eventuality caseframe)])
+verbSR :: T.Text -> Preterm -> T.Text -> (Preterm, [Signature])
+verbSR daihyo eventuality caseframe = 
+  let predname = T.concat [daihyo, "/", caseframe] in
+  (verbSR' predname caseframe caseframe, [(predname, nPlaceVerbType eventuality caseframe)])
 
-verbSR'' :: T.Text      -- ^ daihyo
-          -> [T.Text] -- ^ A case frame
-          -> [T.Text] -- ^ A case frame
+verbSR' :: T.Text      -- ^ daihyo
+          -> T.Text -- ^ A case frame
+          -> T.Text -- ^ A case frame
           -> Preterm
-verbSR'' daihyo caseframe caseframe2 = case caseframe of
-  [] -> (Lam (Sigma event (Sigma (argstcore (Con daihyo) caseframe2) (App (Var 2) (Var 1)))))
-  (_:cfs) -> Lam (verbSR'' daihyo cfs caseframe2)
+verbSR' daihyo caseframe caseframe2 = case T.uncons caseframe of
+  Just (_,cs) -> Lam (verbSR' daihyo cs caseframe2)
+  Nothing -> (Lam (Sigma event (Sigma (argstcore (Con daihyo) caseframe2) (App (Var 2) (Var 1)))))
 
-argstcore :: Preterm -> [T.Text] -> Preterm
+argstcore :: Preterm -> T.Text -> Preterm
 argstcore tm caseframe = 
-  let n = (length caseframe) + 1 in
-  case caseframe of
-    [] -> App tm (Var 0)
-    (cf:cfs) | cf == "ト節" -> argstcore (App tm (App (Var n) (Lam Top))) cfs
-             | otherwise -> argstcore (App tm (Var n)) cfs
+  let n = ((fromIntegral $ T.length caseframe)::Int) + 1 in
+  case T.uncons caseframe of
+    Nothing -> App tm (Var 0)
+    Just (c,cs) | c == 'ト' -> argstcore (App tm (App (Var n) (Lam Top))) cs
+                | otherwise -> argstcore (App tm (Var n)) cs
 
 nPlaceVerbType :: Preterm     -- ^ Eventuarlity
-                  -> [T.Text] -- ^ A case frame
+                  -> T.Text -- ^ A case frame
                   -> Preterm
-nPlaceVerbType eventuality caseframe = case caseframe of
-  [] -> Pi eventuality Type
-  (cf:cfs) | cf == "ガ格" -> Pi entity (nPlaceVerbType eventuality cfs)
-           | cf == "ヲ格" -> Pi entity (nPlaceVerbType eventuality cfs)
-           | cf == "ニ格" -> Pi entity (nPlaceVerbType eventuality cfs)
-           --  cf == "ト格" -> Pi entity (nPlaceVerbType eventuality cfs)
-           | cf == "ト節" -> Pi Type (nPlaceVerbType eventuality cfs)
-           | cf == "によって" -> Pi entity (nPlaceVerbType eventuality cfs)
-           | otherwise -> nPlaceVerbType eventuality cfs
+nPlaceVerbType eventuality caseframe = case T.uncons caseframe of
+  Nothing -> Pi eventuality Type
+  Just (c,cs) | c == 'ガ' -> Pi entity (nPlaceVerbType eventuality cs)
+              | c == 'ヲ' -> Pi entity (nPlaceVerbType eventuality cs)
+              | c == 'ニ' -> Pi entity (nPlaceVerbType eventuality cs)
+              --  c == 'ト' -> Pi entity (nPlaceVerbType eventuality cs)
+              | c == 'ト' -> Pi Type (nPlaceVerbType eventuality cs)
+              | c == 'ヨ' -> Pi entity (nPlaceVerbType eventuality cs)
+              | otherwise -> nPlaceVerbType eventuality cs
 
 nPlaceEventType :: Int -> Preterm
 nPlaceEventType i
@@ -252,8 +252,8 @@ modalSR :: T.Text -> (Preterm,[Signature])
 modalSR op = ((Lam (Lam (App (Con op) (App (Var 1) (Var 0))))), [(op, Pi Type Type)])
 
 -- | N\N, N/N
-modifierSR :: T.Text -> (Preterm,[Signature])
-modifierSR op = ((Lam (Lam (Lam (App (App (Var 2) (Var 1)) (Lam (Sigma (App (Con op) (Var 0)) (App (Var 2) (Var 1)))))))), [(op, nPlacePredType 1)])
+--modifierSR :: T.Text -> (Preterm,[Signature])
+--modifierSR op = ((Lam (Lam (Lam (App (App (Var 2) (Var 1)) (Lam (Sigma (App (Con op) (Var 0)) (App (Var 2) (Var 1)))))))), [(op, nPlacePredType 1)])
 
 -- | 
 -- >>> S\NP\(S\NP):    \p.\x.\c.op(x,\z.(pz)c)
@@ -276,7 +276,7 @@ mannerAdverb op = ((Lam (Lamvec (Lam (App (Appvec 1 (Var 2)) (Lam (Sigma (App (C
 
 -- | N/N: \n.\x.\c. (nx (\s.(op x) × cs))
 nominalModifier :: T.Text -> (Preterm, [Signature])
-nominalModifier op = ((Lam (Lam (Lam (App (App (Var 2) (Var 1)) (Lam (Sigma (App (Con op) (Var 1)) (App (Var 2) (Var 3)))))))), [(op, Pi entity Type)])
+nominalModifier op = ((Lam (Lam (Lam (App (App (Var 2) (Var 1)) (Lam (Sigma (App (Con op) (Var 0)) (App (Var 2) (Var 1)))))))), [(op, Pi entity Type)])
 
 -- | S\S: \p.\c.p(\e.(op e) X ce)
 eventModifier :: T.Text -> (Preterm, [Signature])

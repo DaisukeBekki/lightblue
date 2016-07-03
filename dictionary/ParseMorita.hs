@@ -17,6 +17,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified System.IO as S
 import qualified Data.Time as Time
+import Control.Monad
 
 main :: IO()
 main = do
@@ -54,7 +55,10 @@ parseJumanFile jumancaseframes jumanFile = do
   jumandic <- T.readFile $ "/home/bekki/bigdata/JUMAN++/jumanpp-dic-20160401/"++jumanFile
   mapM_ (parseJumanLine jumanFile jumancaseframes) $ filter (/="") (T.lines jumandic) --empty lines are ignored.
 
-parseJumanLine :: FilePath -> [T.Text] -> T.Text -> IO()
+parseJumanLine :: FilePath    -- ^ Juman file name (e.g. "dic/ContentW.dic")
+                  -> [T.Text] -- ^ Juman Case Frame (e.g. Kawahara.txt, splitted by lines)
+                  -> T.Text   -- ^ a line in a Juman dictionary
+                  -> IO()
 parseJumanLine jumanFile jcf text = 
       case parse jumanWordParser "" text of
         Left err -> do 
@@ -126,15 +130,24 @@ degradeScore midashigoList = degradeScoreLoop 0 midashigoList
 
 -- | The function to search and find a caseframe (from jumancaseframes) 
 --   with respect to the (midashigo, daihyo) pair.
-findCaseFrame :: T.Text -> [T.Text] -> T.Text
+findCaseFrame :: T.Text      -- ^ 代表表記
+                 -> [T.Text] -- ^ A list of a data of the form "する/する	ガト#ガヲ#ガニト#ガ#ガヲニト#ガニ#ガヲニ"
+                 -> T.Text
 findCaseFrame daihyo jumancaseframes =
-  let filteredList = filter (\l -> let midashigolist = (T.split (=='/') $ head l) in daihyo `elem` midashigolist) $ map (T.split (=='\t')) jumancaseframes in
+  let filteredList = filter (\l -> let midashigolist = (T.split (=='/') $ head l) in -- ^ e.g. ["走る","はしる"]
+                                   daihyo `elem` midashigolist)
+                                   $ map (T.split (=='\t')) jumancaseframes in
   if filteredList == []
     then T.empty
-    else T.intercalate "#" $ filter (\l -> length (T.split (==',') l) < 4) $ distillList $ concat $ concat $ map (map (T.split (=='#'))) $ map tail $ filteredList
-         -- ここでは単にfilteredListのheadを取るのではなしに、一度#でばらして、全部集めてリストを作り、
-         -- それをdistillListで「漉す」作業をしたものを、KawaharaFrame.txtに登録している。
+    else T.intercalate "#" $ distillList $ do
+                                           cfsline <- filteredList 
+                                           cf <- T.split (=='#') $ head $ tail cfsline
+                                           guard (T.length cf <= 4)
+                                           return cf
+    -- ここでは単にfilteredListのheadを取るのではなしに、一度#でばらして、全部集めてリストを作り、    
+    -- distillListで「漉す」作業をしたものを、KawaharaFrame.txtに登録している。
 
+-- | リストから重複要素を削除
 distillList :: Eq a => [a] -> [a]
 distillList list = distillListLoop list [] 
   where distillListLoop from to = case from of
@@ -178,7 +191,8 @@ blackList = [
   ("多分","副詞"),
   ("べた","副詞"),
   ("ぽい","副詞"),
-  ("あまり","形容詞:ナ形容詞")
+  ("あまり","形容詞:ナ形容詞"),
+  ("とこ","名詞:副詞的名詞")
   ]
 
 -- | Parsers for Juman dictionary

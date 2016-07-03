@@ -9,31 +9,49 @@
 --  （約７分）
 --  KawaharaFrame.txt: ググる/ググる	ニ格,ガ格#ト格,ガ格#ヲ格,ガ格
 --
-import qualified Data.ByteString.Lazy as BSL
---import qualified Data.ByteString.Lazy.UTF8 as U
 import Prelude as P
+import qualified Data.ByteString.Lazy as BSL
+import System.IO as S
 import Text.XML.Expat.SAX
 import Data.List as L 
+import Data.Time as Time
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
---import System.IO as S
 import qualified Data.Map as M
-import System.IO as S
-import Data.Time as Time
 
 main :: IO()
 main = do
   start <- Time.getCurrentTime
-  contents <- BSL.readFile "/home/bekki/bigdata/cf.20160114.xml"
+  contents <- BSL.readFile "/home/bekki/bigdata/KawaharaCaseFrame/cf.20160114.xml"
   let entries = parse defaultParseOptions contents
-  mapM_ (T.putStrLn . (\(midashi,caselistlist) -> T.concat [midashi, "\t", T.intercalate "#" $ map (T.intercalate ",") caselistlist])) $ findEntry entries
+  mapM_ (T.putStrLn . toText) $ findEntry entries
   stop <- Time.getCurrentTime
   let time = Time.diffUTCTime stop start
   S.hPutStrLn S.stderr $ "Total Execution Time (ParseHayashibe): " ++ show time
 
 type Event = SAXEvent T.Text T.Text
-type CaseFrame = (T.Text,[[T.Text]])  -- ex. ("拡張",[[ヲ格,ガ格],[ニ格,ガ格]])
+type CaseFrame = (T.Text,[[T.Text]])  -- ex. ("拡張",[[ヲ格,ガ格],[ヲ格,ニ格,ガ格]])
 
+toText :: CaseFrame -> T.Text
+toText (midashi,caselistlist) = 
+  T.concat [
+    midashi, 
+    "\t", 
+    T.intercalate "#" $ map (abbrevCaseFrame T.empty) caselistlist
+    ]
+
+-- | ["ヲ格","ニ格","ガ格"] -> "ガニヲ"
+abbrevCaseFrame :: T.Text -> [T.Text] -> T.Text
+abbrevCaseFrame abbrev caselist = case caselist of
+  [] -> abbrev
+  (cf:cfs) | cf == "ガ格" -> abbrevCaseFrame (T.cons 'ガ' abbrev) cfs
+           | cf == "ヲ格" -> abbrevCaseFrame (T.cons 'ヲ' abbrev) cfs
+           | cf == "ニ格" -> abbrevCaseFrame (T.cons 'ニ' abbrev) cfs
+           | cf == "ト節" -> abbrevCaseFrame (T.cons 'ト' abbrev) cfs
+           | cf == "によって" -> abbrevCaseFrame (T.cons 'ヨ' abbrev) cfs
+           | otherwise -> abbrevCaseFrame abbrev cfs
+
+-- | SAX eventのリストから、CaseFrameのリストを得る。
 findEntry :: [Event] -> [CaseFrame]
 findEntry events = case events of
   [] -> []
