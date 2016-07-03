@@ -9,7 +9,8 @@ RM=			rm -f
 
 ### データ ###
 SOURCEDIR=	.
-NAME=		index
+#NAME=		index
+NAME=	bccwj_homelos
 
 ### ターゲット ###
 all:		$(NAME).dvi

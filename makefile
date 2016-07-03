@@ -31,7 +31,8 @@ js: Parser/Japanese/Juman.dic
 
 run: ParseText
 #	./ParseCorpus ../JSeM_beta/test.txt
-	./TreebankBuilder ~/lib/brat-v1.3_Crunchy_Frog/data/bccwjcore/PB/PB10_00047.txt > tex/out.txt
+#	script/bccwj10 > script/result32.txt
+	./TreebankBuilder ~/lib/brat-v1.3_Crunchy_Frog/data/bccwjcore/PB/PB10_00047.txt > tex/bccwj_homelos.txt
 
 haddock:
 	cabal configure
