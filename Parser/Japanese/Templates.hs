@@ -188,19 +188,19 @@ verbSR daihyo eventuality caseframe =
 
 verbSR' :: T.Text      -- ^ daihyo
           -> T.Text -- ^ A case frame
-          -> T.Text -- ^ A case frame
+          -> T.Text -- ^ A case frame (save)
           -> Preterm
 verbSR' daihyo caseframe caseframe2 = case T.uncons caseframe of
+  --let n = ((fromIntegral $ T.length caseframe)::Int) + 1 in
   Just (_,cs) -> Lam (verbSR' daihyo cs caseframe2)
-  Nothing -> (Lam (Sigma event (Sigma (argstcore (Con daihyo) caseframe2) (App (Var 2) (Var 1)))))
+  Nothing -> (Lam (Sigma event (Sigma (App (argstcore 2 (Con daihyo) caseframe2) (Var 0)) (App (Var 2) (Var 1)))))
 
-argstcore :: Preterm -> T.Text -> Preterm
-argstcore tm caseframe = 
-  let n = ((fromIntegral $ T.length caseframe)::Int) + 1 in
+argstcore :: Int -> Preterm -> T.Text -> Preterm
+argstcore n tm caseframe = 
   case T.uncons caseframe of
-    Nothing -> App tm (Var 0)
-    Just (c,cs) | c == 'ト' -> argstcore (App tm (App (Var n) (Lam Top))) cs
-                | otherwise -> argstcore (App tm (Var n)) cs
+    Nothing -> tm
+    Just (c,cs) | c == 'ト' -> App (argstcore (n+1) tm cs) (App (Var n) (Lam Top))
+                | otherwise -> App (argstcore (n+1) tm cs) (Var n)
 
 nPlaceVerbType :: Preterm     -- ^ Eventuarlity
                   -> T.Text -- ^ A case frame
