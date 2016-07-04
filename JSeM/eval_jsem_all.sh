@@ -1,13 +1,62 @@
 #!/bin/bash
 
-# This is a script to evaluate a parser on GQ, Plural, Adjective, Verb, and Attitude sections in JSeM
+# This is a script to evaluate a parser on all sections in JSeM
 #
 # ./eval_jsem_all.sh <directory-name>
 #
+# all the results files are located in <directory-name>
 
 results_dir=$1
 # results_dir='jsem_all'
 
+# Check if the directory for each section exists
+if [ -d jsem_results/Generalized-Quantifier ]; then
+  echo -e "The directory \"jsem_results/Generalized-Quantifier\" already exists"
+  echo "Please rename or delete it"
+  exit 1
+fi
+if [ -d jsem_results/Plural_-nominal-anaphora ]; then
+  echo -e "The directory \"jsem_results/Plural_-nominal-anaphora\" already exists"
+  echo "Please rename or delete it"
+  exit 1
+fi
+if [ -d jsem_results/Nominal-Anaphora ]; then
+  echo -e "The directory \"jsem_results/Nominal-Anaphora\" already exists"
+  echo "Please rename or delete it"
+  exit 1
+fi
+if [ -d jsem_results/Ellipsis ]; then
+  echo -e "The directory \"jsem_results/Nominal-Anaphora\" already exists"
+  echo "Please rename or delete it"
+  exit 1
+fi
+if [ -d jsem_results/Adjective ]; then
+  echo -e "The directory \"jsem_results/Adjective\" already exists"
+  echo "Please rename or delete it"
+  exit 1
+fi
+if [ -d jsem_results/Comparative_-adjective_-temporal-reference ]; then
+  echo -e "The directory \"jsem_results/Comparative_-adjective_-temporal-reference\" already exists"
+  echo "Please rename or delete it"
+  exit 1
+fi
+if [ -d jsem_results/Temporal-Reference ]; then
+  echo -e "The directory \"jsem_results/Temporal-Reference\" already exists"
+  echo "Please rename or delete it"
+  exit 1
+fi
+if [ -d jsem_results/Verb ]; then
+  echo -e "The directory \"jsem_results/Verb\" already exists"
+  echo "Please rename or delete it"
+  exit 1
+fi
+if [ -d jsem_results/Attitude ]; then
+  echo -e "The directory \"jsem_results/Attitude\" already exists"
+  echo "Please rename or delete it"
+  exit 1
+fi
+
+# Check if the main result directory exists
 if [ -d ${results_dir} ]; then
   echo -e "The directory \"${results_dir}\" already exists"
   echo "Please rename or delete it"
@@ -16,6 +65,7 @@ fi
 if [ ! -d ${results_dir} ]; then
   mkdir ${results_dir}
 fi
+
 
 speed () {
 grep 'Average' ${results_dir}/$1/main_jsem.html | awk '{print $5}'
@@ -73,10 +123,30 @@ echo "------------Plural section"
 mv jsem_results/Plural_-nominal-anaphora ${results_dir}/plural
 echo "Plural section: Done------------"
 
+echo "------------Anaphora section"
+./evaluate_jsem.sh "Nominal Anaphora"
+mv jsem_results/Nominal-Anaphora ${results_dir}/anaphora
+echo "Anaphora section: Done------------"
+
+echo "------------Ellipsis section"
+./evaluate_jsem.sh "Ellipsis"
+mv jsem_results/Ellipsis ${results_dir}/ellipsis
+echo "Ellipsis section: Done------------"
+
 echo "------------Adjective section"
 ./evaluate_jsem.sh "Adjective"
 mv jsem_results/Adjective ${results_dir}/adjective
 echo "Adjective section: Done------------"
+
+echo "------------Comparative section"
+./evaluate_jsem.sh "Comparative" "-adjective" "-temporal reference"
+mv jsem_results/Comparative_-adjective_-temporal-reference ${results_dir}/comparative
+echo "Comparative section: Done------------"
+
+echo "------------Temporal Reference section"
+./evaluate_jsem.sh "Temporal Reference"
+mv jsem_results/Temporal-Reference ${results_dir}/tr
+echo "Temporal Reference section: Done------------"
 
 echo "------------Verb section"
 ./evaluate_jsem.sh "Verb"
@@ -86,7 +156,7 @@ echo "Verb section: Done------------"
 echo "------------Attitude section"
 ./evaluate_jsem.sh "Attitude"
 mv jsem_results/Attitude ${results_dir}/attitude
-echo "Verb section: Done------------"
+echo "Attitude section: Done------------"
 
 ### Calculate accuracy, etc. ###
 echo "Calculating..."
@@ -96,7 +166,19 @@ mv base_results.txt ${results_dir}/all.results.list
 base_results ${results_dir}/plural/main_jsem.html
 cat base_results.txt >> ${results_dir}/all.results.list
 
+base_results ${results_dir}/anaphora/main_jsem.html
+cat base_results.txt >> ${results_dir}/all.results.list
+
+base_results ${results_dir}/ellipsis/main_jsem.html
+cat base_results.txt >> ${results_dir}/all.results.list
+
 base_results ${results_dir}/adjective/main_jsem.html
+cat base_results.txt >> ${results_dir}/all.results.list
+
+base_results ${results_dir}/comparative/main_jsem.html
+cat base_results.txt >> ${results_dir}/all.results.list
+
+base_results ${results_dir}/tr/main_jsem.html
 cat base_results.txt >> ${results_dir}/all.results.list
 
 base_results ${results_dir}/verb/main_jsem.html
@@ -127,6 +209,26 @@ plural_syscorrect=`syscorrect 'plural'`
 plural_correct=`correct 'plural'`
 plural_total=`total 'plural'`
 
+anaphora_speed=`speed 'anaphora'`
+anaphora_accuracy=`accuracy 'anaphora'`
+anaphora_recall=`recall 'anaphora'`
+anaphora_precision=`precision 'anaphora'`
+anaphora_gcorrect=`gcorrect 'anaphora'`
+anaphora_sysanswer=`sysanswer 'anaphora'`
+anaphora_syscorrect=`syscorrect 'anaphora'`
+anaphora_correct=`correct 'anaphora'`
+anaphora_total=`total 'anaphora'`
+
+ellipsis_speed=`speed 'ellipsis'`
+ellipsis_accuracy=`accuracy 'ellipsis'`
+ellipsis_recall=`recall 'ellipsis'`
+ellipsis_precision=`precision 'ellipsis'`
+ellipsis_gcorrect=`gcorrect 'ellipsis'`
+ellipsis_sysanswer=`sysanswer 'ellipsis'`
+ellipsis_syscorrect=`syscorrect 'ellipsis'`
+ellipsis_correct=`correct 'ellipsis'`
+ellipsis_total=`total 'ellipsis'`
+
 adjective_speed=`speed 'adjective'`
 adjective_accuracy=`accuracy 'adjective'`
 adjective_recall=`recall 'adjective'`
@@ -136,6 +238,26 @@ adjective_sysanswer=`sysanswer 'adjective'`
 adjective_syscorrect=`syscorrect 'adjective'`
 adjective_correct=`correct 'adjective'`
 adjective_total=`total 'adjective'`
+
+comparative_speed=`speed 'comparative'`
+comparative_accuracy=`accuracy 'comparative'`
+comparative_recall=`recall 'comparative'`
+comparative_precision=`precision 'comparative'`
+comparative_gcorrect=`gcorrect 'comparative'`
+comparative_sysanswer=`sysanswer 'comparative'`
+comparative_syscorrect=`syscorrect 'comparative'`
+comparative_correct=`correct 'comparative'`
+comparative_total=`total 'comparative'`
+
+tr_speed=`speed 'tr'`
+tr_accuracy=`accuracy 'tr'`
+tr_recall=`recall 'tr'`
+tr_precision=`precision 'tr'`
+tr_gcorrect=`gcorrect 'tr'`
+tr_sysanswer=`sysanswer 'tr'`
+tr_syscorrect=`syscorrect 'tr'`
+tr_correct=`correct 'tr'`
+tr_total=`total 'tr'`
 
 verb_speed=`speed 'verb'`
 verb_accuracy=`accuracy 'verb'`
@@ -157,26 +279,30 @@ attitude_syscorrect=`syscorrect 'attitude'`
 attitude_correct=`correct 'attitude'`
 attitude_total=`total 'attitude'`
 
-total_number=`echo "(${gq_total} + ${plural_total} + ${adjective_total} + ${verb_total} + ${attitude_total})" | bc`
+total_number=`echo "(${gq_total} + ${plural_total} + ${anaphora_total} + ${ellipsis_total} + ${adjective_total} + ${comparative_total} + ${tr_total} + ${verb_total} + ${attitude_total})" | bc`
 
-total_accuracy=`echo "scale=4; (${gq_correct} + ${plural_correct} + ${adjective_correct} + ${verb_correct} + ${attitude_correct}) / ${total_number}" | bc -l`
+total_accuracy=`echo "scale=4; (${gq_correct} + ${plural_correct} + ${anaphora_correct} + ${ellipsis_correct} + ${adjective_correct} + ${comparative_correct} + ${tr_correct} + ${verb_correct} + ${attitude_correct}) / ${total_number}" | bc -l`
 
-total_recall=`echo "scale=4; (${gq_syscorrect} + ${plural_syscorrect} + ${adjective_syscorrect} + ${verb_syscorrect} + ${attitude_syscorrect}) / (${gq_gcorrect} + ${plural_gcorrect} + ${adjective_gcorrect} + ${verb_gcorrect} + ${attitude_gcorrect})" | bc -l`
+total_recall=`echo "scale=4; (${gq_syscorrect} + ${plural_syscorrect} + ${anaphora_syscorrect} + ${ellipsis_syscorrect} + ${adjective_syscorrect} + ${comparative_syscorrect} + ${tr_syscorrect} + ${verb_syscorrect} + ${attitude_syscorrect}) / (${gq_gcorrect} + ${plural_gcorrect} + ${anaphora_gcorrect} + ${ellipsis_gcorrect} + ${adjective_gcorrect} + ${comparative_gcorrect} + ${tr_gcorrect} + ${verb_gcorrect} + ${attitude_gcorrect})" | bc -l`
 
-total_precision=`echo "scale=4; (${gq_syscorrect} + ${plural_syscorrect} + ${adjective_syscorrect} + ${verb_syscorrect} + ${attitude_syscorrect}) / (${gq_sysanswer} + ${plural_sysanswer} + ${adjective_sysanswer} + ${verb_sysanswer} + ${attitude_sysanswer})" | bc -l`
+total_precision=`echo "scale=4; (${gq_syscorrect} + ${plural_syscorrect} + ${anaphora_syscorrect} + ${ellipsis_syscorrect} + ${adjective_syscorrect} + ${comparative_syscorrect} + ${tr_syscorrect} + ${verb_syscorrect} + ${attitude_syscorrect}) / (${gq_sysanswer} + ${plural_sysanswer} + ${anaphora_sysanswer} + ${ellipsis_sysanswer} + ${adjective_sysanswer} + ${comparative_sysanswer} + ${tr_sysanswer} + ${verb_sysanswer} + ${attitude_sysanswer})" | bc -l`
 
-total_avspeed=`echo "scale=2; ((${gq_speed} * ${gq_total}) + (${plural_speed} * ${plural_total}) + (${adjective_speed} * ${adjective_total}) + (${verb_speed} * ${verb_total}) + (${attitude_speed} * ${attitude_total})) / ${total_number}" | bc -l`
+total_avspeed=`echo "scale=2; ((${gq_speed} * ${gq_total}) + (${plural_speed} * ${plural_total}) + (${anaphora_speed} * ${anaphora_total}) + (${ellipsis_speed} * ${ellipsis_total}) + (${adjective_speed} * ${adjective_total}) + (${comparative_speed} * ${comparative_total}) + (${tr_speed} * ${tr_total}) + (${verb_speed} * ${verb_total}) + (${attitude_speed} * ${attitude_total})) / ${total_number}" | bc -l`
 
 
 echo -e "-----------------------------------------------------------\n"\
-"     Gold |   count| accuracy| recall| precision| av.speed| \n"\
+"       Gold |   count| accuracy| recall| precision| av.speed| \n"\
 "-----------------------------------------------------------\n"\
-"       GQ |     ${gq_total}|    ${gq_accuracy}|  ${gq_recall}|     ${gq_precision}|     ${gq_speed}| \n"\
-"   Plural |      ${plural_total}|    ${plural_accuracy}|  ${plural_recall}|     ${plural_precision}|     ${plural_speed}| \n"\
-"Adjective |      ${adjective_total}|    ${adjective_accuracy}|  ${adjective_recall}|     ${adjective_precision}|     ${adjective_speed}| \n"\
-"     Verb |      ${verb_total}|    ${verb_accuracy}|  ${verb_recall}|     ${verb_precision}|     ${verb_speed}|\n"\
-" Attitude |      ${attitude_total}|    ${attitude_accuracy}|  ${attitude_recall}|     ${attitude_precision}|     ${attitude_speed}|\n"\
-"    Total |     ${total_number}|    ${total_accuracy}|  ${total_recall}|     ${total_precision}|     ${total_avspeed}|\n"\
+"         GQ |     ${gq_total}|    ${gq_accuracy}|  ${gq_recall}|     ${gq_precision}|     ${gq_speed}| \n"\
+"     Plural |      ${plural_total}|    ${plural_accuracy}|  ${plural_recall}|     ${plural_precision}|     ${plural_speed}| \n"\
+"   Anaphora |      ${anaphora_total}|    ${anaphora_accuracy}|  ${anaphora_recall}|     ${anaphora_precision}|     ${anaphora_speed}| \n"\
+"   Ellipsis |      ${ellipsis_total}|    ${ellipsis_accuracy}|  ${ellipsis_recall}|     ${ellipsis_precision}|     ${ellipsis_speed}| \n"\
+"  Adjective |      ${adjective_total}|    ${adjective_accuracy}|  ${adjective_recall}|     ${adjective_precision}|     ${adjective_speed}| \n"\
+"       Verb |      ${verb_total}|    ${verb_accuracy}|  ${verb_recall}|     ${verb_precision}|     ${verb_speed}|\n"\
+"Comparative |      ${comparative_total}|    ${comparative_accuracy}|  ${comparative_recall}|     ${comparative_precision}|     ${comparative_speed}| \n"\
+"   Temporal |      ${tr_total}|    ${tr_accuracy}|  ${tr_recall}|     ${tr_precision}|     ${tr_speed}| \n"\
+"   Attitude |      ${attitude_total}|    ${attitude_accuracy}|  ${attitude_recall}|     ${attitude_precision}|     ${attitude_speed}|\n"\
+"      Total |     ${total_number}|    ${total_accuracy}|  ${total_recall}|     ${total_precision}|     ${total_avspeed}|\n"\
 > ${results_dir}/all.results.table
 
 # Create a confusion matrix

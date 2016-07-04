@@ -201,6 +201,9 @@ fol2latex(event,Stream):-
 fol2latex(state,Stream):-
     write(Stream,'\\mbox{\\textbf{state}}').
 
+fol2latex(state,Stream):-
+    write(Stream,'\\mbox{\\textbf{evt}}').
+
 fol2latex([A,B],Stream):-
     write(Stream,'('),
     fol2latex(A,Stream),
