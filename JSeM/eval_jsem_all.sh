@@ -115,46 +115,55 @@ cat $1 | \
 ### Evaluate each section ###
 echo "------------GQ section"
 ./evaluate_jsem.sh "Generalized Quantifier"
+wait
 mv jsem_results/Generalized-Quantifier ${results_dir}/gq
 echo "GQ section: Done------------"
 
 echo "------------Plural section"
 ./evaluate_jsem.sh "Plural" "-nominal anaphora"
+wait
 mv jsem_results/Plural_-nominal-anaphora ${results_dir}/plural
 echo "Plural section: Done------------"
 
 echo "------------Anaphora section"
 ./evaluate_jsem.sh "Nominal Anaphora"
+wait
 mv jsem_results/Nominal-Anaphora ${results_dir}/anaphora
 echo "Anaphora section: Done------------"
 
 echo "------------Ellipsis section"
 ./evaluate_jsem.sh "Ellipsis"
+wait
 mv jsem_results/Ellipsis ${results_dir}/ellipsis
 echo "Ellipsis section: Done------------"
 
 echo "------------Adjective section"
 ./evaluate_jsem.sh "Adjective"
+wait
 mv jsem_results/Adjective ${results_dir}/adjective
 echo "Adjective section: Done------------"
 
 echo "------------Comparative section"
 ./evaluate_jsem.sh "Comparative" "-adjective" "-temporal reference"
+wait
 mv jsem_results/Comparative_-adjective_-temporal-reference ${results_dir}/comparative
 echo "Comparative section: Done------------"
 
 echo "------------Temporal Reference section"
 ./evaluate_jsem.sh "Temporal Reference"
+wait
 mv jsem_results/Temporal-Reference ${results_dir}/tr
 echo "Temporal Reference section: Done------------"
 
 echo "------------Verb section"
 ./evaluate_jsem.sh "Verb"
+wait
 mv jsem_results/Verb ${results_dir}/verb
 echo "Verb section: Done------------"
 
 echo "------------Attitude section"
 ./evaluate_jsem.sh "Attitude"
+wait
 mv jsem_results/Attitude ${results_dir}/attitude
 echo "Attitude section: Done------------"
 
