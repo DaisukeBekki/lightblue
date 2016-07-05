@@ -868,6 +868,7 @@ myLexicon = concat $ [
   verblex ["殪"] "PB10-13" [V5s] [Stem] "殪す/のこす" "ガヲ" event,
   verblex ["沃え"] "PB10-14" [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] "沃える/こえる" "ガ" state,
   verblex ["名を得"] "PB10-15" [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] "名を得る/なをえる" "ガニ" event,
+  verblex ["押っ取り篭め","おっとりこめ"] "PB10-16" [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] "押っ取り篭め/おっとりこめ" "ガヲ" event,
   mylex ["ずっぷり"] "PB10-18" (defS [Nda,Nemp,Nto] [NStem] `BS` NP[F[Ga]]) (predSR 1 "ずっぷり/ずっぷり"),
   mylex ["まっすぐ"] "PB10-18" (defS [Nda,Nna,Nno,Nni,Nemp] [NStem] `BS` NP[F[Ga]]) (predSR 1 "真っ直ぐ/まっすぐ"),
   mylex ["疾"] "PB10-23" (defS [Aauo] [Stem] `BS` NP[F[Ga]]) (predSR 1 "疾い/はやい"),

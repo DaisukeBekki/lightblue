@@ -17,7 +17,7 @@ main = do
   start    <- Time.getCurrentTime
   args     <- S.getArgs
   sentence <- T.getLine
-  chart <- CP.parse 32 sentence
+  chart <- CP.parse 24 sentence
   let nodes = case CP.extractBestParse chart of
                 CP.Full ns -> ns
                 CP.Partial ns -> ns
