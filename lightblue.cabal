@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                lightblue
-version:             0.1.4.0
+version:             0.1.5.0
 synopsis:            A CCG parser with DTS-representation for Japanese
 --description:         
 license:             AllRightsReserved
