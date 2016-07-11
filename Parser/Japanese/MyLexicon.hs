@@ -700,8 +700,8 @@ myLexicon = concat $ [
         ((Lam (Lam (Lam (App (App (Con "可能") (Var 2)) (Var 1))))),[("可能",(Sigma entity (Pi entity Type)))]),
   -- 比較級
   mylex ["より","ほど"] "compare" (((T False 1 (S [SF 2 anyPos, SF 3 nonStem, SF 4 [P,M],SF 5 [P,M],F[M],F[M],F[M]]) `BS` NP [F[Ga]]) `SL` (T False 1 (S [SF 2 anyPos, SF 3 nonStem, SF 4 [P,M],SF 5 [P,M],F[M],F[M],F[M]]) `BS` NP [F[Ga]])) `BS` NP [F[Nc]])
-        (Lam (Lam (Lam (Lam (App (App (Var 2) (Var 3)) (Lam (App (App (Var 3) (Var 2)) (Lam (Sigma (App (App (Con ">>") (Var 1)) (Var 0)) (App (Var 3) (Var 1)))))))))),
-         [(">>",Pi event (Pi event Type))]),
+        (Lam (Lam (Lam (Lam (App (App (Var 2) (Var 3)) (Lam (App (App (Var 3) (Var 2)) (Lam (Sigma (App (App (Con "≫") (Var 1)) (Var 0)) (App (Var 3) (Var 1)))))))))),
+         [("≫",Pi event (Pi event Type))]),
   -- 接続詞
   mylex ["が"] "(711)" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Term], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
         (conjunctionSR "ga"),
