@@ -393,11 +393,11 @@ myLexicon = concat $ [
   mylex ["無","な"] "(173)+" ((S ([F[ANAS], F[Stem]]++mmpmm) `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) (predSR 2 "無い/ない"),
   mylex ["無","の"] "(173)" (S ([F[ANAS], F[UStem]]++mmpmm) `BS` NP [F[Ga]]) (predSR 1 "無い/ない"), -- +nとした
   -- チイ形活用形容詞
-  mylex ["弱っち","よわっち"] "(196)" (defS [ATII] [Stem] `BS` NP [F[Ga]]) (predSR 1 "弱っちい"),
-  mylex ["ちゃち"]           "(196)" (defS [ATII] [Stem] `BS` NP [F[Ga]]) (predSR 1 "ちゃちい"),
-  mylex ["ばばっち","ばばち"] "(196)" (defS [ATII] [Stem] `BS` NP [F[Ga]]) (predSR 1 "ばばちい"),
-  mylex ["ぼろっち","ぼろち"] "(196)" (defS [ATII] [Stem] `BS` NP [F[Ga]]) (predSR 1 "ぼろちい"),
-  mylex ["みみっち","みみち"] "(196)" (defS [ATII] [Stem] `BS` NP [F[Ga]]) (predSR 1 "みみっちい"),
+  mylex ["弱っち","よわっち"] "(196)" (defS [ATII] [Stem] `BS` NP [F[Ga]]) (predSR 1 "弱っちい/よわっちい"),
+  mylex ["ちゃち"]           "(196)" (defS [ATII] [Stem] `BS` NP [F[Ga]]) (predSR 1 "ちゃちい/ちゃちい"),
+  mylex ["ばばっち","ばばち"] "(196)" (defS [ATII] [Stem] `BS` NP [F[Ga]]) (predSR 1 "ばばちい/ばばちい"),
+  mylex ["ぼろっち","ぼろち"] "(196)" (defS [ATII] [Stem] `BS` NP [F[Ga]]) (predSR 1 "ぼろちい/ぼろちい"),
+  mylex ["みみっち","みみち"] "(196)" (defS [ATII] [Stem] `BS` NP [F[Ga]]) (predSR 1 "みみっちい/みみっちい"),
   -- ベシ形活用形容詞
   verblex ["如","ごと"] "(199)" [ABES] [Stem] "如し/ごとし" "ガガ#ガノ" state,
   mylex ["如","ごと"] "(199)" (defS [ABES] [Stem] `BS` defS anyPos [Attr]) (verbSR "如し/ごとし" event "ガト"),--SR要修正
@@ -419,6 +419,10 @@ myLexicon = concat $ [
   conjNSuffix "たり" "(222)" [Ntar] [Term],
   conjNSuffix "たる" "(222)" [Ntar] [Attr],
   conjNSuffix "たれ" "(222)" [Ntar] [Imper],
+  -- 状詞活用する形容詞
+  mylex ["大き","おおき"] "(258)" (defS [Nna] [NStem] `BS` NP [F[Ga]]) (predSR 1 "大きな/おおきな"),
+  mylex ["小さ","ちいさ"] "(258)" (defS [Nna] [NStem] `BS` NP [F[Ga]]) (predSR 1 "小さな/ちいさな"),
+  mylex ["可笑し","おかし"] "(258)" (defS [Nna] [NStem] `BS` NP [F[Ga]]) (predSR 1 "可笑しな/おかしな"),
   -- 助動詞（過去）
   mylex ["たり"] "(308)" (S [SF 1 anyPos, F[Cont] ,F[P], SF 2 [P,M], SF 3 [P,M],F[M],F[M]] `BS` S [SF 1 anyPos, F[EuphT], F[M],SF 2 [P,M],SF 3 [P,M],F[M],F[M]]) (eventModifier "タ[MCN]"),
   mylex ["た"] "(308)"  (S [SF 1 anyPos, F[Term,Attr], F[P],SF 2 [P,M],SF 3 [P,M],F[M],F[M]] `BS` S [SF 1 anyPos, F[EuphT], F[M],SF 2 [P,M],SF 3 [P,M],F[M],F[M]]) (eventModifier "タ[MCN]"),
