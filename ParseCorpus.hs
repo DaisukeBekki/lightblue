@@ -18,17 +18,27 @@ main = do
     start <- Time.getCurrentTime
     args <- S.getArgs
     sentences <- T.readFile $ head args
-    (i,j,k,total) <- L.foldl' f (return (0,0,0,0)) $ filter isSentence $ T.lines sentences
+    (i,j,k,total) <- L.foldl' parseSentence (return (0,0,0,0)) $ filter isSentence $ T.lines sentences
     stop <- Time.getCurrentTime
     let totaltime = Time.diffUTCTime stop start
-    S.hPutStrLn S.stdout $ "Results: Full:Partial:Error = " ++ (show i) ++":"++(show j)++":"++(show k)++ ", Full/Total = "++(show i)++"/"++(show total)++" (" ++ (show $ ((fromRational ((toEnum i R.% toEnum total)*100))::F.Fixed F.E3)) ++ "%)"
-    S.hPutStrLn S.stdout $ "Execution Time: " ++ show totaltime ++ " (average: " ++ (show $ ((fromRational ((toEnum (fromEnum totaltime)) R.% toEnum (j*1000000000000)))::F.Fixed F.E3)) ++ "s/sentence)"
+    S.hPutStrLn S.stdout $ "Results: Full:Partial:Error = " 
+                           ++(show i)++":"++(show j)++":"++(show k)
+                           ++ ", Full/Total = "
+                           ++(show i)++"/"++(show total)
+                           ++" (" 
+                           ++ (show $ ((fromRational ((toEnum i R.% toEnum total)*100))::F.Fixed F.E3)) 
+                           ++ "%)"
+    S.hPutStrLn S.stdout $ "Execution Time: " 
+                           ++ show totaltime 
+                           ++ " (average: " 
+                           ++ (show $ ((fromRational ((toEnum (fromEnum totaltime)) R.% toEnum (j*1000000000000)))::F.Fixed F.E3)) 
+                           ++ "s/sentence)"
     where isSentence t = not (t == T.empty || "（" `T.isSuffixOf` t)
 
-f :: IO(Int,Int,Int,Int) -- ^ (The number of fully succeeded, partially succeeded, failed, and total parses)
-     -> T.Text      -- ^ A next sentence to parse
-     -> IO(Int,Int,Int,Int)
-f score sentence = do
+parseSentence :: IO(Int,Int,Int,Int) -- ^ (The number of fully succeeded, partially succeeded, failed, and total parses)
+                 -> T.Text           -- ^ A next sentence to parse
+                 -> IO(Int,Int,Int,Int)
+parseSentence score sentence = do
   (i,j,k,total) <- score
   S.putStr $ "[" ++ show (total+1) ++ "] "
   T.putStrLn sentence

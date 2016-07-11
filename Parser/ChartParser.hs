@@ -71,10 +71,11 @@ printNNodesInTeX handle n nodes = mapM_ (\node -> S.hPutStrLn handle $ "\\noinde
 printNodesInTeX :: S.Handle -> [CCG.Node] -> IO()
 printNodesInTeX handle nodes = 
   mapM_ (\node -> T.hPutStrLn handle $ T.concat [
-            "\\noindent\\kern-2em\\scalebox{",
-            TEX.scaleboxsize $ CCG.pf node,
+            "\\noindent\\kern-2em\\scalebox{.2",
+            --TEX.scaleboxsize $ CCG.pf node,
             "}{\\ensuremath{", 
-            TEX.toTeX $ CCG.sem node,
+            -- TEX.toTeX $ CCG.sem node,
+            TEX.toTeX node,
             "}}\\medskip"
             ]
             ) $ take 1 nodes

@@ -8,7 +8,6 @@ import qualified System.Environment as S  --base
 import qualified Parser.ChartParser as CP
 import qualified Parser.Japanese.Lexicon as LEX
 import qualified Interface.Text as T
---import qualified Interface.TeX as TEX
 import qualified Interface.XML as XML
 
 
