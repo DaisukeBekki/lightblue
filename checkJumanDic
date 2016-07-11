@@ -1,0 +1,2 @@
+#!/bin/bash
+cat Parser/Japanese/Juman.dic | grep -E "^$1(\s)"
