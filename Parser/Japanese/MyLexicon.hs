@@ -578,13 +578,13 @@ myLexicon = concat $ [
   --mylex ["拙","まず"] "(434b)" ((defS [Aauo] [Stem] `BS` NP [F[Ga]]) `BS` S anyPos [TeForm]) (Lam (Lam (Lam (Pi ))))
   -- 6.1.5 授受表現
   mylex ["上げ","あげ"] "(436)" ((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP [F[Ga]]) `BS` (defS verb [TeForm] `BS` NP [F[Ga]]))
-        ((Lam (Lam (Lam (App (Con "アゲル") (Pair (Var 1) (App (App (Var 2) (Var 1)) (Var 0))))))), [("アゲル",Sigma entity Type)]),  -- Signature直す
+        ((Lam (Lam (Lam (App (Con "アゲル") (Pair (Var 1) (App (App (Var 2) (Var 1)) (Var 0))))))), [("アゲル",Pi (Sigma entity Type) Type)]),  -- Signature直す
   mylex ["貰","もら"] "(436)" (((defS [V5w] [Stem] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) `BS` (defS verb [TeForm] `BS` NP [F[Ga]]))
-        ((Lam (Lam (Lam (Lam (App (Con "モラウ") (Pair (Var 1) (Pair (Var 2) (App (App (Var 3) (Var 2)) (Var 0))))))))), [("モラウ",Sigma entity Type)]),
+        ((Lam (Lam (Lam (Lam (App (Con "モラウ") (Pair (Var 1) (Pair (Var 2) (App (App (Var 3) (Var 2)) (Var 0))))))))), [("モラウ",Pi (Sigma entity Type) Type)]),
   -- 6.1.6 −がる
   mylex ["が"] "(443)" ((defS [V5r] [Stem] `BS` NP [F[Ga]]) `BS` (defS [Aauo,Ai,ANAS] [Stem] `BS` NP [F[Ga]])) (intensionalEvent 1 "ガル"),
   -- 6.1.7 −めく
-  mylex ["め"] "(453)" ((defS [V5k] [Stem] `BS` NP [F[Ga]]) `BS` N) ((Lam (Lam (Lam (App (Con "メク") (Pair (Var 0) (App (App (Var 2) (Var 1)) (Var 0))))))), [("メク",Sigma entity Type)]), -- to be revised
+  mylex ["め"] "(453)" ((defS [V5k] [Stem] `BS` NP [F[Ga]]) `BS` N) ((Lam (Lam (Lam (App (Con "メク") (Pair (Var 0) (App (App (Var 2) (Var 1)) (Var 0))))))), [("メク",Pi (Sigma entity Type) Type)]), -- to be revised
   -- 形容詞性接尾語
   -- 6.2.1 ない
   mylex ["な"] "(455)" (S ([F[ANAS], F[Stem]]++mmpmm) `BS` S [F anyPos, F[Neg], F[M],F[M],F[P,M],F[P,M],F[M]]) negOperator,
@@ -659,7 +659,7 @@ myLexicon = concat $ [
         ((Lam (Lam (App (Var 0) (App (Con "ドウカ") (Var 1))))),[]), 
   -- 受動態・使役態
   mylex ["れ"] "(607)" (((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) `BS` (defS anyPos [VoR] `BS` NP [F[Ga]])) 
-        ((Lam (Lam (Lam (Lam (App (App (Var 3) (Var 2)) (Lam (Sigma event (Sigma (App (App (App (Con "迷惑") (Var 1)) (Var 3)) (Var 0)) (App (Var 3) (Var 1)))))))))),[("迷惑",Pi entity (Pi entity (Pi event Type)))]),
+        ((Lam (Lam (Lam (Lam (App (App (Var 3) (Var 2)) (Lam (Sigma event (Sigma (App (App (App (Con "迷惑") (Var 1)) (Var 3)) (Var 0)) (App (Var 3) (Var 1)))))))))),[("迷惑",Pi event (Pi entity (Pi event Type)))]),
   mylex ["れ"] "(608)" (((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP [F[Ga]]) `BS` NP [F[Ni,Niyotte]]) `BS` ((defS anyPos [VoR] `BS` NP [F[Ga]]) `BS` NP [F[Ni,O]])) 
         ((Lam (Lam (Lam (Lam (App (App (App (Var 3) (Var 1)) (Var 2)) (Var 0)))))),[("使役",Pi event (Pi entity (Pi event Type)))]),
   mylex ["せ"] "(629)" (((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) `BS` (defS anyPos [VoS] `BS` NP [F[Ga]]))
@@ -700,8 +700,8 @@ myLexicon = concat $ [
         ((Lam (Lam (Lam (App (App (Con "可能") (Var 2)) (Var 1))))),[("可能",(Sigma entity (Pi entity Type)))]),
   -- 比較級
   mylex ["より","ほど"] "compare" (((T False 1 (S [SF 2 anyPos, SF 3 nonStem, SF 4 [P,M],SF 5 [P,M],F[M],F[M],F[M]]) `BS` NP [F[Ga]]) `SL` (T False 1 (S [SF 2 anyPos, SF 3 nonStem, SF 4 [P,M],SF 5 [P,M],F[M],F[M],F[M]]) `BS` NP [F[Ga]])) `BS` NP [F[Nc]])
-        (Lam (Lam (Lam (Lam (App (App (Var 2) (Var 3)) (Lam (App (App (Var 3) (Var 2)) (Lam (Sigma (App (App (Con "≫") (Var 1)) (Var 0)) (App (Var 3) (Var 1)))))))))),
-         [("≫",Pi event (Pi event Type))]),
+        (Lam (Lam (Lam (Lam (App (App (Var 2) (Var 3)) (Lam (App (App (Var 3) (Var 2)) (Lam (Sigma (App (App (Con "compare") (Var 1)) (Var 0)) (App (Var 3) (Var 1)))))))))),
+         [("compare",Pi event (Pi event Type))]),
   -- 接続詞
   mylex ["が"] "(711)" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Term], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
         (conjunctionSR "ga"),
