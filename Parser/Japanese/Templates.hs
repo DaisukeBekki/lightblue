@@ -53,6 +53,7 @@ module Parser.Japanese.Templates (
   eventModifier,
   nominalModifier,
   negOperator,
+  negOperator2,
   argumentCM,
   adjunctCM,
   adjunctNM,
@@ -286,6 +287,11 @@ eventModifier op = ((Lam (Lam (App (Var 1) (Lam (Sigma (App (Con op) (Var 0)) (A
 -- S\S: \p.\c.not (pc)
 negOperator :: (Preterm, [Signature])
 negOperator = ((Lam (Lam (Not (App (Var 1) (Var 0))))), [])
+
+-- | negation operator 2
+-- S\NP\(S\NP): \p.\x.\c.not ((px)c)
+negOperator2 :: (Preterm, [Signature])
+negOperator2 = ((Lam (Lam (Lam (Not (App (App (Var 2) (Var 1)) (Var 0)))))), [])
 
 -- | argument case marker
 -- T/(T\NP[cm])\NP[nc]: \x.\p.px
