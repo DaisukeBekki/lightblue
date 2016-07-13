@@ -181,7 +181,7 @@ shiftIndices preterm d i = case preterm of
                    then Var (j+d) 
                    else Var j
   Pi a b     -> Pi (shiftIndices a d i) (shiftIndices b d (i+1))
-  Not m      -> Not (shiftIndices m d (i+1))
+  Not m      -> Not (shiftIndices m d i)
   Lam m      -> Lam (shiftIndices m d (i+1))
   App m n    -> App (shiftIndices m d i) (shiftIndices n d i)
   Sigma a b  -> Sigma (shiftIndices a d i) (shiftIndices b d (i+1))
