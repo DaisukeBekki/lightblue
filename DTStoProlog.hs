@@ -26,6 +26,7 @@ norm_cname cname = case T.uncons cname of
         '々' -> "ono"
         '£'  -> "pound"
         '~'  -> ""
+        '＃' -> "MCN"
         ']'  -> "_"
         '['  -> "_"
         '/'  -> "_"
