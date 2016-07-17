@@ -89,7 +89,7 @@ instance Typeset Node where
 
 instance MathML Node where
   toMathML node@(Node _ _ _ _ _ _ _ _) =
-    let newcat = T.replace ">" "]" $ T.replace "<" "" $ toText (cat node);
+    let newcat = T.replace ">" "&gt;" $ T.replace "<" "&lt;" $ toText (cat node);
         newrs = T.replace ">" "&gt;" $ T.replace "<" "&lt;" $ toText (rs node) in
     case daughters node of 
       [] -> T.concat ["<mrow><mfrac linethickness='2px'><mtext fontsize='1.0' color='Black'>", pf node, "</mtext><mfrac linethickness='0px'><mi fontsize='1.0' color='Red'>", newcat, "</mi><mi fontsize='1.0' color='Purple'>", toText (sem node), "</mi></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", source node, "</mtext></mrow>"] 
