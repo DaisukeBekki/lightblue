@@ -49,6 +49,7 @@ import Data.Ratio                    --base
 import DTS.DependentTypes
 import Interface.Text
 import Interface.TeX
+import Interface.MathML
 
 -- | A node in CCG derivation tree.
 data Node = Node {
@@ -84,13 +85,15 @@ instance Typeset Node where
   toTeX node@(Node _ _ _ _ _ _ _ _) =
     case daughters node of 
       [] -> T.concat ["\\vvlex[", (source node), "]{", (pf node), "}{", toTeX (cat node), "}{", toTeX $ sem node, "}"] --, "\\ensuremath{", (source node), "}"]
-      _ -> T.concat ["\\nd[", toTeX (rs node), "]{\\vvcat{", toTeX (cat node), "}{", toTeX $ sem node, "}}{", daughtersTeX, "}"] --, "\\ensuremath{", (source node), "}"]
-    where daughtersTeX =
-            case daughters node of
-              [l,c,r] -> T.concat [toTeX l, "&", toTeX c, "&", toTeX r]
-              [l,r]   -> T.concat [toTeX l, "&", toTeX r]
-              [c]     -> T.concat [toTeX c]
-              x  -> T.pack $ "(Error: daughter nodes are ill-formed: " ++ show x ++ ")"
+      _ -> T.concat ["\\nd[", toTeX (rs node), "]{\\vvcat{", toTeX (cat node), "}{", toTeX $ sem node, "}}{", T.intercalate "&" $ map toTeX $ daughters node, "}"] --, "\\ensuremath{", (source node), "}"]
+
+instance MathML Node where
+  toMathML node@(Node _ _ _ _ _ _ _ _) =
+    let newcat = T.replace ">" "]" $ T.replace "<" "" $ toText (cat node);
+        newrs = T.replace ">" "&gt;" $ T.replace "<" "&lt;" $ toText (rs node) in
+    case daughters node of 
+      [] -> T.concat ["<mrow><mfrac linethickness='2px'><mtext fontsize='1.0' color='Black'>", pf node, "</mtext><mfrac linethickness='0px'><mi fontsize='1.0' color='Red'>", newcat, "</mi><mi fontsize='1.0' color='Purple'>", toText (sem node), "</mi></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", source node, "</mtext></mrow>"] 
+      _ -> T.concat ["<mrow><mfrac linethickness='2px'><mrow>", T.concat $ map toMathML $ daughters node, "</mrow><mfrac linethickness='0px'><mi fontsize='1.0' color='Red'>", newcat, "</mi><mi fontsize='1.0' color='Purple'>", toText $ sem node, "</mi></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", newrs, "</mtext></mrow>"] 
 
 -- | Syntactic categories of 
 data Cat =

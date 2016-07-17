@@ -11,6 +11,7 @@ RM=			rm -f
 SOURCEDIR=	.
 NAME=		index
 #NAME=	bccwj_homelos
+#NAME=	jobs
 
 ### ターゲット ###
 all:		$(NAME).dvi

@@ -23,6 +23,7 @@ module Parser.ChartParser (
   printNodesInText,
   printNNodesInTeX,
   printNodesInTeX,
+  printNodesInMathML,
   -- * Partial parsing function(s)
   ParseResult(..),
   extractBestParse
@@ -40,6 +41,7 @@ import qualified Parser.Japanese.Lexicon as L (LexicalItems, lookupLexicon, setu
 import qualified Parser.Japanese.Templates as LT
 import qualified Interface.Text as T
 import qualified Interface.TeX as TEX
+import qualified Interface.MathML as Math
 
 -- | The type for CYK-charts.
 type Chart = M.Map (Int,Int) [CCG.Node]
@@ -79,6 +81,18 @@ printNodesInTeX handle nodes =
             "}}\\medskip"
             ]
             ) $ take 1 nodes
+
+-- | prints CCG nodes (=a parsing result) as a TeX source code.
+printNodesInMathML :: S.Handle -> [CCG.Node] -> IO()
+printNodesInMathML handle nodes = 
+  mapM_ (\node -> T.hPutStrLn handle $ T.concat [
+    "<!doctype html><html lang='en'><head><meta charset='UTF-8'><title>lightblue parse tree</title><style>body { font-size: 2em; } </style><script type=\"text/javascript\" src=\"http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML\"></script></head><body><p>",
+    CCG.pf node,
+    "</p><math xmlns='http://www.w3.org/1998/Math/MathML'>",
+    Math.toMathML node,
+    "</math></body></html>"
+    ]
+    ) $ take 1 nodes
 
 -- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style
 posTagger :: S.Handle -> [CCG.Node] -> IO()
