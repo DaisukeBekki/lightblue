@@ -105,6 +105,7 @@ processingCompNoun compNouns jumanPairs compNoun compNounHead =
 isCNcomponent :: JumanPair -> Bool
 isCNcomponent (_,j2,j3,j4) =
   if j2 == "名詞" ||
+     j2 == "副詞" ||
      j3 == "名詞接頭辞" ||
      "名詞性名詞" `T.isPrefixOf` j3 ||
      "形容詞性名詞" `T.isPrefixOf` j3 ||

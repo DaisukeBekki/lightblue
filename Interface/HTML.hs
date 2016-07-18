@@ -5,7 +5,7 @@ Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
 -}
-module Interface.MathML (
+module Interface.HTML (
   MathML(..)
   ) where
 

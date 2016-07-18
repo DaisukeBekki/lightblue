@@ -96,7 +96,7 @@ instance SimpleText Preterm where
     App m n -> T.concat [toText m, "(", toText n, ")"]
     Sigma vname a b -> case b of 
                          Top -> T.concat ["(", toText a, ")"]
-                         _   -> T.concat ["(", toText vname, ":", toText a, ")×", toText b]
+                         _   -> T.concat ["(", toText vname, ":", toText a, ")× ", toText b]
     Pair m n  -> T.concat ["(", toText m, ",", toText n, ")"]
     Proj s m  -> T.concat ["π", toText s, "(", toText m, ")"]
     Lamvec vname m  -> T.concat ["λ", toText vname, "+.", toText m]

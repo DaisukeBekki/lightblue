@@ -49,7 +49,7 @@ import Data.Ratio                    --base
 import DTS.DependentTypes
 import Interface.Text
 import Interface.TeX
-import Interface.MathML
+import Interface.HTML
 
 -- | A node in CCG derivation tree.
 data Node = Node {

@@ -8,8 +8,8 @@ import qualified System.Environment as S  --base
 import qualified Parser.ChartParser as CP
 import qualified Parser.Japanese.Lexicon as LEX
 import qualified Interface.Text as T
--- import qualified Interface.MathML as M
--- import qualified Interface.XML as XML
+-- import qualified Interface.HTML as H
+import qualified Interface.XML as XML
 
 
 main :: IO()
@@ -28,8 +28,8 @@ main = do
   where action sentence chart nodes time op
           | op == "-tex" = CP.printNodesInTeX S.stdout nodes
           | op == "-text" = CP.printNodesInText S.stdout nodes
-          -- op == "-xml"  = XML.render S.stdout $ nodes
-          | op == "-html" = CP.printNodesInMathML S.stdout nodes
+          | op == "-xml"  = XML.render S.stdout $ nodes
+          | op == "-html" = CP.printNodesInHTML S.stdout nodes
           | op == "-postag"  = CP.posTagger S.stdout nodes
           | op == "-numeration" = do {numeration <- LEX.setupLexicon sentence; mapM_ (T.putStrLn . T.toText) numeration}
           | op == "-debug" = CP.printChartInTeX S.stdout chart

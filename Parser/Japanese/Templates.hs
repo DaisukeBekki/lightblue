@@ -149,12 +149,6 @@ mppmm = [F[M],F[P],F[P],F[M],F[M]]
 id :: Preterm
 id = Lam (Var 0)
 
--- | verbSR i op
--- i==1 -> S\NP:             \x.\c.(e:event)Xop(e,x)X(ce)
--- i==2 -> S\NP\NP:       \y.\x.\c.(e:event)X(op(e,x,y)X(ce)
--- i==3 -> S\NP\NP\NP: \z.\y.\x.\c.(e:event)X(op(e,x,y,z)X(ce)
--- i==4 -> error
-
 verbCat :: T.Text            -- ^ a case frame (e.g. "ガヲニ")
            -> [FeatureValue] -- ^ a part-of-speech feature value
            -> [FeatureValue] -- ^ a conjugational feature value
@@ -173,15 +167,11 @@ verbCat' caseframe ct = case T.uncons caseframe of
               | otherwise -> verbCat' cs ct
   Nothing-> ct
 
-{-
-verbSR :: Int -> T.Text -> (Preterm, [Signature])
-verbSR i daihyo 
-  | i == 1 =           ((Lam (Lam (Sigma event (Sigma           (App (App (Con daihyo) (Var 2)) (Var 0))                   (App (Var 2) (Var 1)))))), [(daihyo,nPlaceEventType 1)])
-  | i == 2 =      ((Lam (Lam (Lam (Sigma event (Sigma      (App (App (App (Con daihyo) (Var 3)) (Var 2)) (Var 0))          (App (Var 2) (Var 1))))))), [(daihyo,nPlaceEventType 2)])
-  | i == 3 = ((Lam (Lam (Lam (Lam (Sigma event (Sigma (App (App (App (App (Con daihyo) (Var 4)) (Var 3)) (Var 2)) (Var 0)) (App (Var 2) (Var 1)))))))), [(daihyo,nPlaceEventType 3)])
-  | otherwise = (Con $ T.concat ["verbSR: verb ",daihyo," of ", T.pack (show i), " arguments"], [])
--}
-
+-- | verbSR i op
+-- i==1 -> S\NP:             \x.\c.(e:event)Xop(e,x)X(ce)
+-- i==2 -> S\NP\NP:       \y.\x.\c.(e:event)X(op(e,x,y)X(ce)
+-- i==3 -> S\NP\NP\NP: \z.\y.\x.\c.(e:event)X(op(e,x,y,z)X(ce)
+-- ...
 verbSR :: T.Text -> Preterm -> T.Text -> (Preterm, [Signature])
 verbSR daihyo eventuality caseframe = 
   let predname = T.concat [daihyo, "/", caseframe] in
