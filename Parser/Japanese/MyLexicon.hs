@@ -209,17 +209,9 @@ myLexicon = concat $ [
   mylex ["としての"] "new" ((N `SL` N) `BS` (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) (adjunctNM "＃トシテ"),
   mylex ["に基づいた"] "new" ((N `SL` N) `BS` (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) (adjunctNM "＃ニモトヅイテ"),
   mylex ["にあわせた"] "new" ((N `SL` N) `BS` (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) (adjunctNM "＃ニアワセテ"),
-  -- 等位接続（連言）
-  mylex ["と","や","・"] "new" CONJ andSR,
-  mylex ["そして","および"] "new" CONJ andSR,
-  mylex ["なり","やら","だの","とか"] "new" CONJ andSR,
-  mylex ["にくわえて","に加えて","ならびに","並びに","をはじめ","をはじめとして","を始め"] "new" CONJ andSR,
-  -- 等位接続（選言）
-  mylex ["か"] "new" CONJ orSR,
-  mylex ["または","又は"] "new" CONJ orSR,
-  mylex ["もしくは"] "new" CONJ orSR,
-  mylex ["あるいは"] "new" CONJ orSR,
-  mylex ["ないしは","ないし"] "new" CONJ orSR,
+  -- 等位接続
+  mylex ["と","や","・","かつ","かつまた","そして","および","及び","なり","やら","だの","とか","にくわえて","に加えて","ならびに","並びに","をはじめ","をはじめとして","を始め"] "new" CONJ andSR,
+  mylex ["か","または","又は","また","又","もしくは","若しくは","あるいは","或いは","ないしは","乃至は","ないし","乃至"] "new" CONJ orSR,
   -- 動詞活用語尾
   conjSuffix "か" "(112)" [V5k,V5IKU,V5YUK] [Neg,VoR,VoS,NegL],
   conjSuffix "き" "(112)" [V5k,V5IKU,V5YUK] [Cont,ModM],
@@ -717,13 +709,12 @@ myLexicon = concat $ [
         (conjunctionSR "si"),
   mylex ["のに"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
         (conjunctionSR "noni"),
-  mylex ["けど","けれど"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Term,NTerm], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
+  mylex ["けど","けれど","けども","けれども"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Term,NTerm], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
         (conjunctionSR "kedo"),
   mylex ["と"] "new" (S [F anyPos,F[Term],SF 1 [P,M],SF 2 [P,M],SF 3 [P,M],F[M],F[M]] `SL` S [F anyPos,F[Term],SF 1 [P,M],SF 2 [P,M],SF 3 [P,M],F[M],F[M]]) (id,[]),
   -- そして
   -- それとも
   -- それに
-  -- けど,けども,けれど,けれども（このあたりまではすべて「接続詞」エントリあり
   -- まで
   -- より
   --（名詞：副詞的名詞？？）

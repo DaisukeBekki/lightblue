@@ -26,10 +26,9 @@ module Parser.CCG (
   -- * Combinatory Rules
   unaryRules,
   binaryRules,
-  -- trinaryRules
   coordinationRule,
   parenthesisRule,
-  -- test
+  -- * for debugging
   unifyCategory,
   unifyWithHead,
   -- * Partial Parsing
@@ -74,6 +73,8 @@ instance Ord Node where
     | i > j  = LT
   (Node _ _ _ _ _ _ _ _) `compare` (Node _ _ _ _ _ _ _ _) = EQ
 
+{- Printing Nodes -}
+
 instance SimpleText Node where
   toText n@(Node _ _ _ _ sig' _ _ _) = T.concat [toTextLoop "" n, "Sig. ", printSignatures sig', "\n"]
     where toTextLoop indent node =
@@ -92,7 +93,7 @@ instance MathML Node where
     let newcat = T.replace ">" "&gt;" $ T.replace "<" "&lt;" $ toText (cat node);
         newrs = T.replace ">" "&gt;" $ T.replace "<" "&lt;" $ toText (rs node) in
     case daughters node of 
-      [] -> T.concat ["<mrow><mfrac linethickness='2px'><mtext fontsize='1.0' color='Black'>", pf node, "</mtext><mfrac linethickness='0px'><mi fontsize='1.0' color='Red'>", newcat, "</mi><mi fontsize='1.0' color='Purple'>", toText (sem node), "</mi></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", source node, "</mtext></mrow>"] 
+      [] -> T.concat ["<mrow><mfrac linethickness='2px'><mtext fontsize='1.0' color='Black'>", pf node, "</mtext><mfrac linethickness='0px'><mi fontsize='1.0' color='Red'>", newcat, "</mi><mi fontsize='1.0' color='Purple'>", toText $ sem node, "</mi></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", source node, "</mtext></mrow>"] 
       _ -> T.concat ["<mrow><mfrac linethickness='2px'><mrow>", T.concat $ map toMathML $ daughters node, "</mrow><mfrac linethickness='0px'><mi fontsize='1.0' color='Red'>", newcat, "</mi><mi fontsize='1.0' color='Purple'>", toText $ sem node, "</mi></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", newrs, "</mtext></mrow>"] 
 
 -- | Syntactic categories of 

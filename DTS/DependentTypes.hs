@@ -45,6 +45,7 @@ import qualified Control.Monad as M       -- base
 import qualified DTS.DTSwithVarName as VN
 import Interface.Text
 import Interface.TeX
+import Interface.HTML
 
 -- | 'Proj' 'Fst' m is the first projection of m, 
 -- while 'Proj' 'Snd' m is the second projection of m.
@@ -98,6 +99,10 @@ instance SimpleText Preterm where
 -- | translates a DTS preterm into a tex source code.
 instance Typeset Preterm where
   toTeX = toTeX . initializeIndex . fromDeBruijn
+
+-- | translates a DTS preterm into a MathML notation.
+instance MathML Preterm where
+  toMathML = toMathML . initializeIndex . fromDeBruijn
 
 -- | prints a preterm in text, in the De Bruijn style.
 toTextDeBruijn :: Preterm -> T.Text

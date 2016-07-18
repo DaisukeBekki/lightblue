@@ -86,13 +86,15 @@ printNodesInTeX handle nodes =
 printNodesInHTML :: S.Handle -> [CCG.Node] -> IO()
 printNodesInHTML handle nodes = 
   mapM_ (\node -> T.hPutStrLn handle $ T.concat [
-    "<!doctype html><html lang='en'><head><meta charset='UTF-8'><title>lightblue parse tree</title><style>body { font-size: 2em; } </style><script type=\"text/javascript\" src=\"http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML\"></script></head><body><p>",
+    "<?xml version='1.0'?><?xml-stylesheet type='text/xsl' href='http://www.w3.org/Math/XSL/mathml.xsl'?><html xmlns='http://www.w3.org/1999/xhtml'><head><meta charset='UTF-8'><title>lightblue parse tree</title></head><body><p>",
     CCG.pf node,
     "</p><math xmlns='http://www.w3.org/1998/Math/MathML'>",
     HTML.toMathML node,
     "</math></body></html>"
     ]
     ) $ take 1 nodes
+
+-- <style>body { font-size: 2em; } </style><script type='text/javascript' src='http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>
 
 -- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style
 posTagger :: S.Handle -> [CCG.Node] -> IO()

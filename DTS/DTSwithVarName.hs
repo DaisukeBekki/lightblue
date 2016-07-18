@@ -19,6 +19,7 @@ module DTS.DTSwithVarName (
 import qualified Data.Text.Lazy as T
 import Interface.Text
 import Interface.TeX
+import Interface.HTML
 
 -- | A variable name consists of Char (e.g. 'x') and Int (e.g. 1), which is displayed as $x_{1}$ in TeX and $x1$ in Text.
 data VarName = VarName Char Int deriving (Eq,Show)
@@ -28,6 +29,9 @@ instance SimpleText VarName where
 
 instance Typeset VarName where
   toTeX (VarName v i) = T.cons v $ T.concat ["_{", T.pack (show i), "}"]
+
+instance MathML VarName where
+  toMathML (VarName v i) = T.concat ["<msub><mi>", T.singleton v, "<mi><mn>", T.pack (show i), "</mn></msub>"]
 
 -- | 'Proj' 'Fst' m is the first projection of m, while 'Proj' 'Snd' m is the second projection of m.
 data Selector = Fst | Snd
@@ -40,6 +44,10 @@ instance SimpleText Selector where
 
 instance Typeset Selector where
   toTeX = toText
+
+instance MathML Selector where
+  toMathML Fst = "<mn>1</mn>"  -- `Proj` `Fst` m is the first projection of m
+  toMathML Snd = "<mn>2</mn>" -- `Proj` `Snd` m is the second projection of m
 
 -- | Preterms of Underspecified Dependent Type Theory (UDTT).
 data Preterm =
@@ -159,6 +167,40 @@ toTeXEmbedded preterm = case preterm of
   Lamvec vname m -> T.concat ["\\left(\\lambda\\vec{", toTeX vname, "}.", toTeX m, "\\right)"]
   m          -> toTeX m
 
-
+instance MathML Preterm where
+  toMathML preterm = case preterm of
+    Var vname -> toMathML vname
+    Con cname -> T.concat ["<mtext>", cname, "</mtext>"]
+    Type -> "<mtext>type</mtext>"
+    Kind -> "<mtext>kind</mtext>"
+    Pi vname a b -> T.concat ["<mrow><mfenced separators=':'>", toMathML vname, toMathML a, "</mfenced><mo>→</mo>", toMathML b, "</mrow>"]
+    Not a -> T.concat["<mrow><mtext>¬</mtext>", toMathML a, "</mrow>"]
+    Lam vname m -> T.concat ["<mrow><mtext>λ</mtext>", toMathML vname, "<mo>.</mo>", toMathML m, "</mrow>"]
+    App (App (Con cname) y) x -> 
+      T.concat ["<mrow><mtext>", cname, "</mtext><mfenced>", toMathML x, toMathML y,"</mfenced><mrow>"]
+    App (App (App (Con cname) z) y) x -> 
+      T.concat ["<mrow><mtext>", cname, "</mtext><mfenced>", toMathML x, toMathML y,toMathML z,"</mfenced></mrow>"]
+    App (App (App (App (Con cname) u) z) y) x -> 
+      T.concat ["<mrow><mtext>", cname, "</mtext><mfenced>", toMathML x, toMathML y, toMathML z, toMathML u, "</mfenced></mrow>"]
+    App m n -> T.concat ["<mrow>", toMathML m, "<mfenced>", toMathML n, "</mfenced></mrow>"]
+    Sigma vname a b -> case b of 
+                         Top -> T.concat ["<mfenced>", toMathML a, "</mfenced>"]
+                         _   -> T.concat ["<mfenced open='[' close=']'><mtable columnalign='left'><mtr><mtd>", toMathML vname, "<mo>:</mo>", toMathML a, "</mtd></mtr><mtr><mtd>", toMathML b, "</mtd></mtr></mtable></mfenced>"]
+    Pair m n  -> T.concat ["<mfenced >", toMathML m, toMathML n, "</mfenced>"]
+    Proj s m  -> T.concat ["<mrow><msub><mtext>π</mtext>", toMathML s, "</msub><mfenced>", toMathML m, "</mfenced></mrow>"]
+    Lamvec vname m  -> T.concat ["<mrow><mtext>λ</mtext>", toMathML vname, "<mo>+</mo><mo>.</mo>", toMathML m, "</mrow>"]
+    Appvec vname m -> T.concat ["<mfenced separators=''><mrow>", toMathML m, toMathML vname, "<mo>+</mo></mrow></mfenced>"]
+    Unit       -> "<mtext>()</mtext>"
+    Top        -> "<mtext>T</mtext>"
+    Bot        -> "<mtext>⊥</mtext>"
+    Asp j m    -> T.concat["<mrow><mo>@</mo><mn>", T.pack (show j), "</mn><mo>:</mo>", toMathML m, "</mrow>"]
+    Nat    -> "<mi>N</mi>"
+    Zero   -> "<mi>0</mi>"
+    Succ n -> T.concat ["<mrow><mi>s</mi>", toMathML n, "</mrow>"]
+    Natrec n e f -> T.concat ["<mrow><mtext>natrec</mtext><mfenced>", toMathML n, toMathML e, toMathML f, "</mfenced></mrow>"]
+    Eq a m n -> T.concat ["<mrow>", toMathML m, "<msub><mo>=</mo>", toMathML a, "</msub>", toMathML n, "</mrow>"]
+    Refl a m -> T.concat ["<mrow><mtext>refl</mtext>", toMathML a, "<mfenced>", toMathML m, "</mfenced></mrow>"]
+    Idpeel m n -> T.concat ["<mrow><mtext>idpeel</mtext><mfenced>", toMathML m, toMathML n, "</mfenced></mrow>"]
+    DRel i t u v -> T.concat ["<mrow><msub><mtext>DRel</mtext><mn>", T.pack (show i), "</mn></msub><mtext>", t, "</mtext><mfenced>", toMathML u, toMathML v, "</mfenced></mrow>"]
 
 
