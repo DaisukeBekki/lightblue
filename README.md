@@ -43,7 +43,7 @@ $ git clone git@bitbucket.org:DaisukeBekki/lightblue.git
 ```
 This operation will create the directory *lightblue* (henceforth we will refer to this directory as <lightblue>) under the directory in which you did the above.
 
-### Configuration
+### Configuration and Installation
 First you need to add the environment variable LIGHTBLUE and set its value as <lightblue>.  You may add the line `export LIGHTBLUE=<lightblue>` to .bashrc, .bash.profile, or whatever configuration file for your shell.
 
 Then move to <lightblue>, create a sandbox environment there, and check the dependencies as follows.
@@ -58,8 +58,6 @@ If everything is ok, then build *lightblue* there.
 ```
 $ cabal build
 ```
-
-### Installation
 If the build is successful, then you may install *lightblue-0.1.1.0* in the sandbox.
 ```
 #!shell
@@ -103,6 +101,16 @@ or equivalently,
 ```
 #!shell
 $ ./parse2xml 太郎がパンを食べた。
+```
+If you want an HTML output, do
+```
+#!shell
+$ echo 太郎がパンを食べた。 | lightblue -html
+```
+or equivalently,
+```
+#!shell
+$ ./parse -html 太郎がパンを食べた。
 ```
 
 *lightblue* can be used as a part-of-speech tagger with the `-postag` option:
