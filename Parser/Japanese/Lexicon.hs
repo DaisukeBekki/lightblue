@@ -151,7 +151,7 @@ constructVerb daihyo caseframe posF conjF =
   [(verbCat cf posF conjF, verbSR daihyo event cf) | cf <- caseframelist]
 
 constructNominalModifier :: T.Text -> [(Cat, (Preterm, [Signature]))]
-constructNominalModifier daihyo = [(N `BS` N, nominalModifier daihyo)]
+constructNominalModifier daihyo = [(N `SL` N, nominalModifier daihyo)]
 
 constructConjunction :: T.Text -> [(Cat, (Preterm, [Signature]))]
 constructConjunction daihyo = 

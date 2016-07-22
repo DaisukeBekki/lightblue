@@ -52,7 +52,7 @@ parseSentence score sentence = do
        return (i+1,j,k,total+1)
     CP.Partial nodes -> 
        do
-       T.putStr $ T.concat ["Partially parsed, Full:Partial:Failed = ", T.pack (show i), ":", T.pack (show $ j+1), ":", T.pack (show k), ", Full/Total = ", T.pack (show $ i+1), "/", T.pack (show $ total+1), " ("]
+       T.putStr $ T.concat ["Partially parsed, Full:Partial:Failed = ", T.pack (show i), ":", T.pack (show $ j+1), ":", T.pack (show k), ", Full/Total = ", T.pack (show $ j+1), "/", T.pack (show $ total+1), " ("]
        S.putStrLn $ percent (i,total+1) ++ "%)\n"
        T.putStrLn $ T.toText $ head $ nodes
        return (i,j+1,k,total+1)

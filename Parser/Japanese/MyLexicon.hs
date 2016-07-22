@@ -416,6 +416,8 @@ myLexicon = concat $ [
   mylex ["大き","おおき"] "(258)" (defS [Nna] [NStem] `BS` NP [F[Ga]]) (predSR 1 "大きな/おおきな"),
   mylex ["小さ","ちいさ"] "(258)" (defS [Nna] [NStem] `BS` NP [F[Ga]]) (predSR 1 "小さな/ちいさな"),
   mylex ["可笑し","おかし"] "(258)" (defS [Nna] [NStem] `BS` NP [F[Ga]]) (predSR 1 "可笑しな/おかしな"),
+  -- 「同じ」の連体用法
+  mylex ["同じ","おなじ"] "new" (N `SL` N) (nominalModifier "同じ/おなじ"),
   -- 助動詞（過去）
   mylex ["たり"] "(308)" (S [SF 1 anyPos, F[Cont] ,F[P], SF 2 [P,M], SF 3 [P,M],F[M],F[M]] `BS` S [SF 1 anyPos, F[EuphT], F[M],SF 2 [P,M],SF 3 [P,M],F[M],F[M]]) (eventModifier "＃タ"),
   mylex ["た"] "(308)"  (S [SF 1 anyPos, F[Term,Attr], F[P],SF 2 [P,M],SF 3 [P,M],F[M],F[M]] `BS` S [SF 1 anyPos, F[EuphT], F[M],SF 2 [P,M],SF 3 [P,M],F[M],F[M]]) (eventModifier "＃タ"),
