@@ -141,7 +141,7 @@ proveEntailment flag formula coqsig = do
   conv_stop <- Time.getCurrentTime
   elimasp_start <- Time.getCurrentTime
   T.putStrLn $ "-- After resolving @ --------"
-  result1 <- runMyCommand(T.concat ["swipl -s ", lightbluepath, "/Prolog/presupposition.pl -g main -t halt --quiet -- \"", proformula, "\""])
+  result1 <- runMyCommand(T.concat ["swipl -s ", lightbluepath, "/Prolog/presupposition.pl -g main -t halt --quiet -- \"", proformula, "\" []"])
   T.putStrLn $ result1
   elimasp_stop <- Time.getCurrentTime
   elimsigma_start <- Time.getCurrentTime

@@ -12,10 +12,18 @@
 
 main :-
     current_prolog_flag(os_argv, AllArgs),
-    append(_, [-- |[Args]], AllArgs),
-    term_string(X,Args),
-    resolvePresup(SR,[],X),
+    append(_, [-- |[Arg1,Arg2]], AllArgs),
+    term_string(UnspecSR,Arg1),
+    term_string(GCxt,Arg2),
+    resolvePresup(SR,GCxt,UnspecSR),
     write(SR).
+
+% main :-
+%     current_prolog_flag(os_argv, AllArgs),
+%     append(_, [-- |[Args]], AllArgs),
+%     term_string(X,Args),
+%     resolvePresup(SR,[],X),
+%     write(SR).
 
 current_counter(0).
 counter(M):-
@@ -32,7 +40,7 @@ resolvePresup(SR,GCxt,Form0):-
     addType(Form0,Form1),
     rewriteVar(Form1,Form2),
     elimTrue(Form2,Form),
-    findall(PS,checkType(PS,GCxt,Form),Store),
+    findall(PS,checkType(PS,[],Form),Store),
     elimAsp(Store,GCxt,Form,SR0),
     betaConvertPi(SR0,SR1),
     betaConvert(SR1,SR), !.
@@ -54,7 +62,7 @@ elimCont(A,A).
 elimAsp([],_,Form,Form).
 
 elimAsp([[LCxt,@(N,Type)]|Store0],GCxt,Form0,SR):-
-    findProofTerm(LCxt,Term,Type),
+    findProofTerm(GCxt,LCxt,Term,Type),
     bindPresup(LCxt,Term,@(N,Type),Form0,Form),
     \+ violateConditionB(Form0,Form),
     substitute(Term,@(N,Type),Store0,Store),
@@ -67,7 +75,8 @@ elimAsp([[_,@(N,Type)]|_],GCxt,Form,SR):-
     freeVar(Type,FV),
     subtract(FV,[V],Unbound),
     accomPresup([V,Type],Unbound,FormTmp,FormAccom),
-    findall(PS,checkType(PS,GCxt,FormAccom),NewStore),
+    findall(PS,checkType(PS,[],FormAccom),NewStore),
+    % findall(PS,checkType(PS,GCxt,FormAccom),NewStore),
     elimAsp(NewStore,GCxt,FormAccom,SR).
 
 % Pi-accommodation
@@ -186,41 +195,43 @@ findProofTermInit(Gamma,Term,Type0):-
     betaConvertPi(Redex0,Redex),
     betaConvert(Redex,Term).
 
-findProofTerm(Gamma,Term,Type):-
-    applyElim(Gamma,Redex0,Type),
+findProofTerm(GCxt,Gamma,Term,Type):-
+    applyElim(GCxt,Gamma,Redex0,Type),
     betaConvertPi(Redex0,Redex),
     betaConvert(Redex,Term).
 
-applyElim(Gamma,Term,A):-
+applyElim(GCxt,Gamma,Term,A):-
     \+ member([_,and(_,_)],Gamma),
     \+ member([_,exists(_,_,_)],Gamma), !,
-    applyIntro(Gamma,Term,A).
+    applyIntro(GCxt,Gamma,Term,A).
 
-applyElim([[T,and(A,B)]|Gamma],Term,C):-
-    applyElim([[pi1(T),A],[pi2(T),B]|Gamma],Term,C).
+applyElim(GCxt,[[T,and(A,B)]|Gamma],Term,C):-
+    applyElim(GCxt,[[pi1(T),A],[pi2(T),B]|Gamma],Term,C).
 
-applyElim([[T,exists(Y,Type,A)]|Gamma],Term,C):-
+applyElim(GCxt,[[T,exists(Y,Type,A)]|Gamma],Term,C):-
     substitute(pi1(T),Y,A,B),
-    applyElim([[pi1(T),Type],[pi2(T),B]|Gamma],Term,C).
+    applyElim(GCxt,[[pi1(T),Type],[pi2(T),B]|Gamma],Term,C).
 
-applyElim([[T,Body]|Gamma],Term,C):-
+applyElim(GCxt,[[T,Body]|Gamma],Term,C):-
     \+ Body =.. [and|_],
     \+ Body =.. [exists|_],
     append(Gamma,[[T,Body]],Permuted),
-    applyElim(Permuted,Term,C).
+    applyElim(GCxt,Permuted,Term,C).
 
-applyIntro(Gamma,Term,A):-
+applyIntro(_,Gamma,Term,A):-
     member([Term,A],Gamma).
 
-applyIntro(Gamma,[T,U],and(A,B)):-
-    applyIntro(Gamma,T,A),
-    applyIntro(Gamma,U,B).
+applyIntro(GCxt,Gamma,[T,U],and(A,B)):-
+    applyIntro(GCxt,Gamma,T,A),
+    applyIntro(GCxt,Gamma,U,B).
 
-applyIntro(Gamma,[T,U],exists(X,Type,A)):-
-    applyElim(Gamma,T,Type),
+applyIntro(GCxt,Gamma,[T,U],exists(X,Type,A)):-
+    applyElim(GCxt,Gamma,T,Type),
     substitute(T,X,A,B),
-    applyIntro(Gamma,U,B).
+    applyIntro(GCxt,Gamma,U,B).
 
+applyIntro(GCxt,_,Term,A):-
+    member([Term,A],GCxt).
 
 %%% Type-checking for Dependent Type Theory %%%
 
