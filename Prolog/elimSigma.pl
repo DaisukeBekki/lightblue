@@ -23,6 +23,13 @@ elimSigma(exists(X,A,B),exists(X,C,D)):-
     elimSigma(A,C),
     elimSigma(B,D), !.
 
+% presup operator
+elimSigma(exists(X,A,B),and(C,D)):-
+    % nonSigma(A),
+    subterm(presup(X),B),
+    elimSigma(A,C),
+    elimSigma(B,D), !.
+
 elimSigma(exists(X,A,B),and(C,D)):-
     nonSigma(A),
     \+ subterm(X,B),
@@ -32,6 +39,13 @@ elimSigma(exists(X,A,B),and(C,D)):-
 elimSigma(forall(X,A,B),forall(X,C,D)):-
     nonSigma(A),
     subterm(X,B),
+    elimSigma(A,C),
+    elimSigma(B,D), !.
+
+% presup operator
+elimSigma(forall(X,A,B),imp(C,D)):-
+    % nonSigma(A),
+    subterm(presup(X),B),
     elimSigma(A,C),
     elimSigma(B,D), !.
 
@@ -64,6 +78,11 @@ elimSigma(forall(U,and(A,B),C),O):-
     substitute(U1,pi1(U),C,C0),
     substitute(U2,pi2(U),C0,C1),
     elimSigma(forall(U1,A,forall(U2,B,C1)),O), !.
+
+elimSigma(presup(_),true).
+
+% elimSigma(imp(exists(U,A,B),C),O):-
+%     elimSigma(forall(U,A,imp(B,C)),O) !.
 
 % elimSigma(lam(X,A),lam(X,B)):-
 %     elimSigma(A,B), !.

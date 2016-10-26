@@ -30,14 +30,12 @@ resolvePresup(SR,GCxt,Form0):-
     % elimCont(Form0,FormE), %%% temporary repair
     % elimSigma(FormE,FormF),
     addType(Form0,Form1),
-    % write(Form1),nl,
     rewriteVar(Form1,Form2),
     elimTrue(Form2,Form),
     findall(PS,checkType(PS,GCxt,Form),Store),
-    % write(Store),
     elimAsp(Store,GCxt,Form,SR0),
     betaConvertPi(SR0,SR1),
-    betaConvert(SR1,SR).
+    betaConvert(SR1,SR), !.
 
 %%% temporary repair %%%
 elimCont(lam(x0,A),B):-
@@ -47,11 +45,11 @@ elimCont(lam(x0,A),B):-
 elimCont(A,A).
 %%%%%%%
 
-addToStore(_,[],[]).
+% addToStore(_,[],[]).
 
-addToStore(Hyp,[[LCxt,Asp]|Store0],[[LCxtAccom,Asp]|Store]):-
-    append([Hyp],LCxt,LCxtAccom),
-    addToStore(Hyp,Store0,Store).
+% addToStore(Hyp,[[LCxt,Asp]|Store0],[[LCxtAccom,Asp]|Store]):-
+%     append([Hyp],LCxt,LCxtAccom),
+%     addToStore(Hyp,Store0,Store).
 
 elimAsp([],_,Form,Form).
 
@@ -62,52 +60,75 @@ elimAsp([[LCxt,@(N,Type)]|Store0],GCxt,Form0,SR):-
     substitute(Term,@(N,Type),Store0,Store),
     elimAsp(Store,GCxt,Form,SR), !.
 
-elimAsp([[LCxt,@(N,Type)]|Store0],GCxt,Form0,SR):-
+elimAsp([[_,@(N,Type)]|_],GCxt,Form,SR):-
     counter(New),
     atom_concat(t,New,V),
-    substitute(V,@(N,Type),Store0,Store1),
-    substitute(V,@(N,Type),Form0,Form1),
-    accomPresup(LCxt,[V,Type],Store1,Store,[],Form1,Form),
-    elimAsp(Store,GCxt,Form,SR).
-
-
-%%% Accommodation %%%
-
-% Pi-accommodation
-accomPresup(_,[V,Type],Store0,Store1,Binder,Form,forall(V,Type,Form)):-
+    substitute(V,@(N,Type),Form,FormTmp),
     freeVar(Type,FV),
     subtract(FV,[V],Unbound),
-    subset(Unbound,Binder),
-    addToStore([V,Type],Store0,Store1), !.
+    accomPresup([V,Type],Unbound,FormTmp,FormAccom),
+    findall(PS,checkType(PS,GCxt,FormAccom),NewStore),
+    elimAsp(NewStore,GCxt,FormAccom,SR).
 
-accomPresup([[X,_]|Rest],[V,Type],Store0,Store1,Binder0,exists(X,T,A),exists(X,T,B)):-
-    append(Binder0,[X],Binder),
-    accomPresup(Rest,[V,Type],Store0,Store1,Binder,A,B), !.
+% Pi-accommodation
+accomPresup([V,Type],[],Form,forall(V,Type,Form)).
 
-accomPresup([[X,_]|Rest],[V,Type],Store0,Store1,Binder,exists(Y,T,A),exists(Y,T,B)):-
-    X \== Y,
-    accomPresup(Rest,[V,Type],Store0,Store1,Binder,A,B), !.
+% Sigma-accommodation
+% accomPresup([V,Type],[],Form,exists(V,Type,Form)).
 
-accomPresup([[X,_]|Rest],[V,Type],Store0,Store1,Binder0,forall(X,T,A),forall(X,T,B)):-
-    append(Binder0,[X],Binder),
-    accomPresup(Rest,[V,Type],Store0,Store1,Binder,A,B), !.
+accomPresup([V,Type],Unbound,exists(X,T1,A),exists(X,T2,A)):-
+    boundVar(T1,BV),
+    subset(Unbound,BV),
+    accomPresup([V,Type],Unbound,T1,T2), !.
 
-accomPresup([[X,_]|Rest],[V,Type],Store0,Store1,Binder,forall(Y,T,A),forall(Y,T,B)):-
-    X \== Y,
-    accomPresup(Rest,[V,Type],Store0,Store1,Binder,A,B), !.
+accomPresup([V,Type],Unbound,exists(X,T,A),exists(X,T,B)):-
+    subtract(Unbound,[X],UnboundOut),
+    accomPresup([V,Type],UnboundOut,A,B), !.
 
-accomPresup([[_,A1]|Rest],[V,Type],Store0,Store1,Binder,and(A1,A2),and(A1,B)):-
-    accomPresup(Rest,[V,Type],Store0,Store1,Binder,A2,B), !.
+accomPresup([V,Type],Unbound,forall(X,T1,A),forall(X,T2,A)):-
+    boundVar(T1,BV),
+    subset(Unbound,BV),
+    accomPresup([V,Type],Unbound,T1,T2), !.
 
-accomPresup([[_,A1]|Rest],[V,Type],Store0,Store1,Binder,imp(A1,A2),imp(A1,B)):-
-    accomPresup(Rest,[V,Type],Store0,Store1,Binder,A2,B), !.
+accomPresup([V,Type],Unbound,forall(X,T,A),forall(X,T,B)):-
+    subtract(Unbound,[X],UnboundOut),
+    accomPresup([V,Type],UnboundOut,A,B), !.
 
-accomPresup(LCxt,[V,Type],Store0,Store1,Binder,not(A),not(B)):-
-    accomPresup(LCxt,[V,Type],Store0,Store1,Binder,A,B), !.
+accomPresup([V,Type],Unbound,Form1,Form2):-
+    Form1 =.. [P,A],
+    accomPresup([V,Type],Unbound,A,B),
+    Form2 =.. [P,B], !.
 
-accomPresup(LCxt,[V,Type],Store0,Store1,Binder,acci(X,A),acci(X,B)):-
-    accomPresup(LCxt,[V,Type],Store0,Store1,Binder,A,B), !.
+accomPresup([V,Type],Unbound,Form1,Form2):-
+    Form1 =.. [P,A1,A2],
+    boundVar(A1,BV),
+    subset(Unbound,BV),
+    accomPresup([V,Type],Unbound,A1,B1),
+    Form2 =.. [P,B1,A2], !.
 
+accomPresup([V,Type],Unbound,Form1,Form2):-
+    Form1 =.. [P,A1,A2],
+    accomPresup([V,Type],Unbound,A2,B2),
+    Form2 =.. [P,A1,B2], !.
+
+accomPresup([V,Type],Unbound,Form1,Form2):-
+    Form1 =.. [P,A1,A2,A3],
+    boundVar(A1,BV),
+    subset(Unbound,BV),
+    accomPresup([V,Type],Unbound,A1,B1),
+    Form2 =.. [P,B1,A2,A3], !.
+
+accomPresup([V,Type],Unbound,Form1,Form2):-
+    Form1 =.. [P,A1,A2,A3],
+    boundVar(A2,BV),
+    subset(Unbound,BV),
+    accomPresup([V,Type],Unbound,A2,B2),
+    Form2 =.. [P,A1,B2,A3], !.
+
+accomPresup([V,Type],Unbound,Form1,Form2):-
+    Form1 =.. [P,A1,A2,A3],
+    accomPresup([V,Type],Unbound,A3,B3),
+    Form2 =.. [P,A1,A2,B3], !.
 
 %%% Binding %%%
 
@@ -375,6 +396,74 @@ freeVar(A,[A]):-
 
 freeVar(_,[]).
 
+boundVar(exists(X,Type,A),BV):-
+    boundVar(Type,BV1),
+    boundVar(A,BV2),
+    append(BV1,BV2,BV3),
+    append([X],BV3,BV), !.
+
+boundVar(exists(X,A),BV):-
+    boundVar(A,BV1),
+    append([X],BV1,BV), !.
+
+boundVar(forall(X,Type,A),BV):-
+    boundVar(Type,BV1),
+    boundVar(A,BV2),
+    append(BV1,BV2,BV3),
+    append([X],BV3,BV), !.
+  
+boundVar(forall(X,A),BV):-
+    boundVar(A,BV1),
+    append([X],BV1,BV), !.
+
+boundVar(lam(X,Type,A),BV):-
+    boundVar(Type,BV1),
+    boundVar(A,BV2),
+    append(BV1,BV2,BV3),
+    append([X],BV3,BV), !.
+
+boundVar(lam(X,A),BV):-
+    boundVar(A,BV1),
+    append([X],BV1,BV), !.
+
+boundVar(Form,BV):-
+    Form =.. [_,Arg],
+    boundVar(Arg,BV), !.
+
+boundVar(Form,BV):-
+    Form =.. [_,Arg1,Arg2],
+    boundVar(Arg1,BV1),
+    boundVar(Arg2,BV2),
+    append(BV1,BV2,BV), !.
+
+boundVar(Form,BV):-
+    Form =.. [_,Arg1,Arg2,Arg3],
+    boundVar(Arg1,BV1),
+    boundVar(Arg2,BV2),
+    boundVar(Arg3,BV3),
+    append(BV1,BV2,X),
+    append(X,BV3,BV), !.
+
+boundVar(Form,BV):-
+    Form =.. [_,Arg1,Arg2,Arg3,Arg4],
+    boundVar(Arg1,BV1),
+    boundVar(Arg2,BV2),
+    boundVar(Arg3,BV3),
+    boundVar(Arg4,BV4),
+    append(BV1,BV2,X),
+    append(BV3,BV4,Y),
+    append(X,Y,BV), !.
+
+boundVar(type,[]).
+boundVar(entity,[]).
+boundVar(event,[]).
+boundVar(state,[]).
+
+boundVar(A,[]):-
+    atom(A), !.
+
+boundVar(_,[]).
+
 addType(exists(X,A),exists(X,event,Form)):-
     X == v,
     addType(A,Form), !.
@@ -396,17 +485,6 @@ addType(forall(X,A),forall(X,entity,Form)):-
 % addType(lam(X,A),lam(X,entity,Form)):-
 %     addType(A,Form), !.
        
-% addType(and(A0,B0),and(A,B)):-
-%     addType(A0,A),
-%     addType(B0,B), !.
-
-% addType(imp(A0,B0),imp(A,B)):-
-%     addType(A0,A),
-%     addType(B0,B), !.
-
-% addType(not(A0),not(A)):-
-%     addType(A0,A), !.
-
 addType(Form0,Form):-
     Form0 =.. [F,A0],
     addType(A0,A),
@@ -437,93 +515,88 @@ addType(A,A):-
     atomic(A).
 
 
+%%%%% binary version %%%%%
+
 rewriteVar(Form1,Form2):-
-    rewriteVar([],Form1,Form2).
+    rewriteVar([],Form1,Form2,_).
 
-rewriteVar(Stack,exists(X,Type,A),exists(V,Type,Form)):-
-    member(X,Stack),
+rewriteVar(InStack,exists(X,Type,A),exists(V,Type,Form),OutStack):-
+    member(X,InStack),
     counter(N),
     atom_concat(x,N,V),
-    append(Stack,[V],NewStack),
+    append(InStack,[V],NewStack),
     substitute(V,X,A,B),
-    rewriteVar(NewStack,B,Form), !.
+    rewriteVar(NewStack,B,Form,OutStack), !.
 
-rewriteVar(Stack,exists(X,Type,A),exists(X,Type,Form)):-
-    append(Stack,[X],NewStack),
-    rewriteVar(NewStack,A,Form), !.
+rewriteVar(InStack,exists(X,Type,A),exists(X,Type,Form),OutStack):-
+    append(InStack,[X],NewStack),
+    rewriteVar(NewStack,A,Form,OutStack), !.
 
-rewriteVar(Stack,forall(X,Type,A),forall(V,Type,Form)):-
-    member(X,Stack),
+rewriteVar(InStack,forall(X,Type,A),forall(V,Type,Form),OutStack):-
+    member(X,InStack),
     counter(N),
     atom_concat(x,N,V),
-    append(Stack,[V],NewStack),
+    append(InStack,[V],NewStack),
     substitute(V,X,A,B),
-    rewriteVar(NewStack,B,Form), !.
+    rewriteVar(NewStack,B,Form,OutStack), !.
 
-rewriteVar(Stack,forall(X,Type,A),forall(X,Type,Form)):-
-    append(Stack,[X],NewStack),
-    rewriteVar(NewStack,A,Form), !.
+rewriteVar(InStack,forall(X,Type,A),forall(X,Type,Form),OutStack):-
+    append(InStack,[X],NewStack),
+    rewriteVar(NewStack,A,Form,OutStack), !.
 
-rewriteVar(Stack,lam(X,A),lam(X,Form)):-
-    member(X,Stack),
+rewriteVar(InStack,lam(X,A),lam(V,Form),OutStack):-
+    member(X,InStack),
     counter(N),
     atom_concat(x,N,V),
-    append(Stack,[X],NewStack),
+    append(InStack,[X],NewStack),
     substitute(V,X,A,B),
-    rewriteVar(NewStack,B,Form), !.
+    rewriteVar(NewStack,B,Form,OutStack), !.
 
-rewriteVar(Stack,lam(X,A),lam(X,B)):-
-    append(Stack,[X],NewStack),
-    rewriteVar(NewStack,A,B), !.
+rewriteVar(InStack,lam(X,A),lam(X,B),OutStack):-
+    append(InStack,[X],NewStack),
+    rewriteVar(NewStack,A,B,OutStack), !.
 
-rewriteVar(Stack,lam(X,Type,A),lam(X,Type,Form)):-
-    member(X,Stack),
+rewriteVar(InStack,lam(X,Type,A),lam(V,Type,Form),OutStack):-
+    member(X,InStack),
     counter(N),
     atom_concat(x,N,V),
-    append(Stack,[X],NewStack),
+    append(InStack,[X],NewStack),
     substitute(V,X,A,B),
-    rewriteVar(NewStack,B,Form), !.
+    rewriteVar(NewStack,B,Form,OutStack), !.
 
-rewriteVar(Stack,lam(X,Type,A),lam(X,Type,B)):-
-    append(Stack,[X],NewStack),
-    rewriteVar(NewStack,A,B), !.
+rewriteVar(InStack,lam(X,Type,A),lam(X,Type,B),OutStack):-
+    append(InStack,[X],NewStack),
+    rewriteVar(NewStack,A,B,OutStack), !.
 
-rewriteVar(Stack,and(A0,B0),and(A,B)):-
-    rewriteVar(Stack,A0,A),
-    rewriteVar(Stack,B0,B), !.
-
-rewriteVar(Stack,imp(A0,B0),imp(A,B)):-
-    rewriteVar(Stack,A0,A),
-    rewriteVar(Stack,B0,B), !.
-
-rewriteVar(Stack,Form0,Form):-
+rewriteVar(InStack,Form0,Form,OutStack):-
     Form0 =.. [F,A0],
-    rewriteVar(Stack,A0,A),
+    rewriteVar(InStack,A0,A,OutStack),
     Form =.. [F,A], !.
 
-rewriteVar(Stack,Form0,Form):-
+rewriteVar(InStack,Form0,Form,OutStack):-
     Form0 =.. [F,A0,B0],
-    rewriteVar(Stack,A0,A),
-    rewriteVar(Stack,B0,B),
+    rewriteVar(InStack,A0,A,MidStack),
+    rewriteVar(MidStack,B0,B,OutStack),
     Form =.. [F,A,B], !.
 
-rewriteVar(Stack,Form0,Form):-
+rewriteVar(InStack,Form0,Form,OutStack):-
     Form0 =.. [F,A0,B0,C0],
-    rewriteVar(Stack,A0,A),
-    rewriteVar(Stack,B0,B),
-    rewriteVar(Stack,C0,C),
+    rewriteVar(InStack,A0,A,MidStack1),
+    rewriteVar(MidStack1,B0,B,MidStack2),
+    rewriteVar(MidStack2,C0,C,OutStack),
     Form =.. [F,A,B,C], !.
 
-rewriteVar(Stack,Form0,Form):-
+rewriteVar(InStack,Form0,Form,OutStack):-
     Form0 =.. [F,A0,B0,C0,D0],
-    rewriteVar(Stack,A0,A),
-    rewriteVar(Stack,B0,B),
-    rewriteVar(Stack,C0,C),
-    rewriteVar(Stack,D0,D),
+    rewriteVar(InStack,A0,A,MidStack1),
+    rewriteVar(MidStack1,B0,B,MidStack2),
+    rewriteVar(MidStack2,C0,C,MidStack3),
+    rewriteVar(MidStack3,D0,D,OutStack),
     Form =.. [F,A,B,C,D], !.
 
-rewriteVar(_,A,A):-
+rewriteVar(X,A,A,X):-
     atomic(A).
+
 
 %%% Eliminating True %%%
 

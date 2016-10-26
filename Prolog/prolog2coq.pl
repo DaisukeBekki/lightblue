@@ -147,6 +147,11 @@ prolog2coq(F,Stream):-
     write(Stream,' : '),
     prolog2coq(T,Stream).
 
+% prolog2coq(F,Stream):-
+%     F =.. [Symbol,Form],
+%     Symbol == presup,
+%     write(Stream,'True').
+
 prolog2coq(F,Stream):-
     F =.. [Symbol,Form],
     write(Stream,'(_'),
