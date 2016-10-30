@@ -29,7 +29,7 @@ import Parser.CCG
 import qualified Parser.Japanese.CallJuman as JU
 import qualified Parser.Japanese.MyLexicon as LEX
 import Parser.Japanese.Templates
-import DTS.DependentTypes
+import DTS.UDTT
 
 -- | Lexicon consists of a set of CCG Nodes
 type LexicalItems = [Node]
@@ -115,16 +115,16 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "形容詞:タル形容詞"        ct = constructPredicate daihyo [Ntar,Nto] [Stem]
   | T.isPrefixOf "副詞"                  ct  = ((constructPredicate daihyo [Nda,Nna,Nno,Nni,Nto,Nemp] [NStem]) 
                                             ++ (constructCommonNoun daihyo))
-  | T.isPrefixOf "連体詞"                 ct  = constructNominalModifier daihyo
+  | T.isPrefixOf "連体詞"                 ct  = constructNominalPrefix daihyo
   | T.isPrefixOf "接続詞"                 ct = constructConjunction daihyo
-  | T.isPrefixOf "接頭辞:名詞接頭辞"        ct   = constructNominalModifier daihyo
+  | T.isPrefixOf "接頭辞:名詞接頭辞"        ct   = constructNominalPrefix daihyo
   | T.isPrefixOf "接頭辞:動詞接頭辞"        ct   = [((defS verb [Stem] `SL` defS verb [Stem]), ((Lam (Lam (App (Var 1) (Lam (Sigma (App (Con daihyo) (Var 0)) (App (Var 2) (Var 1))))))), [(daihyo, nPlacePredType 1)]))]
   | T.isPrefixOf "接頭辞:イ形容詞接頭辞"     ct   = [((defS [Aauo] [Stem] `BS` NP [F[Ga]]) `SL` (defS [Aauo] [Stem] `BS` NP [F[Ga]]), (id, []))]
   | T.isPrefixOf "接頭辞:ナ形容詞接頭辞"     ct   = [((defS [Nda] [NStem] `BS` NP [F[Ga]]) `SL` (defS [Nda] [NStem] `BS` NP [F[Ga]]), (id, []))]
-  | T.isPrefixOf "接尾辞:名詞性名詞助数辞"   ct  = constructNominalModifier daihyo -- 例：ビット、ヘクトパスカル
-  -- T.isPrefixOf "接尾辞:名詞性名詞接尾辞"  ct  = constructNominalModifier daihyo
-  | T.isPrefixOf "接尾辞:名詞性特殊接尾辞"   ct  = constructNominalModifier daihyo
-  | T.isPrefixOf "接尾辞:名詞性述語接尾辞"   ct  = constructNominalModifier daihyo
+  | T.isPrefixOf "接尾辞:名詞性名詞助数辞"   ct  = constructNominalSuffix daihyo -- 例：ビット、ヘクトパスカル
+  -- T.isPrefixOf "接尾辞:名詞性名詞接尾辞"  ct  = constructNominalSuffix daihyo
+  | T.isPrefixOf "接尾辞:名詞性特殊接尾辞"   ct  = constructNominalSuffix daihyo
+  | T.isPrefixOf "接尾辞:名詞性述語接尾辞"   ct  = constructNominalSuffix daihyo
   --  T.isPrefixOf "特殊:句点" ct =
   --  T.isPrefixOf "特殊:読点" ct =
   | T.isPrefixOf "特殊:括弧始"             ct = [(LPAREN, (Unit, []))]
@@ -150,8 +150,11 @@ constructVerb daihyo caseframe posF conjF =
       caseframelist = T.split (=='#') caseframe' in
   [(verbCat cf posF conjF, verbSR daihyo event cf) | cf <- caseframelist]
 
-constructNominalModifier :: T.Text -> [(Cat, (Preterm, [Signature]))]
-constructNominalModifier daihyo = [(N `SL` N, nominalModifier daihyo)]
+constructNominalSuffix :: T.Text -> [(Cat, (Preterm, [Signature]))]
+constructNominalSuffix daihyo = [(N `SL` N, nominalModifier daihyo)]
+
+constructNominalPrefix :: T.Text -> [(Cat, (Preterm, [Signature]))]
+constructNominalPrefix daihyo = [(N `BS` N, nominalModifier daihyo)]
 
 constructConjunction :: T.Text -> [(Cat, (Preterm, [Signature]))]
 constructConjunction daihyo = 

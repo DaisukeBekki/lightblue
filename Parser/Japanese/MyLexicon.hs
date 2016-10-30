@@ -19,7 +19,7 @@ import qualified Data.Text.Lazy as T
 import Data.Ratio
 import Parser.CCG
 import Parser.Japanese.Templates
-import DTS.DependentTypes
+import DTS.UDTT
 
 -- | defines a lexical entry for an empty category
 ec :: T.Text -> T.Text -> Integer -> Cat -> (Preterm, [Signature]) -> Node

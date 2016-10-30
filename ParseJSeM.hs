@@ -7,7 +7,7 @@ import qualified Data.Text.Lazy.IO as T -- text
 import qualified System.Process as S       -- process
 import qualified System.Environment as E   -- base
 import qualified Parser.ChartParser as CP  -- lightblue
-import qualified DTS.DependentTypes as DTS -- lightblue
+import qualified DTS.UDTT as DTS -- lightblue
 import qualified Interface.Text as T       -- lightblue
 import qualified Interface.JSeM as J       -- lightblue
 

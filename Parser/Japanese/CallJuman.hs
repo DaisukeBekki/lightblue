@@ -40,8 +40,7 @@ see2 noun@(j1,j2,j3,j4) = do
 -- |   given a sentence, returns a list of compound nouns
 jumanCompoundNouns :: T.Text -> IO([Node])
 jumanCompoundNouns sentence = do
-  nounlist <- callJuman sentence
-  return $ jumanNouns2nodes nounlist
+  fmap jumanNouns2nodes $ callJuman sentence
 
 data JumanCompNoun = JumanCompCN [T.Text] | JumanCompNP [T.Text] deriving (Eq,Show)
 type JumanPair = (T.Text, T.Text, T.Text, T.Text) -- (表層,品詞,品詞細分,（動詞なら）活用形)
@@ -70,6 +69,18 @@ jumanNouns2nodes jumancompnouns =
                               :(jumanNouns2nodes js))
     ((JumanCompCN j):js) -> (TPL.lexicalitem (T.concat $ reverse j) "(CompN)" 97 (N) (TPL.commonNounSR (name j)))
                               :(jumanNouns2nodes js)
+
+isCNcomponent :: JumanPair -> Bool
+isCNcomponent (_,j2,j3,j4) =
+  if j2 == "名詞" ||
+     j2 == "副詞" ||
+     j3 == "名詞接頭辞" ||
+     "名詞性名詞" `T.isPrefixOf` j3 ||
+     "形容詞性名詞" `T.isPrefixOf` j3 ||
+     (j2 == "特殊" && j3 == "記号") ||
+     (j2 == "動詞" && j4 == "基本連用形")
+     then True
+     else False
 
 -- | usage: findCompNouns jumanPairs [] 
 -- |   returns the list of pair (hyoso, predname)  
@@ -102,14 +113,3 @@ processingCompNoun compNouns jumanPairs compNoun compNounHead =
                            then processingCompNoun (newCompNoun:compNouns) js (j1:compNoun) j3
                            else findCompNouns (newCompNoun:compNouns) js
 
-isCNcomponent :: JumanPair -> Bool
-isCNcomponent (_,j2,j3,j4) =
-  if j2 == "名詞" ||
-     j2 == "副詞" ||
-     j3 == "名詞接頭辞" ||
-     "名詞性名詞" `T.isPrefixOf` j3 ||
-     "形容詞性名詞" `T.isPrefixOf` j3 ||
-     (j2 == "特殊" && j3 == "記号") ||
-     (j2 == "動詞" && j4 == "基本連用形")
-     then True
-     else False

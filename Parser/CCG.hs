@@ -45,7 +45,7 @@ import qualified Data.List as L      --base
 import qualified Data.Maybe as Maybe --base
 import Data.Fixed                    --base
 import Data.Ratio                    --base
-import DTS.DependentTypes
+import DTS.UDTT
 import Interface.Text
 import Interface.TeX
 import Interface.HTML

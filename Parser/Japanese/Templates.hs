@@ -66,7 +66,7 @@ import Prelude hiding (id)
 import qualified Data.Text.Lazy as T -- text
 import Data.Ratio
 import Parser.CCG
-import DTS.DependentTypes
+import DTS.UDTT
 
 {- Some Macros for defining lexical items -}
 

@@ -8,8 +8,8 @@ import qualified Data.Time as Time       -- time
 import qualified System.Process as S     -- process
 import qualified System.Environment as E -- base
 import qualified Control.Monad as M      -- base
-import qualified DTS.DependentTypes as DTS
-import qualified DTS.DTSwithVarName as D
+import qualified DTS.UDTT as DTS
+import qualified DTS.UDTTwithName as D
 import qualified Parser.ChartParser as CP
 import qualified Interface.Text as T
 

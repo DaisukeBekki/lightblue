@@ -11,7 +11,7 @@ Stability   : beta
 Implementation of Underspecified Dependent Type Theory (Bekki forthcoming).
 
 -}
-module DTS.DependentTypes (
+module DTS.UDTT (
   -- * Types
   Preterm(..),
   Selector(..),
@@ -42,7 +42,7 @@ import qualified Data.Text.Lazy as T      -- text
 import qualified Data.List as L           -- base
 import qualified Control.Applicative as M -- base
 import qualified Control.Monad as M       -- base
-import qualified DTS.DTSwithVarName as VN
+import qualified DTS.UDTTwithName as VN
 import Interface.Text
 import Interface.TeX
 import Interface.HTML
