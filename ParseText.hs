@@ -10,7 +10,8 @@ import qualified Parser.Japanese.Lexicon as LEX
 import qualified Interface.Text as T
 -- import qualified Interface.HTML as H
 import qualified Interface.XML as XML
-
+--import qualified DTS.Prover.TypeChecker 
+--Miho.aspElim 
 
 main :: IO()
 main = do
