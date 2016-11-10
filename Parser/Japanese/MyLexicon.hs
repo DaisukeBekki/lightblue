@@ -375,7 +375,7 @@ myLexicon = concat $ [
   mylex ["から"] "(175)" (S [SF 1 [Aauo,Ai,ANAS,ATII,ABES], F[NegL], F[M],F[M],SF 2 [P,M],F[M],F[M]] `BS` 
                          S [SF 1 [Aauo,Ai,ANAS,ATII,ABES], F[Stem], F[M],F[M],SF 2 [P,M],F[M],F[M]]) (id,[]),
   mylex ["う"]   "(174)" (S [SF 1 [Aauo,Ai,ANAS,ATII], F[Cont], F[M],F[M],SF 2 [P,M],F[M],F[M]] `BS` 
-                         S [SF 1 [Aauo,Ai,ANAS,ATII], F[UStem], F[M],F[M],SF 2 [P,M],F[M],F[M]]) (id,[]),
+                         S [SF 1 [Aauo,Ai,ANAS,ATII], F[Stem,UStem], F[M],F[M],SF 2 [P,M],F[M],F[M]]) (id,[]),
   mylex ["し"]   "(175)" (S [SF 1 [Aauo,ANAS,ABES], F[Term], F[M],F[M],SF 2 [P,M],F[M],F[M]] `BS` 
                          S [SF 1 [Aauo,Ai,ANAS,ATII,ABES], F[Stem], F[M],F[M],SF 2 [P,M],F[M],F[M]]) (id,[]),
   mylex ["き"]   "(175)" (S [SF 1 [Aauo,Ai,ANAS,ATII,ABES], F[Attr], F[M],F[M],SF 2 [P,M],F[M],F[M]] `BS` 
