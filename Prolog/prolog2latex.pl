@@ -1,15 +1,42 @@
 % :- set_stream(user_input, encoding(utf8)).
 % :- set_stream(user_output, encoding(utf8)).
 
+:- dynamic current_counter/1.
+
+current_counter(0).
+counter(M):-
+    retract(current_counter(N)),
+    M is N+1,
+    asserta(current_counter(M)),!.
+
 main :-
     current_prolog_flag(os_argv, AllArgs),
-    append(_, [-- |[Args1,Args2,Args3]], AllArgs),
+    append(_, [-- |[Args1,Args2,Args3,Args4]], AllArgs),
     term_string(X1,Args1),
     term_string(X2,Args2),
     term_string(X3,Args3),
-    fol2file(X1,X2,X3).
+    term_string(X4,Args4),
+    fol2file(X1,X2,X3,X4).
 
-fol2file(F1,F2,F3):-
+fol2latexlist([],Stream) :- nl(Stream).
+fol2latexlist([X|List],Stream) :-
+    counter(Num),
+    write(Stream, '\\noindent'),
+    write(Stream, '\\textsc{SR}'),
+    write(Stream, Num),
+    write(Stream, ':'),
+    nl(Stream),
+    nl(Stream),
+    write(Stream, '\\medskip'),
+    write(Stream,'$'),
+    fol2latex(X,Stream),
+    write(Stream,'$'),
+    nl(Stream),
+    nl(Stream),
+    write(Stream, '\\medskip'),
+    fol2latexlist(List,Stream).
+
+fol2file(F1,F2,F3,F4):-
     open('test.tex',write,Stream,[encoding(utf8)]),
     write(Stream,'\\documentclass{jsarticle}'),
     nl(Stream),
@@ -49,14 +76,16 @@ fol2file(F1,F2,F3):-
     nl(Stream),
     nl(Stream),
     write(Stream,'\\medskip'),
-    numbervars(F2,0,_),
-    write(Stream,'$'),
-    fol2latex(F2,Stream),
-    write(Stream,'$'),
+    % numbervars(F2,0,_),
     nl(Stream),
+    fol2latexlist(F2,Stream),
     nl(Stream),
     write(Stream,'\\bigskip'),
-    write(Stream,'\\noindent\\textsc{Normalized:}'),
+    write(Stream,'\\noindent\\textsc{Normalized '),
+    write(Stream,'(SR'),
+    % write(Stream,F4),
+    fol2latex(F4,Stream),
+    write(Stream,')}:'),
     nl(Stream),
     nl(Stream),
     write(Stream,'\\medskip'),
@@ -84,7 +113,7 @@ fol2file(F1,F2,F3):-
 fol2latex(F):-
     fol2latex(F,user).
 
-fol2latex(exists(X,Type,F),Stream):- 
+fol2latex(exists(X,Type,F),Stream):- !,
     write(Stream,'\\dConj'),
     write(Stream,'{'),
     write_term(Stream,X,[numbervars(true)]),
@@ -106,8 +135,8 @@ fol2latex(forall(X,Type,F),Stream):- !,
     fol2latex(F,Stream),
     write(Stream,'}').
 
-fol2latex(exists(X,F),Stream):- 
-    X == v,
+fol2latex(exists(X,F),Stream):-
+    X == v, !,
     write(Stream,'\\dConj'),
     write(Stream,'{'),
     write_term(Stream,X,[numbervars(true)]),
@@ -116,7 +145,17 @@ fol2latex(exists(X,F),Stream):-
     fol2latex(F,Stream),
     write(Stream,'}').
 
-fol2latex(exists(X,F),Stream):- !,
+fol2latex(exists(X,F),Stream):-
+    atom_concat(v,_,X), !,
+    write(Stream,'\\dConj'),
+    write(Stream,'{'),
+    write_term(Stream,X,[numbervars(true)]),
+    write(Stream,': \\Event}'),
+    write(Stream,'{'),
+    fol2latex(F,Stream),
+    write(Stream,'}').
+
+fol2latex(exists(X,F),Stream):-
     write(Stream,'\\dConj'),
     write(Stream,'{'),
     write_term(Stream,X,[numbervars(true)]),
@@ -125,7 +164,27 @@ fol2latex(exists(X,F),Stream):- !,
     fol2latex(F,Stream),
     write(Stream,'}').
 
-fol2latex(forall(X,F),Stream):- !,
+fol2latex(forall(X,F),Stream):-
+    X == v, !,
+    write(Stream,'\\dPi'),
+    write(Stream,'{'),
+    write_term(Stream,X,[numbervars(true)]),
+    write(Stream,': \\Event}'),
+    write(Stream,'{'),
+    fol2latex(F,Stream),
+    write(Stream,'}').
+
+fol2latex(forall(X,F),Stream):-
+    atom_concat(v,_,X), !,
+    write(Stream,'\\dPi'),
+    write(Stream,'{'),
+    write_term(Stream,X,[numbervars(true)]),
+    write(Stream,': \\Event}'),
+    write(Stream,'{'),
+    fol2latex(F,Stream),
+    write(Stream,'}').
+
+fol2latex(forall(X,F),Stream):-
     write(Stream,'\\dPi'),
     write(Stream,'{'),
     write_term(Stream,X,[numbervars(true)]),
@@ -133,7 +192,6 @@ fol2latex(forall(X,F),Stream):- !,
     write(Stream,'{'),
     fol2latex(F,Stream),
     write(Stream,'}').
-
 
 fol2latex(most(F1,F2),Stream):- !,
     write(Stream,'\\mathbf{most}'),
@@ -279,9 +337,9 @@ fol2latex(F,Stream):-
     write(Stream,'\\mbox{\\textbf{'),
     write_term(Stream,Symbol,[numbervars(true)]),
     write(Stream,'}}('),
-    fol2latex(Arg2,Stream),
-    write(Stream,','),
     fol2latex(Arg1,Stream),
+    write(Stream,','),
+    fol2latex(Arg2,Stream),
     write(Stream,')').
 
 % fol2latex(F,Stream):-
@@ -303,11 +361,11 @@ fol2latex(F,Stream):-
     write(Stream,'\\mbox{\\textbf{'),
     write_term(Stream,Symbol,[numbervars(true)]),
     write(Stream,'}}('),
-    fol2latex(Arg3,Stream),
+    fol2latex(Arg1,Stream),
     write(Stream,','),
     fol2latex(Arg2,Stream),
     write(Stream,','),
-    fol2latex(Arg1,Stream),
+    fol2latex(Arg3,Stream),
     write(Stream,')').
 
 % fol2latex(F,Stream):-
@@ -331,12 +389,12 @@ fol2latex(F,Stream):-
     write(Stream,'\\mbox{\\textbf{'),
     write_term(Stream,Symbol,[numbervars(true)]),
     write(Stream,'}}('),
-    fol2latex(Arg4,Stream),
-    write(Stream,','),
-    fol2latex(Arg3,Stream),
+    fol2latex(Arg1,Stream),
     write(Stream,','),
     fol2latex(Arg2,Stream),
     write(Stream,','),
-    fol2latex(Arg1,Stream),
+    fol2latex(Arg3,Stream),
+    write(Stream,','),
+    fol2latex(Arg4,Stream),
     write(Stream,')').
 
