@@ -9,6 +9,17 @@ counter(M):-
     M is N+1,
     asserta(current_counter(M)),!.
 
+% main :-
+%     current_prolog_flag(os_argv, AllArgs),
+%     append(_, [-- |[Args0,Args1,Args2,Args3,Args4]], AllArgs), % modified line
+%     term_string(Tmp,Args0),
+%     readWord(Tmp,X0), % modified line
+%     term_string(X1,Args1),
+%     term_string(X2,Args2),
+%     term_string(X3,Args3),
+%     term_string(X4,Args4),
+%     fol2file(X0,X1,X2,X3,X4).
+
 main :-
     current_prolog_flag(os_argv, AllArgs),
     append(_, [-- |[Args1,Args2,Args3,Args4]], AllArgs),
@@ -36,6 +47,17 @@ fol2latexlist([X|List],Stream) :-
     write(Stream, '\\medskip'),
     fol2latexlist(List,Stream).
 
+% readWord(InStream,W) :-
+%     get0(InStream,Char),
+%     checkCharAndReadRest(Char,Chars,InStream),
+%     atom_chars(W,Chars).
+% checkCharAndReadRest(10,[],_) :- !. % Return
+% checkCharAndReadRest(32,[],_) :- !. % Space
+% checkCharAndReadRest(-1,[],_) :- !. % End of Stream
+% checkCharAndReadRest(end_of_file,[],_) :- !.
+% checkCharAndReadRest(Char,[Char|Chars],InStream) :-
+%     get0(InStream,NextChar), checkCharAndReadRest(NextChar,Chars,InStream).
+
 fol2file(F1,F2,F3,F4):-
     open('test.tex',write,Stream,[encoding(utf8)]),
     write(Stream,'\\documentclass{jsarticle}'),
@@ -54,11 +76,16 @@ fol2file(F1,F2,F3,F4):-
     nl(Stream),
     write(Stream,'\\newcommand{\\Event}{\\ensuremath{\\mathbf{event}}}'),
     nl(Stream),
+    write(Stream,'\\newcommand{\\Prop}{\\ensuremath{\\mathbf{prop}}}'),
+    nl(Stream),
     write(Stream,'\\begin{document}'),
     nl(Stream),
     write(Stream,'%\\begin{landscape}'),
     nl(Stream),
     write(Stream,'\\scriptsize'),
+    % write(Stream,'$'), % added line
+    % fol2latex(F0,Stream), % added line
+    % write(Stream,'$'), % added line
     nl(Stream),
     nl(Stream),
     write(Stream,'\\noindent\\textsc{Input:}'),
@@ -156,6 +183,26 @@ fol2latex(exists(X,F),Stream):-
     write(Stream,'}').
 
 fol2latex(exists(X,F),Stream):-
+    X == g, !,
+    write(Stream,'\\dConj'),
+    write(Stream,'{'),
+    write_term(Stream,X,[numbervars(true)]),
+    write(Stream,': \\Entity \\to \\Prop}'),
+    write(Stream,'{'),
+    fol2latex(F,Stream),
+    write(Stream,'}').
+
+fol2latex(exists(X,F),Stream):-
+    atom_concat(g,_,X), !,
+    write(Stream,'\\dConj'),
+    write(Stream,'{'),
+    write_term(Stream,X,[numbervars(true)]),
+    write(Stream,': \\Entity \\to \\Prop}'),
+    write(Stream,'{'),
+    fol2latex(F,Stream),
+    write(Stream,'}').
+
+fol2latex(exists(X,F),Stream):-
     write(Stream,'\\dConj'),
     write(Stream,'{'),
     write_term(Stream,X,[numbervars(true)]),
@@ -246,6 +293,13 @@ fol2latex(eq(A,B),Stream):-
     write(Stream,' = '),
     fol2latex(B,Stream), !.
 
+fol2latex(lt(F1,F2),Stream):- !,
+    write(Stream,'\\left('),
+    fol2latex(F1,Stream),
+    write(Stream,' < '),
+    fol2latex(F2,Stream),
+    write(Stream,'\\right)').
+
 fol2latex(not(F),Stream):- !,
     write(Stream,'\\neg'),
     fol2latex(F,Stream).
@@ -259,8 +313,14 @@ fol2latex(event,Stream):-
 fol2latex(state,Stream):-
     write(Stream,'\\mbox{\\textbf{state}}').
 
-fol2latex(state,Stream):-
+fol2latex(evt,Stream):-
     write(Stream,'\\mbox{\\textbf{evt}}').
+
+fol2latex(prop,Stream):-
+    write(Stream,'\\mbox{\\textbf{prop}}').
+
+fol2latex(property,Stream):-
+    write(Stream,'\\mbox{$\\mathbf{entity} \\to \\mathbf{prop}$}').
 
 fol2latex([A,B],Stream):-
     write(Stream,'('),

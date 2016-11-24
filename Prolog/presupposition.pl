@@ -97,11 +97,15 @@ elimAsp([[_,@(N,Type)]|_],GCxt,Form,SR):-
     % findall(PS,checkType(PS,GCxt,FormAccom),NewStore),
     elimAsp(NewStore,GCxt,FormAccom,SR).
 
+% Sigma-accommodation
+accomSigmaPresup([V,Type],[],Form,exists(V,Type,Form)).
+
+% local and intermediate sigma-accommodation with no free variables
+accomPresup([V,Type],[],imp(A,B),imp(A,C)):-
+    accomSigmaPresup([V,Type],[],B,C).
+
 % Pi-accommodation
 accomPresup([V,Type],[],Form,forall(V,Type,Form)):- !.
-
-% Sigma-accommodation
-% accomPresup([V,Type],[],Form,exists(V,Type,Form)).
 
 accomPresup([V,Type],Unbound,exists(X,T1,A),exists(X,T2,A)):-
     boundVar(T1,BV),
@@ -426,6 +430,9 @@ freeVar(type,[]).
 freeVar(entity,[]).
 freeVar(event,[]).
 freeVar(state,[]).
+freeVar(prop,[]).
+freeVar(nat,[]).
+freeVar(property,[]).
 
 freeVar(A,[A]):-
     atom(A), !.
@@ -494,6 +501,9 @@ boundVar(type,[]).
 boundVar(entity,[]).
 boundVar(event,[]).
 boundVar(state,[]).
+boundVar(prop,[]).
+boundVar(nat,[]).
+boundVar(property,[]).
 
 boundVar(A,[]):-
     atom(A), !.
@@ -506,6 +516,14 @@ addType(exists(X,A),exists(X,event,Form)):-
 
 addType(exists(X,A),exists(X,event,Form)):-
     atom_concat(v,_,X),
+    addType(A,Form), !.
+
+addType(exists(X,A),exists(X,property,Form)):-
+    X == g,
+    addType(A,Form), !.
+
+addType(exists(X,A),exists(X,property,Form)):-
+    atom_concat(g,_,X),
     addType(A,Form), !.
 
 addType(exists(X,A),exists(X,entity,Form)):-

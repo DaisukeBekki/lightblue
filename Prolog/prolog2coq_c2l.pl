@@ -10,20 +10,20 @@ prolog2file(F):-
     prolog2coq(F,Stream), !,
     close(Stream).
 
-prolog2coq(exists(X,Type,F),Stream):- 
+prolog2coq(exists(X,_,F),Stream):- 
     write(Stream,'(exists '),
     write_term(Stream,X,[numbervars(true)]),
-    write(Stream,' : '),
-    prolog2coq(Type,Stream),
+    % write(Stream,' : '),
+    % prolog2coq(Type,Stream),
     write(Stream,','),
     prolog2coq(F,Stream),
     write(Stream,')').
 
-prolog2coq(forall(X,Type,F),Stream):- 
+prolog2coq(forall(X,_,F),Stream):- 
     write(Stream,'(forall '),
     write_term(Stream,X,[numbervars(true)]),
-    write(Stream,' : '),
-    prolog2coq(Type,Stream),
+    % write(Stream,' : '),
+    % prolog2coq(Type,Stream),
     write(Stream,','),
     prolog2coq(F,Stream),
     write(Stream,')').
@@ -123,9 +123,6 @@ prolog2coq(event,Stream):-
 prolog2coq(state,Stream):-
     write(Stream,'State').
 
-prolog2coq(evt,Stream):-
-    write(Stream,'Evt').
-
 prolog2coq([A,B],Stream):-
     write(Stream,'(pair '),
     prolog2coq(A,Stream),
@@ -154,10 +151,22 @@ prolog2coq(F,Stream):-
     write(Stream,' : '),
     prolog2coq(T,Stream).
 
-% prolog2coq(F,Stream):-
-%     F =.. [Symbol,Form],
-%     Symbol == presup,
-%     write(Stream,'True').
+prolog2coq(F,Stream):-
+    F =.. [Symbol,Form],
+    member(Symbol,[subj,nom,top,acc,acci,acce,dat,attr,deg,argof,prog,this,that,hold,cul,past,future,poss,nonposs,wh,few]),
+    % member(Symbol,[subj,top,acc,acci,acce,dat,attr,deg,argof]),
+    % first_char_uppercase(Symbol,SymbolUp),
+    write(Stream,'('),
+    write_term(Stream,Symbol,[numbervars(true)]),
+    write(Stream,' '),
+    prolog2coq(Form,Stream),
+    write(Stream,')'), !.
+
+% presupposition operator
+prolog2coq(F,Stream):-
+    F =.. [Symbol,_],
+    Symbol == presup,
+    write(Stream,'True').
 
 prolog2coq(F,Stream):-
     F =.. [Symbol,Form],
@@ -171,6 +180,19 @@ prolog2coq(F,Stream):-
 
 prolog2coq(F,Stream):-
     F =.. [Symbol,Arg1,Arg2],
+    member(Symbol,[acci,content,most,mod,rel,k,stnd]),
+    % first_char_uppercase(Symbol,SymbolUp),
+    write(Stream,'('),
+    write_term(Stream,Symbol,[numbervars(true)]),
+    write(Stream,' '),
+    prolog2coq(Arg1,Stream),
+    write(Stream,' '),
+    prolog2coq(Arg2,Stream),
+    write(Stream,')'), !.
+
+% for "f1"
+prolog2coq(F,Stream):-
+    F =.. [Symbol,Arg1,Arg2],
     sub_atom(Symbol,0,1,_,X),
     sub_atom(Symbol,1,1,_,Y),
     member(X,[f]),
@@ -182,7 +204,7 @@ prolog2coq(F,Stream):-
     prolog2coq(Arg1,Stream),
     write(Stream,' '),
     prolog2coq(Arg2,Stream),
-    write(Stream,')').
+    write(Stream,')'), !.
 
 prolog2coq(F,Stream):-
     F =.. [Symbol,Arg1,Arg2],
@@ -229,7 +251,7 @@ prolog2coq(F,Stream):-
     atom_length(F,L),
     L is 1,
     sub_atom(F,0,1,_,X),
-    member(X,[e,f,s,t,u,v,w,x,y,z]),
+    member(X,[e,f,g,s,t,u,v,w,x,y,z]),
     write_term(Stream,F,[numbervars(true)]).
 
 prolog2coq(F,Stream):-
@@ -247,6 +269,11 @@ prolog2coq(F,Stream):-
 %     % sub_atom(A,0,2,_,B),
 %     write(Stream,'_'),
 %     write_term(Stream,A,[numbervars(true)]).
+
+prolog2coq(F,Stream):-
+    member(F,[true]),
+    first_char_uppercase(F,Symbol),
+    write_term(Stream,Symbol,[numbervars(true)]).
 
 prolog2coq(F,Stream):-
     atomic(F),
