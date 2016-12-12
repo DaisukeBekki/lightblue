@@ -15,8 +15,30 @@ main :-
     append(_, [-- |[Arg1,Arg2]], AllArgs),
     term_string(UnspecSR,Arg1),
     term_string(GCxt,Arg2),
-    resolvePresup(SR,GCxt,UnspecSR),
-    write(SR).
+    findall(SR,resolvePresup(SR,GCxt,UnspecSR),Reading),
+    writePosList(Reading),
+    write("###"),
+    writeNegList(Reading).
+    % nth0(0,Reading,OneBest),
+    % write(OneBest).
+
+writePosList([]).
+writePosList([X|List]) :-
+    write(X), write("\t"),
+    writePosList(List).
+
+writeNegList([]).
+writeNegList([X|List]) :-
+    negateConclusion(X,Y), !, write(Y), write("\t"),
+    writeNegList(List).
+
+negateConclusion(imp(A,B),imp(A,C)) :-
+    negateConclusion(B,C), !.
+negateConclusion(forall(X,T,A),forall(X,T,B)) :-
+    atom_concat(t,_,X), negateConclusion(A,B), !.
+negateConclusion(forall(X,T,A),forall(X,T,B)) :-
+    atom_concat(u,_,X), negateConclusion(A,B), !.
+negateConclusion(X,not(X)).
 
 % main :-
 %     current_prolog_flag(os_argv, AllArgs),
@@ -43,7 +65,7 @@ resolvePresup(SR,GCxt,Form0):-
     findall(PS,checkType(PS,[],Form),Store),
     elimAsp(Store,GCxt,Form,SR0),
     betaConvertPi(SR0,SR1),
-    betaConvert(SR1,SR), !.
+    betaConvert(SR1,SR).
 
 %%% temporary repair %%%
 elimCont(lam(x0,A),B):-
@@ -51,23 +73,19 @@ elimCont(lam(x0,A),B):-
     substitute(true,x0(X),A,B), !.
 
 elimCont(A,A).
-%%%%%%%
-
-% addToStore(_,[],[]).
-
-% addToStore(Hyp,[[LCxt,Asp]|Store0],[[LCxtAccom,Asp]|Store]):-
-%     append([Hyp],LCxt,LCxtAccom),
-%     addToStore(Hyp,Store0,Store).
+%%%%%%%%%%%%%%%%%%%%%%%%
 
 elimAsp([],_,Form,Form).
 
+%%% Binding %%%
 elimAsp([[LCxt,@(N,Type)]|Store0],GCxt,Form0,SR):-
     findProofTerm(GCxt,LCxt,Term,Type),
     bindPresup(LCxt,Term,@(N,Type),Form0,Form),
     \+ violateConditionB(Form0,Form),
     substitute(Term,@(N,Type),Store0,Store),
-    elimAsp(Store,GCxt,Form,SR), !.
+    elimAsp(Store,GCxt,Form,SR).
 
+%%% Accommodation %%%
 elimAsp([[_,@(N,Type)]|_],GCxt,Form,SR):-
     counter(New),
     atom_concat(t,New,V),
@@ -79,11 +97,15 @@ elimAsp([[_,@(N,Type)]|_],GCxt,Form,SR):-
     % findall(PS,checkType(PS,GCxt,FormAccom),NewStore),
     elimAsp(NewStore,GCxt,FormAccom,SR).
 
-% Pi-accommodation
-accomPresup([V,Type],[],Form,forall(V,Type,Form)).
-
 % Sigma-accommodation
-% accomPresup([V,Type],[],Form,exists(V,Type,Form)).
+accomSigmaPresup([V,Type],[],Form,exists(V,Type,Form)).
+
+% local and intermediate sigma-accommodation with no free variables
+accomPresup([V,Type],[],imp(A,B),imp(A,C)):-
+    accomSigmaPresup([V,Type],[],B,C).
+
+% Pi-accommodation
+accomPresup([V,Type],[],Form,forall(V,Type,Form)):- !.
 
 accomPresup([V,Type],Unbound,exists(X,T1,A),exists(X,T2,A)):-
     boundVar(T1,BV),
@@ -158,6 +180,13 @@ bindPresup(LCxt,Term,@(N,Type),Form0,Form1):-
     substitute(forall(BindVar,Body,Right),imp(Body,Right),Form0,Form),
     substitute(BindVar,po(u,Num),Term,PTerm),
     substitute(PTerm,@(N,Type),Form,Form1), !.
+
+%% when the same [po(u,N)] appears more than twice
+bindPresup(_,Term,@(N,Type),Form0,Form1):-
+    subterm(po(u,Num),Term),
+    atom_concat(u,Num,BindVar),
+    substitute(BindVar,po(u,Num),Term,PTerm),
+    substitute(PTerm,@(N,Type),Form0,Form1), !.
 
 bindPresup(_,Term,@(N,Type),Form0,Form1):-
     substitute(Term,@(N,Type),Form0,Form1).
@@ -401,6 +430,9 @@ freeVar(type,[]).
 freeVar(entity,[]).
 freeVar(event,[]).
 freeVar(state,[]).
+freeVar(prop,[]).
+freeVar(nat,[]).
+freeVar(property,[]).
 
 freeVar(A,[A]):-
     atom(A), !.
@@ -469,6 +501,9 @@ boundVar(type,[]).
 boundVar(entity,[]).
 boundVar(event,[]).
 boundVar(state,[]).
+boundVar(prop,[]).
+boundVar(nat,[]).
+boundVar(property,[]).
 
 boundVar(A,[]):-
     atom(A), !.
@@ -479,11 +514,27 @@ addType(exists(X,A),exists(X,event,Form)):-
     X == v,
     addType(A,Form), !.
 
+addType(exists(X,A),exists(X,event,Form)):-
+    atom_concat(v,_,X),
+    addType(A,Form), !.
+
+addType(exists(X,A),exists(X,property,Form)):-
+    X == g,
+    addType(A,Form), !.
+
+addType(exists(X,A),exists(X,property,Form)):-
+    atom_concat(g,_,X),
+    addType(A,Form), !.
+
 addType(exists(X,A),exists(X,entity,Form)):-
     addType(A,Form), !.
 
 addType(forall(X,A),forall(X,event,Form)):-
     X == v,
+    addType(A,Form), !.
+
+addType(forall(X,A),forall(X,event,Form)):-
+    atom_concat(v,_,X),
     addType(A,Form), !.
 
 addType(forall(X,A),forall(X,entity,Form)):-
