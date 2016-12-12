@@ -538,6 +538,7 @@ toDeBruijn2 vnames preterm = case preterm of
   VN.Proj s m -> case s of 
                    VN.Fst -> Proj Fst (toDeBruijn2 vnames m)
                    VN.Snd -> Proj Snd (toDeBruijn2 vnames m)
+  VN.Asp i m -> Asp i (toDeBruijn2 vnames m)
   _ -> Type
 
 -- | translates a context in de Bruijn notation (i.e. [DTS.DependentTypes.Preterm]) into a context with variable names (i.e. [(DTS.DTSwithVarName.VarName, DTS.DTSwithVarName.Preterm)]).
