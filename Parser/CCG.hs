@@ -93,8 +93,8 @@ instance MathML Node where
     let newcat = T.replace ">" "&gt;" $ T.replace "<" "&lt;" $ toText (cat node);
         newrs = T.replace ">" "&gt;" $ T.replace "<" "&lt;" $ toText (rs node) in
     case daughters node of 
-      [] -> T.concat ["<mrow><mfrac linethickness='2px'><mtext fontsize='1.0' color='Black'>", pf node, "</mtext><mfrac linethickness='0px'><mi fontsize='1.0' color='Red'>", newcat, "</mi><mi fontsize='1.0' color='Purple'>", toText $ sem node, "</mi></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", source node, "</mtext></mrow>"] 
-      _ -> T.concat ["<mrow><mfrac linethickness='2px'><mrow>", T.concat $ map toMathML $ daughters node, "</mrow><mfrac linethickness='0px'><mi fontsize='1.0' color='Red'>", newcat, "</mi><mi fontsize='1.0' color='Purple'>", toText $ sem node, "</mi></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", newrs, "</mtext></mrow>"] 
+      [] -> T.concat ["<mrow><mfrac linethickness='2px'><mtext fontsize='1.0' color='Black'>", pf node, "</mtext><mfrac linethickness='0px'><mi fontsize='1.0' color='Red'>", newcat, "</mi>", toMathML $ sem node, "</mfrac></mfrac><mtext fontsize='0.8' color='Black'>", source node, "</mtext></mrow>"] 
+      _ -> T.concat ["<mrow><mfrac linethickness='2px'><mrow>", T.concat $ map toMathML $ daughters node, "</mrow><mfrac linethickness='0px'><mi fontsize='1.0' color='Red'>", newcat, "</mi>", toMathML $ sem node, "</mfrac></mfrac><mtext fontsize='0.8' color='Black'>", newrs, "</mtext></mrow>"] 
 
 -- | Syntactic categories of 
 data Cat =

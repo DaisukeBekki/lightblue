@@ -104,6 +104,11 @@ instance Typeset Preterm where
 instance MathML Preterm where
   toMathML = toMathML . initializeIndex . fromDeBruijn
 
+-- | The data type for 
+data Judgment = Judgmen [Preterm] Preterm Preterm deriving (Eq)
+
+
+
 -- | prints a preterm in text, in the De Bruijn style.
 toTextDeBruijn :: Preterm -> T.Text
 toTextDeBruijn preterm = case preterm of
@@ -541,7 +546,9 @@ toDeBruijn2 vnames preterm = case preterm of
   VN.Asp i m -> Asp i (toDeBruijn2 vnames m)
   _ -> Type
 
--- | translates a context in de Bruijn notation (i.e. [DTS.DependentTypes.Preterm]) into a context with variable names (i.e. [(DTS.DTSwithVarName.VarName, DTS.DTSwithVarName.Preterm)]).
+-- | translates a context in de Bruijn notation (i.e. [DTS.DependentTypes.Preterm]) 
+-- into a context with variable names 
+-- (i.e. [(DTS.DTSwithVarName.VarName, DTS.DTSwithVarName.Preterm)]).
 fromDeBruijnContext :: [Preterm] -> VN.Context
 fromDeBruijnContext preterms = 
   initializeIndex $ mapM g preterms

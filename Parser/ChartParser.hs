@@ -85,8 +85,36 @@ printNodesInTeX handle nodes =
 -- | prints CCG nodes (=a parsing result) as a TeX source code.
 printNodesInHTML :: S.Handle -> [CCG.Node] -> IO()
 printNodesInHTML handle nodes = 
-  mapM_ (\node -> T.hPutStrLn handle $ T.concat [
-    "<?xml version='1.0'?><?xml-stylesheet type='text/xsl' href='http://www.w3.org/Math/XSL/mathml.xsl'?><html xmlns='http://www.w3.org/1999/xhtml'><head><meta charset='UTF-8'><title>lightblue parse tree</title></head><body><p>",
+  mapM_ (\node -> T.hPutStrLn handle $ T.concat ["\
+    \<?xml version='1.0'?>\
+    \<?xml-stylesheet type='text/xsl' href='http://www.w3.org/Math/XSL/mathml.xsl'?>\
+    \<html xmlns='http://www.w3.org/1999/xhtml'>\
+    \<head>\
+    \  <meta charset='UTF-8'>\
+    \  <title>lightblue parse tree</title>\
+    \  <style>body {\
+    \    font-size: 1em;\
+    \    }\
+    \  </style>\
+    \  <script type='text/javascript'\
+    \    src='http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'>\
+    \  </script>\
+    \  <script type='text/x-mathjax-config'>\
+    \    MathJax.Hub.Config({\
+    \      tex2jax: {\
+    \        inlineMath: [['$','$'], ['\\(','\\)']],\
+    \        processEscapes: true\
+    \        },\
+    \      CommonHTML: { matchFontHeight: false },\
+    \      displayAlign: left,\
+    \      displayIndent: 2em\
+    \      });\
+    \    MathJax.Hub.Config({\
+    \      'HTML-CSS': {\
+    \      availableFonts: [],\
+    \      preferredFont: null,webFont: 'Neo-Euler'}});\
+    \  </script>\
+    \  </head><body><p>",
     CCG.pf node,
     "</p><math xmlns='http://www.w3.org/1998/Math/MathML'>",
     HTML.toMathML node,

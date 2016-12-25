@@ -275,7 +275,7 @@ myLexicon = concat $ [
   conjSuffix "れ" "(132)" [V1] [Hyp],
   conjSuffix "ろ" "(132)" [V1] [Imper],
   conjSuffix "よ" "(132)" [V1] [Imper,ModU],
-  conjSuffix "い" "(132)" [V1] [Imper],
+  --conjSuffix "い" "(132)" [V1] [Imper],
   mylex ["ん"] "(132)" (S ([F[V1], F[Neg,Term,Attr]]++mmmpm) `BS` defS [V1] [Stem]) (id,[]),
   -- 音便形
   conjSuffix "い" "(76)-" [V5k] [EuphT],
