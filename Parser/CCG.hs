@@ -18,7 +18,7 @@ module Parser.CCG (
   Feature(..),
   FeatureValue(..),
   -- * Text and TeX interface
-  printF,
+  -- printF,
   printPMFs,
   -- * Tests
   isBaseCategory,
@@ -90,11 +90,10 @@ instance Typeset Node where
 
 instance MathML Node where
   toMathML node@(Node _ _ _ _ _ _ _ _) =
-    let newcat = T.replace ">" "&gt;" $ T.replace "<" "&lt;" $ toText (cat node);
-        newrs = T.replace ">" "&gt;" $ T.replace "<" "&lt;" $ toText (rs node) in
+    let newrs = T.replace ">" "&gt;" $ T.replace "<" "&lt;" $ toText (rs node) in
     case daughters node of 
-      [] -> T.concat ["<mrow><mfrac linethickness='2px'><mtext fontsize='1.0' color='Black'>", pf node, "</mtext><mfrac linethickness='0px'><mi fontsize='1.0' color='Red'>", newcat, "</mi>", toMathML $ sem node, "</mfrac></mfrac><mtext fontsize='0.8' color='Black'>", source node, "</mtext></mrow>"] 
-      _ -> T.concat ["<mrow><mfrac linethickness='2px'><mrow>", T.concat $ map toMathML $ daughters node, "</mrow><mfrac linethickness='0px'><mi fontsize='1.0' color='Red'>", newcat, "</mi>", toMathML $ sem node, "</mfrac></mfrac><mtext fontsize='0.8' color='Black'>", newrs, "</mtext></mrow>"] 
+      [] -> T.concat ["<mrow><mfrac linethickness='2px'><mtext fontsize='1.0' color='Black'>", pf node, "</mtext><mfrac linethickness='0px'><mstyle color='Red'>", toMathML $ cat node, "</mstyle><mstyle color='Black'>", toMathML $ sem node, "</mstyle></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", source node, "</mtext></mrow>"] 
+      _ -> T.concat ["<mrow><mfrac linethickness='2px'><mrow>", T.concat $ map toMathML $ daughters node, "</mrow><mfrac linethickness='0px'><mstyle color='Red'>", toMathML $ cat node, "</mstyle><mstyle color='Black'>", toMathML $ sem node, "</mstyle></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", newrs, "</mtext></mrow>"] 
 
 -- | Syntactic categories of 
 data Cat =
@@ -139,15 +138,15 @@ instance SimpleText Cat where
     S (pos:(conj:pmf)) -> 
               T.concat [
                        "S[",
-                       printF pos,
+                       toText pos,
                        "][",
-                       printF conj,
+                       toText conj,
                        "][",
                        printPMFs pmf,
                        "]"
                        ]
-    NP [cas]    -> T.concat ["NP[", printF cas, "]"]
-    Sbar [sf]   -> T.concat ["Sbar[", printF sf, "]"]
+    NP [cas]    -> T.concat ["NP[", toText cas, "]"]
+    Sbar [sf]   -> T.concat ["Sbar[", toText sf, "]"]
     N           -> "N"
     CONJ        -> "CONJ"
     LPAREN      -> "LPAREN"
@@ -167,23 +166,50 @@ instance Typeset Cat where
     S (pos:(conj:pm)) -> 
                    T.concat [
                      "S\\f{",
-                     f2TeX pos,",",
-                     f2TeX conj,",",
+                     toTeX pos,",",
+                     toTeX conj,",",
                      pmfs2TeX pm,
                      "}"
                      ]
-    NP [cas]    -> T.concat ["\\np\\f{",(printF cas),"}"]
-    Sbar [sf]   -> T.concat ["\\bar{S}\\f{",(printF sf),"}"]
+    NP [cas]    -> T.concat ["\\np\\f{", toText cas, "}"]
+    Sbar [sf]   -> T.concat ["\\bar{S}\\f{", toText sf, "}"]
     N           -> "N"
     CONJ        -> "\\conj"
     LPAREN      -> "LPAREN"
     RPAREN      -> "RPAREN"
     _ -> "Error: toTeX Cat"
+    where toTeX' c = if isBaseCategory c 
+                     then toTeX c
+                     else T.concat ["(", toTeX c, ")"]
 
-toTeX' :: Cat -> T.Text
-toTeX' c = if isBaseCategory c 
-           then toTeX c
-           else T.concat ["(", toTeX c, ")"]
+instance MathML Cat where
+  toMathML category = case category of
+    SL x y      -> T.concat ["<mrow>", toMathML x, "<mo>/</mo>", toMathML' y, "</mrow>"]
+    BS x y      -> T.concat ["<mrow>", toMathML x, "<mo>\\</mo>", toMathML' y, "</mrow>"]
+    T True i _  -> T.concat ["<msub><mi>T</mi><mn>",(T.pack $ show i),"</mn></msub>"]
+    T False i u -> T.concat ["<msub>", toMathML' u, "<mn>",(T.pack $ show i),"</mn></msub>"]
+    S (pos:(conj:pm)) -> 
+                   T.concat [
+                     "<msub><mi>S</mi><mstyle color='Purple'><mtable columnalign='left'><mtr><mtd>",
+                     toMathML pos,"</mtd></mtr><mtr><mtd><mpadded height='-0.5em'>",
+                     toMathML conj,
+                     let x = (pmfs2MathML pm) in 
+                       if T.null x
+                       then T.empty
+                       else T.append "</mtd></mtr><mtr><mtd><mpadded height='-0.5em'>" x,
+                     "</mpadded></mtd></mtr></mtable></mstyle></msub>"
+                     ]
+    NP [cas]    -> T.concat ["<msub><mi>NP</mi><mtext color='Purple'>", toMathML cas, "</mtext></msub>"]
+    Sbar [sf]   -> T.concat ["<msub><menclose notation='top'><mi>S</mi></menclose><mtext color='Purple'>", toMathML sf, "</mtext></msub>"]
+    N           -> "<mi>N</mi>"
+    CONJ        -> "<mi>CONJ</mi>"
+    LPAREN      -> "<mi>LPAREN</mi>"
+    RPAREN      -> "<mi>RPAREN</mi>"
+    _           -> "<mtext>Error: toMathML Cat</mtext>"
+    -- newcat = T.replace ">" "&gt;" $ T.replace "<" "&lt;" $ toText (cat node);
+    where toMathML' c = if isBaseCategory c 
+                        then toMathML c
+                        else T.concat ["<mrow><mo>(</mo>", toMathML c, "<mo>)</mo></mrow>"]
 
 -- | Syntactic features of 
 data Feature = 
@@ -293,42 +319,46 @@ unifiable f1 f2 = case unifyFeatures [] f1 f2 of
                     Just _ -> True
                     Nothing -> False
 
--- | prints a syntactic feature in text.
-printF :: Feature -> T.Text
-printF (SF i f) = T.concat [printFVal f, "<", T.pack (show i), ">"]
-printF (F f) = printFVal f
+{- Text interface -}
+
+instance SimpleText Feature where
+  toText (SF i f) = T.concat [fVal2Text f, "<", T.pack (show i), ">"]
+  toText (F f) = fVal2Text f
 
 -- | prints a value of a syntactic feature.
-printFVal :: [FeatureValue] -> T.Text
-printFVal [] = T.empty
-printFVal [pos] = T.pack $ show pos
-printFVal [pos1,pos2] = T.pack $ (show pos1) ++ "|" ++ (show pos2)
-printFVal (pos1:(pos2:_)) = T.pack $ (show pos1) ++ "|" ++ (show pos2) ++ "|+"
+fVal2Text :: [FeatureValue] -> T.Text
+fVal2Text [] = T.empty
+fVal2Text [pos] = T.pack $ show pos
+fVal2Text [pos1,pos2] = T.pack $ (show pos1) ++ "|" ++ (show pos2)
+fVal2Text (pos1:(pos2:_)) = T.pack $ (show pos1) ++ "|" ++ (show pos2) ++ "|+"
 
-printPMF :: Bool -> T.Text -> Feature -> Maybe T.Text
-printPMF _ label pmf = case (label,pmf) of
-    (l,F [P])       -> Just $ T.concat ["+", l]
-    (_,F [M])      -> Nothing -- if shared then Just $ T.concat ["-", l] else Nothing
+-- | prints a syntactic feature that ranges over {P,M,PM}.
+printPMF :: T.Text -> Feature -> Maybe T.Text
+printPMF label pmf = case (label,pmf) of
+    (l,F [P])   -> Just $ T.concat ["+", l]
+    (_,F [M])   -> Nothing -- if shared then Just $ T.concat ["-", l] else Nothing
     (l,F [P,M]) -> Just $ T.concat ["±", l]
     (l,F [M,P]) -> Just $ T.concat ["±", l]
-    (l,SF i f) -> do
-                  x <- printPMF True l (F f)
-                  return $ T.concat [x,"<",T.pack (show i),">"]
+    (l,SF i f)  -> do
+                   x <- printPMF l (F f)
+                   return $ T.concat [x,"<",T.pack (show i),">"]
     _ -> return $ T.concat ["Error: printPMF", T.pack $ show pmf]
 
--- | prints a list of syntactic features each of whose value is either `P` or `M` in text.
+-- | prints a list of syntactic features each of which ranges over {P,M,PM}.
 printPMFs :: [Feature] -> T.Text
 printPMFs pmfs = T.intercalate "," $ Maybe.catMaybes $ printPMFsLoop ["t","p","n","N","T"] pmfs
-
+ 
 printPMFsLoop :: [T.Text] -> [Feature] -> [Maybe T.Text]
 printPMFsLoop labels pmfs = case (labels,pmfs) of
   ([],[])         -> []
-  ((l:ls),(p:ps)) -> (printPMF False l p):(printPMFsLoop ls ps)
+  ((l:ls),(p:ps)) -> (printPMF l p):(printPMFsLoop ls ps)
   _ -> [Just $ T.concat ["Error: mismatch in ", T.pack (show labels), " and ", T.pack (show pmfs)]]
 
-f2TeX :: Feature -> T.Text
-f2TeX (SF i f) = T.concat [fVal2TeX f, ":\\sq{", T.pack (show i), "}"]
-f2TeX (F f) = fVal2TeX f
+{- TeX Interface -}
+
+instance Typeset Feature where
+  toTeX (SF i ft) = T.concat [fVal2TeX ft, ":\\sq{", T.pack (show i), "}"]
+  toTeX (F ft)    = fVal2TeX ft
 
 fVal2TeX :: [FeatureValue] -> T.Text
 fVal2TeX [] = T.empty
@@ -354,6 +384,32 @@ pmfs2TeXLoop :: [T.Text] -> [Feature] -> [Maybe T.Text]
 pmfs2TeXLoop labels pmfs = case (labels,pmfs) of
   ([],[])         -> []
   ((l:ls),(p:ps)) -> (pmf2TeX False l p):(pmfs2TeXLoop ls ps)
+  _ -> [Just $ T.concat ["Error: mismatch in ", T.pack (show labels), " and ", T.pack (show pmfs)]]
+
+{- MathML Interface -}
+
+instance MathML Feature where 
+  toMathML (SF i f) = T.concat ["<mtext>", fVal2TeX f, "</mtext><mo>:</mo><menclose notation='box'><mn>", T.pack (show i), "</mn></menclose>"]
+  toMathML (F f) = T.concat ["<mtext>", fVal2TeX f, "</mtext>"]
+
+pmf2MathML :: T.Text -> Feature -> Maybe T.Text
+pmf2MathML label pmf = case (label,pmf) of
+  (l,F [P])   -> Just $ T.concat ["+", l]
+  (_,F [M])   -> Nothing -- if shared then Just $ T.concat ["{-}", l] else Nothing
+  (l,F [P,M]) -> Just $ T.concat ["&plusmn;", l]
+  (l,F [M,P]) -> Just $ T.concat ["&plusmn;", l]
+  (l,SF i f)  -> do
+                 x <- pmf2MathML l (F f)
+                 return $ T.concat [x, ":<menclose notation='box'><mn>", T.pack $ show i, "</mn></menclose>"]
+  _ -> return $ T.pack "Error: pmf2MathML"
+
+pmfs2MathML :: [Feature] -> T.Text
+pmfs2MathML pmfs = T.intercalate "," $ Maybe.catMaybes $ pmfs2MathMLLoop ["t","p","n","N","T"] pmfs
+
+pmfs2MathMLLoop :: [T.Text] -> [Feature] -> [Maybe T.Text]
+pmfs2MathMLLoop labels pmfs = case (labels,pmfs) of
+  ([],[])         -> []
+  ((l:ls),(p:ps)) -> (pmf2MathML l p):(pmfs2MathMLLoop ls ps)
   _ -> [Just $ T.concat ["Error: mismatch in ", T.pack (show labels), " and ", T.pack (show pmfs)]]
 
 {- Tests for syntactic -}

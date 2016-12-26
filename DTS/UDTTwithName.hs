@@ -173,9 +173,9 @@ instance MathML Preterm where
     Con cname -> T.concat ["<mtext>", cname, "</mtext>"]
     Type -> "<mi>type</mi>"
     Kind -> "<mi>kind</mi>"
-    Pi vname a b -> T.concat ["<mrow><mo>(</mo><mfenced separators=':'>", toMathML vname, toMathML a, "</mfenced><mo>)</mo><mo>→</mo>", toMathML b, "</mrow>"]
-    Not a -> T.concat["<mrow><mi>¬</mi>", toMathML a, "</mrow>"]
-    Lam vname m -> T.concat ["<mrow><mi>&lambda;</mi>", toMathML vname, "<mo>.</mo>", toMathML m, "</mrow>"]
+    Pi vname a b -> T.concat ["<mrow><mfenced separators=':'>", toMathML vname, toMathML a, "</mfenced><mo>&rarr;</mo>", toMathML b, "</mrow>"]
+    Not a -> T.concat["<mrow><mi>&not;</mi>", toMathML a, "</mrow>"]
+    Lam vname m -> T.concat ["<mrow><mi>&lambda;</mi>", toMathML vname, "<mpadded lspace='-0.2em' width='-0.2em'><mo>.</mo></mpadded>", toMathML m, "</mrow>"]
     App (App (Con cname) y) x -> 
       T.concat ["<mrow><mtext>", cname, "</mtext><mfenced>", toMathML x, toMathML y,"</mfenced></mrow>"]
     App (App (App (Con cname) z) y) x -> 
@@ -185,15 +185,15 @@ instance MathML Preterm where
     App m n -> T.concat ["<mrow>", toMathML m, "<mfenced>", toMathML n, "</mfenced></mrow>"]
     Sigma vname a b -> case b of 
                          Top -> T.concat ["<mfenced>", toMathML a, "</mfenced>"]
-                         _   -> T.concat ["<mfenced open='[' close=']'><mtable columnalign='left'><mtr><mtd>", toMathML vname, "<mo>:</mo>", toMathML a, "</mtd></mtr><mtr><mtd>", toMathML b, "</mtd></mtr></mtable></mfenced>"]
+                         _   -> T.concat ["<mfenced open='[' close=']'><mtable columnalign='left'><mtr><mtd>", toMathML vname, "<mo>:</mo>", toMathML a, "</mtd></mtr><mtr><mtd><mpadded height='-0.5em'>", toMathML b, "</mpadded></mtd></mtr></mtable></mfenced>"]
     Pair m n  -> T.concat ["<mfenced>", toMathML m, toMathML n, "</mfenced>"]
     Proj s m  -> T.concat ["<mrow><msub><mi>&pi;</mi>", toMathML s, "</msub><mfenced>", toMathML m, "</mfenced></mrow>"]
-    Lamvec vname m  -> T.concat ["<mrow><mi>&lambda;</mi>", toMathML vname, "<mo>+</mo><mo>.</mo>", toMathML m, "</mrow>"]
-    Appvec vname m -> T.concat ["<mfenced separators=''><mrow>", toMathML m, toMathML vname, "<mo>+</mo></mrow></mfenced>"]
+    Lamvec vname m  -> T.concat ["<mrow><mi>&lambda;</mi><mover>", toMathML vname, "<mo>&rarr;</mo></mover><mo>.</mo>", toMathML m, "</mrow>"]
+    Appvec vname m -> T.concat ["<mfenced separators=''>", toMathML m, "<mover>", toMathML vname, "<mo>&rarr;</mo></mover></mfenced>"]
     Unit       -> "<mi>()</mi>"
     Top        -> "<mi>T</mi>"
-    Bot        -> "<mi>⊥</mi>"
-    Asp j m    -> T.concat["<mrow><mo>@</mo><mn>", T.pack (show j), "</mn><mo>:</mo>", toMathML m, "</mrow>"]
+    Bot        -> "<mi>&perp;</mi>"
+    Asp j m    -> T.concat["<mrow><msub><mo>@</mo><mn>", T.pack (show j), "</mn></msub><mo>:</mo>", toMathML m, "</mrow>"]
     Nat    -> "<mi>N</mi>"
     Zero   -> "<mi>0</mi>"
     Succ n -> T.concat ["<mrow><mi>s</mi>", toMathML n, "</mrow>"]
