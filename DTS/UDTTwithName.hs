@@ -14,6 +14,7 @@ module DTS.UDTTwithName (
   Selector(..),
   Preterm(..),
   Context,
+  Judgment(..)
   ) where
 
 import qualified Data.Text.Lazy as T
@@ -77,9 +78,6 @@ data Preterm =
   Idpeel Preterm Preterm |         -- ^ idpeel
   DRel Int T.Text Preterm Preterm  -- ^ Discourse relations
   deriving (Eq)
-
--- | A context is a list of pairs of a variable and a preterm.
-type Context = [(VarName,Preterm)] 
 
 {- Printing of Preterms -}
 
@@ -203,4 +201,23 @@ instance MathML Preterm where
     Idpeel m n -> T.concat ["<mrow><mi>idpeel</mi><mfenced>", toMathML m, toMathML n, "</mfenced></mrow>"]
     DRel i t u v -> T.concat ["<mrow><msub><mi>DRel</mi><mn>", T.pack (show i), "</mn></msub><mtext>", t, "</mtext><mfenced>", toMathML u, toMathML v, "</mfenced></mrow>"]
 
+{- Judgment -}
 
+-- | A context is a list of pairs of a variable and a preterm.
+type Context = [(VarName,Preterm)] 
+
+instance SimpleText Context where
+  toText = (T.intercalate ",") . (map (\(nm,tm) -> T.concat [toText nm, ":", toText tm]))
+
+instance Typeset Context where
+  toTeX = (T.intercalate ",") . (map (\(nm,tm) -> T.concat [toTeX nm, ":", toTeX tm]))
+
+instance MathML Context where
+  toMathML cont = T.concat $ ["<mfenced separators=','>"] ++ (map (\(nm,tm) -> T.concat ["<mrow>", toMathML nm, "<mo>:</mo>", toMathML tm, "</mrow>"]) cont) ++ ["</mfenced>"]
+
+-- | The data type for a judgment
+data Judgment = Judgment { 
+  context :: Context, -- ^ A context \Gamma in \Gamma \vdash M:A
+  term :: Preterm,      -- ^ A term M in \Gamma \vdash M:A
+  typ :: Preterm        -- ^ A type A in \Gamma \vdash M:A
+  } deriving (Eq)

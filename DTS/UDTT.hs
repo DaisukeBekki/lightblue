@@ -35,7 +35,10 @@ module DTS.UDTT (
   Indexed(..),
   sentenceIndex,
   initializeIndex,
-  fromDeBruijnContext
+  -- * Judgment
+  Context,
+  Judgment(..),
+  fromDeBruijnContext,
   ) where
 
 import qualified Data.Text.Lazy as T      -- text
@@ -104,11 +107,6 @@ instance Typeset Preterm where
 instance MathML Preterm where
   toMathML = toMathML . initializeIndex . (fromDeBruijn [])
 
--- | The data type for 
-data Judgment = Judgmen [Preterm] Preterm Preterm deriving (Eq)
-
-
-
 -- | prints a preterm in text, in the De Bruijn style.
 toTextDeBruijn :: Preterm -> T.Text
 toTextDeBruijn preterm = case preterm of
@@ -143,7 +141,7 @@ toTextDeBruijn preterm = case preterm of
 type Signature = (T.Text,Preterm)
 
 instance SimpleText Signature where
-  toText (cname,typ) = T.concat $ [toText (Con cname), ":", toText typ]
+  toText (cname,ty) = T.concat $ [toText (Con cname), ":", toText ty]
 
 -- | prints a signature in text.
 printSignatures :: [Signature] -> T.Text
@@ -544,6 +542,7 @@ toDeBruijn vnames preterm = case preterm of
   VN.Asp i m -> Asp i (toDeBruijn vnames m)
   _ -> Type
 
+{-
 -- | translates a context in de Bruijn notation (i.e. [DTS.DependentTypes.Preterm]) 
 -- into a context with variable names 
 -- (i.e. [(DTS.DTSwithVarName.VarName, DTS.DTSwithVarName.Preterm)]).
@@ -554,3 +553,60 @@ fromDeBruijnContext preterms =
           i <- sentenceIndex
           preterm' <- fromDeBruijn [] preterm
           return (VN.VarName 's' i, preterm')
+-}
+
+{- Judgment of UDTT in de Bruijn notation -}
+
+-- | A context is a list of preterms
+type Context = [Preterm]
+
+instance SimpleText Context where
+  toText = toText . initializeIndex . fromDeBruijnContext
+
+instance Typeset Context where
+  toTeX = toTeX . initializeIndex . fromDeBruijnContext
+
+instance MathML Context where
+  toMathML = toMathML . initializeIndex . fromDeBruijnContext
+
+fromDeBruijnContext :: Context -> Indexed VN.Context
+fromDeBruijnContext = 
+  L.foldr f (return [])
+  where -- f :: a=Preterm -> b=Indexed VN.Context -> b=Indexed VN.Context
+    f tm ivcon = do
+                 i <- sentenceIndex
+                 vcon <- ivcon
+                 vterm <- fromDeBruijnUnderContext vcon tm
+                 return $ (VN.VarName 'u' i, vterm):vcon
+
+fromDeBruijnUnderContext :: VN.Context -> Preterm -> Indexed VN.Preterm
+fromDeBruijnUnderContext vcon = fromDeBruijn (fst $ unzip vcon)
+
+-- | The data type for a judgment
+data Judgment = Judgment { 
+  context :: Context, -- ^ A context \Gamma in \Gamma \vdash M:A
+  term :: Preterm,      -- ^ A term M in \Gamma \vdash M:A
+  typ :: Preterm        -- ^ A type A in \Gamma \vdash M:A
+  } deriving (Eq)
+
+g :: Context -> Preterm -> VN.Preterm
+g cont preterm = 
+  initializeIndex $ do
+    vcon <- fromDeBruijnContext cont
+    fromDeBruijnUnderContext vcon preterm
+
+instance SimpleText Judgment where
+  toText judgment = 
+    let c = context judgment in
+    T.concat [toText c, "|-", toText $ g c $ term judgment, ":", toText $ g c $ typ judgment]
+
+instance Typeset Judgment where
+  toTeX judgment = 
+    let c = context judgment in
+    T.concat [toTeX c, "\vdash", toTeX $ g c $ term judgment, ":", toTeX $ g c $ typ judgment]
+
+instance MathML Judgment where
+  toMathML judgment = 
+    let c = context judgment in
+    T.concat [toMathML c, "<mo>&vdash;</mo>", toMathML $ g c $ term judgment, "<mo>:</mo>", toMathML $ g c $ typ judgment]
+
