@@ -119,7 +119,7 @@ convcoq preterm = case preterm of
   D.DRel _ _ _ _ -> "True"
 
 makeCoqSigList :: [DTS.Signature] -> T.Text
-makeCoqSigList siglist = T.concat (L.nub (map (\ (text, preterm) -> T.concat ["Parameter _", (cname_f text), " : ", (convcoq $ DTS.initializeIndex $ DTS.fromDeBruijn $ preterm), ". \n"]) siglist))
+makeCoqSigList siglist = T.concat (L.nub (map (\ (text, preterm) -> T.concat ["Parameter _", (cname_f text), " : ", (convcoq $ DTS.initializeIndex $ DTS.fromDeBruijn [] $ preterm), ". \n"]) siglist))
 
 runMyCommand :: T.Text -> IO T.Text
 runMyCommand command = do
@@ -205,8 +205,8 @@ main = do
   let (srlist, siglists) = unzip parseresult
       premises = L.init $ srlist
       conclusion = L.last $ srlist
-      formula = DTS.initializeIndex . DTS.fromDeBruijn . DTS.betaReduce $ (currying premises conclusion)
-      neg_formula = DTS.initializeIndex . DTS.fromDeBruijn . DTS.betaReduce $ (neg_currying premises conclusion)
+      formula = DTS.initializeIndex . (DTS.fromDeBruijn []) . DTS.betaReduce $ (currying premises conclusion)
+      neg_formula = DTS.initializeIndex . (DTS.fromDeBruijn []) . DTS.betaReduce $ (neg_currying premises conclusion)
       coqsig = makeCoqSigList (L.concat siglists)
   parse_stop <- Time.getCurrentTime
   let parse_time = Time.diffUTCTime parse_stop parse_start

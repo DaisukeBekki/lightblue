@@ -94,15 +94,15 @@ instance Show Preterm where
 
 -- | translates a DTS preterm into a simple text notation.
 instance SimpleText Preterm where
-  toText = toText . initializeIndex . fromDeBruijn
+  toText = toText . initializeIndex . (fromDeBruijn [])
 
 -- | translates a DTS preterm into a tex source code.
 instance Typeset Preterm where
-  toTeX = toTeX . initializeIndex . fromDeBruijn
+  toTeX = toTeX . initializeIndex . (fromDeBruijn [])
 
 -- | translates a DTS preterm into a MathML notation.
 instance MathML Preterm where
-  toMathML = toMathML . initializeIndex . fromDeBruijn
+  toMathML = toMathML . initializeIndex . (fromDeBruijn [])
 
 -- | The data type for 
 data Judgment = Judgmen [Preterm] Preterm Preterm deriving (Eq)
@@ -403,11 +403,10 @@ initializeIndex :: Indexed a -> a
 initializeIndex (Indexed m) = let (m',_,_,_,_) = m 1 1 1 1 in m'
 
 -- | translates a preterm in de Bruijn notation into a preterm with variable name.
-fromDeBruijn :: Preterm -> Indexed VN.Preterm
-fromDeBruijn = fromDeBruijn2 []
-
-fromDeBruijn2 :: [VN.VarName] -> Preterm -> Indexed VN.Preterm
-fromDeBruijn2 vnames preterm = case preterm of
+fromDeBruijn :: [VN.VarName] -- ^ A context (= a list of variable names)
+                -> Preterm   -- ^ A preterm in de Bruijn notation
+                -> Indexed VN.Preterm -- ^ A preterm with variable names
+fromDeBruijn vnames preterm = case preterm of
   Var j -> if j < length vnames
               then return $ VN.Var (vnames!!j)
               else return $ VN.Con $ T.concat ["error: var ",T.pack (show j), " in ", T.pack (show vnames)]
@@ -430,11 +429,11 @@ fromDeBruijn2 vnames preterm = case preterm of
                   Eq _ _ _ -> VN.VarName 's' i
                   Nat -> VN.VarName 'k' i
                   _ -> VN.VarName 'x' i
-    a' <- fromDeBruijn2 vnames a
-    b' <- fromDeBruijn2 (vname:vnames) b
+    a' <- fromDeBruijn vnames a
+    b' <- fromDeBruijn (vname:vnames) b
     return $ VN.Pi vname a' b'
   Not a   -> do
-    a' <- fromDeBruijn2 vnames a
+    a' <- fromDeBruijn vnames a
     return $ VN.Not a'
   Lam m   -> do
     i <- varIndex
@@ -442,11 +441,11 @@ fromDeBruijn2 vnames preterm = case preterm of
                   Sigma _ _ -> VN.VarName 'x' i
                   Pi _ _    -> VN.VarName 'x' i
                   _         -> VN.VarName 'x' i
-    m' <- fromDeBruijn2 (vname:vnames) m
+    m' <- fromDeBruijn (vname:vnames) m
     return $ VN.Lam vname m'
   App m n -> do
-    m' <- fromDeBruijn2 vnames m
-    n' <- fromDeBruijn2 vnames n
+    m' <- fromDeBruijn vnames m
+    n' <- fromDeBruijn vnames n
     return $ VN.App m' n'
   Sigma a b -> do
     i <- varIndex
@@ -464,86 +463,85 @@ fromDeBruijn2 vnames preterm = case preterm of
                   Eq _ _ _ -> VN.VarName 's' i
                   Nat -> VN.VarName 'k' i
                   _ -> VN.VarName 'x' i
-    a' <- fromDeBruijn2 vnames a
-    b' <- fromDeBruijn2 (vname:vnames) b
+    a' <- fromDeBruijn vnames a
+    b' <- fromDeBruijn (vname:vnames) b
     return $ VN.Sigma vname a' b'
   Pair m n  -> do
-    m' <- fromDeBruijn2 vnames m
-    n' <- fromDeBruijn2 vnames n
+    m' <- fromDeBruijn vnames m
+    n' <- fromDeBruijn vnames n
     return $ VN.Pair m' n'
   Proj s m  -> do
-    m' <- fromDeBruijn2 vnames m
+    m' <- fromDeBruijn vnames m
     return $ case s of
                Fst -> VN.Proj VN.Fst m'
                Snd -> VN.Proj VN.Snd m'
   Lamvec m  -> do
     i <- varIndex
     let vname = VN.VarName 'x' i
-    m' <- fromDeBruijn2 (vname:vnames) m
+    m' <- fromDeBruijn (vname:vnames) m
     return $ VN.Lamvec vname m'
   Appvec j m -> do
     let vname = vnames!!j
-    m' <- fromDeBruijn2 vnames m
+    m' <- fromDeBruijn vnames m
     return $ VN.Appvec vname m'
   Unit    -> return VN.Unit
   Top     -> return VN.Top
   Bot     -> return VN.Bot
   Asp _ m -> do
     j' <- aspIndex
-    m' <- fromDeBruijn2 vnames m
+    m' <- fromDeBruijn vnames m
     return $ VN.Asp j' m'
   Nat    -> return VN.Nat
   Zero   -> return VN.Zero
   Succ n -> do
-    n' <- fromDeBruijn2 vnames n
+    n' <- fromDeBruijn vnames n
     return $ VN.Succ n'
   Natrec n e f -> do
-    n' <- fromDeBruijn2 vnames n
-    e' <- fromDeBruijn2 vnames e
-    f' <- fromDeBruijn2 vnames f
+    n' <- fromDeBruijn vnames n
+    e' <- fromDeBruijn vnames e
+    f' <- fromDeBruijn vnames f
     return $ VN.Natrec n' e' f'
   Eq a m n -> do
-    a' <- fromDeBruijn2 vnames a
-    m' <- fromDeBruijn2 vnames m
-    n' <- fromDeBruijn2 vnames n
+    a' <- fromDeBruijn vnames a
+    m' <- fromDeBruijn vnames m
+    n' <- fromDeBruijn vnames n
     return $ VN.Eq a' m' n'
   Refl a m -> do
-    a' <- fromDeBruijn2 vnames a
-    m' <- fromDeBruijn2 vnames m
+    a' <- fromDeBruijn vnames a
+    m' <- fromDeBruijn vnames m
     return $ VN.Refl a' m'
   Idpeel m n -> do
-    m' <- fromDeBruijn2 vnames m
-    n' <- fromDeBruijn2 vnames n
+    m' <- fromDeBruijn vnames m
+    n' <- fromDeBruijn vnames n
     return $ VN.Idpeel m' n'
   DRel _ t m n -> do
     j' <- dRelIndex
-    m' <- fromDeBruijn2 vnames m
-    n' <- fromDeBruijn2 vnames n
+    m' <- fromDeBruijn vnames m
+    n' <- fromDeBruijn vnames n
     return $ VN.DRel j' t m' n'
     -- App (App (Con (T.concat ["DRel",T.pack $ show j',"[",t,"]"])) m') n'
 
 -- | translates a preterm with variable name into a preterm in de Bruijn notation. 
-toDeBruijn :: VN.Preterm -> Preterm
-toDeBruijn = toDeBruijn2 []
-
-toDeBruijn2 :: [VN.VarName] -> VN.Preterm -> Preterm
-toDeBruijn2 vnames preterm = case preterm of
+toDeBruijn :: [VN.VarName]  -- ^ A context (= a list of variable names)
+              -> VN.Preterm -- ^ A preterm with variable names
+              -> Preterm    -- ^ A preterm in de Bruijn notation
+toDeBruijn vnames preterm = case preterm of
   VN.Var vname -> case L.elemIndex vname vnames of
                     Just i -> Var i
                     Nothing -> Type
   VN.Con cname -> Con cname
   VN.Type -> Type
   VN.Kind -> Kind
-  VN.Pi vname a b -> Pi (toDeBruijn2 (vname:vnames) a) (toDeBruijn2 (vname:vnames) b)
-  VN.Not a -> Not (toDeBruijn2 vnames a)
-  VN.Lam vname m -> Lam (toDeBruijn2 (vname:vnames) m)
-  VN.App m n -> App (toDeBruijn2 vnames m) (toDeBruijn2 vnames n)
-  VN.Sigma vname a b -> Sigma (toDeBruijn2 (vname:vnames) a) (toDeBruijn2 (vname:vnames) b)
-  VN.Pair m n -> Pair (toDeBruijn2 vnames m) (toDeBruijn2 vnames n)
+  VN.Pi vname a b -> Pi (toDeBruijn (vname:vnames) a) (toDeBruijn (vname:vnames) b)
+  VN.Not a -> Not (toDeBruijn vnames a)
+  VN.Lam vname m -> Lam (toDeBruijn (vname:vnames) m)
+  VN.App m n -> App (toDeBruijn vnames m) (toDeBruijn vnames n)
+  VN.Sigma vname a b -> Sigma (toDeBruijn (vname:vnames) a) (toDeBruijn (vname:vnames) b)
+  VN.Pair m n -> Pair (toDeBruijn vnames m) (toDeBruijn vnames n)
   VN.Proj s m -> case s of 
-                   VN.Fst -> Proj Fst (toDeBruijn2 vnames m)
-                   VN.Snd -> Proj Snd (toDeBruijn2 vnames m)
-  VN.Asp i m -> Asp i (toDeBruijn2 vnames m)
+                   VN.Fst -> Proj Fst (toDeBruijn vnames m)
+                   VN.Snd -> Proj Snd (toDeBruijn vnames m)
+  VN.Asp i m -> Asp i (toDeBruijn vnames m)
   _ -> Type
 
 -- | translates a context in de Bruijn notation (i.e. [DTS.DependentTypes.Preterm]) 
@@ -554,5 +552,5 @@ fromDeBruijnContext preterms =
   initializeIndex $ mapM g preterms
   where g preterm = do
           i <- sentenceIndex
-          preterm' <- fromDeBruijn preterm
+          preterm' <- fromDeBruijn [] preterm
           return (VN.VarName 's' i, preterm')
