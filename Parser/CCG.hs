@@ -76,20 +76,21 @@ instance Ord Node where
 {- Printing Nodes -}
 
 instance SimpleText Node where
-  toText n@(Node _ _ _ _ sig' _ _ _) = T.concat [toTextLoop "" n, "Sig. ", printSignatures sig', "\n"]
+  toText n -- @(Node _ _ _ _ sig' _ _ _) 
+    = T.concat [toTextLoop "" n, "Sig. ", printSignatures (sig n), "\n"]
     where toTextLoop indent node =
             case daughters node of 
               [] -> T.concat [(T.pack indent), toText (rs node), " ", pf node, " ", toText (cat node), " ", toText (sem node), " ", source node, " [", T.pack (show ((fromRational $ score node)::Fixed E2)), "]\n"]
               dtrs -> T.concat $ [(T.pack indent), toText (rs node), " ", toText (cat node), " ", toText (sem node), " [", T.pack (show ((fromRational $ score node)::Fixed E2)), "]\n"] ++ (map (\d -> toTextLoop (indent++"  ") d) dtrs)
 
 instance Typeset Node where
-  toTeX node@(Node _ _ _ _ _ _ _ _) =
+  toTeX node = -- @(Node _ _ _ _ _ _ _ _) =
     case daughters node of 
       [] -> T.concat ["\\vvlex[", (source node), "]{", (pf node), "}{", toTeX (cat node), "}{", toTeX $ sem node, "}"] --, "\\ensuremath{", (source node), "}"]
       _ -> T.concat ["\\nd[", toTeX (rs node), "]{\\vvcat{", toTeX (cat node), "}{", toTeX $ sem node, "}}{", T.intercalate "&" $ map toTeX $ daughters node, "}"] --, "\\ensuremath{", (source node), "}"]
 
 instance MathML Node where
-  toMathML node@(Node _ _ _ _ _ _ _ _) =
+  toMathML node = -- @(Node _ _ _ _ _ _ _ _) =
     let newrs = T.replace ">" "&gt;" $ T.replace "<" "&lt;" $ toText (rs node) in
     case daughters node of 
       [] -> T.concat ["<mrow><mfrac linethickness='2px'><mtext fontsize='1.0' color='Black'>", pf node, "</mtext><mfrac linethickness='0px'><mstyle color='Red'>", toMathML $ cat node, "</mstyle><mstyle color='Black'>", toMathML $ sem node, "</mstyle></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", source node, "</mtext></mrow>"] 

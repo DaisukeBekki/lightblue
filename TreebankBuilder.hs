@@ -30,5 +30,5 @@ main = do
             TEX.toTeX sr, 
             "}}\\end{center}\\newpage"
             ]
-            ) $ zip3 ([1..]::[Int]) sentences (DTS.fromDeBruijnContext $ map (CP.sem . head) nodes)
+            ) $ zip3 ([1..]::[Int]) sentences (DTS.initializeIndex $ DTS.fromDeBruijnContext $ map (CP.sem . head) nodes)
 

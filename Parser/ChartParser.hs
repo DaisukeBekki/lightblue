@@ -308,9 +308,11 @@ extractBestParse :: Chart -> ParseResult
 extractBestParse chart = 
   f $ L.sortBy isLessPrivilegedThan $ filter (\((_,_),nodes) -> not (L.null nodes)) $ M.toList $ chart
   where f [] = Failed
-        f (((i,_),nodes):cs) | i == 0 = Full $ map (CCG.drel . CCG.wrapNode) (sortByNumberOfArgs $ bestOnly $ L.sort nodes)
+--        f (((i,_),nodes):cs) | i == 0 = Full $ map (CCG.drel . CCG.wrapNode) (sortByNumberOfArgs $ bestOnly $ L.sort nodes)
+        f (((i,_),nodes):cs) | i == 0 = Full $ map CCG.wrapNode (sortByNumberOfArgs $ bestOnly $ L.sort nodes)
                              | otherwise = Partial $ g (map CCG.wrapNode (sortByNumberOfArgs $ bestOnly $ L.sort nodes)) (filter (\((_,j),_) -> j <= i) cs)
-        g results [] = map CCG.drel results
+--        g results [] = map CCG.drel results
+        g results [] = results
         g results (((i,_),nodes):cs) = g [CCG.conjoinNodes (CCG.wrapNode $ head $ sortByNumberOfArgs $ bestOnly $ L.sort nodes) (head results)] $ filter (\((_,j),_) -> j < i) cs
 
 -- | a `isLessPriviledgedThan` b means that b is more important parse result than a.

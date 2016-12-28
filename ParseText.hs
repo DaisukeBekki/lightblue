@@ -1,6 +1,7 @@
 {-# OPTIONS -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.Time as Time        --time
 import qualified System.IO as S           --base
@@ -12,6 +13,7 @@ import qualified Interface.Text as T
 import qualified Interface.XML as XML
 --import qualified DTS.Prover.TypeChecker 
 --Miho.aspElim 
+import qualified Interface.StanfordNLP as NLP
 
 main :: IO()
 main = do
@@ -32,6 +34,7 @@ main = do
           | op == "-xml"  = XML.render S.stdout $ nodes
           | op == "-html" = CP.printNodesInHTML S.stdout nodes
           | op == "-postag"  = CP.posTagger S.stdout nodes
+          | op == "-NLP" = T.putStrLn $ (\(cs,ts) -> T.append (T.concat $ reverse ts) (T.concat $ reverse cs)) $ NLP.node2NLP 0 $ head nodes
           | op == "-numeration" = do {numeration <- LEX.setupLexicon sentence; mapM_ (T.putStrLn . T.toText) numeration}
           | op == "-debug" = CP.printChartInTeX S.stdout chart
           | op == "-time" = S.hPutStrLn S.stderr $ "Total Execution Time: " ++ show time
