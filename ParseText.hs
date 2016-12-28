@@ -34,7 +34,7 @@ main = do
           | op == "-xml"  = XML.render S.stdout $ nodes
           | op == "-html" = CP.printNodesInHTML S.stdout nodes
           | op == "-postag"  = CP.posTagger S.stdout nodes
-          | op == "-NLP" = T.putStrLn $ (\(cs,ts) -> T.append (T.concat $ reverse ts) (T.concat $ reverse cs)) $ NLP.node2NLP 0 $ head nodes
+          | op == "-NLP" = T.putStrLn $ (\(cs,ts,_) -> T.append (T.concat $ reverse ts) (T.concat $ reverse cs)) $ NLP.node2NLP 0 $ head nodes
           | op == "-numeration" = do {numeration <- LEX.setupLexicon sentence; mapM_ (T.putStrLn . T.toText) numeration}
           | op == "-debug" = CP.printChartInTeX S.stdout chart
           | op == "-time" = S.hPutStrLn S.stderr $ "Total Execution Time: " ++ show time
