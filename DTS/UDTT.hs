@@ -561,7 +561,7 @@ fromDeBruijnContext preterms =
 type Context = [Preterm]
 
 instance SimpleText Context where
-  toText = toText . initializeIndex . fromDeBruijnContext
+  toText = toText . reverse . initializeIndex . (fmap reverse) . fromDeBruijnContext
 
 instance Typeset Context where
   toTeX = toTeX . initializeIndex . fromDeBruijnContext
@@ -581,6 +581,8 @@ fromDeBruijnContext =
 
 fromDeBruijnUnderContext :: VN.Context -> Preterm -> Indexed VN.Preterm
 fromDeBruijnUnderContext vcon = fromDeBruijn (fst $ unzip vcon)
+
+
 
 -- | The data type for a judgment
 data Judgment = Judgment { 
