@@ -398,7 +398,7 @@ dRelIndex = Indexed (\s x a d -> (d,s,x,a,d+1))
 
 -- | re-assigns sequential indices to all asperands that appear in a given preterm.
 initializeIndex :: Indexed a -> a
-initializeIndex (Indexed m) = let (m',_,_,_,_) = m 1 1 1 1 in m'
+initializeIndex (Indexed m) = let (m',_,_,_,_) = m 0 0 0 0 in m'
 
 -- | translates a preterm in de Bruijn notation into a preterm with variable name.
 fromDeBruijn :: [VN.VarName] -- ^ A context (= a list of variable names)
@@ -561,28 +561,30 @@ fromDeBruijnContext preterms =
 type Context = [Preterm]
 
 instance SimpleText Context where
-  toText = toText . reverse . initializeIndex . (fmap reverse) . fromDeBruijnContext
+  toText = toText . fromDeBruijnContext
 
 instance Typeset Context where
-  toTeX = toTeX . initializeIndex . fromDeBruijnContext
+  toTeX = toTeX . fromDeBruijnContext
 
 instance MathML Context where
-  toMathML = toMathML . initializeIndex . fromDeBruijnContext
+  toMathML = toMathML . fromDeBruijnContext
 
-fromDeBruijnContext :: Context -> Indexed VN.Context
-fromDeBruijnContext = 
-  L.foldr f (return [])
-  where -- f :: a=Preterm -> b=Indexed VN.Context -> b=Indexed VN.Context
-    f tm ivcon = do
-                 i <- sentenceIndex
-                 vcon <- ivcon
-                 vterm <- fromDeBruijnUnderContext vcon tm
-                 return $ (VN.VarName 'u' i, vterm):vcon
+-- | translates a context in de Bruijn notation to one with variable names
+fromDeBruijnContext :: Context -> VN.Context
+fromDeBruijnContext = reverse . initializeIndex . (fromDeBruijnContextLoop []) . reverse
+
+-- | the internal function of the fromDeBruijnContext function
+fromDeBruijnContextLoop :: [VN.VarName] -> Context -> Indexed VN.Context
+fromDeBruijnContextLoop _ [] = return []
+fromDeBruijnContextLoop vs (c:cs) = do
+  i <- sentenceIndex
+  let newvar = VN.VarName 'u' i
+  ic <- fromDeBruijn vs c
+  ics <- fromDeBruijnContextLoop (newvar:vs) cs
+  return $ (newvar, ic):ics
 
 fromDeBruijnUnderContext :: VN.Context -> Preterm -> Indexed VN.Preterm
 fromDeBruijnUnderContext vcon = fromDeBruijn (fst $ unzip vcon)
-
-
 
 -- | The data type for a judgment
 data Judgment = Judgment { 
@@ -592,10 +594,8 @@ data Judgment = Judgment {
   } deriving (Eq)
 
 g :: Context -> Preterm -> VN.Preterm
-g cont preterm = 
-  initializeIndex $ do
-    vcon <- fromDeBruijnContext cont
-    fromDeBruijnUnderContext vcon preterm
+g contex preterm = 
+  initializeIndex $ fromDeBruijnUnderContext (fromDeBruijnContext contex) preterm
 
 instance SimpleText Judgment where
   toText judgment = 

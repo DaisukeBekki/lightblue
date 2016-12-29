@@ -91,10 +91,9 @@ instance Typeset Node where
 
 instance MathML Node where
   toMathML node = -- @(Node _ _ _ _ _ _ _ _) =
-    let newrs = T.replace ">" "&gt;" $ T.replace "<" "&lt;" $ toText (rs node) in
     case daughters node of 
       [] -> T.concat ["<mrow><mfrac linethickness='2px'><mtext fontsize='1.0' color='Black'>", pf node, "</mtext><mfrac linethickness='0px'><mstyle color='Red'>", toMathML $ cat node, "</mstyle><mstyle color='Black'>", toMathML $ sem node, "</mstyle></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", source node, "</mtext></mrow>"] 
-      _ -> T.concat ["<mrow><mfrac linethickness='2px'><mrow>", T.concat $ map toMathML $ daughters node, "</mrow><mfrac linethickness='0px'><mstyle color='Red'>", toMathML $ cat node, "</mstyle><mstyle color='Black'>", toMathML $ sem node, "</mstyle></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", newrs, "</mtext></mrow>"] 
+      _ -> T.concat ["<mrow><mfrac linethickness='2px'><mrow>", T.concat $ map toMathML $ daughters node, "</mrow><mfrac linethickness='0px'><mstyle color='Red'>", toMathML $ cat node, "</mstyle><mstyle color='Black'>", toMathML $ sem node, "</mstyle></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", toMathML $ rs node, "</mtext></mrow>"] 
 
 -- | Syntactic categories of 
 data Cat =
@@ -139,10 +138,8 @@ instance SimpleText Cat where
     S (pos:(conj:pmf)) -> 
               T.concat [
                        "S[",
-                       toText pos,
-                       "][",
-                       toText conj,
-                       "][",
+                       toText pos,"][",
+                       toText conj,"][",
                        printPMFs pmf,
                        "]"
                        ]
@@ -333,6 +330,16 @@ fVal2Text [pos] = T.pack $ show pos
 fVal2Text [pos1,pos2] = T.pack $ (show pos1) ++ "|" ++ (show pos2)
 fVal2Text (pos1:(pos2:_)) = T.pack $ (show pos1) ++ "|" ++ (show pos2) ++ "|+"
 
+-- | prints a list of syntactic features each of which ranges over {P,M,PM}.
+printPMFs :: [Feature] -> T.Text
+printPMFs pmfs = T.intercalate "," $ Maybe.catMaybes $ printPMFsLoop ["t","p","n","N","T"] pmfs
+ 
+printPMFsLoop :: [T.Text] -> [Feature] -> [Maybe T.Text]
+printPMFsLoop labels pmfs = case (labels,pmfs) of
+  ([],[])         -> []
+  ((l:ls),(p:ps)) -> (printPMF l p):(printPMFsLoop ls ps)
+  _ -> [Just $ T.concat ["Error: mismatch in ", T.pack (show labels), " and ", T.pack (show pmfs)]]
+
 -- | prints a syntactic feature that ranges over {P,M,PM}.
 printPMF :: T.Text -> Feature -> Maybe T.Text
 printPMF label pmf = case (label,pmf) of
@@ -344,16 +351,6 @@ printPMF label pmf = case (label,pmf) of
                    x <- printPMF l (F f)
                    return $ T.concat [x,"<",T.pack (show i),">"]
     _ -> return $ T.concat ["Error: printPMF", T.pack $ show pmf]
-
--- | prints a list of syntactic features each of which ranges over {P,M,PM}.
-printPMFs :: [Feature] -> T.Text
-printPMFs pmfs = T.intercalate "," $ Maybe.catMaybes $ printPMFsLoop ["t","p","n","N","T"] pmfs
- 
-printPMFsLoop :: [T.Text] -> [Feature] -> [Maybe T.Text]
-printPMFsLoop labels pmfs = case (labels,pmfs) of
-  ([],[])         -> []
-  ((l:ls),(p:ps)) -> (printPMF l p):(printPMFsLoop ls ps)
-  _ -> [Just $ T.concat ["Error: mismatch in ", T.pack (show labels), " and ", T.pack (show pmfs)]]
 
 {- TeX Interface -}
 
@@ -542,6 +539,9 @@ instance Typeset RuleSymbol where
     DC    -> "DC"
     DREL  -> "DREL"
     -- CNP -> "CNP"
+
+instance MathML RuleSymbol where
+  toMathML rulesymbol = T.replace ">" "&gt;" $ T.replace "<" "&lt;" $ toText rulesymbol
 
 {- Classes of Combinatory Rules -}
 
