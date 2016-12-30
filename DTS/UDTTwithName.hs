@@ -226,7 +226,7 @@ instance SimpleText Judgment where
   toText j = T.concat [toText $ context j, "|-", toText $ term j, ":", toText $ typ j]
 
 instance Typeset Judgment where
-  toTeX j = T.concat [toTeX $ context j, "\vdash", toTeX $ term j, ":", toTeX $ typ j]
+  toTeX j = T.concat [toTeX $ context j, "\\vdash", toTeX $ term j, ":", toTeX $ typ j]
 
 instance MathML Judgment where
   toMathML j = T.concat ["<mrow", toMathML $ context j, "<mo>&vdash;</mo>", toMathML $ term j, "<mo>:</mo>", toMathML $ typ j, "</mrow>"]

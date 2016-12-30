@@ -147,12 +147,13 @@ parse beam sentence
 
 -- | removes occurrences of non-letters from an input text.
 purifyText :: T.Text -> T.Text
-purifyText text = case T.uncons text of -- remove a non-literal symbol at the beginning of a sentence (if any)
-                    Nothing -> T.empty
-                    Just (c,t) | isSpace c -> purifyText t                                                                   -- ignore white spaces
-                               | c `elem` ['！','？','!','?','…','「','」','◎','○','●','▲','△','▼','▽','■','□','◆','◇','★','☆','※','†','‡'] -> purifyText t -- ignore some symbols as meaningless
-                               | c `elem` ['，',',','-','―','?','。','．','／','＼'] -> T.cons '、' $ purifyText t          -- punctuations
-                               | otherwise -> T.cons c $ purifyText t
+purifyText text = 
+  case T.uncons text of -- remove a non-literal symbol at the beginning of a sentence (if any)
+    Nothing -> T.empty
+    Just (c,t) | isSpace c -> purifyText t                                                                   -- ignore white spaces
+               | c `elem` ['！','？','!','?','…','「','」','◎','○','●','▲','△','▼','▽','■','□','◆','◇','★','☆','※','†','‡'] -> purifyText t -- ignore some symbols as meaningless
+               | c `elem` ['，',',','-','―','?','。','．','／','＼'] -> T.cons '、' $ purifyText t          -- punctuations
+               | otherwise -> T.cons c $ purifyText t
 
 -- | Simple parsing function to return just the best node for a given sentence
 simpleParse :: Int -> T.Text -> IO([CCG.Node])
