@@ -9,7 +9,12 @@ Stability   : beta
 module DTS.Prover.TypeChecker 
 ( aspElim,
   typeCheckU,
-  typeInferU
+  typeInferU,
+  proofSearch,
+  dismantle,
+  dismantleSig,
+  changeSig,
+  execute
 ) where
 
 {-
@@ -74,6 +79,8 @@ transP (UD.Sigma preA preB) = do
   pretermA <- transP preA
   pretermB <- transP preB
   return (DT.Sigma pretermA pretermB)
+transP (UD.Not preM) = 
+  transP (UD.Pi preM UD.Bot)
 transP (UD.Asp n preM) = []
 transP preterm = []
 
@@ -100,6 +107,8 @@ repositP (DT.Pi preA preB) =
 　　UD.Pi (repositP preA) (repositP preB)
 repositP (DT.Sigma preA preB) = 
 　　UD.Sigma (repositP preA) (repositP preB)
+repositP (DT.Not preM) = 
+  repositP (DT.Pi preM DT.Bot)
 
 
 -- transE : TUEnv(UDTTの環境)をTEnv(DTTの環境)に変換する関数
@@ -264,6 +273,9 @@ typeInferU typeEnv sig (UD.Pi preA preB) = do
                  ++ (typeCheckU (preA':typeEnv) sig preB UD.Kind)
   ansType <- getTypeU rightTree
   return (UPiF (UJudgement typeEnv (UD.Pi preA preB) ansType) leftTree rightTree)
+-- (ΠF) rule (Not の場合)
+typeInferU typeEnv sig (UD.Not preM) = 
+  typeInferU typeEnv sig (UD.Pi preM UD.Bot)
 -- (ΠE) rule
 typeInferU typeEnv sig (UD.App preM preN) = do
   leftTree <- typeInferU typeEnv sig preM
@@ -297,8 +309,9 @@ typeInferU typeEnv sig (UD.Proj selector preM) =
   else do overTree <- typeInferU typeEnv sig preM
           bodyType <- getTypeU overTree
           case bodyType of
-            (UD.Sigma preA preB) ->
-               return (USigE (UJudgement typeEnv (UD.Proj UD.Snd preM) preA) overTree)
+            (UD.Sigma preA preB) -> do
+               let preB' = UD.subst preB (UD.Proj UD.Fst preM) 0
+               return (USigE (UJudgement typeEnv (UD.Proj UD.Snd preM) preB') overTree)
             otherwise -> []
 -- (Asp) rule
 typeInferU typeEnv sig (UD.Asp i preA) = do
@@ -314,11 +327,13 @@ typeInferU typeEnv sig (UD.Asp i preA) = do
 -- Proof Search
 proofSearch :: TUEnv -> SUEnv -> UD.Preterm -> [UTree UJudgement]
 proofSearch typeEnv sig preterm = do
-  let candidates = (dismantle typeEnv typeEnv [])
-                      ++ (dismantleSig (changeSig sig []) [])
-  let ansTerms = searchType candidates preterm
+  let candidatesA = (dismantle typeEnv typeEnv [])
+                       ++ (dismantleSig (changeSig sig []) [])
+  let candidatesB = execute (changeSig sig []) candidatesA []
+  let candidates = candidatesA ++ candidatesB
+  let ansTerms = searchType candidates (UD.shiftIndices preterm 1 0)
   ansTerm <- ansTerms
-  typeCheckU typeEnv sig ansTerm preterm
+  typeCheckU typeEnv sig ansTerm (UD.shiftIndices preterm 1 0)
 
 
 -- searchType : ProofSearchのための補助関数
@@ -336,7 +351,7 @@ dismantle _ [] result = result
 dismantle env (preterm:xs) result = 
   case preterm of
     (UD.Sigma preA preB) -> 
-      let index = L.elemIndex preterm env in -- Maybe Int
+      let index = L.elemIndex preterm env in
       case index of
         Just k -> let preB' = UD.subst preB (UD.Proj UD.Fst (UD.Var k)) 0 in
                   dismantle env (preB':preA:xs) ((UD.Proj UD.Snd (UD.Var k), preB'):(UD.Proj UD.Fst (UD.Var k), preA):(UD.Var k, preterm):result)
@@ -346,19 +361,19 @@ dismantle env (preterm:xs) result =
                                   dismantle env (preB':preA:xs) ((UD.Proj UD.Snd term, preB'):(UD.Proj UD.Fst term, preA):result)
                      Nothing -> dismantle env xs result
     otherwise -> dismantle env xs result
-
+--(UD.shiftIndices (UD.Var k) 1 0)
 
 -- execute : シグネチャの中からPi型を見つけて投射をかける
 -- シグネチャはあらかじめchangeSigで型を変換しておく
-execute :: [(UD.Preterm, UD.Preterm)] -> TUEnv -> [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)]
+execute :: [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)]
 execute [] _ result = result
 execute ((v, preterm):xs) env result = 
   case preterm of
     (UD.Pi preA preB) -> 
-      let termAs = searchIndex preA env env [] in
+      let termAs = searchType env preA in
       let anslist = do {p <- termAs;
-                        return (make v preB (UD.Var p))} in
-      
+                        return (make v preB p)} in
+      execute (anslist ++ xs) env ((v, preterm):(anslist ++ result))
     otherwise -> execute xs env result
 
 
@@ -380,7 +395,7 @@ dismantleSig ((term, preterm):xs) result =
     (UD.Sigma preA preB) -> 
       let preB' = UD.subst preB (UD.Proj UD.Fst term) 0 in
       dismantleSig ((UD.Proj UD.Fst term, preA):(UD.Proj UD.Snd term, preB'):xs) ((term, preterm):result)
-    otherwise -> dismantleSig xs result
+    otherwise -> dismantleSig xs ((term, preterm):result)
 
 
 -- changeSig : dismantleSigの補助関数
