@@ -39,6 +39,7 @@ module DTS.UDTT (
   Context,
   Judgment(..),
   fromDeBruijnContext,
+  fromDeBruijnContextLoop,
   ) where
 
 import qualified Data.Text.Lazy as T      -- text
@@ -367,11 +368,11 @@ replaceLambda i preterm = case preterm of
 
 {- Initializing or Re-indexing of vars, @s and DRels -}
 
--- | Indexed monad controls indices to be attached to preterms.  Arguments correspond to:
--- | 'u' for variables in context
--- | 'x' for variables in general
--- | indices for @ operators
--- | and indices for DReL operators
+-- | Indexed monad controls indices to be attached to preterms.  Arguments correspond to
+-- u for variables in context
+-- x for variables in general
+-- indices for @ operators
+-- and indices for DReL operators
 newtype Indexed a = Indexed { indexing :: Int -> Int -> Int -> Int -> (a,Int,Int,Int,Int) }
 
 instance Monad Indexed where
@@ -571,8 +572,8 @@ instance MathML Context where
   toMathML = toMathML . fromDeBruijnContext
 
 -- | translates a context in de Bruijn notation (i.e. [DTS.DependentTypes.Preterm]) 
--- | into a context with variable names 
--- | (i.e. [(DTS.DTSwithVarName.VarName, DTS.DTSwithVarName.Preterm)]).
+-- into one with variable names 
+-- (i.e. [(DTS.DTSwithVarName.VarName, DTS.DTSwithVarName.Preterm)]).
 fromDeBruijnContext :: Context -> VN.Context
 fromDeBruijnContext = reverse . initializeIndex . (fromDeBruijnContextLoop []) . reverse
 
@@ -593,6 +594,16 @@ data Judgment = Judgment {
   typ :: Preterm        -- ^ A type A in \Gamma \vdash M:A
   } deriving (Eq)
 
+instance SimpleText Judgment where
+  toText = toText . fromDeBruijnJudgment
+
+instance Typeset Judgment where
+  toTeX = toTeX . fromDeBruijnJudgment
+
+instance MathML Judgment where
+  toMathML = toMathML . fromDeBruijnJudgment
+
+-- | translates a judgment in de Bruijn notation into one with variable names 
 fromDeBruijnJudgment :: Judgment -> VN.Judgment
 fromDeBruijnJudgment j = 
   let (vcontext', vterm', vtyp') 
@@ -606,11 +617,3 @@ fromDeBruijnJudgment j =
                    VN.term = vterm',
                    VN.typ = vtyp' }
 
-instance SimpleText Judgment where
-  toText = toText . fromDeBruijnJudgment
-
-instance Typeset Judgment where
-  toTeX = toTeX . fromDeBruijnJudgment
-
-instance MathML Judgment where
-  toMathML = toMathML . fromDeBruijnJudgment
