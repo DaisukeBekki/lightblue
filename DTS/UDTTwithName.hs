@@ -207,13 +207,13 @@ instance MathML Preterm where
 type Context = [(VarName,Preterm)] 
 
 instance SimpleText Context where
-  toText = (T.intercalate ",") . (map (\(nm,tm) -> T.concat [toText nm, ":", toText tm]))
+  toText = (T.intercalate ", ") . (map (\(nm,tm) -> T.concat [toText nm, ":", toText tm])) . reverse
 
 instance Typeset Context where
-  toTeX = (T.intercalate ",") . (map (\(nm,tm) -> T.concat [toTeX nm, ":", toTeX tm]))
+  toTeX = (T.intercalate ",") . (map (\(nm,tm) -> T.concat [toTeX nm, ":", toTeX tm])) . reverse
 
 instance MathML Context where
-  toMathML cont = T.concat $ ["<mfenced separators=','>"] ++ (map (\(nm,tm) -> T.concat ["<mrow>", toMathML nm, "<mo>:</mo>", toMathML tm, "</mrow>"]) cont) ++ ["</mfenced>"]
+  toMathML cont = T.concat $ ["<mfenced separators=','>"] ++ (map (\(nm,tm) -> T.concat ["<mrow>", toMathML nm, "<mo>:</mo>", toMathML tm, "</mrow>"]) $ reverse cont) ++ ["</mfenced>"]
 
 -- | The data type for a judgment
 data Judgment = Judgment { 
@@ -221,3 +221,12 @@ data Judgment = Judgment {
   term :: Preterm,      -- ^ A term M in \Gamma \vdash M:A
   typ :: Preterm        -- ^ A type A in \Gamma \vdash M:A
   } deriving (Eq)
+
+instance SimpleText Judgment where
+  toText j = T.concat [toText $ context j, "|-", toText $ term j, ":", toText $ typ j]
+
+instance Typeset Judgment where
+  toTeX j = T.concat [toTeX $ context j, "\vdash", toTeX $ term j, ":", toTeX $ typ j]
+
+instance MathML Judgment where
+  toMathML j = T.concat ["<mrow", toMathML $ context j, "<mo>&vdash;</mo>", toMathML $ term j, "<mo>:</mo>", toMathML $ typ j, "</mrow>"]

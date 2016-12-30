@@ -367,7 +367,11 @@ replaceLambda i preterm = case preterm of
 
 {- Initializing or Re-indexing of vars, @s and DRels -}
 
--- | Indexed monad controls indices to be attached to preterms.
+-- | Indexed monad controls indices to be attached to preterms.  Arguments correspond to:
+-- | 'u' for variables in context
+-- | 'x' for variables in general
+-- | indices for @ operators
+-- | and indices for DReL operators
 newtype Indexed a = Indexed { indexing :: Int -> Int -> Int -> Int -> (a,Int,Int,Int,Int) }
 
 instance Monad Indexed where
@@ -543,9 +547,6 @@ toDeBruijn vnames preterm = case preterm of
   _ -> Type
 
 {-
--- | translates a context in de Bruijn notation (i.e. [DTS.DependentTypes.Preterm]) 
--- into a context with variable names 
--- (i.e. [(DTS.DTSwithVarName.VarName, DTS.DTSwithVarName.Preterm)]).
 fromDeBruijnContext :: [Preterm] -> VN.Context
 fromDeBruijnContext preterms = 
   initializeIndex $ mapM g preterms
@@ -569,7 +570,9 @@ instance Typeset Context where
 instance MathML Context where
   toMathML = toMathML . fromDeBruijnContext
 
--- | translates a context in de Bruijn notation to one with variable names
+-- | translates a context in de Bruijn notation (i.e. [DTS.DependentTypes.Preterm]) 
+-- | into a context with variable names 
+-- | (i.e. [(DTS.DTSwithVarName.VarName, DTS.DTSwithVarName.Preterm)]).
 fromDeBruijnContext :: Context -> VN.Context
 fromDeBruijnContext = reverse . initializeIndex . (fromDeBruijnContextLoop []) . reverse
 
@@ -583,9 +586,6 @@ fromDeBruijnContextLoop vs (c:cs) = do
   ics <- fromDeBruijnContextLoop (newvar:vs) cs
   return $ (newvar, ic):ics
 
-fromDeBruijnUnderContext :: VN.Context -> Preterm -> Indexed VN.Preterm
-fromDeBruijnUnderContext vcon = fromDeBruijn (fst $ unzip vcon)
-
 -- | The data type for a judgment
 data Judgment = Judgment { 
   context :: Context, -- ^ A context \Gamma in \Gamma \vdash M:A
@@ -593,22 +593,24 @@ data Judgment = Judgment {
   typ :: Preterm        -- ^ A type A in \Gamma \vdash M:A
   } deriving (Eq)
 
-g :: Context -> Preterm -> VN.Preterm
-g contex preterm = 
-  initializeIndex $ fromDeBruijnUnderContext (fromDeBruijnContext contex) preterm
+fromDeBruijnJudgment :: Judgment -> VN.Judgment
+fromDeBruijnJudgment j = 
+  let (vcontext', vterm', vtyp') 
+        = initializeIndex $ do
+                            vcontext <- fromDeBruijnContextLoop [] $ reverse $ context j
+                            let varnames = reverse $ fst $ unzip vcontext
+                            vterm <- fromDeBruijn varnames (term j)
+                            vtyp <- fromDeBruijn varnames (typ j)
+                            return (vcontext, vterm, vtyp)
+  in VN.Judgment { VN.context = reverse vcontext',
+                   VN.term = vterm',
+                   VN.typ = vtyp' }
 
 instance SimpleText Judgment where
-  toText judgment = 
-    let c = context judgment in
-    T.concat [toText c, "|-", toText $ g c $ term judgment, ":", toText $ g c $ typ judgment]
+  toText = toText . fromDeBruijnJudgment
 
 instance Typeset Judgment where
-  toTeX judgment = 
-    let c = context judgment in
-    T.concat [toTeX c, "\vdash", toTeX $ g c $ term judgment, ":", toTeX $ g c $ typ judgment]
+  toTeX = toTeX . fromDeBruijnJudgment
 
 instance MathML Judgment where
-  toMathML judgment = 
-    let c = context judgment in
-    T.concat [toMathML c, "<mo>&vdash;</mo>", toMathML $ g c $ term judgment, "<mo>:</mo>", toMathML $ g c $ typ judgment]
-
+  toMathML = toMathML . fromDeBruijnJudgment
