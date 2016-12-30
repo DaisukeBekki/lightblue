@@ -51,7 +51,8 @@ data UJudgement =
     deriving (Eq, Show)
 
 instance Typeset UJudgement where
-  toTeX (UJudgement env preM preA) = (printGammaU env) `T.append` T.pack "\\vdash" `T.append` (toTeX preM) `T.append` T.pack " : " `T.append` (toTeX preA)
+  toTeX (UJudgement env preM preA) = 
+    toTeX UD.Judgment {UD.context = env, UD.term = preM, UD.typ = preA}
 
 instance MathML UJudgement where
   toMathML (UJudgement env preM preA) = T.pack "これから"
