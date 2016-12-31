@@ -64,7 +64,11 @@ data Judgement =
     deriving (Eq, Show)
 
 instance Typeset Judgement where
-  toTeX (Judgement env preM preA) = (printGamma env) `T.append` T.pack "\\vdash" `T.append` (toTeX preM) `T.append` T.pack " : " `T.append` (toTeX preA)
+  toTeX (Judgement env preM preA) = 
+    let uenv = map DT.toUDTT env
+        preM' = DT.toUDTT preM
+        preA' = DT.toUDTT preA in
+    toTeX UD.Judgment {UD.context = uenv, UD.term = preM', UD.typ = preA'}
 
 instance MathML Judgement where
   toMathML (Judgement env preM preA) = T.pack "これから"
