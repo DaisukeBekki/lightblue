@@ -94,11 +94,10 @@ printNodesInHTML handle nodes = do
 
 printNodeInHTML :: CCG.Node -> T.Text
 printNodeInHTML node  = T.concat [
-  "<p>", 
-  CCG.pf node,
-  "</p><math xmlns='http://www.w3.org/1998/Math/MathML'>",
+  "<p>", CCG.pf node, "</p>",
+  HTML.startMathML,
   HTML.toMathML node,
-  "</math>"
+  HTML.endMathML
   ]
 
 -- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style

@@ -11,7 +11,9 @@ Stability   : beta
 module Interface.HTML (
   MathML(..),
   htmlHeader4MathML,
-  htmlFooter4MathML
+  htmlFooter4MathML,
+  startMathML,
+  endMathML
   ) where
 
 import qualified Data.Text.Lazy as T
@@ -55,3 +57,9 @@ htmlHeader4MathML = "\
 
 htmlFooter4MathML :: T.Text
 htmlFooter4MathML = "</body></html>"
+
+startMathML :: T.Text
+startMathML = "<math xmlns='http://www.w3.org/1998/Math/MathML'>"
+
+endMathML :: T.Text
+endMathML = "</math>"
