@@ -12,6 +12,7 @@ module DTS.Prover.Judgement
   getTermU,
   getList,
   utreeToTeX,
+  utreeToMathML,
   treeToTeX
 ) where
 
@@ -55,7 +56,8 @@ instance Typeset UJudgement where
     toTeX UD.Judgment {UD.context = env, UD.term = preM, UD.typ = preA}
 
 instance MathML UJudgement where
-  toMathML (UJudgement env preM preA) = T.pack "これから"
+  toMathML (UJudgement env preM preA) = 
+    toMathML UD.Judgment {UD.context = env, UD.term = preM, UD.typ = preA}
 
 
 -- Judgement : DTTのジャッジメントの定義
@@ -71,7 +73,11 @@ instance Typeset Judgement where
     toTeX UD.Judgment {UD.context = uenv, UD.term = preM', UD.typ = preA'}
 
 instance MathML Judgement where
-  toMathML (Judgement env preM preA) = T.pack "これから"
+  toMathML (Judgement env preM preA) = 
+    let uenv = map DT.toUDTT env
+        preM' = DT.toUDTT preM
+        preA' = DT.toUDTT preA in
+    toMathML UD.Judgment {UD.context = uenv, UD.term = preM', UD.typ = preA'}
 
 
 -- UTree : UDTT用の木構造
@@ -92,6 +98,7 @@ data UTree a =
  | UTopI a
  | UBotF a
    deriving (Eq, Show)
+
 
 -- utreeToTeX : UDTTのTree用のtoTeX関数
 utreeToTeX :: (UTree UJudgement) -> T.Text
@@ -125,14 +132,120 @@ utreeToTeX (UTopI judgement) =
 utreeToTeX (UBotF judgement) = 
   T.pack "\\nd[(\\underline{\\bot F})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
 
--- Typesetのinstanceにはできなさそう。
--- おそらく (UTree a) の a が悪い?
-{-
-instance Typeset (UTree UJudgement) where
-  toTeX UEmpty = T.pack ""
-  toTeX (UCHK judgement overTree) = toTeX judgement
-    (T.pack "\\nd[(\\underline{CHK})]{") `T.append` (toTeX judgement) `T.append` (T.pack "}{") `T.append` (toTeX overTree) `T.append` (T.pack "}")
--}
+
+-- utreeToMathML : UDTTのTree用のtoMathML関数
+utreeToMathML :: (UTree UJudgement) -> T.Text
+utreeToMathML UEmpty = T.pack "<mrow><mi color='White'> Empty </mi></mrow>"
+utreeToMathML (UCHK judgement overTree) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'><p style='text-decoration: underline;'>(CHK)</p></mi><mfrac linethickness='2px'>",
+  utreeToMathML overTree,
+  toMathML judgement,
+  T.pack "</mi></mrow>"
+  ]
+utreeToMathML (UCON judgement) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'><p style='text-decoration: underline;'>(CON)</p></mi><mfrac linethickness='2px'>",
+  T.pack "<mi color='White'> Empty </mi>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+utreeToMathML (UVAR judgement) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'><p style='text-decoration: underline;'>(VAR)</p></mi><mfrac linethickness='2px'>",
+  T.pack "<mi color='White'> Empty </mi>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+utreeToMathML (UTypeF judgement) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'><p style='text-decoration: underline;'>(typeF)</p></mi><mfrac linethickness='2px'>",
+  T.pack "<mi color='White'> Empty </mi>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+utreeToMathML (UPiF judgement leftTree rightTree) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'><p style='text-decoration: underline;'>(&Pi;F)</p></mi><mfrac linethickness='2px'>",
+  T.pack "<mrow>",
+  utreeToMathML leftTree,
+  T.pack " ",
+  utreeToMathML rightTree,
+  T.pack "</mrow>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+utreeToMathML (UPiI judgement leftTree rightTree) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'>(&Pi;I)</mi><mfrac linethickness='2px'>",
+  T.pack "<mrow>",
+  utreeToMathML leftTree,
+  T.pack " ",
+  utreeToMathML rightTree,
+  T.pack "</mrow>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+utreeToMathML (UPiE judgement leftTree rightTree) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'><p style='text-decoration: underline;'>(&Pi;E)</p></mi><mfrac linethickness='2px'>",
+  T.pack "<mrow>",
+  utreeToMathML leftTree,
+  T.pack " ",
+  utreeToMathML rightTree,
+  T.pack "</mrow>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+utreeToMathML (USigF judgement leftTree rightTree) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'><p style='text-decoration: underline;'>(&Sigma;F)</p></mi><mfrac linethickness='2px'>",
+  T.pack "<mrow>",
+  utreeToMathML leftTree,
+  T.pack " ",
+  utreeToMathML rightTree,
+  T.pack "</mrow>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+utreeToMathML (USigI judgement leftTree rightTree) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'><p style='text-decoration: underline;'>(&Sigma;I)</p></mi><mfrac linethickness='2px'>",
+  T.pack "<mrow>",
+  utreeToMathML leftTree,
+  T.pack " ",
+  utreeToMathML rightTree,
+  T.pack "</mrow>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+utreeToMathML (USigE judgement overTree) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'><p style='text-decoration: underline;'>(&Sigma;E)</p></mi><mfrac linethickness='2px'>",
+  utreeToMathML overTree,
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+utreeToMathML (UTopF judgement) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'><p style='text-decoration: underline;'>(&top;F)</p></mi><mfrac linethickness='2px'>",
+  T.pack "<mi color='White'> Empty </mi>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+utreeToMathML (UTopI judgement) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'><p style='text-decoration: underline;'>(&top;I)</p></mi><mfrac linethickness='2px'>",
+  T.pack "<mi color='White'> Empty </mi>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+utreeToMathML (UBotF judgement) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'><p style='text-decoration: underline;'>(&bot;F)</p></mi><mfrac linethickness='2px'>",
+  T.pack "<mi color='White'> Empty </mi>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+utreeToMathML (ASP judgement leftTree rightTree) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'>(@)</mi><mfrac linethickness='2px'>",
+  T.pack "<mrow>",
+  utreeToMathML leftTree,
+  T.pack " ",
+  utreeToMathML rightTree,
+  T.pack "</mrow>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+
+
 
 -- Tree : DTT用の木構造
 data Tree a =
@@ -182,6 +295,108 @@ treeToTeX (TopI judgement) =
 treeToTeX (BotF judgement) = 
   T.pack "\\nd[(\\bot F)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
 
+
+-- treeToMathML : DTTのTree用のtoMathML関数
+treeToMathML :: (Tree Judgement) -> T.Text
+treeToMathML Empty = T.pack "<mrow><mi color='White'> Empty </mi></mrow>"
+treeToMathML (CHK judgement overTree) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'>(CHK)</mi><mfrac linethickness='2px'>",
+  treeToMathML overTree,
+  toMathML judgement,
+  T.pack "</mi></mrow>"
+  ]
+treeToMathML (CON judgement) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'>(CON)</mi><mfrac linethickness='2px'>",
+  T.pack "<mi color='White'> Empty </mi>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+treeToMathML (VAR judgement) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'>(VAR)</mi><mfrac linethickness='2px'>",
+  T.pack "<mi color='White'> Empty </mi>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+treeToMathML (TypeF judgement) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'>(typeF)</mi><mfrac linethickness='2px'>",
+  T.pack "<mi color='White'> Empty </mi>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+treeToMathML (PiF judgement leftTree rightTree) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'>(&Pi;F)</mi><mfrac linethickness='2px'>",
+  T.pack "<mrow>",
+  treeToMathML leftTree,
+  T.pack " ",
+  treeToMathML rightTree,
+  T.pack "</mrow>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+treeToMathML (PiI judgement leftTree rightTree) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'>(&Pi;I)</mi><mfrac linethickness='2px'>",
+  T.pack "<mrow>",
+  treeToMathML leftTree,
+  T.pack " ",
+  treeToMathML rightTree,
+  T.pack "</mrow>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+treeToMathML (PiE judgement leftTree rightTree) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'>(&Pi;E)</mi><mfrac linethickness='2px'>",
+  T.pack "<mrow>",
+  treeToMathML leftTree,
+  T.pack " ",
+  treeToMathML rightTree,
+  T.pack "</mrow>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+treeToMathML (SigF judgement leftTree rightTree) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'>(&Sigma;F)</mi><mfrac linethickness='2px'>",
+  T.pack "<mrow>",
+  treeToMathML leftTree,
+  T.pack " ",
+  treeToMathML rightTree,
+  T.pack "</mrow>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+treeToMathML (SigI judgement leftTree rightTree) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'>(&Sigma;I)</mi><mfrac linethickness='2px'>",
+  T.pack "<mrow>",
+  treeToMathML leftTree,
+  T.pack " ",
+  treeToMathML rightTree,
+  T.pack "</mrow>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+treeToMathML (SigE judgement overTree) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'>(&Sigma;E)</mi><mfrac linethickness='2px'>",
+  treeToMathML overTree,
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+treeToMathML (TopF judgement) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'>(&top;F)</mi><mfrac linethickness='2px'>",
+  T.pack "<mi color='White'> Empty </mi>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+treeToMathML (TopI judgement) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'>(&top;I)</mi><mfrac linethickness='2px'>",
+  T.pack "<mi color='White'> Empty </mi>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+treeToMathML (BotF judgement) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'>(&bot;F)</mi><mfrac linethickness='2px'>",
+  T.pack "<mi color='White'> Empty </mi>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
 
 
 -- getTypeU : UDTTの証明木の一番下のTypeを取り出す
