@@ -58,7 +58,7 @@ loop i node =
     [] -> do
           j <- terminalIndex
           let id = T.concat ["s", T.pack $ show i, "_", T.pack $ show j]
-          pushTerminal id $ T.concat ["<token surf='", CCG.pf node, "' category='", printCat $ CCG.cat node, "' id='", id, "' />"]
+          pushTerminal id $ T.concat ["<token surf='", CCG.pf node, "' base='", CCG.pf node, "' category='", printCat $ CCG.cat node, "' id='", id, "' />"]
     _ -> do
          ids <- mapM (loop i) $ CCG.daughters node
          j <- childIndex
