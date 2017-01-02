@@ -36,7 +36,10 @@ parseJSeM xmlfile = do
   let problemNodes = X.child cursor >>= X.element "problem"
   return $ map problem2JSeMData problemNodes
 
--- | takes a "problem" node in a JSeM file and translates it to a 'JSeMData'.  Note that the xml-conduit package uses Data.Text (=strict texts) as internal format of text data, and `problem2JSeMData` function converts them to Data.Text.Lazy (=lazy texts), which is a standard format of text data in lightblue.
+-- | takes a "problem" node in a JSeM file and translates it to a 'JSeMData'.  
+-- Note that the xml-conduit package uses Data.Text (=strict texts) as internal format of text data, 
+-- and `problem2JSeMData` function converts them to Data.Text.Lazy (=lazy texts), 
+-- which is a standard format of text data in lightblue.
 problem2JSeMData :: X.Cursor -> JSeMData
 problem2JSeMData problem =
   let children = [problem] >>= X.child in
