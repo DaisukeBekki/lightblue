@@ -189,8 +189,8 @@ instance MathML Preterm where
     Lamvec vname m  -> T.concat ["<mrow><mi>&lambda;</mi><mover>", toMathML vname, "<mo>&rarr;</mo></mover><mo>.</mo>", toMathML m, "</mrow>"]
     Appvec vname m -> T.concat ["<mfenced separators=''>", toMathML m, "<mover>", toMathML vname, "<mo>&rarr;</mo></mover></mfenced>"]
     Unit       -> "<mi>()</mi>"
-    Top        -> "<mi>T</mi>"
-    Bot        -> "<mi>&perp;</mi>"
+    Top        -> "<mi>&top;</mi>"
+    Bot        -> "<mi>&bot;</mi>"
     Asp j m    -> T.concat["<mrow><msub><mo>@</mo><mn>", T.pack (show j), "</mn></msub><mo>:</mo>", toMathML m, "</mrow>"]
     Nat    -> "<mi>N</mi>"
     Zero   -> "<mi>0</mi>"

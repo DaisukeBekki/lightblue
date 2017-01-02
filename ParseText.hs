@@ -10,9 +10,8 @@ import qualified Parser.ChartParser as CP
 import qualified Parser.Japanese.Lexicon as LEX
 import qualified Interface.Text as T
 import qualified Interface.XML as XML
+--import qualified Interface.HTML as HTML
 import qualified Interface.OpenNLP as NLP
---import qualified DTS.Prover.TypeChecker 
---Miho.aspElim 
 
 main :: IO()
 main = do
@@ -38,3 +37,4 @@ main = do
           | op == "-debug" = CP.printChartInTeX S.stdout chart
           | op == "-time" = S.hPutStrLn S.stderr $ "Total Execution Time: " ++ show time
           | otherwise = return ()
+

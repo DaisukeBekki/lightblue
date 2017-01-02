@@ -24,7 +24,7 @@ module Parser.ChartParser (
   printNNodesInTeX,
   printNodesInTeX,
   printNodesInHTML,
-  printNodeInHTML,
+  --printNodeInHTML,
   -- * Partial parsing function(s)
   ParseResult(..),
   extractBestParse
@@ -43,6 +43,9 @@ import qualified Parser.Japanese.Templates as LT
 import qualified Interface.Text as T
 import qualified Interface.TeX as TEX
 import qualified Interface.HTML as HTML
+import qualified DTS.UDTT as U
+import qualified DTS.Prover.TypeChecker as Ty
+import qualified DTS.Prover.Judgement as Ty
 
 -- | The type for CYK-charts.
 type Chart = M.Map (Int,Int) [CCG.Node]
@@ -85,20 +88,22 @@ printNodesInTeX handle nodes =
 
 -- | prints CCG nodes (=a parsing result) as a TeX source code.
 printNodesInHTML :: S.Handle -> [CCG.Node] -> IO()
-printNodesInHTML handle nodes = do
-  T.putStrLn HTML.htmlHeader4MathML
-  mapM_ ((T.hPutStrLn handle). printNodeInHTML) $ take 1 nodes
-  T.putStrLn HTML.htmlFooter4MathML
-
--- <style>body { font-size: 2em; } </style><script type='text/javascript' src='http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></script>
-
-printNodeInHTML :: CCG.Node -> T.Text
-printNodeInHTML node  = T.concat [
-  "<p>", CCG.pf node, "</p>",
-  HTML.startMathML,
-  HTML.toMathML node,
-  HTML.endMathML
-  ]
+printNodesInHTML handle nodes = 
+  do
+  T.hPutStrLn handle HTML.htmlHeader4MathML
+  mapM_ (\node -> 
+          do
+          T.hPutStrLn handle $ "<p>";
+          T.hPutStrLn handle $ CCG.pf node;
+          T.hPutStrLn handle $ "</p>";
+          T.hPutStrLn handle $ HTML.startMathML;
+          T.hPutStrLn handle $ HTML.toMathML node;
+          T.hPutStrLn handle $ HTML.endMathML;
+          T.hPutStrLn handle $ HTML.startMathML;
+          mapM_ ((T.hPutStrLn handle) . Ty.utreeToMathML) $ Ty.typeCheckU [] ((CCG.sig node)++[("evt",U.Type),("entity",U.Type)]) (CCG.sem node) (U.Type);
+          T.hPutStrLn handle $ HTML.endMathML 
+          ) nodes
+  T.hPutStrLn handle HTML.htmlFooter4MathML
 
 -- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style
 posTagger :: S.Handle -> [CCG.Node] -> IO()
