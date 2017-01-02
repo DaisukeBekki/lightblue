@@ -213,7 +213,7 @@ instance Typeset Context where
   toTeX = (T.intercalate ",") . (map (\(nm,tm) -> T.concat [toTeX nm, ":", toTeX tm])) . reverse
 
 instance MathML Context where
-  toMathML cont = T.concat $ ["<mfenced separators=','>"] ++ (map (\(nm,tm) -> T.concat ["<mrow>", toMathML nm, "<mo>:</mo>", toMathML tm, "</mrow>"]) $ reverse cont) ++ ["</mfenced>"]
+  toMathML cont = T.concat $ ["<mfenced separators=',' open='' close=''>"] ++ (map (\(nm,tm) -> T.concat ["<mrow>", toMathML nm, "<mo>:</mo>", toMathML tm, "</mrow>"]) $ reverse cont) ++ ["</mfenced>"]
 
 -- | The data type for a judgment
 data Judgment = Judgment { 
