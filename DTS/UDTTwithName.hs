@@ -218,8 +218,8 @@ instance MathML Context where
 -- | The data type for a judgment
 data Judgment = Judgment { 
   context :: Context, -- ^ A context \Gamma in \Gamma \vdash M:A
-  term :: Preterm,      -- ^ A term M in \Gamma \vdash M:A
-  typ :: Preterm        -- ^ A type A in \Gamma \vdash M:A
+  term :: Preterm,    -- ^ A term M in \Gamma \vdash M:A
+  typ :: Preterm      -- ^ A type A in \Gamma \vdash M:A
   } deriving (Eq)
 
 instance SimpleText Judgment where

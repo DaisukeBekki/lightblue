@@ -30,11 +30,10 @@ module DTS.UDTT (
   add,
   multiply,
   -- * De Bruijn notation <-> Variable-name notation
+  Indexed(..),
+  initializeIndex,
   fromDeBruijn,
   toDeBruijn,
-  Indexed(..),
-  sentenceIndex,
-  initializeIndex,
   -- * Judgment
   Context,
   Judgment(..),
@@ -369,17 +368,18 @@ replaceLambda i preterm = case preterm of
 {- Initializing or Re-indexing of vars, @s and DRels -}
 
 -- | Indexed monad controls indices to be attached to preterms.  Arguments correspond to
--- u for variables in context
--- x for variables in general
+-- u for variables for propositions
+-- x for variables for entities
+-- e for variables for eventualities
 -- indices for @ operators
 -- and indices for DReL operators
-newtype Indexed a = Indexed { indexing :: Int -> Int -> Int -> Int -> (a,Int,Int,Int,Int) }
+newtype Indexed a = Indexed { indexing :: Int -> Int -> Int -> Int -> Int -> (a,Int,Int,Int,Int,Int) }
 
 instance Monad Indexed where
-  return m = Indexed (\s x a d -> (m,s,x,a,d))
-  (Indexed m) >>= f = Indexed (\s x a d -> let (m',s',x',a',d') = m s x a d;
-                                               (Indexed n) = f m' in
-                                           n s' x' a' d')
+  return m = Indexed (\u x e a d -> (m,u,x,e,a,d))
+  (Indexed m) >>= f = Indexed (\u x e a d -> let (m',u',x',e',a',d') = m u x e a d;
+                                                 (Indexed n) = f m' in
+                                             n u' x' e' a' d')
 
 instance Functor Indexed where
   fmap = M.liftM
@@ -389,21 +389,24 @@ instance M.Applicative Indexed where
   (<*>) = M.ap
 
 -- | A sequential number for variable names (i.e. x_1, x_2, ...) in a context
-sentenceIndex :: Indexed Int
-sentenceIndex = Indexed (\s x a d -> (s,s+1,x,a,d))
+uIndex :: Indexed Int
+uIndex = Indexed (\u x e a d -> (u,u+1,x,e,a,d))
 
-varIndex :: Indexed Int
-varIndex = Indexed (\s x a d -> (x,s,x+1,a,d))
+xIndex :: Indexed Int
+xIndex = Indexed (\u x e a d -> (x,u,x+1,e,a,d))
+
+eIndex :: Indexed Int
+eIndex = Indexed (\u x e a d -> (e,u,x,e+1,a,d))
 
 aspIndex :: Indexed Int
-aspIndex = Indexed (\s x a d -> (a,s,x,a+1,d))
+aspIndex = Indexed (\u x e a d -> (a,u,x,e,a+1,d))
 
 dRelIndex :: Indexed Int
-dRelIndex = Indexed (\s x a d -> (d,s,x,a,d+1))
+dRelIndex = Indexed (\u x e a d -> (d,u,x,e,a,d+1))
 
 -- | re-assigns sequential indices to all asperands that appear in a given preterm.
 initializeIndex :: Indexed a -> a
-initializeIndex (Indexed m) = let (m',_,_,_,_) = m 0 0 0 0 in m'
+initializeIndex (Indexed m) = let (m',_,_,_,_,_) = m 0 0 0 0 0 in m'
 
 -- | translates a preterm in de Bruijn notation into a preterm with variable name.
 fromDeBruijn :: [VN.VarName] -- ^ A context (= a list of variable names)
@@ -417,21 +420,7 @@ fromDeBruijn vnames preterm = case preterm of
   Type -> return VN.Type
   Kind -> return VN.Kind
   Pi a b -> do
-    i <- varIndex
-    let vname = case a of
-                  Con cname | cname == "entity" -> VN.VarName 'x' i
-                            | cname == "evt"  -> VN.VarName 'e' i
-                            -- cname == "state"  -> VN.VarName 's' i
-                  Type -> VN.VarName 'p' i
-                  Kind -> VN.VarName 'p' i
-                  App _ _   -> VN.VarName 'u' i
-                  Sigma _ _ -> VN.VarName 'u' i
-                  Pi _ _    -> VN.VarName 'u' i
-                  Not _     -> VN.VarName 'u' i
-                  Appvec _ _ -> VN.VarName 'u' i
-                  Eq _ _ _ -> VN.VarName 's' i
-                  Nat -> VN.VarName 'k' i
-                  _ -> VN.VarName 'x' i
+    vname <- variableNameFor a
     a' <- fromDeBruijn vnames a
     b' <- fromDeBruijn (vname:vnames) b
     return $ VN.Pi vname a' b'
@@ -439,7 +428,7 @@ fromDeBruijn vnames preterm = case preterm of
     a' <- fromDeBruijn vnames a
     return $ VN.Not a'
   Lam m   -> do
-    i <- varIndex
+    i <- xIndex
     let vname = case m of
                   Sigma _ _ -> VN.VarName 'x' i
                   Pi _ _    -> VN.VarName 'x' i
@@ -451,21 +440,7 @@ fromDeBruijn vnames preterm = case preterm of
     n' <- fromDeBruijn vnames n
     return $ VN.App m' n'
   Sigma a b -> do
-    i <- varIndex
-    let vname = case a of
-                  Con cname | cname == "entity" -> VN.VarName 'x' i
-                            | cname == "evt"  -> VN.VarName 'e' i
-                            -- cname == "state"  -> VN.VarName 's' i
-                  Type -> VN.VarName 'p' i
-                  Kind -> VN.VarName 'p' i
-                  App _ _   -> VN.VarName 'u' i
-                  Sigma _ _ -> VN.VarName 'u' i
-                  Pi _ _    -> VN.VarName 'u' i
-                  Not _     -> VN.VarName 'u' i
-                  Appvec _ _ -> VN.VarName 'u' i
-                  Eq _ _ _ -> VN.VarName 's' i
-                  Nat -> VN.VarName 'k' i
-                  _ -> VN.VarName 'x' i
+    vname <- variableNameFor a
     a' <- fromDeBruijn vnames a
     b' <- fromDeBruijn (vname:vnames) b
     return $ VN.Sigma vname a' b'
@@ -479,7 +454,7 @@ fromDeBruijn vnames preterm = case preterm of
                Fst -> VN.Proj VN.Fst m'
                Snd -> VN.Proj VN.Snd m'
   Lamvec m  -> do
-    i <- varIndex
+    i <- xIndex
     let vname = VN.VarName 'x' i
     m' <- fromDeBruijn (vname:vnames) m
     return $ VN.Lamvec vname m'
@@ -523,6 +498,16 @@ fromDeBruijn vnames preterm = case preterm of
     n' <- fromDeBruijn vnames n
     return $ VN.DRel j' t m' n'
     -- App (App (Con (T.concat ["DRel",T.pack $ show j',"[",t,"]"])) m') n'
+
+variableNameFor :: Preterm -> Indexed VN.VarName
+variableNameFor preterm = 
+  case preterm of
+    Con cname | cname == "entity" -> do i <- xIndex; return $ VN.VarName 'x' i
+              | cname == "evt"    -> do i <- eIndex; return $ VN.VarName 'e' i
+              -- cname == "state"  -> VN.VarName 's' i
+    Eq _ _ _ -> do i <- xIndex; return $ VN.VarName 's' i
+    Nat      -> do i <- xIndex; return $ VN.VarName 'k' i
+    _        -> do i <- uIndex; return $ VN.VarName 'u' i
 
 -- | translates a preterm with variable name into a preterm in de Bruijn notation. 
 toDeBruijn :: [VN.VarName]  -- ^ A context (= a list of variable names)
@@ -581,11 +566,12 @@ fromDeBruijnContext = reverse . initializeIndex . (fromDeBruijnContextLoop []) .
 fromDeBruijnContextLoop :: [VN.VarName] -> Context -> Indexed VN.Context
 fromDeBruijnContextLoop _ [] = return []
 fromDeBruijnContextLoop vs (c:cs) = do
-  i <- sentenceIndex
-  let newvar = VN.VarName 'u' i
+  varname <- variableNameFor c
+  -- i <- sentenceIndex
+  -- let newvar = VN.VarName 'u' i
   ic <- fromDeBruijn vs c
-  ics <- fromDeBruijnContextLoop (newvar:vs) cs
-  return $ (newvar, ic):ics
+  ics <- fromDeBruijnContextLoop (varname:vs) cs
+  return $ (varname, ic):ics
 
 -- | The data type for a judgment
 data Judgment = Judgment { 
