@@ -516,7 +516,7 @@ toDeBruijn :: [VN.VarName]  -- ^ A context (= a list of variable names)
 toDeBruijn vnames preterm = case preterm of
   VN.Var vname -> case L.elemIndex vname vnames of
                     Just i -> Var i
-                    Nothing -> Type
+                    Nothing -> Con "Error: vname not found in toDeBruijn Var"
   VN.Con cname -> Con cname
   VN.Type -> Type
   VN.Kind -> Kind
@@ -529,8 +529,22 @@ toDeBruijn vnames preterm = case preterm of
   VN.Proj s m -> case s of 
                    VN.Fst -> Proj Fst (toDeBruijn vnames m)
                    VN.Snd -> Proj Snd (toDeBruijn vnames m)
+  VN.Lamvec vname m -> Lamvec (toDeBruijn (vname:vnames) m)
+  VN.Appvec vname m -> case L.elemIndex vname vnames of
+                        Just i -> Appvec i (toDeBruijn vnames m)
+                        Nothing -> Con "Error: vname not found in toDeBruijn Appvec"
+  VN.Unit -> Unit
+  VN.Top -> Top
+  VN.Bot -> Bot
   VN.Asp i m -> Asp i (toDeBruijn vnames m)
-  _ -> Type
+  VN.Nat -> Nat
+  VN.Zero -> Zero
+  VN.Succ n -> Succ (toDeBruijn vnames n)
+  VN.Natrec n e f -> Natrec (toDeBruijn vnames n) (toDeBruijn vnames e) (toDeBruijn vnames f)
+  VN.Eq a m n -> Eq (toDeBruijn vnames a) (toDeBruijn vnames m) (toDeBruijn vnames n)
+  VN.Refl a m -> Refl (toDeBruijn vnames a) (toDeBruijn vnames m)
+  VN.Idpeel m n -> Idpeel (toDeBruijn vnames m) (toDeBruijn vnames n)
+  VN.DRel j t m n -> DRel j t (toDeBruijn vnames m) (toDeBruijn vnames n)
 
 {-
 fromDeBruijnContext :: [Preterm] -> VN.Context
