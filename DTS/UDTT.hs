@@ -350,7 +350,10 @@ deleteLambda i preterm = case preterm of
 -- | replaceLambda i preterm: the third subroutine for 'transvec' function,
 -- which takes an index i and a preterm p, transforms the latter in a way that the i-th variable vector within p is replaced by a single variable.
 replaceLambda :: Int -> Preterm -> Preterm
-replaceLambda i preterm = case preterm of
+replaceLambda i preterm = deleteLambda i (addLambda i preterm)
+
+{-
+  case preterm of
   Pi a b     -> Pi (replaceLambda i a) (replaceLambda (i+1) b)
   Not a      -> Not (replaceLambda i a)
   Lam m      -> Lam (replaceLambda (i+1) m)
@@ -364,6 +367,7 @@ replaceLambda i preterm = case preterm of
              | otherwise -> Appvec j (replaceLambda i m)
   DRel j t m n -> DRel j t (replaceLambda i m) (replaceLambda i n)
   m -> m
+-}
 
 {- Initializing or Re-indexing of vars, @s and DRels -}
 
@@ -545,16 +549,6 @@ toDeBruijn vnames preterm = case preterm of
   VN.Refl a m -> Refl (toDeBruijn vnames a) (toDeBruijn vnames m)
   VN.Idpeel m n -> Idpeel (toDeBruijn vnames m) (toDeBruijn vnames n)
   VN.DRel j t m n -> DRel j t (toDeBruijn vnames m) (toDeBruijn vnames n)
-
-{-
-fromDeBruijnContext :: [Preterm] -> VN.Context
-fromDeBruijnContext preterms = 
-  initializeIndex $ mapM g preterms
-  where g preterm = do
-          i <- sentenceIndex
-          preterm' <- fromDeBruijn [] preterm
-          return (VN.VarName 's' i, preterm')
--}
 
 {- Judgment of UDTT in de Bruijn notation -}
 
