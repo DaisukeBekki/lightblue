@@ -198,10 +198,11 @@ main :: IO()
 main = do
   sentences <- T.getContents
   parse_start <- Time.getCurrentTime
-  parseresult <- (mapM (\t -> do
-                           nodes <- CP.simpleParse 24 t
-                           let representative = head nodes
-                           return ((CP.sem $ representative), (CP.sig $ representative))) (T.lines sentences))
+  parseresult <- mapM (\t -> do
+                              nodes <- CP.simpleParse 24 t
+                              let representative = head nodes
+                              return ((CP.sem $ representative), (CP.sig $ representative))
+                       ) (T.lines sentences)
   let (srlist, siglists) = unzip parseresult
       premises = L.init $ srlist
       conclusion = L.last $ srlist

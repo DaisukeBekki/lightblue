@@ -328,8 +328,9 @@ isLessPrivilegedThan ((i1,j1),_) ((i2,j2),_) | i1 == i2 && j1 == j2 = EQ
                                              | otherwise = LT
 
 -- | takes only the nodes with the best score.
+-- 'nodes' needs to be sorted before applying 'bestOnly' (e.g. bestOnly $ L.sort nodes)
 bestOnly :: [CCG.Node] -> [CCG.Node]
-bestOnly nodes = case sort nodes of
+bestOnly nodes = case nodes of
   [] -> []
   (firstnode:ns) -> firstnode:(takeWhile (\node -> CCG.score(node) >= CCG.score(firstnode)) ns)
 
