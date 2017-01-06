@@ -17,17 +17,7 @@ module DTS.Prover.TypeChecker
   execute
 ) where
 
-{-
-できたら公開する
-aspElim,
-  typeCheckU,
-  typeInferU,
-  proofSearch
 
-TODO : aspElim
-       proofSearch
-       Interface
--}
 
 import qualified DTS.UDTT as UD           -- UDTT
 import qualified DTS.DTT as DT            -- DTT
@@ -82,33 +72,16 @@ transP (UD.Sigma preA preB) = do
 transP (UD.Not preM) = 
   transP (UD.Pi preM UD.Bot)
 transP (UD.Asp n preM) = []
+transP (UD.DRel i t preM preN) = do
+  pretermA <- transP preM
+  pretermB <- transP preN
+  return (DT.DRel i t pretermA pretermB)
 transP preterm = []
 
 
 -- repositP : DTTの項をUDTTの項に変換する関数
 repositP :: DT.Preterm -> UD.Preterm
-repositP (DT.Var k) = UD.Var k
-repositP (DT.Con text) = UD.Con text
-repositP (DT.Lam preM) = 
-　　UD.Lam (repositP preM)
-repositP (DT.App preM preN) = 
-　　UD.App (repositP preM) (repositP preN)
-repositP (DT.Pair preM preN) = 
-　　UD.Pair (repositP preM) (repositP preN)
-repositP (DT.Proj selector preM) = 
-   if selector == DT.Fst
-   then UD.Proj UD.Fst (repositP preM)
-   else UD.Proj UD.Snd (repositP preM)
-repositP DT.Type = UD.Type
-repositP DT.Kind = UD.Kind
-repositP DT.Top = UD.Top
-repositP DT.Bot = UD.Bot
-repositP (DT.Pi preA preB) = 
-　　UD.Pi (repositP preA) (repositP preB)
-repositP (DT.Sigma preA preB) = 
-　　UD.Sigma (repositP preA) (repositP preB)
-repositP (DT.Not preM) = 
-  repositP (DT.Pi preM DT.Bot)
+repositP = DT.toUDTT
 
 
 -- transE : TUEnv(UDTTの環境)をTEnv(DTTの環境)に変換する関数
@@ -210,7 +183,14 @@ aspElim (UCHK (UJudgement uenv preM preA) over) = do
   preM' <- getTerm resultO
   preA' <- getType resultO
   return (CHK (Judgement (transE uenv) preM' preA') resultO)
+-- (DRel)規則
+aspElim (UDREL (UJudgement uenv (UD.DRel i t preM preN) typ)) = do
+  preM' <- transP preM
+  preN' <- transP preN
+  typ' <- transP typ
+  return (DREL (Judgement (transE uenv) (DT.DRel i t preM' preN') typ'))
 --aspElim tree = [tree]
+
 
 
 -- typeCheckU : UDTTの型チェック
@@ -322,6 +302,9 @@ typeInferU typeEnv sig (UD.Asp i preA) = do
   let preA' = UD.betaReduce $ repositP newA
   ansTree <- proofSearch typeEnv sig preA'
   return (ASP (UJudgement typeEnv (UD.Asp i preA) preA) leftTree ansTree)
+-- (DRel) rule
+typeInferU typeEnv _ (UD.DRel i t preM preN) = do
+  return (UDREL (UJudgement typeEnv (UD.DRel i t preM preN) UD.Type))
 
 
 -- Proof Search
