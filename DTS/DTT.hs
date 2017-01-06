@@ -64,7 +64,7 @@ data Preterm =
   Natrec Preterm Preterm Preterm | -- ^ natrec
   Eq Preterm Preterm Preterm |     -- ^ Intensional equality types
   Refl Preterm Preterm |           -- ^ refl
-  Idpeel Preterm Preterm           -- ^ idpeel
+  Idpeel Preterm Preterm |         -- ^ idpeel
   DRel Int T.Text Preterm Preterm  -- ^ Discourse relations
   deriving (Eq)
 
