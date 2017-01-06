@@ -118,6 +118,7 @@ toUDTT preterm = case preterm of
   Eq a m n     -> UDTT.Eq (toUDTT a) (toUDTT m) (toUDTT n)
   Refl a m     -> UDTT.Refl (toUDTT a) (toUDTT m)
   Idpeel m n   -> UDTT.Idpeel (toUDTT m) (toUDTT n)
+  DRel i t m n -> UDTT.DRel i t (toUDTT m) (toUDTT n)
 
 toUDTTselector :: Selector -> UDTT.Selector
 toUDTTselector Fst = UDTT.Fst

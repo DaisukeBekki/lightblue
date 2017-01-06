@@ -97,6 +97,7 @@ data UTree a =
  | UTopF a
  | UTopI a
  | UBotF a
+ | UDREL a
    deriving (Eq, Show)
 
 
@@ -263,6 +264,7 @@ data Tree a =
  | TopF a
  | TopI a
  | BotF a
+ | DREL a
    deriving (Eq, Show)
 
 -- treeToTeX : DTTのTree用のtoTeX関数
