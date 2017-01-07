@@ -4,15 +4,15 @@
 import Prelude hiding (readFile)
 import qualified Data.Text.Lazy as T    -- text
 import qualified Data.Text.Lazy.IO as T -- text
-import qualified System.Process as S       -- process
+--import qualified System.Process as S       -- process
 import qualified System.Environment as E   -- base
 import qualified Parser.ChartParser as CP  -- lightblue
 import qualified DTS.UDTT as DTS -- lightblue
 import qualified Interface.Text as T       -- lightblue
 import qualified Interface.JSeM as J       -- lightblue
 
-jSeMpath :: FilePath
-jSeMpath = "../JSeM_beta/JSeM_beta_150415.xml"
+--jSeMpath :: FilePath
+--jSeMpath = "../JSeM_beta/JSeM_beta_150415.xml"
 
 main :: IO()
 main = do
@@ -40,9 +40,11 @@ parseText sentence = do
   nodes <- CP.simpleParse 16 sentence
   return $ CP.sem (head nodes)
 
+{-
 callCoq :: T.Text -> IO()
 callCoq _ = do
   let coqcommand = T.concat ["echo -e \"Extraction Language Scheme.\nParameter A:Prop.\nParameter B:Prop.\nTheorem id: A -> B -> A.\nExtraction id.\n\" | coqtop 2> /dev/null | awk '{if($0 != \"\") {print $0}}' | tail -n 2"]
   (_, stdout, _, _) <- S.runInteractiveCommand $ T.unpack coqcommand
   t <- T.hGetContents stdout
   T.putStrLn $ T.replace "\n" "" $ T.strip t
+-}
