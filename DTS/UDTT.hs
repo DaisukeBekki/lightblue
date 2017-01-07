@@ -27,9 +27,9 @@ module DTS.UDTT (
   -- * Computations
   betaReduce,
   strongBetaReduce,
+  sigmaElimination,
   add,
   multiply,
-  sigmaElimination,
   -- * De Bruijn notation <-> Variable-name notation
   Indexed(..),
   initializeIndex,
@@ -40,6 +40,7 @@ module DTS.UDTT (
   Judgment(..),
   fromDeBruijnContext,
   fromDeBruijnContextLoop,
+  printProofSearchQuery
   ) where
 
 import qualified Data.Text.Lazy as T      -- text
@@ -293,6 +294,31 @@ strongBetaReduce t preterm = case preterm of
                   m' -> Idpeel m' (strongBetaReduce 0 n)
   DRel i text m n -> DRel i text (strongBetaReduce 0 m) (strongBetaReduce 0 n)
 
+-- | eliminates nested Sigma constructions from a given preterm
+sigmaElimination :: Preterm -> Preterm
+sigmaElimination preterm = case preterm of
+  Pi a b     -> case a of
+                  Sigma a' b' -> sigmaElimination (Pi a' (Pi b' (subst (shiftIndices b 1 1) (Pair (Var 1) (Var 0)) 0)))
+                  _ -> Pi (sigmaElimination a) (sigmaElimination b)
+  Not m      -> Not (sigmaElimination m)
+  Lam m      -> Lam (sigmaElimination m)
+  App m n    -> App (sigmaElimination m) (sigmaElimination n)
+  Sigma a b  -> case a of
+                  Sigma a' b' -> sigmaElimination (Sigma a' (Sigma b' (subst (shiftIndices b 1 1) (Pair (Var 1) (Var 0)) 0)))
+                  _ -> Sigma (sigmaElimination a) (sigmaElimination b)
+  Pair m n   -> Pair (sigmaElimination m) (sigmaElimination n)
+  Proj s m   -> Proj s (sigmaElimination m)
+  Asp j m    -> Asp j (sigmaElimination m)
+  Lamvec m   -> Lamvec (sigmaElimination m)
+  Appvec j m -> Appvec j (sigmaElimination m)
+  Succ n     -> Succ (sigmaElimination n)
+  Natrec n e f -> Natrec (sigmaElimination n) (sigmaElimination e) (sigmaElimination f)
+  Eq a m n   -> Eq (sigmaElimination a) (sigmaElimination m) (sigmaElimination n)
+  Refl a m   -> Refl (sigmaElimination a) (sigmaElimination m)
+  Idpeel m n -> Idpeel (sigmaElimination m) (sigmaElimination n)
+  DRel j t m n -> DRel j t (sigmaElimination m) (sigmaElimination n)
+  m -> m
+
 -- | adds two preterms (of type `Nat`).
 add :: Preterm -> Preterm -> Preterm
 add m n = Natrec m n (Lam (Lam (Succ (Var 0))))
@@ -369,28 +395,6 @@ replaceLambda i preterm = deleteLambda i (addLambda i preterm)
   DRel j t m n -> DRel j t (replaceLambda i m) (replaceLambda i n)
   m -> m
 -}
-
-sigmaElimination :: Preterm -> Preterm
-sigmaElimination preterm = case preterm of
-  Pi a b     -> Pi (sigmaElimination a) (sigmaElimination b)
-  Not m      -> Not (sigmaElimination m)
-  Lam m      -> Lam (sigmaElimination m)
-  App m n    -> App (sigmaElimination m) (sigmaElimination n)
-  Sigma a b  -> case a of
-                  Sigma a' b' -> sigmaElimination (Sigma a' (Sigma b' (subst (shiftIndices b 1 1) (Pair (Var 1) (Var 0)) 0)))
-                  a' -> Sigma (sigmaElimination a') (sigmaElimination b)
-  Pair m n   -> Pair (sigmaElimination m) (sigmaElimination n)
-  Proj s m   -> Proj s (sigmaElimination m)
-  Asp j m    -> Asp j (sigmaElimination m)
-  Lamvec m   -> Lamvec (sigmaElimination m)
-  Appvec j m -> Appvec j (sigmaElimination m)
-  Succ n     -> Succ (sigmaElimination n)
-  Natrec n e f -> Natrec (sigmaElimination n) (sigmaElimination e) (sigmaElimination f)
-  Eq a m n   -> Eq (sigmaElimination a) (sigmaElimination m) (sigmaElimination n)
-  Refl a m   -> Refl (sigmaElimination a) (sigmaElimination m)
-  Idpeel m n -> Idpeel (sigmaElimination m) (sigmaElimination n)
-  DRel j t m n -> DRel j t (sigmaElimination m) (sigmaElimination n)
-  m -> m
 
 {- Initializing or Re-indexing of vars, @s and DRels -}
 
@@ -633,4 +637,15 @@ fromDeBruijnJudgment j =
   in VN.Judgment { VN.context = reverse vcontext',
                    VN.term = vterm',
                    VN.typ = vtyp' }
+
+-- | 
+printProofSearchQuery :: Context -> Preterm -> T.Text
+printProofSearchQuery cont ty = 
+  let (vcontext', vtyp') 
+        = initializeIndex $ do
+                            vcontext <- fromDeBruijnContextLoop [] $ reverse $ cont
+                            let varnames = reverse $ fst $ unzip vcontext
+                            vtyp <- fromDeBruijn varnames ty
+                            return (vcontext, vtyp)
+  in T.concat ["<mrow>", toMathML vcontext', "<mo>&vdash;</mo><mo>?</mo><mo>:</mo>", toMathML vtyp', "</mrow>"]
 

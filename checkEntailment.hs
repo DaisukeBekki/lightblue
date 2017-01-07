@@ -20,21 +20,16 @@ main :: IO()
 main = do
   sentences <- T.getContents
   nodes <- mapM ((fmap head) . (CP.simpleParse 24)) (T.lines sentences)
-  let premises = map (DTS.sigmaElimination . CP.sem) $ L.init $ nodes;
-      conclusion = (DTS.sigmaElimination . CP.sem) $ L.last $ nodes;
+  let premises = map (DTS.betaReduce . DTS.sigmaElimination . CP.sem) $ L.init $ nodes;
+      conclusion = (DTS.betaReduce . DTS.sigmaElimination . CP.sem) $ L.last $ nodes;
       siglists = map CP.sig nodes;
   T.putStrLn HTML.htmlHeader4MathML
-  mapM_ (\node -> do
-                  T.putStrLn HTML.startMathML
-                  T.putStrLn $ HTML.toMathML node
-                  T.putStrLn HTML.endMathML
-                  T.putStrLn "<hr size='10' />"
-                  T.putStrLn HTML.startMathML
-                  T.putStrLn $ HTML.toMathML $ DTS.betaReduce $ DTS.sigmaElimination $ CP.sem node
-                  T.putStrLn HTML.endMathML
-                  T.putStrLn "<hr size='10' />"
-                  ) nodes
-  T.putStrLn HTML.startMathML
-  mapM_ (T.putStrLn . Ty.utreeToMathML) $ Ty.proofSearch (reverse premises) (L.concat $ [("evt",DTS.Type),("entity",DTS.Type)]:siglists) conclusion
-  T.putStrLn HTML.endMathML
+  mapM_ (\node -> mapM_ T.putStrLn [HTML.startMathML, HTML.toMathML node, HTML.endMathML, "<hr size='10' />"]) nodes
+  let proofdiagrams = Ty.proofSearch (reverse premises) (L.concat $ [("evt",DTS.Type),("entity",DTS.Type)]:siglists) conclusion
+  if proofdiagrams == []
+     then mapM_ T.putStrLn ["No proof diagrams for: ", HTML.startMathML, DTS.printProofSearchQuery (reverse premises) conclusion, HTML.endMathML]
+      else do
+           T.putStrLn HTML.startMathML
+           mapM_ (T.putStrLn . Ty.utreeToMathML) proofdiagrams
+           T.putStrLn HTML.endMathML
   T.putStrLn HTML.htmlFooter4MathML
