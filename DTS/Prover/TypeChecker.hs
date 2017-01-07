@@ -263,7 +263,7 @@ typeInferU typeEnv sig (UD.App preM preN) = do
   case funcType of
     (UD.Pi preA preB) -> do
        rightTree <- typeCheckU typeEnv sig preN preA
-       let preB' = UD.betaReduce $ UD.subst preB preN 0
+       let preB' = UD.betaReduce $ UD.shiftIndices (UD.subst preB (UD.shiftIndices preN 1 0) 0) (-1) 0
        return (UPiE (UJudgement typeEnv (UD.App preM preN) preB') leftTree rightTree)
     otherwise -> []
 -- UD.shiftIndices (UD.subst preB preN 0) (-1) 0
@@ -407,7 +407,7 @@ searchIndex preA (x:xs) env result =
 -- make : executeの補助関数
 -- Pi型の項の、関数適用した結果の項と型を返す
 make :: UD.Preterm -> UD.Preterm -> UD.Preterm -> (UD.Preterm, UD.Preterm)
-make v preB p = (UD.App v p, UD.subst preB p 0)
+make v preB p = (UD.App v p, UD.shiftIndices (UD.subst preB (UD.shiftIndices p 1 0) 0) (-1) 0)
 
 --UD.shiftIndices (UD.subst preB p 0) (-1) 0)
 
