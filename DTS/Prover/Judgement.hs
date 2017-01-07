@@ -97,6 +97,7 @@ data UTree a =
  | UTopF a
  | UTopI a
  | UBotF a
+ | UDREL a
    deriving (Eq, Show)
 
 
@@ -131,6 +132,8 @@ utreeToTeX (UTopI judgement) =
   T.pack "\\nd[(\\underline{\\top I})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
 utreeToTeX (UBotF judgement) = 
   T.pack "\\nd[(\\underline{\\bot F})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
+utreeToTeX (UDREL judgement) = 
+  T.pack "\\nd[(\\underline{DRel})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
 
 
 -- utreeToMathML : UDTTのTree用のtoMathML関数
@@ -244,6 +247,12 @@ utreeToMathML (ASP judgement leftTree rightTree) = T.concat [
   toMathML judgement,
   T.pack "</mfrac></mrow>"
   ]
+utreeToMathML (UDREL judgement) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'><p style='text-decoration: underline;'>(DRel)</p></mi><mfrac linethickness='2px'>",
+  T.pack "<mi color='White'> Empty </mi>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
 
 
 
@@ -263,6 +272,7 @@ data Tree a =
  | TopF a
  | TopI a
  | BotF a
+ | DREL a
    deriving (Eq, Show)
 
 -- treeToTeX : DTTのTree用のtoTeX関数
@@ -294,6 +304,8 @@ treeToTeX (TopI judgement) =
   T.pack "\\nd[(\\top I)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
 treeToTeX (BotF judgement) = 
   T.pack "\\nd[(\\bot F)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
+treeToTeX (DREL judgement) = 
+  T.pack "\\nd[(DRel)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
 
 
 -- treeToMathML : DTTのTree用のtoMathML関数
@@ -397,6 +409,12 @@ treeToMathML (BotF judgement) = T.concat [
   toMathML judgement,
   T.pack "</mfrac></mrow>"
   ]
+treeToMathML (DREL judgement) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'>(DRel)</mi><mfrac linethickness='2px'>",
+  T.pack "<mi color='White'> Empty </mi>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
 
 
 -- getTypeU : UDTTの証明木の一番下のTypeを取り出す
@@ -416,6 +434,7 @@ getTypeU (USigE (UJudgement env preP preS) over) = [preS]
 getTypeU (UTopF (UJudgement env preTop preT)) = [preT]
 getTypeU (UTopI (UJudgement env preUnit preTop)) = [preTop]
 getTypeU (UBotF (UJudgement env preBot preT)) = [preT]
+getTypeU (UDREL (UJudgement env preBot preT)) = [preT]
 
 
 -- getTypeU : UDTTの証明木の一番下のTypeを取り出す
@@ -434,6 +453,7 @@ getType (SigE (Judgement env preP preS) over) = [preS]
 getType (TopF (Judgement env preTop preT)) = [preT]
 getType (TopI (Judgement env preUnit preTop)) = [preTop]
 getType (BotF (Judgement env preBot preT)) = [preT]
+getType (DREL (Judgement env preBot preT)) = [preT]
 
 
 -- getTermU : UDTTの証明木の一番下のTermを取り出す
@@ -453,6 +473,7 @@ getTermU (USigE (UJudgement env preP preS) over) = [preP]
 getTermU (UTopF (UJudgement env preTop preT)) = [preTop]
 getTermU (UTopI (UJudgement env preUnit preTop)) = [preUnit]
 getTermU (UBotF (UJudgement env preBot preT)) = [preBot]
+getTermU (UDREL (UJudgement env preBot preT)) = [preBot]
 
 
 -- getTerm : DTTの証明木の一番下のTermを取り出す
@@ -471,6 +492,7 @@ getTerm (SigE (Judgement env preP preS) over) = [preP]
 getTerm (TopF (Judgement env preTop preT)) = [preTop]
 getTerm (TopI (Judgement env preUnit preTop)) = [preUnit]
 getTerm (BotF (Judgement env preBot preT)) = [preBot]
+getTerm (DREL (Judgement env preBot preT)) = [preBot]
 
 
 -- printGammaU : UDTTの環境を出力する関数

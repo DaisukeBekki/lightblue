@@ -54,8 +54,8 @@ transP (UD.Pair preM preN) = do
 transP (UD.Proj selector preM) = do
   preterm <- transP preM
   if selector == UD.Fst
-  then do return (DT.Proj DT.Fst preterm)
-  else do return (DT.Proj DT.Snd preterm)
+    then do return (DT.Proj DT.Fst preterm)
+    else do return (DT.Proj DT.Snd preterm)
 transP UD.Type = [DT.Type]
 transP UD.Kind = [DT.Kind]
 transP UD.Top = [DT.Top]
@@ -263,9 +263,10 @@ typeInferU typeEnv sig (UD.App preM preN) = do
   case funcType of
     (UD.Pi preA preB) -> do
        rightTree <- typeCheckU typeEnv sig preN preA
-       let preB' = UD.subst preB preN 0
+       let preB' = UD.betaReduce $ UD.subst preB preN 0
        return (UPiE (UJudgement typeEnv (UD.App preM preN) preB') leftTree rightTree)
     otherwise -> []
+-- UD.shiftIndices (UD.subst preB preN 0) (-1) 0
 -- (ΣF) rule
 typeInferU typeEnv sig (UD.Sigma preA preB) = do
   leftTree <- (typeCheckU typeEnv sig preA UD.Type)
@@ -314,10 +315,14 @@ proofSearch typeEnv sig preterm = do
                        ++ (dismantleSig (changeSig sig []) [])
   let candidatesB = execute (changeSig sig []) candidatesA []
   let candidates = candidatesA ++ candidatesB
-  let ansTerms = searchType candidates (UD.shiftIndices preterm 1 0)
+  let ansTerms = searchType candidates preterm
   ansTerm <- ansTerms
-  typeCheckU typeEnv sig ansTerm (UD.shiftIndices preterm 1 0)
+  typeCheckU typeEnv sig ansTerm preterm
 
+{-
+let ansTerms = searchType candidates (UD.shiftIndices preterm 1 0)
+typeCheckU typeEnv sig ansTerm (UD.shiftIndices preterm 1 0)
+-}
 
 -- searchType : ProofSearchのための補助関数
 -- 与えた型をもつ項をリストのなかから探し、それを全て返す
@@ -403,5 +408,7 @@ searchIndex preA (x:xs) env result =
 -- Pi型の項の、関数適用した結果の項と型を返す
 make :: UD.Preterm -> UD.Preterm -> UD.Preterm -> (UD.Preterm, UD.Preterm)
 make v preB p = (UD.App v p, UD.subst preB p 0)
+
+--UD.shiftIndices (UD.subst preB p 0) (-1) 0)
 
 
