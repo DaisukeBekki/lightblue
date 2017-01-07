@@ -24,10 +24,20 @@ main = do
       conclusion = (DTS.betaReduce . DTS.sigmaElimination . CP.sem) $ L.last $ nodes;
       siglists = map CP.sig nodes;
   T.putStrLn HTML.htmlHeader4MathML
-  mapM_ (\node -> mapM_ T.putStrLn [HTML.startMathML, HTML.toMathML node, HTML.endMathML, "<hr size='10' />"]) nodes
+  mapM_ (\node -> mapM_ T.putStrLn [
+                    HTML.startMathML, 
+                    HTML.toMathML node, 
+                    HTML.endMathML, 
+                    "<hr size='15' />"
+                    ]) nodes
   let proofdiagrams = Ty.proofSearch (reverse premises) (L.concat $ [("evt",DTS.Type),("entity",DTS.Type)]:siglists) conclusion
   if proofdiagrams == []
-     then mapM_ T.putStrLn ["No proof diagrams for: ", HTML.startMathML, DTS.printProofSearchQuery (reverse premises) conclusion, HTML.endMathML]
+     then mapM_ T.putStrLn [
+           "No proof diagrams for: ", 
+           HTML.startMathML, 
+           DTS.printProofSearchQuery (reverse premises) conclusion, 
+           HTML.endMathML
+           ]
       else do
            T.putStrLn HTML.startMathML
            mapM_ (T.putStrLn . Ty.utreeToMathML) proofdiagrams
