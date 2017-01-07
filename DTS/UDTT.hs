@@ -29,6 +29,7 @@ module DTS.UDTT (
   strongBetaReduce,
   add,
   multiply,
+  sigmaElimination,
   -- * De Bruijn notation <-> Variable-name notation
   Indexed(..),
   initializeIndex,
@@ -368,6 +369,28 @@ replaceLambda i preterm = deleteLambda i (addLambda i preterm)
   DRel j t m n -> DRel j t (replaceLambda i m) (replaceLambda i n)
   m -> m
 -}
+
+sigmaElimination :: Preterm -> Preterm
+sigmaElimination preterm = case preterm of
+  Pi a b     -> Pi (sigmaElimination a) (sigmaElimination b)
+  Not m      -> Not (sigmaElimination m)
+  Lam m      -> Lam (sigmaElimination m)
+  App m n    -> App (sigmaElimination m) (sigmaElimination n)
+  Sigma a b  -> case a of
+                  Sigma a' b' -> sigmaElimination (Sigma a' (Sigma b' (subst (shiftIndices b 1 1) (Pair (Var 1) (Var 0)) 0)))
+                  a' -> Sigma (sigmaElimination a') (sigmaElimination b)
+  Pair m n   -> Pair (sigmaElimination m) (sigmaElimination n)
+  Proj s m   -> Proj s (sigmaElimination m)
+  Asp j m    -> Asp j (sigmaElimination m)
+  Lamvec m   -> Lamvec (sigmaElimination m)
+  Appvec j m -> Appvec j (sigmaElimination m)
+  Succ n     -> Succ (sigmaElimination n)
+  Natrec n e f -> Natrec (sigmaElimination n) (sigmaElimination e) (sigmaElimination f)
+  Eq a m n   -> Eq (sigmaElimination a) (sigmaElimination m) (sigmaElimination n)
+  Refl a m   -> Refl (sigmaElimination a) (sigmaElimination m)
+  Idpeel m n -> Idpeel (sigmaElimination m) (sigmaElimination n)
+  DRel j t m n -> DRel j t (sigmaElimination m) (sigmaElimination n)
+  m -> m
 
 {- Initializing or Re-indexing of vars, @s and DRels -}
 
