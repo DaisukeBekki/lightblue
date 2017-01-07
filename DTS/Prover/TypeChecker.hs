@@ -314,7 +314,7 @@ proofSearch typeEnv sig preterm = do
   let candidatesA = (dismantle typeEnv typeEnv [])
                        ++ (dismantleSig (changeSig sig []) [])
   let candidatesB = execute (changeSig sig []) candidatesA []
-  let candidates = candidatesA ++ candidatesB
+  let candidates = candidatesA ++ candidatesB ++ [(UD.Unit, UD.Top)]
   let ansTerms = searchType candidates preterm
   ansTerm <- ansTerms
   typeCheckU typeEnv sig ansTerm preterm
