@@ -291,9 +291,10 @@ typeInferU typeEnv sig (UD.Proj selector preM) =
           bodyType <- getTypeU overTree
           case bodyType of
             (UD.Sigma preA preB) -> do
-               let preB' = UD.subst preB (UD.Proj UD.Fst preM) 0
+               let preB' = UD.betaReduce $ UD.shiftIndices (UD.subst preB (UD.shiftIndices (UD.Proj UD.Fst preM) 1 0) 0) (-1) 0
                return (USigE (UJudgement typeEnv (UD.Proj UD.Snd preM) preB') overTree)
             otherwise -> []
+-- UD.subst preB (UD.Proj UD.Fst preM) 0
 -- (Asp) rule
 typeInferU typeEnv sig (UD.Asp i preA) = do
   leftTree <- (typeCheckU typeEnv sig preA UD.Type)
@@ -345,11 +346,11 @@ dismantle env (preterm:xs) result =
                   dismantle env (preB':preA:xs) ((UD.Proj UD.Snd (UD.Var k), preB'):(UD.Proj UD.Fst (UD.Var k), preA):(UD.Var k, preterm):result)
         Nothing -> let newTerm = search result preterm in
                    case newTerm of
-                     Just term -> let preB' = UD.subst preB (UD.Proj UD.Fst term) 0 in
+                     Just term -> let preB' = UD.shiftIndices (UD.subst preB (UD.shiftIndices (UD.Proj UD.Fst term) 1 0) 0) (-1) 0 in
                                   dismantle env (preB':preA:xs) ((UD.Proj UD.Snd term, preB'):(UD.Proj UD.Fst term, preA):result)
                      Nothing -> dismantle env xs result
     otherwise -> dismantle env xs result
---(UD.shiftIndices (UD.Var k) 1 0)
+-- UD.subst preB (UD.Proj UD.Fst term) 0
 
 -- execute : シグネチャの中からPi型を見つけて投射をかける
 -- シグネチャはあらかじめchangeSigで型を変換しておく
