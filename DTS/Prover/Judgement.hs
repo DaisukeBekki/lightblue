@@ -82,22 +82,23 @@ instance MathML Judgement where
 
 -- UTree : UDTT用の木構造
 data UTree a = 
-   UEmpty
- | UCHK a (UTree a)
- | UCON a
- | UVAR a
- | UTypeF a
- | ASP a (UTree a) (UTree a)
- | UPiF a (UTree a) (UTree a)
- | UPiI a (UTree a) (UTree a)
- | UPiE a (UTree a) (UTree a)
- | USigF a (UTree a) (UTree a)
- | USigI a (UTree a) (UTree a)
- | USigE a (UTree a)
- | UTopF a
- | UTopI a
- | UBotF a
- | UDREL a
+   UEmpty                          -- Empty Tree
+ | UCHK a (UTree a)                -- (CHK) rule
+ | UCON a                          -- (CON) rule
+ | UVAR a                          -- (VAR) rule
+ | UTypeF a                        -- (typeF) rule
+ | ASP a (UTree a) (UTree a)       -- (@) rule
+ | UPiF a (UTree a) (UTree a)      -- (Pi F) rule
+ | UPiI a (UTree a) (UTree a)      -- (Pi I) rule
+ | UPiE a (UTree a) (UTree a)      -- (Pi E) rule
+ | USigF a (UTree a) (UTree a)     -- (Sig F) rule
+ | USigI a (UTree a) (UTree a)     -- (Sig I) rule
+ | USigE a (UTree a)               -- (Sig E) rule
+ | UTopF a                         -- (TF) rule
+ | UTopI a                         -- (TI) rule
+ | UBotF a                         -- (Bot F) rule
+ | UDREL a                         -- (DRel) rule
+ | UError a (UTree a) (UTree a)    -- for debug
    deriving (Eq, Show)
 
 
@@ -134,6 +135,8 @@ utreeToTeX (UBotF judgement) =
   T.pack "\\nd[(\\underline{\\bot F})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
 utreeToTeX (UDREL judgement) = 
   T.pack "\\nd[(\\underline{DRel})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
+utreeToTeX (UError judgement leftTree rightTree) = 
+  T.pack "\\nd[(Error)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (utreeToTeX leftTree) `T.append` T.pack "&" `T.append` (utreeToTeX rightTree) `T.append` T.pack "}"
 
 
 -- utreeToMathML : UDTTのTree用のtoMathML関数
@@ -174,7 +177,7 @@ utreeToMathML (UPiF judgement leftTree rightTree) = T.concat [
   T.pack "</mfrac></mrow>"
   ]
 utreeToMathML (UPiI judgement leftTree rightTree) = T.concat [
-  T.pack "<mrow><mi fontsize='0.8'>(&Pi;I)</mi><mfrac linethickness='2px'>",
+  T.pack "<mrow><mi fontsize='0.8'><p style='text-decoration: underline;'>(&Pi;I)</p></mi><mfrac linethickness='2px'>",
   T.pack "<mrow>",
   utreeToMathML leftTree,
   T.pack " ",
@@ -253,6 +256,17 @@ utreeToMathML (UDREL judgement) = T.concat [
   toMathML judgement,
   T.pack "</mfrac></mrow>"
   ]
+utreeToMathML (UError judgement leftTree rightTree) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'>(Error)</mi><mfrac linethickness='2px'>",
+  T.pack "<mrow>",
+  utreeToMathML leftTree,
+  T.pack " ",
+  utreeToMathML rightTree,
+  T.pack "</mrow>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+
 
 
 
@@ -273,6 +287,7 @@ data Tree a =
  | TopI a
  | BotF a
  | DREL a
+ | Error a (Tree a) (Tree a)    -- for debug
    deriving (Eq, Show)
 
 -- treeToTeX : DTTのTree用のtoTeX関数
@@ -306,6 +321,8 @@ treeToTeX (BotF judgement) =
   T.pack "\\nd[(\\bot F)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
 treeToTeX (DREL judgement) = 
   T.pack "\\nd[(DRel)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
+treeToTeX (Error judgement leftTree rightTree) = 
+  T.pack "\\nd[(Error)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (treeToTeX leftTree) `T.append` T.pack "&" `T.append` (treeToTeX rightTree) `T.append` T.pack "}"
 
 
 -- treeToMathML : DTTのTree用のtoMathML関数
@@ -415,6 +432,16 @@ treeToMathML (DREL judgement) = T.concat [
   toMathML judgement,
   T.pack "</mfrac></mrow>"
   ]
+treeToMathML (Error judgement leftTree rightTree) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'>(Error)</mi><mfrac linethickness='2px'>",
+  T.pack "<mrow>",
+  treeToMathML leftTree,
+  T.pack " ",
+  treeToMathML rightTree,
+  T.pack "</mrow>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
 
 
 -- getTypeU : UDTTの証明木の一番下のTypeを取り出す
@@ -435,9 +462,10 @@ getTypeU (UTopF (UJudgement env preTop preT)) = [preT]
 getTypeU (UTopI (UJudgement env preUnit preTop)) = [preTop]
 getTypeU (UBotF (UJudgement env preBot preT)) = [preT]
 getTypeU (UDREL (UJudgement env preBot preT)) = [preT]
+getTypeU (UError (UJudgement env preBot preT) left right) = [preT]
 
 
--- getTypeU : UDTTの証明木の一番下のTypeを取り出す
+-- getType : DTTの証明木の一番下のTypeを取り出す
 getType :: (Tree Judgement) -> [DT.Preterm]
 getType Empty = []
 getType (CHK (Judgement env preM preA) over) = [preA]
@@ -454,6 +482,7 @@ getType (TopF (Judgement env preTop preT)) = [preT]
 getType (TopI (Judgement env preUnit preTop)) = [preTop]
 getType (BotF (Judgement env preBot preT)) = [preT]
 getType (DREL (Judgement env preBot preT)) = [preT]
+getType (Error (Judgement env preBot preT) left right) = [preT]
 
 
 -- getTermU : UDTTの証明木の一番下のTermを取り出す
@@ -474,6 +503,7 @@ getTermU (UTopF (UJudgement env preTop preT)) = [preTop]
 getTermU (UTopI (UJudgement env preUnit preTop)) = [preUnit]
 getTermU (UBotF (UJudgement env preBot preT)) = [preBot]
 getTermU (UDREL (UJudgement env preBot preT)) = [preBot]
+getTermU (UError (UJudgement env preBot preT) left right) = [preBot]
 
 
 -- getTerm : DTTの証明木の一番下のTermを取り出す
@@ -493,6 +523,7 @@ getTerm (TopF (Judgement env preTop preT)) = [preTop]
 getTerm (TopI (Judgement env preUnit preTop)) = [preUnit]
 getTerm (BotF (Judgement env preBot preT)) = [preBot]
 getTerm (DREL (Judgement env preBot preT)) = [preBot]
+getTerm (Error (Judgement env preBot preT) left right) = [preBot]
 
 
 -- printGammaU : UDTTの環境を出力する関数
