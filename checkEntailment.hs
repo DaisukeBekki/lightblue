@@ -20,13 +20,17 @@ main :: IO()
 main = do
   sentences <- T.getContents
   nodes <- mapM ((fmap head) . (CP.simpleParse 24)) (T.lines sentences)
-  let premises = map CP.sem $ L.init $ nodes;
-      conclusion = CP.sem $ L.last $ nodes;
+  let premises = map (DTS.sigmaElimination . CP.sem) $ L.init $ nodes;
+      conclusion = (DTS.sigmaElimination . CP.sem) $ L.last $ nodes;
       siglists = map CP.sig nodes;
   T.putStrLn HTML.htmlHeader4MathML
   mapM_ (\node -> do
                   T.putStrLn HTML.startMathML
                   T.putStrLn $ HTML.toMathML node
+                  T.putStrLn HTML.endMathML
+                  T.putStrLn "<hr size='10' />"
+                  T.putStrLn HTML.startMathML
+                  T.putStrLn $ HTML.toMathML $ DTS.betaReduce $ DTS.sigmaElimination $ CP.sem node
                   T.putStrLn HTML.endMathML
                   T.putStrLn "<hr size='10' />"
                   ) nodes
