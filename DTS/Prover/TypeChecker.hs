@@ -95,7 +95,6 @@ transE (udtt:rest) =
 
 -- @-Elimination
 aspElim :: (UTree UJudgement) -> [Tree Judgement]
-aspElim UEmpty = do return Empty
 -- (@)規則
 aspElim (ASP (UJudgement uenv (UD.Asp n preA) preA2) left right) = 
   aspElim right
@@ -170,14 +169,14 @@ aspElim (USigE (UJudgement uenv (UD.Proj selector preM) preA) over) = do
       typeS <- getType resultO
       case typeS of
         DT.Sigma preA' preB' -> return (SigE (Judgement (transE uenv) (DT.Proj DT.Fst preM') (preA')) resultO)
-        otherwise -> return Empty
+        otherwise -> []
     UD.Snd -> do
       resultO <- aspElim over
       preM' <- getTerm resultO
       typeS <- getType resultO
       case typeS of
         DT.Sigma preA' preB' -> return (SigE (Judgement (transE uenv) (DT.Proj DT.Snd preM') (preB')) resultO)
-        otherwise -> return Empty
+        otherwise -> []
 -- (CHK)規則
 aspElim (UCHK (UJudgement uenv preM preA) over) = do
   resultO <- aspElim over
@@ -191,14 +190,28 @@ aspElim (UDREL (UJudgement uenv (UD.DRel i t preM preN) typ)) = do
   typ' <- transP typ
   return (DREL (Judgement (transE uenv) (DT.DRel i t preM' preN') typ'))
 -- (Error)
-aspElim (UError (UJudgement uenv pretermA pretermB) left right) = do
+aspElim (UError (UJudgement uenv pretermA pretermB) text) = []
+{-
+aspElim (UError (UJudgement uenv pretermA pretermB) text) = do
   preA' <- transP pretermA
   preB' <- transP pretermB
-  resultL <- aspElim left
-  resultR <- aspElim right
-  return (Error (Judgement (transE uenv) preA' preB') resultL resultR)  
+  return (Error (Judgement (transE uenv) preA' preB') text)
+-}
+{-
+--  resultO <- aspElim over
+  preA' <- transP pretermA
+  preB' <- transP pretermB
+  let tree = CON (Judgement [] (DT.Con $ T.pack "error") (DT.Con $ T.pack "error"))
+  return (Error (Judgement (transE uenv) preA' preB') tree text)
+-}
+{-
+aspElim (UError (UJudgement uenv pretermA pretermB) over text) = do
+  resultO <- aspElim over
+  preA' <- transP pretermA
+  preB' <- transP pretermB
+  return (Error (Judgement (transE uenv) preA' preB') resultO text)
+-}  
 --aspElim tree = [tree]
-
 
 
 
@@ -226,8 +239,8 @@ typeCheckU typeEnv sig preE value = do
   overTree <- typeInferU typeEnv sig preE
   resultType <- getTypeU overTree
   if value == resultType
-  then do return (UCHK (UJudgement typeEnv preE value) overTree)
-  else do return (UError (UJudgement typeEnv (UD.Con $ T.pack "does not match type") value)overTree UEmpty)
+    then do return (UCHK (UJudgement typeEnv preE value) overTree)
+    else do return (UError (UJudgement typeEnv value resultType) (T.pack "does not match type"))
 {-
 typeCheckU typeEnv sig preE value = do
   overTree <- typeInferU typeEnv sig preE
@@ -250,7 +263,7 @@ typeInferU typeEnv _ (UD.Var k) = do
 typeInferU typeEnv sig (UD.Con text) = 
   let conTypes = getList sig text in
   if conTypes == []
-  then do return (UError (UJudgement typeEnv (UD.Con text) (UD.Con $ T.pack "is not exist.")) UEmpty UEmpty)
+  then do return (UCON (UJudgement typeEnv (UD.Con text) (UD.Con $ T.pack "is not exist.")))
   else do conType <- conTypes
           return (UCON (UJudgement typeEnv (UD.Con text) conType))
 -- (TopF) rule
@@ -285,7 +298,7 @@ typeInferU typeEnv sig (UD.App preM preN) = do
        rightTree <- typeCheckU typeEnv sig preN preA
        let preB' = UD.betaReduce $ UD.shiftIndices (UD.subst preB (UD.shiftIndices preN 1 0) 0) (-1) 0
        return (UPiE (UJudgement typeEnv (UD.App preM preN) preB') leftTree rightTree)
-    otherwise -> do return (UError (UJudgement typeEnv funcType (UD.Con $ T.pack "is not a function")) leftTree UEmpty)
+    otherwise -> do return (UError (UJudgement typeEnv (UD.App preM preN) (UD.Con $ T.pack "???")) (T.pack "Not a function"))
 -- (ΣF) rule
 typeInferU typeEnv sig (UD.Sigma preA preB) = do
   leftTree <- (typeCheckU typeEnv sig preA UD.Type)
@@ -305,14 +318,14 @@ typeInferU typeEnv sig (UD.Proj selector preM) =
           case bodyType of
             (UD.Sigma preA preB) ->
                return (USigE (UJudgement typeEnv (UD.Proj UD.Fst preM) preA) overTree)
-            otherwise -> do return (UError (UJudgement typeEnv bodyType (UD.Con $ T.pack "is not a Sigma type")) overTree UEmpty)
+            otherwise -> do return (UError (UJudgement typeEnv (UD.Proj UD.Fst preM) (UD.Con $ T.pack "???")) (T.pack "Not a Sigma type"))
   else do overTree <- typeInferU typeEnv sig preM
           bodyType <- getTypeU overTree
           case bodyType of
             (UD.Sigma preA preB) -> do
                let preB' = UD.betaReduce $ UD.shiftIndices (UD.subst preB (UD.shiftIndices (UD.Proj UD.Fst preM) 1 0) 0) (-1) 0
                return (USigE (UJudgement typeEnv (UD.Proj UD.Snd preM) preB') overTree)
-            otherwise -> do return (UError (UJudgement typeEnv bodyType (UD.Con $ T.pack "is not a Sigma type")) overTree UEmpty)
+            otherwise -> do return (UError (UJudgement typeEnv (UD.Proj UD.Snd preM) (UD.Con $ T.pack "???")) (T.pack "Not a Sigma type"))
 -- UD.subst preB (UD.Proj UD.Fst preM) 0
 -- (Asp) rule
 typeInferU typeEnv sig (UD.Asp i preA) = do
@@ -337,15 +350,12 @@ proofSearch typeEnv sig preterm = do
   let candidates = candidatesA ++ candidatesB ++ [(UD.Unit, UD.Top)]
   let ansTerms = searchType candidates preterm
   if ansTerms == []
-  then do let results = show candidates
-          return (UError (UJudgement typeEnv (UD.Con $ T.pack "failed: proofSearch") preterm) (UError (UJudgement [] (UD.Con $ T.pack "result of dismantle & execute") (UD.Con $ T.pack results)) UEmpty UEmpty) UEmpty)
-  else do ansTerm <- ansTerms
-          typeCheckU typeEnv sig ansTerm preterm
+    then do let results = show candidates
+            let overTree = (UCON (UJudgement [] (UD.Con $ T.pack "?") (UD.Con $ T.pack "?")))
+            return (UError (UJudgement typeEnv (UD.Con $ T.pack "???") preterm) (T.pack "fail: proofSearch"))
+    else do ansTerm <- ansTerms
+            typeCheckU typeEnv sig ansTerm preterm
 
-{-
-let ansTerms = searchType candidates (UD.shiftIndices preterm 1 0)
-typeCheckU typeEnv sig ansTerm (UD.shiftIndices preterm 1 0)
--}
 
 -- searchType : ProofSearchのための補助関数
 -- 与えた型をもつ項をリストのなかから探し、それを全て返す
