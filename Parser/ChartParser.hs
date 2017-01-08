@@ -95,7 +95,9 @@ printNodesInHTML handle nodes =
           do
           T.hPutStrLn handle $ "<p>";
           T.hPutStrLn handle $ CCG.pf node;
-          T.hPutStrLn handle $ "</p>";
+          T.hPutStrLn handle $ " [";
+          T.hPutStrLn handle $ T.pack $ show $ ((fromRational $ CCG.score node)::Fixed E2);
+          T.hPutStrLn handle $ "]</p>";
           T.hPutStrLn handle $ HTML.startMathML;
           T.hPutStrLn handle $ HTML.toMathML node;
           T.hPutStrLn handle $ HTML.endMathML;
