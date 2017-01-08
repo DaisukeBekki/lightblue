@@ -189,7 +189,15 @@ aspElim (UDREL (UJudgement uenv (UD.DRel i t preM preN) typ)) = do
   preN' <- transP preN
   typ' <- transP typ
   return (DREL (Judgement (transE uenv) (DT.DRel i t preM' preN') typ'))
+-- (Error)
+aspElim (UError (UJudgement uenv pretermA pretermB) left right) = do
+  preA' <- transP pretermA
+  preB' <- transP pretermB
+  resultL <- aspElim left
+  resultR <- aspElim right
+  return (Error (Judgement (transE uenv) preA' preB') resultL resultR)  
 --aspElim tree = [tree]
+
 
 
 
@@ -216,8 +224,16 @@ typeCheckU typeEnv sig (UD.Pair preM preN) (UD.Sigma preA preB) = do
 typeCheckU typeEnv sig preE value = do
   overTree <- typeInferU typeEnv sig preE
   resultType <- getTypeU overTree
+  if value == resultType
+  then do return (UCHK (UJudgement typeEnv preE value) overTree)
+  else do return (UError (UJudgement typeEnv (UD.Con $ T.pack "does not match type") value)overTree UEmpty)
+{-
+typeCheckU typeEnv sig preE value = do
+  overTree <- typeInferU typeEnv sig preE
+  resultType <- getTypeU overTree
   M.guard (value == resultType)
   return (UCHK (UJudgement typeEnv preE value) overTree)
+-}
 
 
 -- typeInferU : UDTTの型推論
@@ -230,9 +246,12 @@ typeInferU typeEnv _ (UD.Var k) = do
   let varType = typeEnv !! k
   return (UVAR (UJudgement typeEnv (UD.Var k) varType))
 -- (CON) rule
-typeInferU typeEnv sig (UD.Con text) = do
-  conType <- getList sig text
-  return (UCON (UJudgement typeEnv (UD.Con text) conType))
+typeInferU typeEnv sig (UD.Con text) = 
+  let conTypes = getList sig text in
+  if conTypes == []
+  then do return (UError (UJudgement typeEnv (UD.Con text) (UD.Con $ T.pack "is not exist.")) UEmpty UEmpty)
+  else do conType <- conTypes
+          return (UCON (UJudgement typeEnv (UD.Con text) conType))
 -- (TopF) rule
 typeInferU typeEnv _ UD.Top = do
   return (UTopF (UJudgement typeEnv UD.Top UD.Type))
@@ -265,8 +284,7 @@ typeInferU typeEnv sig (UD.App preM preN) = do
        rightTree <- typeCheckU typeEnv sig preN preA
        let preB' = UD.betaReduce $ UD.shiftIndices (UD.subst preB (UD.shiftIndices preN 1 0) 0) (-1) 0
        return (UPiE (UJudgement typeEnv (UD.App preM preN) preB') leftTree rightTree)
-    otherwise -> []
--- UD.shiftIndices (UD.subst preB preN 0) (-1) 0
+    otherwise -> do return (UError (UJudgement typeEnv funcType (UD.Con $ T.pack "is not a function")) leftTree UEmpty)
 -- (ΣF) rule
 typeInferU typeEnv sig (UD.Sigma preA preB) = do
   leftTree <- (typeCheckU typeEnv sig preA UD.Type)
@@ -286,14 +304,14 @@ typeInferU typeEnv sig (UD.Proj selector preM) =
           case bodyType of
             (UD.Sigma preA preB) ->
                return (USigE (UJudgement typeEnv (UD.Proj UD.Fst preM) preA) overTree)
-            otherwise -> []
+            otherwise -> do return (UError (UJudgement typeEnv bodyType (UD.Con $ T.pack "is not a Sigma type")) overTree UEmpty)
   else do overTree <- typeInferU typeEnv sig preM
           bodyType <- getTypeU overTree
           case bodyType of
             (UD.Sigma preA preB) -> do
                let preB' = UD.betaReduce $ UD.shiftIndices (UD.subst preB (UD.shiftIndices (UD.Proj UD.Fst preM) 1 0) 0) (-1) 0
                return (USigE (UJudgement typeEnv (UD.Proj UD.Snd preM) preB') overTree)
-            otherwise -> []
+            otherwise -> do return (UError (UJudgement typeEnv bodyType (UD.Con $ T.pack "is not a Sigma type")) overTree UEmpty)
 -- UD.subst preB (UD.Proj UD.Fst preM) 0
 -- (Asp) rule
 typeInferU typeEnv sig (UD.Asp i preA) = do
@@ -317,8 +335,10 @@ proofSearch typeEnv sig preterm = do
   let candidatesB = execute (changeSig sig []) candidatesA []
   let candidates = candidatesA ++ candidatesB ++ [(UD.Unit, UD.Top)]
   let ansTerms = searchType candidates preterm
-  ansTerm <- ansTerms
-  typeCheckU typeEnv sig ansTerm preterm
+  if ansTerms == []
+  then do return (UError (UJudgement typeEnv (UD.Con $ T.pack "failed: proofSearch") preterm) UEmpty UEmpty)
+  else do ansTerm <- ansTerms
+          typeCheckU typeEnv sig ansTerm preterm
 
 {-
 let ansTerms = searchType candidates (UD.shiftIndices preterm 1 0)
