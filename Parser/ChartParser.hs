@@ -102,7 +102,7 @@ printNodesInHTML handle nodes =
           T.hPutStrLn handle $ HTML.toMathML node;
           T.hPutStrLn handle $ HTML.endMathML;
           T.hPutStrLn handle $ HTML.startMathML;
-          -- mapM_ ((T.hPutStrLn handle) . Ty.utreeToMathML) $ Ty.typeCheckU [] ((CCG.sig node)++[("evt",U.Type),("entity",U.Type)]) (CCG.sem node) (U.Type);
+          mapM_ ((T.hPutStrLn handle) . Ty.utreeToMathML) $ Ty.typeCheckU [] ((CCG.sig node)++[("evt",U.Type),("entity",U.Type)]) (CCG.sem node) (U.Type);
           T.hPutStrLn handle $ HTML.endMathML 
           ) nodes
   T.hPutStrLn handle HTML.htmlFooter4MathML
