@@ -336,7 +336,8 @@ proofSearch typeEnv sig preterm = do
   let candidates = candidatesA ++ candidatesB ++ [(UD.Unit, UD.Top)]
   let ansTerms = searchType candidates preterm
   if ansTerms == []
-  then do return (UError (UJudgement typeEnv (UD.Con $ T.pack "failed: proofSearch") preterm) UEmpty UEmpty)
+  then do let results = show candidates
+          return (UError (UJudgement typeEnv (UD.Con $ T.pack "failed: proofSearch") preterm) (UError (UJudgement [] (UD.Con $ T.pack "result of dismantle & execute") (UD.Con $ T.pack results)) UEmpty UEmpty) UEmpty)
   else do ansTerm <- ansTerms
           typeCheckU typeEnv sig ansTerm preterm
 
