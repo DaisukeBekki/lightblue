@@ -287,7 +287,7 @@ data Tree a =
  | TopI a
  | BotF a
  | DREL a
- | Error a (Tree a) (Tree a)    -- for debug
+ | Error a (Tree a) (Tree a)
    deriving (Eq, Show)
 
 -- treeToTeX : DTTのTree用のtoTeX関数

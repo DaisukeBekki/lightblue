@@ -95,6 +95,7 @@ transE (udtt:rest) =
 
 -- @-Elimination
 aspElim :: (UTree UJudgement) -> [Tree Judgement]
+aspElim UEmpty = do return Empty
 -- (@)規則
 aspElim (ASP (UJudgement uenv (UD.Asp n preA) preA2) left right) = 
   aspElim right
