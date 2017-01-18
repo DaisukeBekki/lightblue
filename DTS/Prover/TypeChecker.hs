@@ -240,7 +240,10 @@ typeCheckU typeEnv sig preE value = do
   resultType <- getTypeU overTree
   if value == resultType
     then do return (UCHK (UJudgement typeEnv preE value) overTree)
-    else do return (UError (UJudgement typeEnv value resultType) (T.pack "does not match type"))
+    else if value == UD.Kind
+      then []
+      else do return (UError (UJudgement typeEnv value resultType) (T.pack "does not match type")) 
+--    else do return (UError (UJudgement typeEnv value resultType) (T.pack "does not match type"))
 {-
 typeCheckU typeEnv sig preE value = do
   overTree <- typeInferU typeEnv sig preE
@@ -345,17 +348,18 @@ typeInferU typeEnv _ (UD.DRel i t preM preN) = do
 proofSearch :: TUEnv -> SUEnv -> UD.Preterm -> [UTree UJudgement]
 proofSearch typeEnv sig preterm = do
   let candidatesA = (dismantle typeEnv typeEnv [])
-                       ++ (dismantleSig (changeSig sig []) [])
+                       ++ (dismantleSig (changeSig sig []) []) ++ [(UD.Unit, UD.Top)]
   let candidatesB = execute (changeSig sig []) candidatesA []
-  let candidates = candidatesA ++ candidatesB ++ [(UD.Unit, UD.Top)]
+  let candidatesC = execute (changeTenv typeEnv typeEnv []) candidatesA []
+  let candidates = candidatesA ++ candidatesB ++ candidatesC
   let ansTerms = searchType candidates preterm
   if ansTerms == []
-    then do let results = show candidates
-            let overTree = (UCON (UJudgement [] (UD.Con $ T.pack "?") (UD.Con $ T.pack "?")))
-            return (UError (UJudgement typeEnv (UD.Con $ T.pack "???") preterm) (T.pack "fail: proofSearch"))
+    then do let envs = show candidates
+            return (UError (UJudgement typeEnv (UD.Con $ T.pack "???") preterm) (T.pack "fail: proofSearch." `T.append` T.pack envs))
     else do ansTerm <- ansTerms
             typeCheckU typeEnv sig ansTerm preterm
-
+--let results = show candidates
+--let overTree = (UCON (UJudgement [] (UD.Con $ T.pack "?") (UD.Con $ T.pack "?")))
 
 -- searchType : ProofSearchのための補助関数
 -- 与えた型をもつ項をリストのなかから探し、それを全て返す
@@ -374,7 +378,7 @@ dismantle env (preterm:xs) result =
     (UD.Sigma preA preB) -> 
       let index = L.elemIndex preterm env in
       case index of
-        Just k -> let preB' = UD.subst preB (UD.Proj UD.Fst (UD.Var k)) 0 in
+        Just k -> let preB' = UD.shiftIndices (UD.subst preB (UD.shiftIndices (UD.Proj UD.Fst (UD.Var k)) 1 0) 0) (-1) 0 in
                   dismantle env (preB':preA:xs) ((UD.Proj UD.Snd (UD.Var k), preB'):(UD.Proj UD.Fst (UD.Var k), preA):(UD.Var k, preterm):result)
         Nothing -> let newTerm = search result preterm in
                    case newTerm of
@@ -383,6 +387,7 @@ dismantle env (preterm:xs) result =
                      Nothing -> dismantle env xs result
     otherwise -> dismantle env xs result
 -- UD.subst preB (UD.Proj UD.Fst term) 0
+-- UD.subst preB (UD.Proj UD.Fst (UD.Var k)) 0
 
 -- execute : シグネチャの中からPi型を見つけて投射をかける
 -- シグネチャはあらかじめchangeSigで型を変換しておく
@@ -395,7 +400,12 @@ execute ((v, preterm):xs) env result =
       let anslist = do {p <- termAs;
                         return (make v preB p)} in
       execute (anslist ++ xs) env ((v, preterm):(anslist ++ result))
-    otherwise -> execute xs env result
+    otherwise -> execute xs env ((v, preterm):result)
+
+-- executeT : 型環境の中からPi型を見つけて投射をかける
+-- 型環境はあらかじめchangeTenvで型を変換しておく
+--executeT :: [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)]
+--execute
 
 
 -- search : dismantleの補助関数
@@ -414,7 +424,7 @@ dismantleSig [] result = result
 dismantleSig ((term, preterm):xs) result = 
   case preterm of
     (UD.Sigma preA preB) -> 
-      let preB' = UD.subst preB (UD.Proj UD.Fst term) 0 in
+      let preB' = UD.shiftIndices (UD.subst preB (UD.shiftIndices (UD.Proj UD.Fst term) 1 0) 0) (-1) 0 in
       dismantleSig ((UD.Proj UD.Fst term, preA):(UD.Proj UD.Snd term, preB'):xs) ((term, preterm):result)
     otherwise -> dismantleSig xs ((term, preterm):result)
 
@@ -424,6 +434,18 @@ dismantleSig ((term, preterm):xs) result =
 changeSig :: SUEnv -> [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)]
 changeSig [] result = result
 changeSig ((text, preterm):xs) result = (UD.Con text, preterm):(changeSig xs result)
+
+
+-- changeTenv : executeTの補助関数
+-- 型環境の型を変更
+changeTenv :: TUEnv -> TUEnv -> [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)]
+changeTenv _ [] result = result
+changeTenv env (preterm:xs) result = 
+  let index = L.elemIndex preterm env in
+  case index of
+    Just k -> let term = (UD.Var k) in
+              changeTenv env xs ((term, preterm):result)
+    otherwise -> changeTenv env xs result
 
 
 -- searchIndex : executeの補助関数
@@ -442,6 +464,12 @@ searchIndex preA (x:xs) env result =
 make :: UD.Preterm -> UD.Preterm -> UD.Preterm -> (UD.Preterm, UD.Preterm)
 make v preB p = (UD.App v p, UD.shiftIndices (UD.subst preB (UD.shiftIndices p 1 0) 0) (-1) 0)
 
---UD.shiftIndices (UD.subst preB p 0) (-1) 0)
+
+-- sigToMathML : Debug用関数
+-- candidatesの中身をmathML形式で表示
+sigToMathML :: [(UD.Preterm, UD.Preterm)] -> T.Text
+sigToMathML [] = T.pack " "
+sigToMathML ((term, typ):rest) = 
+  (toMathML term) `T.append` (T.pack " : ") `T.append` (toMathML typ) `T.append` (T.pack ", ") `T.append` (sigToMathML rest)
 
 
