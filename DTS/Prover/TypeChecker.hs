@@ -1,3 +1,5 @@
+{-# LANGUAGE DoAndIfThenElse #-}
+
 {-|
 Module      : TypeChecker
 Description : A Typechecker for DTS
