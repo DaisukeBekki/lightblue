@@ -17,14 +17,6 @@ module Parser.ChartParser (
   -- * Main parsing functions
   parse,
   simpleParse,
-  posTagger,
-  -- * Text and TeX interfaces
-  printChartInTeX,
-  printNodesInText,
-  printNNodesInTeX,
-  printNodesInTeX,
-  printNodesInHTML,
-  --printNodeInHTML,
   -- * Partial parsing function(s)
   ParseResult(..),
   extractBestParse
@@ -32,112 +24,16 @@ module Parser.ChartParser (
 
 import Data.List as L
 import Data.Char                       --base
-import Data.Fixed                      --base
 import qualified Data.Text.Lazy as T   --text
-import qualified Data.Text.Lazy.IO as T --text
 import qualified Data.Map as M         --container
-import qualified System.IO as S        --base
 import qualified Parser.CCG as CCG --(Node, unaryRules, binaryRules, trinaryRules, isCONJ, cat, SimpleText)
 import qualified Parser.Japanese.Lexicon as L (LexicalItems, lookupLexicon, setupLexicon, emptyCategories)
 import qualified Parser.Japanese.Templates as LT
-import qualified Interface.Text as T
-import qualified Interface.TeX as TEX
-import qualified Interface.HTML as HTML
-import qualified DTS.UDTT as U
-import qualified DTS.Prover.TypeChecker as Ty
-import qualified DTS.Prover.Judgement as Ty
+
+{- Main functions -}
 
 -- | The type for CYK-charts.
 type Chart = M.Map (Int,Int) [CCG.Node]
-
-{- Come functions for pretty printing Chart/Nodes -}
-
--- | prints every box in the (parsed) CYK chart as a TeX source code.
-printChartInTeX :: S.Handle -> Chart -> IO()
-printChartInTeX handle chart = mapM_ printList $ M.toList $ M.filter (/= []) chart
-  where printList (key,nodes) = do -- list化したChartを画面表示する。
-          S.hPutStr handle $ "\\subsubsection*{" ++ show key ++ ": ノード数 " ++ (show $ length nodes) ++ "}"
-          printNodesInTeX handle nodes
-
--- | prints CCG nodes (=a parsing result) as a plain text.
-printNodesInText :: S.Handle -> [CCG.Node] -> IO()
-printNodesInText handle nodes = 
-  do
-  S.hPutStrLn handle (take 100 $ repeat '-')
-  mapM_ (\node -> do S.hPutStr handle $ T.unpack $ T.toText node
-                     S.hPutStrLn handle $ take 100 $ repeat '-'
-        ) nodes
-  S.hPutStrLn handle $ "Number of nodes: " ++ show (length nodes)
-
--- | prints n-nodes (n is a natural number) from given list of CCG nodes (=a parsing result) as a TeX source code.
-printNNodesInTeX :: S.Handle -> Int -> [CCG.Node] -> IO()
-printNNodesInTeX handle n nodes = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-2em\\scalebox{.2}{" ++ T.unpack (TEX.toTeX node) ++ "\\\\}\\par\\medskip") $ take n nodes
-
--- | prints CCG nodes (=a parsing result) as a TeX source code.
-printNodesInTeX :: S.Handle -> [CCG.Node] -> IO()
-printNodesInTeX handle nodes = 
-  mapM_ (\node -> T.hPutStrLn handle $ T.concat [
-            "\\noindent\\kern-2em\\scalebox{.2",
-            --TEX.scaleboxsize $ CCG.pf node,
-            "}{\\ensuremath{", 
-            -- TEX.toTeX $ CCG.sem node,
-            TEX.toTeX node,
-            "}}\\medskip"
-            ]
-            ) $ take 1 nodes
-
--- | prints CCG nodes (=a parsing result) as a TeX source code.
-printNodesInHTML :: S.Handle -> [CCG.Node] -> IO()
-printNodesInHTML handle nodes = 
-  do
-  T.hPutStrLn handle HTML.htmlHeader4MathML
-  mapM_ (\node -> 
-          do
-          T.hPutStrLn handle $ "<p>";
-          T.hPutStrLn handle $ CCG.pf node;
-          T.hPutStrLn handle $ " [";
-          T.hPutStrLn handle $ T.pack $ show $ ((fromRational $ CCG.score node)::Fixed E2);
-          T.hPutStrLn handle $ "]</p>";
-          T.hPutStrLn handle $ HTML.startMathML;
-          T.hPutStrLn handle $ HTML.toMathML node;
-          T.hPutStrLn handle $ HTML.endMathML;
-          T.hPutStrLn handle $ HTML.startMathML;
-          mapM_ ((T.hPutStrLn handle) . Ty.utreeToMathML) $ Ty.typeCheckU [] ((CCG.sig node)++[("evt",U.Type),("entity",U.Type)]) (CCG.sem node) (U.Type);
-          T.hPutStrLn handle $ HTML.endMathML 
-          ) nodes
-  T.hPutStrLn handle HTML.htmlFooter4MathML
-
--- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style
-posTagger :: S.Handle -> [CCG.Node] -> IO()
-posTagger handle nodes = 
-  case nodes of
-    [] -> S.hPutStrLn handle "No results."
-    (n:_) -> mapM_ ((S.hPutStrLn handle) . T.unpack) $ node2PosTags n
-
--- | A subroutine for `posTagger` function
-node2PosTags :: CCG.Node -> [T.Text]
-node2PosTags node@(CCG.Node _ _ _ _ _ _ _ _) =
-  case CCG.daughters node of
-    [] -> [T.concat [CCG.pf node, "\t", T.toText (CCG.cat node), " \t", T.toText (CCG.sem node), "\t", CCG.source node, "\t[", T.pack (show ((fromRational $ CCG.score node)::Fixed E2)), "]"]]
-    dtrs -> [t | dtr <- dtrs, t <- node2PosTags dtr]
-
-{-
--- | picks up the nodes in the "top" box in the chart.
-topBox :: Chart -> [CCG.Node]
-topBox chart = let ((_,k),_) = M.findMax chart in
-                 case M.lookup (0,k) chart of
-                   Just nodes -> sort nodes
-                   Nothing    -> []
-
--- | checks if a given node's category is `S` or `Sbar`.
-isS :: CCG.Node -> Bool
-isS node = case CCG.cat node of
-             CCG.S _ -> True
-             CCG.Sbar _ -> True
-             _ -> False
--}
-
-{- Main functions -}
 
 -- | Main parsing function to parse a Japanees sentence and generates a CYK-chart.
 parse :: Int           -- ^ The beam width
