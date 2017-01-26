@@ -1,5 +1,4 @@
-{-# LANGUAGE DoAndIfThenElse #-}
-
+{-#OPTIONS -Wall#-}
 {-|
 Module      : TypeChecker
 Description : A Typechecker for DTS
@@ -71,8 +70,9 @@ transP (UD.Sigma preA preB) = do
   pretermA <- transP preA
   pretermB <- transP preB
   return (DT.Sigma pretermA pretermB)
-transP (UD.Not preM) = 
-  transP (UD.Pi preM UD.Bot)
+transP (UD.Not preM) = do
+  pretermM <- transP preM
+  return (DT.Not pretermM)
 transP (UD.Asp n preM) = []
 transP (UD.DRel i t preM preN) = do
   pretermA <- transP preM
@@ -179,6 +179,26 @@ aspElim (USigE (UJudgement uenv (UD.Proj selector preM) preA) over) = do
       case typeS of
         DT.Sigma preA' preB' -> return (SigE (Judgement (transE uenv) (DT.Proj DT.Snd preM') (preB')) resultO)
         otherwise -> []
+-- (Not F)規則
+aspElim (UNotF (UJudgement uenv (UD.Not preM) utyp) over) = do
+  resultO <- aspElim over
+  preM' <- getTerm resultO
+  typ <- getType resultO
+  return (NotF (Judgement (transE uenv) (DT.Not preM') typ) resultO)
+-- (Not I)規則
+aspElim (UNotI (UJudgement uenv (UD.Lam preM) (UD.Not preA)) left right) = do
+  resultL <- aspElim left
+  resultR <- aspElim right
+  preA' <- getTerm resultL
+  preM' <- getTerm resultR
+  return (NotI (Judgement (transE uenv) (DT.Lam preM') (DT.Not preA')) resultL resultR)
+-- (Not E)規則
+aspElim (UNotE (UJudgement uenv (UD.App preM preN) UD.Bot) left right) = do
+  resultL <- aspElim left
+  resultR <- aspElim right
+  preM' <- getTerm resultL
+  preN' <- getTerm resultR
+  return (NotE (Judgement (transE uenv) (DT.App preM' preN') DT.Bot) resultL resultR)
 -- (CHK)規則
 aspElim (UCHK (UJudgement uenv preM preA) over) = do
   resultO <- aspElim over
@@ -228,12 +248,22 @@ typeCheckU typeEnv sig (UD.Lam preM) (UD.Pi preA preB) = do
   let preA' = UD.betaReduce $ repositP newA
   rightTree <- typeCheckU (preA':typeEnv) sig preM preB
   return (UPiI (UJudgement typeEnv (UD.Lam preM) (UD.Pi preA preB)) leftTree rightTree)
+-- (NotI) rule (
+typeCheckU typeEnv sig (UD.Lam preM) (UD.Not preterm) = do
+  leftTree <- (typeCheckU typeEnv sig preterm UD.Type)
+                ++ (typeCheckU typeEnv sig preterm UD.Kind)
+  newleftTree <- aspElim leftTree
+  newA <- getTerm newleftTree
+  let preA' = UD.betaReduce $ repositP newA
+  rightTree <- typeCheckU (preA':typeEnv) sig preM UD.Bot
+  return (UNotI (UJudgement typeEnv (UD.Lam preM) (UD.Not preterm)) leftTree rightTree)
 -- (ΣI) rule
 typeCheckU typeEnv sig (UD.Pair preM preN) (UD.Sigma preA preB) = do
   leftTree <- typeCheckU typeEnv sig preM preA
   newleftTree <- aspElim leftTree
   newM <- getTerm newleftTree
-  let preB' = UD.subst preB (UD.betaReduce $ repositP newM) 0
+  let preB' = UD.shiftIndices (UD.subst preB (UD.shiftIndices (repositP newM) 1 0) 0) (-1) 0
+--  let preB' = UD.subst preB (UD.betaReduce $ repositP newM) 0
   rightTree <- typeCheckU typeEnv sig preN preB'
   return (USigI (UJudgement typeEnv (UD.Pair preM preN) (UD.Sigma preA preB)) leftTree rightTree)
 -- (CHK) rule
@@ -291,10 +321,12 @@ typeInferU typeEnv sig (UD.Pi preA preB) = do
                  ++ (typeCheckU (preA':typeEnv) sig preB UD.Kind)
   ansType <- getTypeU rightTree
   return (UPiF (UJudgement typeEnv (UD.Pi preA preB) ansType) leftTree rightTree)
--- (ΠF) rule (Not の場合)
-typeInferU typeEnv sig (UD.Not preM) = 
-  typeInferU typeEnv sig (UD.Pi preM UD.Bot)
--- (ΠE) rule
+-- (Not F) rule 
+typeInferU typeEnv sig (UD.Not preM) = do
+  overTree <- typeInferU typeEnv sig preM
+  typ <- getTypeU overTree
+  return (UNotF (UJudgement typeEnv (UD.Not preM) typ) overTree)
+-- (ΠE) rule, (Not E) rule
 typeInferU typeEnv sig (UD.App preM preN) = do
   leftTree <- typeInferU typeEnv sig preM
   funcType <- getTypeU leftTree
@@ -303,6 +335,9 @@ typeInferU typeEnv sig (UD.App preM preN) = do
        rightTree <- typeCheckU typeEnv sig preN preA
        let preB' = UD.betaReduce $ UD.shiftIndices (UD.subst preB (UD.shiftIndices preN 1 0) 0) (-1) 0
        return (UPiE (UJudgement typeEnv (UD.App preM preN) preB') leftTree rightTree)
+    (UD.Not preA) -> do
+       rightTree <- typeCheckU typeEnv sig preN preA
+       return (UNotE (UJudgement typeEnv (UD.App preM preN) UD.Bot) leftTree rightTree)
     otherwise -> do return (UError (UJudgement typeEnv (UD.App preM preN) (UD.Con $ T.pack "???")) (T.pack "Not a function"))
 -- (ΣF) rule
 typeInferU typeEnv sig (UD.Sigma preA preB) = do
@@ -355,6 +390,18 @@ proofSearch typeEnv sig preterm = do
   let candidatesC = execute (changeTenv typeEnv typeEnv []) candidatesA []
   let candidates = candidatesA ++ candidatesB ++ candidatesC
   let ansTerms = searchType candidates preterm
+  case (ansTerms, preterm) of
+    -- バラすだけではだめで、型がSigmaの場合(Sigma I)
+    ([], UD.Sigma preM preN) -> sigIntro typeEnv sig candidates preterm
+    -- 失敗なら
+    ([], oterwise) -> do
+      let envs = show candidates
+      return (UError (UJudgement typeEnv (UD.Con $ T.pack "???") preterm) (T.pack "fail: proofSearch." `T.append` T.pack envs))
+    -- 証明項があるなら
+    (pTerms, _) -> do
+      ansTerm <- pTerms
+      typeCheckU typeEnv sig ansTerm preterm
+{-
   if ansTerms == []
     then do let envs = show candidates
             return (UError (UJudgement typeEnv (UD.Con $ T.pack "???") preterm) (T.pack "fail: proofSearch." `T.append` T.pack envs))
@@ -362,6 +409,7 @@ proofSearch typeEnv sig preterm = do
             typeCheckU typeEnv sig ansTerm preterm
 --let results = show candidates
 --let overTree = (UCON (UJudgement [] (UD.Con $ T.pack "?") (UD.Con $ T.pack "?")))
+-}
 
 -- searchType : ProofSearchのための補助関数
 -- 与えた型をもつ項をリストのなかから探し、それを全て返す
@@ -370,6 +418,20 @@ searchType [] _ = []
 searchType ((tr, ty1):xs) ty2 
   | ty1 == ty2 = tr:(searchType xs ty2)
   | otherwise  = searchType xs ty2
+
+
+-- sigIntro : (Sigma I)規則にしたがって証明探索する関数
+sigIntro :: TUEnv -> SUEnv -> [(UD.Preterm, UD.Preterm)] -> UD.Preterm -> [UTree UJudgement]
+sigIntro typeEnv sig candidates (preterm@(UD.Sigma preM preN)) = do
+  termM <- searchType candidates preM
+  leftTree <- typeCheckU typeEnv sig termM preM
+  newleftTree <- aspElim leftTree
+  newM <- getTerm newleftTree
+  let newM' = UD.betaReduce $ UD.shiftIndices (UD.subst preN (UD.shiftIndices (repositP newM) 1 0) 0) (-1) 0
+--UD.subst preN (repositP newM) 0
+  termN <- searchType candidates newM'
+  typeCheckU typeEnv sig (UD.Pair termM termN) preterm
+sigIntro typeEnv sig candidates _ = []
 
 
 -- dismantle : 型環境の中からSigma型を見つけて投射をかける
@@ -403,11 +465,6 @@ execute ((v, preterm):xs) env result =
                         return (make v preB p)} in
       execute (anslist ++ xs) env ((v, preterm):(anslist ++ result))
     otherwise -> execute xs env ((v, preterm):result)
-
--- executeT : 型環境の中からPi型を見つけて投射をかける
--- 型環境はあらかじめchangeTenvで型を変換しておく
---executeT :: [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)]
---execute
 
 
 -- search : dismantleの補助関数
@@ -465,13 +522,5 @@ searchIndex preA (x:xs) env result =
 -- Pi型の項の、関数適用した結果の項と型を返す
 make :: UD.Preterm -> UD.Preterm -> UD.Preterm -> (UD.Preterm, UD.Preterm)
 make v preB p = (UD.App v p, UD.shiftIndices (UD.subst preB (UD.shiftIndices p 1 0) 0) (-1) 0)
-
-
--- sigToMathML : Debug用関数
--- candidatesの中身をmathML形式で表示
-sigToMathML :: [(UD.Preterm, UD.Preterm)] -> T.Text
-sigToMathML [] = T.pack " "
-sigToMathML ((term, typ):rest) = 
-  (toMathML term) `T.append` (T.pack " : ") `T.append` (toMathML typ) `T.append` (T.pack ", ") `T.append` (sigToMathML rest)
 
 

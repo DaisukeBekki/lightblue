@@ -93,6 +93,9 @@ data UTree a =
  | USigF a (UTree a) (UTree a)     -- (Sig F) rule
  | USigI a (UTree a) (UTree a)     -- (Sig I) rule
  | USigE a (UTree a)               -- (Sig E) rule
+ | UNotF a (UTree a)               -- (Not F) rule
+ | UNotI a (UTree a) (UTree a)     -- (Not I) rule
+ | UNotE a (UTree a) (UTree a)     -- (Not E) rule
  | UTopF a                         -- (TF) rule
  | UTopI a                         -- (TI) rule
  | UBotF a                         -- (Bot F) rule
@@ -126,6 +129,12 @@ utreeToTeX (USigI judgement leftTree rightTree) =
   T.pack "\\nd[(\\underline{\\Sigma I})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (utreeToTeX leftTree) `T.append` T.pack "&" `T.append` (utreeToTeX rightTree) `T.append` T.pack "}"
 utreeToTeX (USigE judgement overTree) = 
   T.pack "\\nd[(\\underline{\\Sigma E})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (utreeToTeX overTree) `T.append` T.pack "}"
+utreeToTeX (UNotF judgement overTree) = 
+  T.pack "\\nd[(\\underline{\\neg F})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (utreeToTeX overTree) `T.append` T.pack "}"
+utreeToTeX (UNotI judgement leftTree rightTree) = 
+  T.pack "\\nd[(\\underline{\\neg I})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (utreeToTeX leftTree) `T.append` T.pack "&" `T.append` (utreeToTeX rightTree) `T.append` T.pack "}"
+utreeToTeX (UNotE judgement leftTree rightTree) = 
+  T.pack "\\nd[(\\underline{\\neg E})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (utreeToTeX leftTree) `T.append` T.pack "&" `T.append` (utreeToTeX rightTree) `T.append` T.pack "}"
 utreeToTeX (UTopF judgement) = 
   T.pack "\\nd[(\\underline{\\top F})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
 utreeToTeX (UTopI judgement) = 
@@ -220,6 +229,32 @@ utreeToMathML (USigE judgement overTree) = T.concat [
   toMathML judgement,
   T.pack "</mfrac></mrow>"
   ]
+utreeToMathML (UNotF judgement overTree) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'><p style='text-decoration: underline;'>(<not/>F)</p></mi><mfrac linethickness='2px'>",
+  utreeToMathML overTree,
+  toMathML judgement,
+  T.pack "</mi></mrow>"
+  ]
+utreeToMathML (UNotI judgement leftTree rightTree) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'><p style='text-decoration: underline;'>(<not/>I)</p></mi><mfrac linethickness='2px'>",
+  T.pack "<mrow>",
+  utreeToMathML leftTree,
+  T.pack " ",
+  utreeToMathML rightTree,
+  T.pack "</mrow>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+utreeToMathML (UNotE judgement leftTree rightTree) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'><p style='text-decoration: underline;'>(<not/>E)</p></mi><mfrac linethickness='2px'>",
+  T.pack "<mrow>",
+  utreeToMathML leftTree,
+  T.pack " ",
+  utreeToMathML rightTree,
+  T.pack "</mrow>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
 utreeToMathML (UTopF judgement) = T.concat [
   T.pack "<mrow><mi fontsize='0.8'><p style='text-decoration: underline;'>(&top;F)</p></mi><mfrac linethickness='2px'>",
   T.pack "<mi color='White'> Empty </mi>",
@@ -276,6 +311,9 @@ data Tree a =
  | SigF a (Tree a) (Tree a)
  | SigI a (Tree a) (Tree a)
  | SigE a (Tree a)
+ | NotF a (Tree a)
+ | NotI a (Tree a) (Tree a)
+ | NotE a (Tree a) (Tree a)
  | TopF a
  | TopI a
  | BotF a
@@ -306,6 +344,12 @@ treeToTeX (SigI judgement leftTree rightTree) =
   T.pack "\\nd[(\\Sigma I)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (treeToTeX leftTree) `T.append` T.pack "&" `T.append` (treeToTeX rightTree) `T.append` T.pack "}"
 treeToTeX (SigE judgement overTree) = 
   T.pack "\\nd[(\\Sigma E)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (treeToTeX overTree) `T.append` T.pack "}"
+treeToTeX (NotF judgement overTree) = 
+  T.pack "\\nd[(\\neg F)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (treeToTeX overTree) `T.append` T.pack "}"
+treeToTeX (NotI judgement leftTree rightTree) = 
+  T.pack "\\nd[(\\neg I)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (treeToTeX leftTree) `T.append` T.pack "&" `T.append` (treeToTeX rightTree) `T.append` T.pack "}"
+treeToTeX (NotE judgement leftTree rightTree) = 
+  T.pack "\\nd[(\\neg E)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (treeToTeX leftTree) `T.append` T.pack "&" `T.append` (treeToTeX rightTree) `T.append` T.pack "}"
 treeToTeX (TopF judgement) = 
   T.pack "\\nd[(\\top F)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
 treeToTeX (TopI judgement) = 
@@ -400,6 +444,32 @@ treeToMathML (SigE judgement overTree) = T.concat [
   toMathML judgement,
   T.pack "</mfrac></mrow>"
   ]
+treeToMathML (NotF judgement overTree) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'>(<not/>F)</mi><mfrac linethickness='2px'>",
+  treeToMathML overTree,
+  toMathML judgement,
+  T.pack "</mi></mrow>"
+  ]
+treeToMathML (NotI judgement leftTree rightTree) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'>(<not/>I)</mi><mfrac linethickness='2px'>",
+  T.pack "<mrow>",
+  treeToMathML leftTree,
+  T.pack " ",
+  treeToMathML rightTree,
+  T.pack "</mrow>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
+treeToMathML (NotE judgement leftTree rightTree) = T.concat [
+  T.pack "<mrow><mi fontsize='0.8'>(<not/>E)</mi><mfrac linethickness='2px'>",
+  T.pack "<mrow>",
+  treeToMathML leftTree,
+  T.pack " ",
+  treeToMathML rightTree,
+  T.pack "</mrow>",
+  toMathML judgement,
+  T.pack "</mfrac></mrow>"
+  ]
 treeToMathML (TopF judgement) = T.concat [
   T.pack "<mrow><mi fontsize='0.8'>(&top;F)</mi><mfrac linethickness='2px'>",
   T.pack "<mi color='White'> Empty </mi>",
@@ -445,6 +515,9 @@ getTypeU (UPiE (UJudgement env preMN preB) left right) = [preB]
 getTypeU (USigF (UJudgement env preP preS) left right) = [preS]
 getTypeU (USigI (UJudgement env preP preS) left right) = [preS]
 getTypeU (USigE (UJudgement env preP preS) over) = [preS]
+getTypeU (UNotF (UJudgement env preP preS) over) = [preS]
+getTypeU (UNotI (UJudgement env preP preS) left right) = [preS]
+getTypeU (UNotE (UJudgement env preP preS) left right) = [preS]
 getTypeU (UTopF (UJudgement env preTop preT)) = [preT]
 getTypeU (UTopI (UJudgement env preUnit preTop)) = [preTop]
 getTypeU (UBotF (UJudgement env preBot preT)) = [preT]
@@ -464,6 +537,9 @@ getType (PiE (Judgement env preMN preB) left right) = [preB]
 getType (SigF (Judgement env preP preS) left right) = [preS]
 getType (SigI (Judgement env preP preS) left right) = [preS]
 getType (SigE (Judgement env preP preS) over) = [preS]
+getType (NotF (Judgement env preP preS) over) = [preS]
+getType (NotI (Judgement env preP preS) left right) = [preS]
+getType (NotE (Judgement env preP preS) left right) = [preS]
 getType (TopF (Judgement env preTop preT)) = [preT]
 getType (TopI (Judgement env preUnit preTop)) = [preTop]
 getType (BotF (Judgement env preBot preT)) = [preT]
@@ -484,6 +560,9 @@ getTermU (UPiE (UJudgement env preMN preB) left right) = [preMN]
 getTermU (USigF (UJudgement env preP preS) left right) = [preP]
 getTermU (USigI (UJudgement env preP preS) left right) = [preP]
 getTermU (USigE (UJudgement env preP preS) over) = [preP]
+getTermU (UNotF (UJudgement env preP preS) over) = [preP]
+getTermU (UNotI (UJudgement env preP preS) left right) = [preP]
+getTermU (UNotE (UJudgement env preP preS) left right) = [preP]
 getTermU (UTopF (UJudgement env preTop preT)) = [preTop]
 getTermU (UTopI (UJudgement env preUnit preTop)) = [preUnit]
 getTermU (UBotF (UJudgement env preBot preT)) = [preBot]
@@ -503,6 +582,9 @@ getTerm (PiE (Judgement env preMN preB) left right) = [preMN]
 getTerm (SigF (Judgement env preP preS) left right) = [preP]
 getTerm (SigI (Judgement env preP preS) left right) = [preP]
 getTerm (SigE (Judgement env preP preS) over) = [preP]
+getTerm (NotF (Judgement env preP preS) over) = [preP]
+getTerm (NotI (Judgement env preP preS) left right) = [preP]
+getTerm (NotE (Judgement env preP preS) left right) = [preP]
 getTerm (TopF (Judgement env preTop preT)) = [preTop]
 getTerm (TopI (Judgement env preUnit preTop)) = [preUnit]
 getTerm (BotF (Judgement env preBot preT)) = [preBot]
