@@ -69,10 +69,10 @@ node2NLP :: Int -> T.Text -> CCG.Node -> T.Text
 node2NLP i sentence node = initializeIndex $ do
                     id <- loop i node
                     (cs,ts) <- popResults
-                    return $ T.concat $ (header id) ++ (reverse ts) ++ (mediate id T.empty) ++ (reverse cs) ++ footer
-  where header id = ["<?xml version='1.0' encoding='UTF-8'?><root><document id='d0'><sentences><sentence id='", id, "'>", sentence, "<tokens>"]
+                    return $ T.concat $ (header id) ++ (reverse ts) ++ (mediate id $ CCG.showScore node) ++ (reverse cs) ++ footer
+  where header id = ["<sentence id='", id, "'>", sentence, "<tokens>"]
         mediate id score = ["</tokens><ccg score='", score, "' id='s0_ccg0' root='", id, "'>"]
-        footer = ["</ccg></sentence></sentences></document></root>"]
+        footer = ["</ccg></sentence>"]
 
 printCat :: CCG.Cat -> T.Text
 printCat category = case category of

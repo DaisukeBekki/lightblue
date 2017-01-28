@@ -39,8 +39,8 @@ import qualified DTS.Prover.Judgement as Ty
 {- Some functions for pretty printing Chart/Nodes -}
 
 -- | prints CCG nodes (=a parsing result) as a TeX source code.
-printNodesInHTML :: S.Handle -> Bool -> [CCG.Node] -> IO()
-printNodesInHTML handle typeCheck nodes = 
+printNodesInHTML :: S.Handle -> Int -> Bool -> [CCG.Node] -> IO()
+printNodesInHTML handle nBest typeCheck nodes = 
   do
   T.hPutStrLn handle HTML.htmlHeader4MathML
   mapM_ (\node -> 
@@ -60,36 +60,42 @@ printNodesInHTML handle typeCheck nodes =
                   mapM_ ((T.hPutStrLn handle) . Ty.utreeToMathML) $ Ty.typeCheckU [] ((CCG.sig node)++[("evt",U.Type),("entity",U.Type)]) (CCG.sem node) (U.Type);
                   T.hPutStrLn handle $ HTML.endMathML 
              else return ()
-          ) nodes
+          ) $ take nBest nodes
   T.hPutStrLn handle HTML.htmlFooter4MathML
 
 -- | prints CCG nodes (=a parsing result) as a plain text.
-printNodesInText :: S.Handle -> [CCG.Node] -> IO()
-printNodesInText handle nodes = 
-  do
+printNodesInText :: S.Handle -> Int -> Bool -> [CCG.Node] -> IO()
+printNodesInText handle nBest typeCheck nodes = do
   S.hPutStrLn handle (take 100 $ repeat '-')
-  mapM_ (\node -> do S.hPutStr handle $ T.unpack $ T.toText node
-                     S.hPutStrLn handle $ take 100 $ repeat '-'
-        ) nodes
-  S.hPutStrLn handle $ "Number of nodes: " ++ show (length nodes)
+  mapM_ (\node -> do 
+                  S.hPutStr handle $ T.unpack $ T.toText node
+                  S.hPutStrLn handle $ take 100 $ repeat '-'
+        ) $ take nBest nodes
+  let l = length nodes
+  S.hPutStrLn handle $ show (min nBest l) ++ " parse result(s) shown out of " ++ show l
 
-printNodesInXML :: S.Handle -> T.Text -> [CCG.Node] -> IO()
-printNodesInXML handle sentence nodes = T.hPutStrLn handle $ NLP.node2NLP 0 sentence $ head nodes
+printNodesInXML :: S.Handle -> T.Text -> Int -> [CCG.Node] -> IO()
+printNodesInXML handle sentence nBest nodes = do
+  S.hPutStrLn handle "<?xml version='1.0' encoding='UTF-8'?><root><document id='d0'><sentences>"
+  mapM_ (\node -> do 
+                  T.hPutStrLn handle $ NLP.node2NLP 0 sentence node
+        ) $ take nBest nodes
+  S.hPutStrLn handle "</sentences></document></root>"
 
 -- | prints every box in the (parsed) CYK chart as a TeX source code.
-printChartInTeX :: S.Handle -> CP.Chart -> IO()
-printChartInTeX handle chart = mapM_ printList $ M.toList $ M.filter (/= []) chart
+printChartInTeX :: S.Handle -> Int -> Bool -> CP.Chart -> IO()
+printChartInTeX handle nBest typeCheck chart = mapM_ printList $ M.toList $ M.filter (/= []) chart
   where printList (key,nodes) = do -- list化したChartを画面表示する。
           S.hPutStr handle $ "\\subsubsection*{" ++ show key ++ ": ノード数 " ++ (show $ length nodes) ++ "}"
-          printNodesInTeX handle nodes
+          printNodesInTeX handle nBest typeCheck nodes
 
 -- | prints n-nodes (n is a natural number) from given list of CCG nodes (=a parsing result) as a TeX source code.
-printNNodesInTeX :: S.Handle -> Int -> [CCG.Node] -> IO()
-printNNodesInTeX handle n nodes = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-2em\\scalebox{.2}{" ++ T.unpack (TEX.toTeX node) ++ "\\\\}\\par\\medskip") $ take n nodes
+printNNodesInTeX :: S.Handle -> Int -> Bool -> [CCG.Node] -> IO()
+printNNodesInTeX handle nBest typeCheck nodes = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-2em\\scalebox{.2}{" ++ T.unpack (TEX.toTeX node) ++ "\\\\}\\par\\medskip") $ take nBest nodes
 
 -- | prints CCG nodes (=a parsing result) as a TeX source code.
-printNodesInTeX :: S.Handle -> [CCG.Node] -> IO()
-printNodesInTeX handle nodes = 
+printNodesInTeX :: S.Handle -> Int -> Bool -> [CCG.Node] -> IO()
+printNodesInTeX handle nBest typeCheck nodes = 
   mapM_ (\node -> T.hPutStrLn handle $ T.concat [
             "\\noindent\\kern-2em\\scalebox{.2",
             --TEX.scaleboxsize $ CCG.pf node,
@@ -98,7 +104,7 @@ printNodesInTeX handle nodes =
             TEX.toTeX node,
             "}}\\medskip"
             ]
-            ) $ take 1 nodes
+            ) $ take nBest nodes
 
 -- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style
 posTagger :: S.Handle -> [CCG.Node] -> IO()

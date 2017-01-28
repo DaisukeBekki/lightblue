@@ -16,10 +16,11 @@ module Parser.ChartParser (
   CCG.Node(..),
   -- * Main parsing functions
   parse,
-  simpleParse,
   -- * Partial parsing function(s)
   ParseResult(..),
-  extractBestParse
+  simpleParse,
+  extractParseResult,
+  bestOnly
   ) where
 
 import Data.List as L
@@ -40,7 +41,7 @@ parse :: Int           -- ^ The beam width
          -> T.Text     -- ^ A sentence to be parsed
          -> IO(Chart) -- ^ A pair of the resulting CYK-chart and a list of CYK-charts for segments
 parse beam sentence 
-  | sentence == T.empty = return M.empty -- foldl returns a runtime error when text is empty
+  | sentence == T.empty = return M.empty -- returns an empty chart, otherwise foldl returns a runtime error when text is empty
   | otherwise =
       do
       lexicon <- L.setupLexicon (T.replace "―" "。" sentence)
@@ -56,15 +57,6 @@ purifyText text =
                | c `elem` ['！','？','!','?','…','「','」','◎','○','●','▲','△','▼','▽','■','□','◆','◇','★','☆','※','†','‡'] -> purifyText t -- ignore some symbols as meaningless
                | c `elem` ['，',',','-','―','?','。','．','／','＼'] -> T.cons '、' $ purifyText t          -- punctuations
                | otherwise -> T.cons c $ purifyText t
-
--- | Simple parsing function to return just the best node for a given sentence
-simpleParse :: Int -> T.Text -> IO([CCG.Node])
-simpleParse beam sentence = do
-  chart <- parse beam sentence
-  case extractBestParse chart of
-    Full nodes -> return nodes
-    Partial nodes -> return nodes
-    Failed -> return []
 
 -- | triples representing a state during parsing:
 -- the parsed result (=chart) of the left of the pivot,
@@ -140,16 +132,17 @@ boxAccumulator :: Int               -- ^ beam width
                   -> PartialBox
 boxAccumulator beam lexicon (chart,word,i,j) c =
   let newword = T.cons c word;
-      list0 = if (T.compareLength newword 23) == LT -- Does not execute lookup for a long word (run "LongestWord" to check it (=23))
+      list0 = if (T.compareLength newword 23) == LT 
+                -- Does not execute lookup for a long word. Run "LongestWord" to check that the length of the longest word (=23).
                 then L.lookupLexicon newword lexicon
                 else [];
       list1 = checkEmptyCategories $ checkParenthesisRule i j chart $ checkCoordinationRule i j chart $ checkBinaryRules i j chart $ checkUnaryRules list0 in
-  ((M.insert (i,j) (cutoff beam list1) chart), newword, i-1, j)
+  ((M.insert (i,j) (take beam $ L.sort list1) chart), newword, i-1, j)
   --((M.insert (i,j) (cutoff (max (beam+i-j) 24) list1) chart), newword, i-1, j)
 
 -- | take `beam` nodes from the top of `ndoes`.
-cutoff :: Int -> [CCG.Node] -> [CCG.Node]
-cutoff beam nodes = if length nodes <= beam then nodes else take beam $ sort nodes
+--cutoff :: Int -> [CCG.Node] -> [CCG.Node]
+--cutoff beam nodes = if length nodes <= beam then nodes else take beam $ sort nodes
 
 -- | looks up a chart with the key (i,j) and returns the value of type [Node]
 lookupChart :: Int -> Int -> Chart -> [CCG.Node]
@@ -199,6 +192,15 @@ checkEmptyCategories prevlist =
 
 {- Partial Parsing -}
 
+-- | Simple parsing function to return just the best node for a given sentence
+simpleParse :: Int -> T.Text -> IO([CCG.Node])
+simpleParse beam sentence = do
+  chart <- parse beam sentence
+  case extractParseResult beam chart of
+    Full nodes -> return nodes
+    Partial nodes -> return nodes
+    Failed -> return []
+
 -- | A data type for the parsing result.
 data ParseResult = 
   Full [CCG.Node]      -- ^ when there are at least one node in the topmost box in the chart, returning the nodes.
@@ -207,16 +209,14 @@ data ParseResult =
   deriving (Eq,Show)
 
 -- | takes a (parse result) chart and returns a list consisting of nodes, partially parsed substrings.
-extractBestParse :: Chart -> ParseResult
-extractBestParse chart = 
+extractParseResult :: Int -> Chart -> ParseResult
+extractParseResult beam chart = 
   f $ L.sortBy isLessPrivilegedThan $ filter (\((_,_),nodes) -> not (L.null nodes)) $ M.toList $ chart
   where f [] = Failed
---        f (((i,_),nodes):cs) | i == 0 = Full $ map (CCG.drel . CCG.wrapNode) (sortByNumberOfArgs $ bestOnly $ L.sort nodes)
-        f (((i,_),nodes):cs) | i == 0 = Full $ map CCG.wrapNode (sortByNumberOfArgs $ bestOnly $ L.sort nodes)
-                             | otherwise = Partial $ g (map CCG.wrapNode (sortByNumberOfArgs $ bestOnly $ L.sort nodes)) (filter (\((_,j),_) -> j <= i) cs)
---        g results [] = map CCG.drel results
+        f c@(((i,_),nodes):_) | i == 0 = Full $ map CCG.wrapNode (sortByNumberOfArgs nodes)
+                              | otherwise = Partial $ g (map CCG.wrapNode (sortByNumberOfArgs nodes)) (filter (\((_,j),_) -> j <= i) c)
         g results [] = results
-        g results (((i,_),nodes):cs) = g [CCG.conjoinNodes (CCG.wrapNode $ head $ sortByNumberOfArgs $ bestOnly $ L.sort nodes) (head results)] $ filter (\((_,j),_) -> j < i) cs
+        g results (((i,_),nodes):cs) = g (take beam [CCG.conjoinNodes x y | x <- map CCG.wrapNode $ sortByNumberOfArgs nodes, y <- results]) $ filter (\((_,j),_) -> j < i) cs
 
 -- | a `isLessPriviledgedThan` b means that b is more important parse result than a.
 isLessPrivilegedThan :: ((Int,Int),a) -> ((Int,Int),a) -> Ordering
@@ -237,7 +237,7 @@ sortByNumberOfArgs = sortByNumberOfArgs2 20 []
 
 sortByNumberOfArgs2 :: Int -> [CCG.Node] -> [CCG.Node] -> [CCG.Node]
 sortByNumberOfArgs2 i selected nodes = case nodes of
-  [] -> selected
+  [] -> L.sort selected
   (n:ns) -> let j = (CCG.numberOfArgs . CCG.cat) n in
             case () of
               _ | j < i  -> sortByNumberOfArgs2 j [n] ns

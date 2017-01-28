@@ -75,16 +75,16 @@ optionParser =
       <> showDefault
       <> value "parse" )
     <*> strOption 
-      ( long "format"
-      <> short 'f'
-      <> metavar "FORMAT"
-      <> help "Print result in FORMAT={text|tex|xml|html}" 
+      ( long "output"
+      <> short 'o'
+      <> metavar "OUTPUT-FORMAT"
+      <> help "Print result in OUTPUT-FORMAT={text|tex|xml|html}" 
       <> showDefault
       <> value "html" )
     <*> option auto 
-      ( long "best"
-      <> short 'b'
-      <> help "Show N-best derivations (not implemented yet)"
+      ( long "nbest"
+      <> short 'n'
+      <> help "Show N-best derivations"
       <> showDefault
       <> value 1
       <> metavar "N" )
@@ -106,22 +106,18 @@ lightblueMain Corpus = parseCorpus
 lightblueMain options = do
   start    <- Time.getCurrentTime
   sentence <- T.getLine
-  chart <- CP.parse 24 sentence
-  let nodes = case CP.extractBestParse chart of
-                CP.Full ns -> ns
-                CP.Partial ns -> ns
-                CP.Failed -> []
+  nodes    <- CP.simpleParse 24 sentence
   stop     <- Time.getCurrentTime
   let time = Time.diffUTCTime stop start
   case (task options, format options) of
     ("infer",_) -> checkEntailment
     ("postag",_) -> I.posTagger S.stdout nodes
     ("numeration",_) -> I.printNumeration S.stdout sentence
-    ("parse","html") -> I.printNodesInHTML S.stdout (showTypeCheck options) nodes
-    ("parse","text") -> I.printNodesInText S.stdout nodes
-    ("parse","tex")  -> I.printNodesInTeX  S.stdout nodes
-    ("parse","xml")  -> I.printNodesInXML  S.stdout sentence nodes
-    _ -> putStrLn $ show $ parserUsage defaultPrefs optionParser "hoge"
+    ("parse","html") -> I.printNodesInHTML S.stdout (nBest options) (showTypeCheck options) nodes
+    ("parse","text") -> I.printNodesInText S.stdout (nBest options) (showTypeCheck options) nodes
+    ("parse","tex")  -> I.printNodesInTeX  S.stdout (nBest options) (showTypeCheck options) nodes
+    ("parse","xml")  -> I.printNodesInXML  S.stdout sentence (nBest options) nodes
+    _ -> putStrLn $ show $ parserUsage defaultPrefs optionParser "Not supported"
   if showExecutionTime options 
      then S.hPutStrLn S.stderr $ "Total Execution Time: " ++ show time
      else return ()
@@ -183,8 +179,9 @@ parseSentence score sentence = do
   (i,j,k,total) <- score
   S.putStr $ "[" ++ show (total+1) ++ "] "
   T.putStrLn sentence
-  chart <- CP.parse 24 sentence
-  case CP.extractBestParse chart of
+  let beam = 24
+  chart <- CP.parse beam sentence
+  case CP.extractParseResult beam chart of
     CP.Full nodes -> 
        do
        T.putStr $ T.concat ["Fully parsed, Full:Partial:Failed = ", T.pack (show $ i+1), ":", T.pack (show j), ":", T.pack (show k), ", Full/Total = ", T.pack (show $ i+1), "/", T.pack (show $ total+1), " ("] 
