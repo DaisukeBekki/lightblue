@@ -101,8 +101,8 @@ data UTree a =
  | UBotF a                         -- (Bot F) rule
  | UDREL a                         -- (DRel) rule
  | UError a T.Text                 -- for debug
--- | UError a (UTree a) T.Text       -- for debug
-   deriving (Eq, Show)
+ deriving (Eq, Show)
+--  UError a (UTree a) T.Text       -- for debug
 
 
 -- utreeToTeX : UDTTのTree用のtoTeX関数
@@ -319,8 +319,8 @@ data Tree a =
  | BotF a
  | DREL a
  | Error a T.Text
--- | Error a (Tree a) T.Text
-   deriving (Eq, Show)
+-- Error a (Tree a) T.Text
+ deriving (Eq, Show)
 
 -- treeToTeX : DTTのTree用のtoTeX関数
 treeToTeX :: (Tree Judgement) -> T.Text

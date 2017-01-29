@@ -7,6 +7,7 @@ import Data.Semigroup ((<>))              -- semigroup
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.List as L           --base
+import qualified Data.Map as M            --
 import qualified Data.Time as Time        --time
 import qualified Data.Ratio as R
 import qualified Data.Fixed as F
@@ -25,9 +26,9 @@ import qualified DTS.Prover.Judgement as Ty
 data Options =  
   Version 
   | Stat 
-  | Corpus 
-  | JSEM 
-  | Numeration 
+  | JSEM FilePath
+  | Corpus FilePath
+  | Debug Int Int
   | Options
   { task :: String
   , format :: String
@@ -40,12 +41,12 @@ main :: IO()
 main = execParser opts >>= lightblueMain 
   where opts = info (helper <*> optionParser)
                  ( fullDesc
-                 <> progDesc "echo <sentence> | ./lightblue"
+                 <> progDesc "echo <sentence> | ./lightblue\n echo <sentence> | ./lightblue"
                  <> header "lightblue - a Japanese CCG parser with DTS representations (c) Bekki Laboratory" )
 
 {-
-  <$> :: (a -> b) -> f a -> f b
-  <*> :: f(a -> b) -> f a -> f b
+  <$> :: (a -> b) -> Parser a -> Parser b
+  <*> :: Parser (a -> b) -> Parser a -> Parser b
 -}
 
 optionParser :: Parser Options
@@ -57,28 +58,43 @@ optionParser =
   flag' Stat ( long "stat" 
              <> help "Show the statistics of ligthblue parser" )
   <|>
-  flag' JSEM ( long "jsem" 
-             <> help "Parse JSeM data" )
-  <|>  
-  flag' Corpus ( long "corpus"
-               <> help "Parse BCCWJ" )
+  JSEM 
+    <$> strOption
+        ( long "jsem"
+        <> metavar "FILEPATH"
+        <> help "Parse JSeM data" )
+  <|>
+  Corpus 
+    <$> strOption
+        ( long "corpus"
+        <> metavar "FILEPATH"
+        <> help "Parse BCCWJ corpus" )
+  <|>
+  subparser (command "debug" (info (Debug
+                                     <$> argument auto idm
+                                       --( help "from" <> showDefault <> value 0 <> metavar "N" )
+                                     <*> argument auto 
+                                       ( help "to" <> showDefault <> value 1 <> metavar "N" ))
+                                   (progDesc "'lightblue debug i j' shows all the parsing results between the pivots i and j." )))
   <|>
   Options 
     <$> strOption
       ( long "task"
-      <> metavar "TASK"
-      <> help ("Execute TASK={parse|infer|postag|numeration} " 
-                ++"Usage for parse: cat <sentence> | lightblue -t parse > output.html "
-                ++"Usage for infer: cat <textfile> | lightblue -t infer > output.html "
-                ++"where <textfile> consists of premises and a coclusion" 
-                ++"(with one sentence per each line)")
+      <> short 't'
+      <> metavar "parse|infer|postag|numeration"
+      <> help ("Execute the specified task"
+                --"Usage for parse: cat <sentence> | lightblue -t parse > output.html "
+                --"Usage for infer: cat <textfile> | lightblue -t infer > output.html "
+                --"where <textfile> consists of premises and a coclusion" 
+                --"(with one sentence per each line)"
+              )
       <> showDefault
       <> value "parse" )
     <*> strOption 
       ( long "output"
       <> short 'o'
-      <> metavar "OUTPUT-FORMAT"
-      <> help "Print result in OUTPUT-FORMAT={text|tex|xml|html}" 
+      <> metavar "text|tex|xml|html"
+      <> help "Print result in the specified format" 
       <> showDefault
       <> value "html" )
     <*> option auto 
@@ -89,20 +105,21 @@ optionParser =
       <> value 1
       <> metavar "N" )
     <*> switch 
-      ( long "type-check"
-      <> short 't'
+      ( long "typecheck"
       <> help "Execute typechecking for the SR" )
     <*> switch 
       ( long "time"
-      <> help "Show the execution time" )
+      <> help "Show the execution time in stderr" )
 
 lightblueMain :: Options -> IO()
 lightblueMain Version = showVersion
 lightblueMain Stat = showStat
-lightblueMain JSEM = do
-  content <- T.getContents
-  mapM_ processJSeMData $ J.parseJSeM content
-lightblueMain Corpus = parseCorpus
+lightblueMain (JSEM filepath) = parseJSeM filepath
+lightblueMain (Corpus filepath) = parseCorpus filepath
+lightblueMain (Debug i j) =  do
+  sentence <- T.getLine
+  chart <- CP.parse 24 sentence
+  I.printNodesInHTML S.stdout 100 False $ L.concat $ map (\(_,nodes) -> nodes) $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
 lightblueMain options = do
   start    <- Time.getCurrentTime
   sentence <- T.getLine
@@ -117,7 +134,7 @@ lightblueMain options = do
     ("parse","text") -> I.printNodesInText S.stdout (nBest options) (showTypeCheck options) nodes
     ("parse","tex")  -> I.printNodesInTeX  S.stdout (nBest options) (showTypeCheck options) nodes
     ("parse","xml")  -> I.printNodesInXML  S.stdout sentence (nBest options) nodes
-    _ -> putStrLn $ show $ parserUsage defaultPrefs optionParser "Not supported"
+    (t,f) -> S.hPutStrLn S.stderr $ show $ parserUsage defaultPrefs optionParser $ "task=" ++ t ++ ", format=" ++ f ++ ": Not supported."
   if showExecutionTime options 
      then S.hPutStrLn S.stderr $ "Total Execution Time: " ++ show time
      else return ()
@@ -148,13 +165,60 @@ showStat = do
   putStr $ show $ length $ T.lines jumandic
   putStrLn " lexical entries for open words from JUMAN++"
 
--- | lightblue --corpus
+{-
+-- | lightblue --fuman (hidden option)
+-- | transforms an input (from stdin) each of whose line is a json entry
+-- | into an output (to stdout) each of whose line is a paragraph.
+-- | Usage:
+-- | cat <file> | lightblue --fuman | head -n | Fuman/para2sentence > ...txt
 -- |
-parseCorpus :: IO()
-parseCorpus = do
+fuman2text :: IO()
+fuman2text = do
+  jsonStrings <- T.getContents
+  mapM_ T.putStrLn $ M.catMaybes $ map (\j -> j ^? key "fuman" . _String) $ T.lines jsonStrings
+-}
+
+-- | $ ligthblue --jsem ../JSeM_beta/JSeM_beta_150415.xml
+-- | 
+parseJSeM :: FilePath -> IO()
+parseJSeM filepath = do
+  content <- T.readFile filepath
+  mapM_ processJSeMData $ J.parseJSeM content
+
+processJSeMData :: J.JSeMData -> IO()
+processJSeMData jsemdata = do
+  T.putStrLn $ T.concat ["id [", J.jsem_id (jsemdata), "]"]
+  mapM_ (\p -> do {T.putStr $ T.concat ["P: ", p, "\n"]}) $ J.premise jsemdata
+  T.putStr $ T.concat ["H: ", J.hypothesis jsemdata, "\n"]
+  psems <- mapM parseText $ J.premise jsemdata
+  hsem <- parseText $ J.hypothesis jsemdata
+  let sem = DTS.betaReduce $ currying psems hsem
+  T.putStrLn $ T.toText sem
+
+currying :: [DTS.Preterm] -> DTS.Preterm -> DTS.Preterm
+currying [] preterm = preterm
+currying (p:ps) preterm = DTS.Pi p (currying ps preterm)
+
+parseText :: T.Text -> IO(DTS.Preterm)
+parseText sentence = do
+  nodes <- CP.simpleParse 16 sentence
+  return $ CP.sem (head nodes)
+
+{-
+callCoq :: T.Text -> IO()
+callCoq _ = do
+  let coqcommand = T.concat ["echo -e \"Extraction Language Scheme.\nParameter A:Prop.\nParameter B:Prop.\nTheorem id: A -> B -> A.\nExtraction id.\n\" | coqtop 2> /dev/null | awk '{if($0 != \"\") {print $0}}' | tail -n 2"]
+  (_, stdout, _, _) <- S.runInteractiveCommand $ T.unpack coqcommand
+  t <- T.hGetContents stdout
+  T.putStrLn $ T.replace "\n" "" $ T.strip t
+-}
+
+-- | lightblue --corpus filepath
+-- |
+parseCorpus :: FilePath -> IO()
+parseCorpus filepath = do
     start <- Time.getCurrentTime
-    args <- E.getArgs
-    sentences <- T.readFile $ head args
+    sentences <- T.readFile filepath
     (i,j,k,total) <- L.foldl' parseSentence (return (0,0,0,0)) $ filter isSentence $ T.lines sentences
     stop <- Time.getCurrentTime
     let totaltime = Time.diffUTCTime stop start
@@ -234,36 +298,4 @@ checkEntailment = do
            mapM_ (T.putStrLn . Ty.utreeToMathML) proofdiagrams
            T.putStrLn HTML.endMathML
   T.putStrLn HTML.htmlFooter4MathML
-
--- | lightblue --jsem
--- | jSeMpath = "../JSeM_beta/JSeM_beta_150415.xml"
--- |
-processJSeMData :: J.JSeMData -> IO()
-processJSeMData jsemdata = do
-  T.putStrLn $ T.concat ["id [", J.jsem_id (jsemdata), "]"]
-  mapM_ (\p -> do {T.putStr $ T.concat ["P: ", p, "\n"]}) $ J.premise jsemdata
-  T.putStr $ T.concat ["H: ", J.hypothesis jsemdata, "\n"]
-  psems <- mapM parseText $ J.premise jsemdata
-  hsem <- parseText $ J.hypothesis jsemdata
-  let sem = DTS.betaReduce $ currying psems hsem
-  T.putStrLn $ T.toText sem
-  T.putStrLn ""
-
-currying :: [DTS.Preterm] -> DTS.Preterm -> DTS.Preterm
-currying [] preterm = preterm
-currying (p:ps) preterm = DTS.Pi p (currying ps preterm)
-
-parseText :: T.Text -> IO(DTS.Preterm)
-parseText sentence = do
-  nodes <- CP.simpleParse 16 sentence
-  return $ CP.sem (head nodes)
-
-{-
-callCoq :: T.Text -> IO()
-callCoq _ = do
-  let coqcommand = T.concat ["echo -e \"Extraction Language Scheme.\nParameter A:Prop.\nParameter B:Prop.\nTheorem id: A -> B -> A.\nExtraction id.\n\" | coqtop 2> /dev/null | awk '{if($0 != \"\") {print $0}}' | tail -n 2"]
-  (_, stdout, _, _) <- S.runInteractiveCommand $ T.unpack coqcommand
-  t <- T.hGetContents stdout
-  T.putStrLn $ T.replace "\n" "" $ T.strip t
--}
 

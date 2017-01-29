@@ -216,7 +216,7 @@ extractParseResult beam chart =
         f c@(((i,_),nodes):_) | i == 0 = Full $ map CCG.wrapNode (sortByNumberOfArgs nodes)
                               | otherwise = Partial $ g (map CCG.wrapNode (sortByNumberOfArgs nodes)) (filter (\((_,j),_) -> j <= i) c)
         g results [] = results
-        g results (((i,_),nodes):cs) = g (take beam [CCG.conjoinNodes x y | x <- map CCG.wrapNode $ sortByNumberOfArgs nodes, y <- results]) $ filter (\((_,j),_) -> j < i) cs
+        g results (((i,_),nodes):cs) = g (take beam [CCG.conjoinNodes x y | x <- map CCG.wrapNode $ sortByNumberOfArgs nodes, y <- results]) $ filter (\((_,j),_) -> j <= i) cs
 
 -- | a `isLessPriviledgedThan` b means that b is more important parse result than a.
 isLessPrivilegedThan :: ((Int,Int),a) -> ((Int,Int),a) -> Ordering

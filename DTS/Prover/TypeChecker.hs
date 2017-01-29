@@ -1,4 +1,6 @@
 {-#OPTIONS -Wall#-}
+{-# LANGUAGE OverloadedStrings #-}
+
 {-|
 Module      : TypeChecker
 Description : A Typechecker for DTS
@@ -7,10 +9,12 @@ Licence     : All right reserved
 Maintainer  : Miho Sato <satoh.miho@is.ocha.ac.jp>
 Stability   : beta
 -}
+
 module DTS.Prover.TypeChecker 
 ( aspElim,
   typeCheckU,
   typeInferU,
+  checkFelicity,
   proofSearch,
   dismantle,
   dismantleSig,
@@ -24,12 +28,12 @@ import qualified DTS.UDTT as UD           -- UDTT
 import qualified DTS.DTT as DT            -- DTT
 import qualified Data.Text.Lazy as T      -- text
 import qualified Data.List as L           -- base
-import qualified Control.Applicative as M -- base
-import qualified Control.Monad as M       -- base
-import qualified DTS.UDTTwithName as VN
-import Interface.Text
-import Interface.TeX
-import Interface.HTML
+--import qualified Control.Applicative as M -- base
+--import qualified Control.Monad as M       -- base
+--import qualified DTS.UDTTwithName as VN
+--import Interface.Text
+--import Interface.TeX
+--import Interface.HTML
 import DTS.Prover.Judgement
 
 
@@ -171,14 +175,14 @@ aspElim (USigE (UJudgement uenv (UD.Proj selector preM) preA) over) = do
       typeS <- getType resultO
       case typeS of
         DT.Sigma preA' preB' -> return (SigE (Judgement (transE uenv) (DT.Proj DT.Fst preM') (preA')) resultO)
-        otherwise -> []
+        _ -> []
     UD.Snd -> do
       resultO <- aspElim over
       preM' <- getTerm resultO
       typeS <- getType resultO
       case typeS of
         DT.Sigma preA' preB' -> return (SigE (Judgement (transE uenv) (DT.Proj DT.Snd preM') (preB')) resultO)
-        otherwise -> []
+        _ -> []
 -- (Not F)規則
 aspElim (UNotF (UJudgement uenv (UD.Not preM) utyp) over) = do
   resultO <- aspElim over
@@ -338,7 +342,7 @@ typeInferU typeEnv sig (UD.App preM preN) = do
     (UD.Not preA) -> do
        rightTree <- typeCheckU typeEnv sig preN preA
        return (UNotE (UJudgement typeEnv (UD.App preM preN) UD.Bot) leftTree rightTree)
-    otherwise -> do return (UError (UJudgement typeEnv (UD.App preM preN) (UD.Con $ T.pack "???")) (T.pack "Not a function"))
+    _ -> do return (UError (UJudgement typeEnv (UD.App preM preN) (UD.Con $ T.pack "???")) (T.pack "Not a function"))
 -- (ΣF) rule
 typeInferU typeEnv sig (UD.Sigma preA preB) = do
   leftTree <- (typeCheckU typeEnv sig preA UD.Type)
@@ -358,14 +362,14 @@ typeInferU typeEnv sig (UD.Proj selector preM) =
           case bodyType of
             (UD.Sigma preA preB) ->
                return (USigE (UJudgement typeEnv (UD.Proj UD.Fst preM) preA) overTree)
-            otherwise -> do return (UError (UJudgement typeEnv (UD.Proj UD.Fst preM) (UD.Con $ T.pack "???")) (T.pack "Not a Sigma type"))
+            _ -> do return (UError (UJudgement typeEnv (UD.Proj UD.Fst preM) (UD.Con $ T.pack "???")) (T.pack "Not a Sigma type"))
   else do overTree <- typeInferU typeEnv sig preM
           bodyType <- getTypeU overTree
           case bodyType of
             (UD.Sigma preA preB) -> do
                let preB' = UD.betaReduce $ UD.shiftIndices (UD.subst preB (UD.shiftIndices (UD.Proj UD.Fst preM) 1 0) 0) (-1) 0
                return (USigE (UJudgement typeEnv (UD.Proj UD.Snd preM) preB') overTree)
-            otherwise -> do return (UError (UJudgement typeEnv (UD.Proj UD.Snd preM) (UD.Con $ T.pack "???")) (T.pack "Not a Sigma type"))
+            _ -> do return (UError (UJudgement typeEnv (UD.Proj UD.Snd preM) (UD.Con $ T.pack "???")) (T.pack "Not a Sigma type"))
 -- UD.subst preB (UD.Proj UD.Fst preM) 0
 -- (Asp) rule
 typeInferU typeEnv sig (UD.Asp i preA) = do
@@ -380,6 +384,9 @@ typeInferU typeEnv sig (UD.Asp i preA) = do
 typeInferU typeEnv _ (UD.DRel i t preM preN) = do
   return (UDREL (UJudgement typeEnv (UD.DRel i t preM preN) UD.Type))
 
+-- | checks felicity condition
+checkFelicity :: [UD.Signature] -> UD.Preterm -> [UTree UJudgement]
+checkFelicity signature preterm = typeCheckU [] (signature++[("evt",UD.Type),("entity",UD.Type)]) preterm (UD.Type)
 
 -- Proof Search
 proofSearch :: TUEnv -> SUEnv -> UD.Preterm -> [UTree UJudgement]
@@ -394,7 +401,7 @@ proofSearch typeEnv sig preterm = do
     -- バラすだけではだめで、型がSigmaの場合(Sigma I)
     ([], UD.Sigma preM preN) -> sigIntro typeEnv sig candidates preterm
     -- 失敗なら
-    ([], oterwise) -> do
+    ([], _) -> do
       let envs = show candidates
       return (UError (UJudgement typeEnv (UD.Con $ T.pack "???") preterm) (T.pack "fail: proofSearch." `T.append` T.pack envs))
     -- 証明項があるなら
@@ -449,7 +456,7 @@ dismantle env (preterm:xs) result =
                      Just term -> let preB' = UD.shiftIndices (UD.subst preB (UD.shiftIndices (UD.Proj UD.Fst term) 1 0) 0) (-1) 0 in
                                   dismantle env (preB':preA:xs) ((UD.Proj UD.Snd term, preB'):(UD.Proj UD.Fst term, preA):result)
                      Nothing -> dismantle env xs result
-    otherwise -> dismantle env xs result
+    _ -> dismantle env xs result
 -- UD.subst preB (UD.Proj UD.Fst term) 0
 -- UD.subst preB (UD.Proj UD.Fst (UD.Var k)) 0
 
@@ -464,7 +471,7 @@ execute ((v, preterm):xs) env result =
       let anslist = do {p <- termAs;
                         return (make v preB p)} in
       execute (anslist ++ xs) env ((v, preterm):(anslist ++ result))
-    otherwise -> execute xs env ((v, preterm):result)
+    _ -> execute xs env ((v, preterm):result)
 
 
 -- search : dismantleの補助関数
@@ -485,7 +492,7 @@ dismantleSig ((term, preterm):xs) result =
     (UD.Sigma preA preB) -> 
       let preB' = UD.shiftIndices (UD.subst preB (UD.shiftIndices (UD.Proj UD.Fst term) 1 0) 0) (-1) 0 in
       dismantleSig ((UD.Proj UD.Fst term, preA):(UD.Proj UD.Snd term, preB'):xs) ((term, preterm):result)
-    otherwise -> dismantleSig xs ((term, preterm):result)
+    _ -> dismantleSig xs ((term, preterm):result)
 
 
 -- changeSig : dismantleSigの補助関数
@@ -504,7 +511,7 @@ changeTenv env (preterm:xs) result =
   case index of
     Just k -> let term = (UD.Var k) in
               changeTenv env xs ((term, preterm):result)
-    otherwise -> changeTenv env xs result
+    _ -> changeTenv env xs result
 
 
 -- searchIndex : executeの補助関数

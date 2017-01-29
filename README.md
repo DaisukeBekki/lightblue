@@ -2,7 +2,7 @@
 ## What is this repository for?
 
 * *lightblue* is a Japanese CCG parser with DTS representations.  
-* Current version: 0.1.2.0.  
+* Current version: 0.1.6.0.  
 * Copyright owner: Daisuke Bekki
 
 
@@ -54,53 +54,57 @@ If everything is ok, then build *lightblue* there.
 ```
 $ cabal build
 ```
-If the build is successful, then you may install *lightblue-0.1.1.0* in the sandbox.
+If the build is successful, then you may install *lightblue-0.1.6.0* in the sandbox.
 ```
 $ cabal install
 ```
-If succeeded, executable is found at `<lightblue>/.cabal-sandbox/bin/lightblue` and `<lightblue>/.cabal-sandbox/bin/lightbluetest`.  You may want to add a path to `<lightblue>/.cabal-sandbox/bin`.
+If succeeded, executable is found at `<lightblue>/.cabal-sandbox/bin/lightblue`.  You may want to add a path to `<lightblue>/.cabal-sandbox/bin`.
 
 ### Generating the Document
 The HTML document is created by the following command in <lightblue>:
 ```
-$ cabal haddock
+$ cabal --executable haddock
 ```
 The generated document is found at: `<lightblue>/dist/doc/html/lightblue/index.html`
 
 ### How to run tests
-Set the permission of shell scripts `parse` and `tidy` to executable.
+Set the permission of two shell scripts `parse` and `tidy` to executable.
 ```
 $ chmod 755 parse
+$ chmod 755 tidy
 ```
 
-To parse a Japanese sentence and get a text representation, execute:
+To parse a Japanese sentence and get a text|HTML|TeX|XML representation, execute:
 ```
-$ echo 太郎がパンを食べた。 | lightblue -o text
+$ echo 太郎がパンを食べた。 | lightblue -o {text|HTML|TeX}
 ```
-
-If you want an XML output (in OpenNLP format), do
+or
 ```
-$ echo 太郎がパンを食べた。 | lightblue -o xml
-```
-
-If you want an HTML output, do
-```
-$ echo 太郎がパンを食べた。 | lightblue -o html
+$ echo 太郎がパンを食べた。 | lightblue -o XML | ./tidy
 ```
 
-*lightblue* can be used as a part-of-speech tagger with the `-postag` option:
+With '-n|--nbest' option, *lightblue* will show the N-best parse results.
+
+With '--time' option, *lightblue* will show the execution time for parsing.
+
+*lightblue* can be used as a part-of-speech tagger when the `-postag` option is specified:
 ```
-$ echo 太郎がパンを食べた。 | lightblue --task postag
+$ echo 太郎がパンを食べた。 | lightblue -t postag
 ```
 
-The following command shows the list of lexical items prepared for pasing the given sentence.
+The following command shows the list of lexical items prepared for pasing the given sentence:
 ```
-$ echo 太郎がパンを食べた。| lightblue --task numeration
+$ echo 太郎がパンを食べた。| lightblue --t numeration
 ```
 
 If you have a text file (one sentence per line) <corpusfile>, then you can feed it to *lightblue* by:
 ```
 $ lightblue --corpus  <corpusfile>
+```
+
+To parse a JSeM file and execute inferences therein, then you can feed it to *lightblue* by:
+```
+$ lightblue --jsem  <jsemfile>
 ```
 
 Check also:
