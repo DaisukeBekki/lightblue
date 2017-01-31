@@ -7,8 +7,6 @@ all:  Parser/Japanese/Juman.dic
 	ghc --make -O2 -package text-1.2.1.1 -package containers-0.4.2.1 ParseCorpus.hs
 	ghc --make -O2 -package text-1.2.1.1 -package containers-0.4.2.1 DTStoProlog.hs
 	ghc --make -O2 -package text-1.2.1.1 -package containers-0.4.2.1 TreebankBuilder.hs
-	ghc --make -O2 -package text-1.2.1.1 -package containers-0.4.2.1 ParseJSeM.hs
-	ghc --make -O2 -package text-1.2.1.1 -package containers-0.4.2.1 checkEntailment.hs
 
 install: Parser/Japanese/Juman.dic
 	cabal configure
@@ -37,4 +35,4 @@ run: ParseText
 
 haddock:
 	cabal configure
-	cabal haddock --hyperlink-source --html-location='http://hackage.haskell.org/package/lightblue/docs' --contents-location='http://hackage.haskell.org/package/lightblue'
+	cabal haddock --executable --hyperlink-source --html-location='http://hackage.haskell.org/package/lightblue/docs' --contents-location='http://hackage.haskell.org/package/lightblue'

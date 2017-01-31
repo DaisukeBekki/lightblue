@@ -18,6 +18,7 @@ module Parser.CCG (
   Feature(..),
   FeatureValue(..),
   -- * Text and TeX interface
+  showScore,
   -- printF,
   printPMFs,
   -- * Tests
@@ -75,13 +76,16 @@ instance Ord Node where
 
 {- Printing Nodes -}
 
+showScore :: Node -> T.Text
+showScore node = T.pack (show ((fromRational $ score node)::Fixed E2))
+
 instance SimpleText Node where
   toText n -- @(Node _ _ _ _ sig' _ _ _) 
     = T.concat [toTextLoop "" n, "Sig. ", printSignatures (sig n), "\n"]
     where toTextLoop indent node =
             case daughters node of 
-              [] -> T.concat [(T.pack indent), toText (rs node), " ", pf node, " ", toText (cat node), " ", toText (sem node), " ", source node, " [", T.pack (show ((fromRational $ score node)::Fixed E2)), "]\n"]
-              dtrs -> T.concat $ [(T.pack indent), toText (rs node), " ", toText (cat node), " ", toText (sem node), " [", T.pack (show ((fromRational $ score node)::Fixed E2)), "]\n"] ++ (map (\d -> toTextLoop (indent++"  ") d) dtrs)
+              [] -> T.concat [(T.pack indent), toText (rs node), " ", pf node, " ", toText (cat node), " ", toText (sem node), " ", source node, " [", showScore node, "]\n"]
+              dtrs -> T.concat $ [(T.pack indent), toText (rs node), " ", toText (cat node), " ", toText (sem node), " [", showScore node, "]\n"] ++ (map (\d -> toTextLoop (indent++"  ") d) dtrs)
 
 instance Typeset Node where
   toTeX node = -- @(Node _ _ _ _ _ _ _ _) =

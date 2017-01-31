@@ -2,7 +2,7 @@
 ## What is this repository for?
 
 * *lightblue* is a Japanese CCG parser with DTS representations.  
-* Current version: 0.1.2.0.  
+* Current version: 0.1.6.0.  
 * Copyright owner: Daisuke Bekki
 
 
@@ -17,13 +17,11 @@ In Debian, you may just do it by `sudo apt-get install haskell-platform`.
 
 After installing GHC, update cabal.
 ```
-#!shell
 $ cabal update
 ```
 
 Installing Haskell-mode for Emacs will help.
 ```
-#!shell
 $ sudo apt-get install haskell-mode
 ```
 
@@ -38,7 +36,6 @@ The followint tools must be installed before executing *lightblue*.
 ### Download
 Do the following in the directory under which you'd like to install *lightblue*.
 ```
-#!shell
 $ git clone git@bitbucket.org:DaisukeBekki/lightblue.git
 ```
 This operation will create the directory *lightblue* (henceforth we will refer to this directory as <lightblue>) under the directory in which you did the above.
@@ -48,7 +45,6 @@ First you need to add the environment variable LIGHTBLUE and set its value as <l
 
 Then move to <lightblue>, create a sandbox environment there, and check the dependencies as follows.
 ```
-#!shell
 $ cd <lightblue>
 $ cabal sandbox init
 $ cabal install --only-dependencies
@@ -58,71 +54,64 @@ If everything is ok, then build *lightblue* there.
 ```
 $ cabal build
 ```
-If the build is successful, then you may install *lightblue-0.1.1.0* in the sandbox.
+If the build is successful, then you may install *lightblue-0.1.6.0* in the sandbox.
 ```
-#!shell
 $ cabal install
 ```
-If succeeded, executable is found at `<lightblue>/.cabal-sandbox/bin/lightblue` and `<lightblue>/.cabal-sandbox/bin/lightbluetest`.  You may want to add a path to `<lightblue>/.cabal-sandbox/bin`.
+If succeeded, executable is found at `<lightblue>/.cabal-sandbox/bin/lightblue`.  You may want to add a path to `<lightblue>/.cabal-sandbox/bin`.
 
 ### Generating the Document
 The HTML document is created by the following command in <lightblue>:
 ```
-#!shell
-$ cabal haddock
+$ cabal --executable haddock
 ```
 The generated document is found at: `<lightblue>/dist/doc/html/lightblue/index.html`
 
 ### How to run tests
-Set the permission of scripts `parse` and `parse2xml` to executable.
+Set the permission of two shell scripts `lightblue` and `tidy` to executable.
 ```
-#!shell
-$ chmod 755 parse
-$ chmod 755 parse2xml
-```
-
-To parse a Japanese sentence and get a text representation, execute:
-```
-#!shell
-$ echo 太郎がパンを食べた。 | lightblue -text
-```
-or equivalently,
-```
-#!shell
-$ ./parse -text 太郎がパンを食べた。
+$ chmod 755 lightblue
+$ chmod 755 tidy
 ```
 
-If you want an XML output, do
+To parse a Japanese sentence and get a text|HTML|TeX|XML representation, execute:
 ```
-#!shell
-$ echo 太郎がパンを食べた。 | lightblue -xml
+$ echo 太郎がパンを食べた。 | lightblue -o {text|HTML|TeX}
 ```
-or equivalently,
+or
 ```
-#!shell
-$ ./parse2xml 太郎がパンを食べた。
-```
-If you want an HTML output, do
-```
-#!shell
-$ echo 太郎がパンを食べた。 | lightblue -html
-```
-or equivalently,
-```
-#!shell
-$ ./parse -html 太郎がパンを食べた。
+$ echo 太郎がパンを食べた。 | lightblue -o XML | ./tidy
 ```
 
-*lightblue* can be used as a part-of-speech tagger with the `-postag` option:
+With '-n|--nbest' option, *lightblue* will show the N-best parse results.
+
+With '--time' option, *lightblue* will show the execution time for parsing.
+
+*lightblue* can be used as a part-of-speech tagger when the `-postag` option is specified:
 ```
-#!shell
-$ echo 太郎がパンを食べた。 | lightblue -postag
+$ echo 太郎がパンを食べた。 | lightblue -t postag
 ```
 
-If you have a text file (one sentence per line) <corpus>, then you can feed it to *lightblue* by:
+The following command shows the list of lexical items prepared for pasing the given sentence:
 ```
-#!shell
-$ lightbluetest <corpus>
+$ echo 太郎がパンを食べた。| lightblue --t numeration
+```
+
+If you have a text file (one sentence per line) <corpusfile>, then you can feed it to *lightblue* by:
+```
+$ lightblue --corpus  <corpusfile>
+```
+
+To parse a JSeM file and execute inferences therein, then you can feed it to *lightblue* by:
+```
+$ lightblue --jsem  <jsemfile>
+```
+
+Check also:
+```
+$ lightblue --help
+$ lightblue --version
+$ lightblue --stat
 ```
 
 ## Contact ##

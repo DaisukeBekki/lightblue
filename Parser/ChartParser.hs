@@ -16,135 +16,32 @@ module Parser.ChartParser (
   CCG.Node(..),
   -- * Main parsing functions
   parse,
-  simpleParse,
-  posTagger,
-  -- * Text and TeX interfaces
-  printChartInTeX,
-  printNodesInText,
-  printNNodesInTeX,
-  printNodesInTeX,
-  printNodesInHTML,
-  --printNodeInHTML,
   -- * Partial parsing function(s)
   ParseResult(..),
-  extractBestParse
+  simpleParse,
+  extractParseResult,
+  bestOnly
   ) where
 
 import Data.List as L
 import Data.Char                       --base
-import Data.Fixed                      --base
 import qualified Data.Text.Lazy as T   --text
-import qualified Data.Text.Lazy.IO as T --text
 import qualified Data.Map as M         --container
-import qualified System.IO as S        --base
 import qualified Parser.CCG as CCG --(Node, unaryRules, binaryRules, trinaryRules, isCONJ, cat, SimpleText)
 import qualified Parser.Japanese.Lexicon as L (LexicalItems, lookupLexicon, setupLexicon, emptyCategories)
 import qualified Parser.Japanese.Templates as LT
-import qualified Interface.Text as T
-import qualified Interface.TeX as TEX
-import qualified Interface.HTML as HTML
-import qualified DTS.UDTT as U
-import qualified DTS.Prover.TypeChecker as Ty
-import qualified DTS.Prover.Judgement as Ty
+
+{- Main functions -}
 
 -- | The type for CYK-charts.
 type Chart = M.Map (Int,Int) [CCG.Node]
-
-{- Come functions for pretty printing Chart/Nodes -}
-
--- | prints every box in the (parsed) CYK chart as a TeX source code.
-printChartInTeX :: S.Handle -> Chart -> IO()
-printChartInTeX handle chart = mapM_ printList $ M.toList $ M.filter (/= []) chart
-  where printList (key,nodes) = do -- list化したChartを画面表示する。
-          S.hPutStr handle $ "\\subsubsection*{" ++ show key ++ ": ノード数 " ++ (show $ length nodes) ++ "}"
-          printNodesInTeX handle nodes
-
--- | prints CCG nodes (=a parsing result) as a plain text.
-printNodesInText :: S.Handle -> [CCG.Node] -> IO()
-printNodesInText handle nodes = 
-  do
-  S.hPutStrLn handle (take 100 $ repeat '-')
-  mapM_ (\node -> do S.hPutStr handle $ T.unpack $ T.toText node
-                     S.hPutStrLn handle $ take 100 $ repeat '-'
-        ) nodes
-  S.hPutStrLn handle $ "Number of nodes: " ++ show (length nodes)
-
--- | prints n-nodes (n is a natural number) from given list of CCG nodes (=a parsing result) as a TeX source code.
-printNNodesInTeX :: S.Handle -> Int -> [CCG.Node] -> IO()
-printNNodesInTeX handle n nodes = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-2em\\scalebox{.2}{" ++ T.unpack (TEX.toTeX node) ++ "\\\\}\\par\\medskip") $ take n nodes
-
--- | prints CCG nodes (=a parsing result) as a TeX source code.
-printNodesInTeX :: S.Handle -> [CCG.Node] -> IO()
-printNodesInTeX handle nodes = 
-  mapM_ (\node -> T.hPutStrLn handle $ T.concat [
-            "\\noindent\\kern-2em\\scalebox{.2",
-            --TEX.scaleboxsize $ CCG.pf node,
-            "}{\\ensuremath{", 
-            -- TEX.toTeX $ CCG.sem node,
-            TEX.toTeX node,
-            "}}\\medskip"
-            ]
-            ) $ take 1 nodes
-
--- | prints CCG nodes (=a parsing result) as a TeX source code.
-printNodesInHTML :: S.Handle -> [CCG.Node] -> IO()
-printNodesInHTML handle nodes = 
-  do
-  T.hPutStrLn handle HTML.htmlHeader4MathML
-  mapM_ (\node -> 
-          do
-          T.hPutStrLn handle $ "<p>";
-          T.hPutStrLn handle $ CCG.pf node;
-          T.hPutStrLn handle $ " [";
-          T.hPutStrLn handle $ T.pack $ show $ ((fromRational $ CCG.score node)::Fixed E2);
-          T.hPutStrLn handle $ "]</p>";
-          T.hPutStrLn handle $ HTML.startMathML;
-          T.hPutStrLn handle $ HTML.toMathML node;
-          T.hPutStrLn handle $ HTML.endMathML;
-          T.hPutStrLn handle $ HTML.startMathML;
-          mapM_ ((T.hPutStrLn handle) . Ty.utreeToMathML) $ Ty.typeCheckU [] ((CCG.sig node)++[("evt",U.Type),("entity",U.Type)]) (CCG.sem node) (U.Type);
-          T.hPutStrLn handle $ HTML.endMathML 
-          ) nodes
-  T.hPutStrLn handle HTML.htmlFooter4MathML
-
--- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style
-posTagger :: S.Handle -> [CCG.Node] -> IO()
-posTagger handle nodes = 
-  case nodes of
-    [] -> S.hPutStrLn handle "No results."
-    (n:_) -> mapM_ ((S.hPutStrLn handle) . T.unpack) $ node2PosTags n
-
--- | A subroutine for `posTagger` function
-node2PosTags :: CCG.Node -> [T.Text]
-node2PosTags node@(CCG.Node _ _ _ _ _ _ _ _) =
-  case CCG.daughters node of
-    [] -> [T.concat [CCG.pf node, "\t", T.toText (CCG.cat node), " \t", T.toText (CCG.sem node), "\t", CCG.source node, "\t[", T.pack (show ((fromRational $ CCG.score node)::Fixed E2)), "]"]]
-    dtrs -> [t | dtr <- dtrs, t <- node2PosTags dtr]
-
-{-
--- | picks up the nodes in the "top" box in the chart.
-topBox :: Chart -> [CCG.Node]
-topBox chart = let ((_,k),_) = M.findMax chart in
-                 case M.lookup (0,k) chart of
-                   Just nodes -> sort nodes
-                   Nothing    -> []
-
--- | checks if a given node's category is `S` or `Sbar`.
-isS :: CCG.Node -> Bool
-isS node = case CCG.cat node of
-             CCG.S _ -> True
-             CCG.Sbar _ -> True
-             _ -> False
--}
-
-{- Main functions -}
 
 -- | Main parsing function to parse a Japanees sentence and generates a CYK-chart.
 parse :: Int           -- ^ The beam width
          -> T.Text     -- ^ A sentence to be parsed
          -> IO(Chart) -- ^ A pair of the resulting CYK-chart and a list of CYK-charts for segments
 parse beam sentence 
-  | sentence == T.empty = return M.empty -- foldl returns a runtime error when text is empty
+  | sentence == T.empty = return M.empty -- returns an empty chart, otherwise foldl returns a runtime error when text is empty
   | otherwise =
       do
       lexicon <- L.setupLexicon (T.replace "―" "。" sentence)
@@ -156,19 +53,10 @@ purifyText :: T.Text -> T.Text
 purifyText text = 
   case T.uncons text of -- remove a non-literal symbol at the beginning of a sentence (if any)
     Nothing -> T.empty
-    Just (c,t) | isSpace c -> purifyText t                                                                   -- ignore white spaces
-               | c `elem` ['！','？','!','?','…','「','」','◎','○','●','▲','△','▼','▽','■','□','◆','◇','★','☆','※','†','‡'] -> purifyText t -- ignore some symbols as meaningless
-               | c `elem` ['，',',','-','―','?','。','．','／','＼'] -> T.cons '、' $ purifyText t          -- punctuations
-               | otherwise -> T.cons c $ purifyText t
-
--- | Simple parsing function to return just the best node for a given sentence
-simpleParse :: Int -> T.Text -> IO([CCG.Node])
-simpleParse beam sentence = do
-  chart <- parse beam sentence
-  case extractBestParse chart of
-    Full nodes -> return nodes
-    Partial nodes -> return nodes
-    Failed -> return []
+    Just (c,t) | isSpace c                                -> purifyText t              -- ignore white spaces
+               | T.any (==c) "！？!?…「」◎○●▲△▼▽■□◆◇★☆※†‡." -> purifyText t              -- ignore some symbols as meaningless
+               | T.any (==c) "，,-―?。．／＼"               -> T.cons '、' $ purifyText t -- punctuations
+               | otherwise                                -> T.cons c $ purifyText t
 
 -- | triples representing a state during parsing:
 -- the parsed result (=chart) of the left of the pivot,
@@ -244,16 +132,17 @@ boxAccumulator :: Int               -- ^ beam width
                   -> PartialBox
 boxAccumulator beam lexicon (chart,word,i,j) c =
   let newword = T.cons c word;
-      list0 = if (T.compareLength newword 23) == LT -- Does not execute lookup for a long word (run "LongestWord" to check it (=23))
+      list0 = if (T.compareLength newword 23) == LT 
+                -- Does not execute lookup for a long word. Run "LongestWord" to check that the length of the longest word (=23).
                 then L.lookupLexicon newword lexicon
                 else [];
       list1 = checkEmptyCategories $ checkParenthesisRule i j chart $ checkCoordinationRule i j chart $ checkBinaryRules i j chart $ checkUnaryRules list0 in
-  ((M.insert (i,j) (cutoff beam list1) chart), newword, i-1, j)
+  ((M.insert (i,j) (take beam $ L.sort list1) chart), newword, i-1, j)
   --((M.insert (i,j) (cutoff (max (beam+i-j) 24) list1) chart), newword, i-1, j)
 
 -- | take `beam` nodes from the top of `ndoes`.
-cutoff :: Int -> [CCG.Node] -> [CCG.Node]
-cutoff beam nodes = if length nodes <= beam then nodes else take beam $ sort nodes
+--cutoff :: Int -> [CCG.Node] -> [CCG.Node]
+--cutoff beam nodes = if length nodes <= beam then nodes else take beam $ sort nodes
 
 -- | looks up a chart with the key (i,j) and returns the value of type [Node]
 lookupChart :: Int -> Int -> Chart -> [CCG.Node]
@@ -303,6 +192,15 @@ checkEmptyCategories prevlist =
 
 {- Partial Parsing -}
 
+-- | Simple parsing function to return just the best node for a given sentence
+simpleParse :: Int -> T.Text -> IO([CCG.Node])
+simpleParse beam sentence = do
+  chart <- parse beam sentence
+  case extractParseResult beam chart of
+    Full nodes -> return nodes
+    Partial nodes -> return nodes
+    Failed -> return []
+
 -- | A data type for the parsing result.
 data ParseResult = 
   Full [CCG.Node]      -- ^ when there are at least one node in the topmost box in the chart, returning the nodes.
@@ -311,16 +209,14 @@ data ParseResult =
   deriving (Eq,Show)
 
 -- | takes a (parse result) chart and returns a list consisting of nodes, partially parsed substrings.
-extractBestParse :: Chart -> ParseResult
-extractBestParse chart = 
+extractParseResult :: Int -> Chart -> ParseResult
+extractParseResult beam chart = 
   f $ L.sortBy isLessPrivilegedThan $ filter (\((_,_),nodes) -> not (L.null nodes)) $ M.toList $ chart
   where f [] = Failed
---        f (((i,_),nodes):cs) | i == 0 = Full $ map (CCG.drel . CCG.wrapNode) (sortByNumberOfArgs $ bestOnly $ L.sort nodes)
-        f (((i,_),nodes):cs) | i == 0 = Full $ map CCG.wrapNode (sortByNumberOfArgs $ bestOnly $ L.sort nodes)
-                             | otherwise = Partial $ g (map CCG.wrapNode (sortByNumberOfArgs $ bestOnly $ L.sort nodes)) (filter (\((_,j),_) -> j <= i) cs)
---        g results [] = map CCG.drel results
+        f c@(((i,_),nodes):_) | i == 0 = Full $ map CCG.wrapNode (sortByNumberOfArgs nodes)
+                              | otherwise = Partial $ g (map CCG.wrapNode (sortByNumberOfArgs nodes)) (filter (\((_,j),_) -> j <= i) c)
         g results [] = results
-        g results (((i,_),nodes):cs) = g [CCG.conjoinNodes (CCG.wrapNode $ head $ sortByNumberOfArgs $ bestOnly $ L.sort nodes) (head results)] $ filter (\((_,j),_) -> j < i) cs
+        g results (((i,_),nodes):cs) = g (take beam [CCG.conjoinNodes x y | x <- map CCG.wrapNode $ sortByNumberOfArgs nodes, y <- results]) $ filter (\((_,j),_) -> j <= i) cs
 
 -- | a `isLessPriviledgedThan` b means that b is more important parse result than a.
 isLessPrivilegedThan :: ((Int,Int),a) -> ((Int,Int),a) -> Ordering
@@ -341,7 +237,7 @@ sortByNumberOfArgs = sortByNumberOfArgs2 20 []
 
 sortByNumberOfArgs2 :: Int -> [CCG.Node] -> [CCG.Node] -> [CCG.Node]
 sortByNumberOfArgs2 i selected nodes = case nodes of
-  [] -> selected
+  [] -> L.sort selected
   (n:ns) -> let j = (CCG.numberOfArgs . CCG.cat) n in
             case () of
               _ | j < i  -> sortByNumberOfArgs2 j [n] ns

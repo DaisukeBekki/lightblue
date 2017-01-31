@@ -1,0 +1,3 @@
+#!/bin/bash
+dist/build/lightblue/lightblue $@
+

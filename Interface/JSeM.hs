@@ -29,12 +29,12 @@ data JSeMData = JSeMData {
   } deriving (Eq, Show)
 
 -- | takes a file path of a JSeM file (XML format) and returns a list of 'JSeMData'.
-parseJSeM :: FilePath -> IO([JSeMData])
-parseJSeM xmlfile = do
-  doc <- X.readFile X.def xmlfile
-  let cursor = X.fromDocument doc
-  let problemNodes = X.child cursor >>= X.element "problem"
-  return $ map problem2JSeMData problemNodes
+parseJSeM :: LazyT.Text -> [JSeMData]
+parseJSeM text = 
+  let doc = X.parseText_ X.def text;
+      cursor = X.fromDocument doc;
+      problemNodes = X.child cursor >>= X.element "problem" in
+  map problem2JSeMData problemNodes
 
 -- | takes a "problem" node in a JSeM file and translates it to a 'JSeMData'.  
 -- Note that the xml-conduit package uses Data.Text (=strict texts) as internal format of text data, 
@@ -51,5 +51,3 @@ problem2JSeMData problem =
     premise = map (LazyT.fromStrict . StrictT.strip . StrictT.replace "\r\n" "") $ children >>= X.element "p" >>= X.child >>= X.element "script" >>= X.child >>= X.content,
     hypothesis = LazyT.fromStrict $ StrictT.concat $ map (StrictT.strip . StrictT.replace "\r\n" "") $ children >>= X.element "h" >>= X.child >>= X.element "script" >>= X.child >>= X.content
     }
-
-
