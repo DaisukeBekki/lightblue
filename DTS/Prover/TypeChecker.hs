@@ -383,6 +383,8 @@ typeInferU typeEnv sig (UD.Asp i preA) = do
 -- (DRel) rule
 typeInferU typeEnv _ (UD.DRel i t preM preN) = do
   return (UDREL (UJudgement typeEnv (UD.DRel i t preM preN) UD.Type))
+-- otherwise
+typeInferU _ _ _ = []
 
 -- | checks felicity condition
 checkFelicity :: [UD.Signature] -> UD.Preterm -> [UTree UJudgement]
