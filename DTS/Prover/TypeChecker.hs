@@ -217,6 +217,8 @@ aspElim (UDREL (UJudgement uenv (UD.DRel i t preM preN) typ)) = do
   return (DREL (Judgement (transE uenv) (DT.DRel i t preM' preN') typ'))
 -- (Error)
 aspElim (UError (UJudgement uenv pretermA pretermB) text) = []
+-- otherwise
+aspElim uTree = []
 {-
 aspElim (UError (UJudgement uenv pretermA pretermB) text) = do
   preA' <- transP pretermA
