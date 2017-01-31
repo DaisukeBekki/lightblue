@@ -68,9 +68,9 @@ $ cabal --executable haddock
 The generated document is found at: `<lightblue>/dist/doc/html/lightblue/index.html`
 
 ### How to run tests
-Set the permission of two shell scripts `parse` and `tidy` to executable.
+Set the permission of two shell scripts `lightblue` and `tidy` to executable.
 ```
-$ chmod 755 parse
+$ chmod 755 lightblue
 $ chmod 755 tidy
 ```
 

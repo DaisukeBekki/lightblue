@@ -125,7 +125,7 @@ printChartInTeX handle nBest typeCheck chart = mapM_ printList $ M.toList $ M.fi
 
 -- | prints n-nodes (n is a natural number) from given list of CCG nodes (=a parsing result) as a TeX source code.
 printNNodesInTeX :: S.Handle -> Int -> Bool -> [CCG.Node] -> IO()
-printNNodesInTeX handle nBest typeCheck nodes = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-2em\\scalebox{.2}{" ++ T.unpack (TEX.toTeX node) ++ "\\\\}\\par\\medskip") $ take nBest nodes
+printNNodesInTeX handle nBest _ nodes = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-2em\\scalebox{.2}{" ++ T.unpack (TEX.toTeX node) ++ "\\\\}\\par\\medskip") $ take nBest nodes
 
 -- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style
 posTagger :: S.Handle -> [CCG.Node] -> IO()
