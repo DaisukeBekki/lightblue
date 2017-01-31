@@ -62,13 +62,13 @@ optionParser =
     <$> strOption
         ( long "jsem"
         <> metavar "FILEPATH"
-        <> help "Parse JSeM data" )
+        <> help "Parse JSeM data (Specify '-' to use stdin)" )
   <|>
   Corpus 
     <$> strOption
         ( long "corpus"
         <> metavar "FILEPATH"
-        <> help "Parse BCCWJ corpus" )
+        <> help "Parse BCCWJ corpus (Specify '-' to use stdin)" )
   <|>
   subparser (command "debug" (info (Debug
                                      <$> argument auto idm
@@ -182,7 +182,9 @@ fuman2text = do
 -- | 
 parseJSeM :: FilePath -> IO()
 parseJSeM filepath = do
-  content <- T.readFile filepath
+  content <- case () of
+    _ | filepath == "-" -> T.getContents
+      | otherwise       -> T.readFile filepath
   mapM_ processJSeMData $ J.parseJSeM content
 
 processJSeMData :: J.JSeMData -> IO()
@@ -217,9 +219,11 @@ callCoq _ = do
 -- |
 parseCorpus :: FilePath -> IO()
 parseCorpus filepath = do
+    content <- case () of
+      _ | filepath == "-" -> T.getContents
+        | otherwise        -> T.readFile filepath
     start <- Time.getCurrentTime
-    sentences <- T.readFile filepath
-    (i,j,k,total) <- L.foldl' parseSentence (return (0,0,0,0)) $ filter isSentence $ T.lines sentences
+    (i,j,k,total) <- L.foldl' parseSentence (return (0,0,0,0)) $ filter isSentence $ T.lines content
     stop <- Time.getCurrentTime
     let totaltime = Time.diffUTCTime stop start
     S.hPutStrLn S.stdout $ "Results: Full:Partial:Error = " 
