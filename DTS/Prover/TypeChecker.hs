@@ -393,6 +393,8 @@ proofSearch typeEnv sig preterm = do
   case (ansTerms, preterm) of
     -- バラすだけではだめで、型がSigmaの場合(Sigma I)
     ([], UD.Sigma preM preN) -> sigIntro typeEnv sig candidates preterm
+    -- バラすだけではだめで、型がPiの場合(Pi I)
+    ([], UD.Pi preM preN) -> piIntro typeEnv sig preterm
     -- 失敗なら
     ([], oterwise) -> do
       let envs = show candidates
@@ -432,6 +434,24 @@ sigIntro typeEnv sig candidates (preterm@(UD.Sigma preM preN)) = do
   termN <- searchType candidates newM'
   typeCheckU typeEnv sig (UD.Pair termM termN) preterm
 sigIntro typeEnv sig candidates _ = []
+
+
+-- piIntro : (Pi I)規則にしたがって証明探索する関数
+piIntro :: TUEnv -> SUEnv -> UD.Preterm -> [UTree UJudgement]
+piIntro typeEnv sig (preterm@(UD.Pi preA preB)) = do
+  leftTree <- (typeCheckU typeEnv sig preA UD.Type)
+                 ++ (typeCheckU typeEnv sig preA UD.Kind)
+  newleftTree <- aspElim leftTree
+  newA <- getTerm newleftTree
+  let preA' = UD.betaReduce $ repositP newA
+  let newEnv = (preA':typeEnv)
+  let candidatesA = (dismantle newEnv newEnv [])
+                       ++ (dismantleSig (changeSig sig []) [])
+  let candidatesB = execute (changeSig sig []) candidatesA []
+  let candidates = candidatesA ++ candidatesB
+  termM <- searchType candidates preB
+  typeCheckU typeEnv sig (UD.Lam termM) preterm
+piIntro typeEnv sig _ = []
 
 
 -- dismantle : 型環境の中からSigma型を見つけて投射をかける
