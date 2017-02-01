@@ -622,11 +622,11 @@ myLexicon = concat $ [
   mylex ["気味","ぎみ"] "(509)" ((defS [Nda,Nna,Nno,Nni] [NStem] `BS` NP [F[Ga]]) `BS` N) ((Lam (Lam (App (Var 1) (Var 0)))),[]),-- ??
   mylex ["なの"] "(510)" (defS [Nda] [NStem] `BS` defS [Nda] [NStem])          (modalSR "＃ナノダ"),
   mylex ["の","ん"] "(511)" (S [F[Nda], F[NStem],F[M],F[M],F[M],F[M],F[M]] `BS` S [F anyPos,F[Attr],F[P,M],F[P,M],F[P,M],F[P,M],F[M]]) (modalSR "＃ノダ"),
-  mylex ["筈","はず","ハズ"] "(511)" (defS [Nda] [NStem] `BS` defS anyPos [Attr]) (modalSR "＃ハズダ"),
-  mylex ["訳","わけ","ワケ"] "(511)" (defS [Nda] [NStem] `BS` defS anyPos [Attr]) (modalSR "＃ワケダ"),
-  mylex ["つもり"] "new" (defS [Nda] [NStem] `BS` defS anyPos [Attr])            (modalSR "＃ツモリダ"),
-  mylex ["もの","もん"] "(511)" (defS [Nda] [NStem] `BS` defS anyPos [Attr])      (modalSR "＃モノダ"),
-  mylex ["等","など"] "new" (defS [Nda,Nno] [NStem] `BS` defS anyPos [Term,NStem]) (modalSR "＃ナド"),
+  mylex ["筈","はず","ハズ"] "(511)" (defS [Nda] [NStem] `BS` S [F anyPos,F[Attr],F[P,M],F[M],F[P,M],F[M],F[M]]) (modalSR "＃ハズダ"),
+  mylex ["訳","わけ","ワケ"] "(511)" (defS [Nda] [NStem] `BS` S [F anyPos,F[Attr],F[P,M],F[M],F[P,M],F[M],F[M]]) (modalSR "＃ワケダ"),
+  mylex ["つもり"] "new"            (defS [Nda] [NStem] `BS` S [F anyPos,F[Attr],F[P,M],F[M],F[P,M],F[M],F[M]])            (modalSR "＃ツモリダ"),
+  mylex ["もの","もん"] "(511)"      (defS [Nda] [NStem] `BS` S [F anyPos,F[Attr],F[P,M],F[M],F[P,M],F[M],F[M]])      (modalSR "＃モノダ"),
+  mylex ["等","など"] "new" (defS [Nda,Nno] [NStem] `BS` S [F anyPos,F[Term,NStem],F[P,M],F[M],F[P,M],F[M],F[M]]) (modalSR "＃ナド"),
   -- べきだ
   -- ふうだ
   -- ことだ
