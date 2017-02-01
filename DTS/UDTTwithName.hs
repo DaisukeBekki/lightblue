@@ -183,7 +183,7 @@ instance MathML Preterm where
       T.concat ["<mrow><mtext>", cname, "</mtext><mfenced>", toMathML x, toMathML y, toMathML z, toMathML u, "</mfenced></mrow>"]
     App m n -> T.concat ["<mrow>", toMathML m, "<mfenced>", toMathML n, "</mfenced></mrow>"]
     Sigma vname a b -> case b of 
-                         Top -> T.concat ["<mfenced>", toMathML a, "</mfenced>"]
+                         Top -> toMathML a
                          _   -> T.concat ["<mfenced open='[' close=']'><mtable columnalign='left'><mtr><mtd>", toMathML vname, "<mo>:</mo>", toMathML a, "</mtd></mtr><mtr><mtd><mpadded height='-0.5em'>", toMathML b, "</mpadded></mtd></mtr></mtable></mfenced>"]
     Pair m n  -> T.concat ["<mfenced>", toMathML m, toMathML n, "</mfenced>"]
     Proj s m  -> T.concat ["<mrow><msub><mi>&pi;</mi>", toMathML s, "</msub><mfenced>", toMathML m, "</mfenced></mrow>"]
