@@ -14,6 +14,7 @@ module DTS.UDTTwithName (
   Selector(..),
   Preterm(..),
   Context,
+  toVerticalMathML,
   Judgment(..)
   ) where
 
@@ -214,6 +215,9 @@ instance Typeset Context where
 
 instance MathML Context where
   toMathML cont = T.concat $ ["<mfenced separators=',' open='' close=''>"] ++ (map (\(nm,tm) -> T.concat ["<mrow>", toMathML nm, "<mo>:</mo>", toMathML tm, "</mrow>"]) $ reverse cont) ++ ["</mfenced>"]
+
+toVerticalMathML :: Context -> T.Text
+toVerticalMathML cont = T.concat $ map (\(nm,tm) -> T.concat ["<mrow>", toMathML nm, "<mo>:</mo>", toMathML tm, "</mrow>"]) $ reverse cont
 
 -- | The data type for a judgment
 data Judgment = Judgment { 

@@ -32,7 +32,9 @@ data Options =
   | Test
   | Options
   { task :: String
+  , input :: String
   , format :: String
+  , file :: FilePath
   , nBest  :: Int
   , beamW :: Int
   , showTypeCheck :: Bool
@@ -55,10 +57,10 @@ optionParser :: Parser Options
 optionParser = 
   flag' Version ( long "version" 
                 <> short 'v' 
-                <> help "Show the version of lightblue parser" )
+                <> help "Print the lightblue version" )
   <|> 
   flag' Stat ( long "stat" 
-             <> help "Show the statistics of ligthblue parser" )
+             <> help "Print the lightblue statistics" )
   <|> 
   flag' Test ( long "test" 
              <> hidden 
@@ -88,7 +90,7 @@ optionParser =
     <$> strOption
       ( long "task"
       <> short 't'
-      <> metavar "parse|infer|postag|numeration"
+      <> metavar "parse|infer|postag|numeration|sembank"
       <> help ("Execute the specified task"
                 --"Usage for parse: cat <sentence> | lightblue -t parse > output.html "
                 --"Usage for infer: cat <textfile> | lightblue -t infer > output.html "
@@ -98,12 +100,26 @@ optionParser =
       <> showDefault
       <> value "parse" )
     <*> strOption 
-      ( long "output"
+      ( long "input-format"
+      <> short 'i' 
+      <> metavar "sentence|corpus|jsem"
+      <> help "Specify the style of input texts"
+      <> showDefault
+      <> value "sentence" )
+    <*> strOption 
+      ( long "output-format"
       <> short 'o'
       <> metavar "text|tex|xml|html"
-      <> help "Print result in the specified format" 
+      <> help "Print results in the specified format"
       <> showDefault
       <> value "html" )
+    <*> strOption 
+      ( long "file"
+      <> short 'f'
+      <> metavar "FILEPATH"
+      <> help "Read input texts from FILEPATH (Specify '-' to use stdin)"
+      <> showDefault
+      <> value "-" )
     <*> option auto 
       ( long "nbest"
       <> short 'n'
@@ -137,19 +153,20 @@ lightblueMain (Debug i j) =  do
 lightblueMain Test = test
 lightblueMain options = do
   start <- Time.getCurrentTime
-  if task options == "infer"
-     then processInferenceText (beamW options) (nBest options)
-     else do
-       sentence <- T.getLine
-       nodes    <- CP.simpleParse (beamW options) sentence
-       case (task options, format options) of
-         ("postag",_) -> I.posTagger S.stdout nodes
-         ("numeration",_) -> I.printNumeration S.stdout sentence
-         ("parse","html") -> I.printNodesInHTML S.stdout (nBest options) (showTypeCheck options) nodes
-         ("parse","text") -> I.printNodesInText S.stdout (nBest options) (showTypeCheck options) nodes
-         ("parse","tex")  -> I.printNodesInTeX  S.stdout (nBest options) (showTypeCheck options) nodes
-         ("parse","xml")  -> I.printNodesInXML  S.stdout sentence (nBest options) nodes
-         (t,f) -> S.hPutStrLn S.stderr $ show $ parserUsage defaultPrefs optionParser $ "task=" ++ t ++ ", format=" ++ f ++ ": Not supported."
+  case task options of
+    "infer" -> processInferenceText (beamW options) (nBest options)
+    "sembank" -> treebankBuilder (beamW options)
+    _ -> do
+         sentence <- T.getLine
+         nodes    <- CP.simpleParse (beamW options) sentence
+         case (task options, format options) of
+           ("postag",_) -> I.posTagger S.stdout nodes
+           ("numeration",_) -> I.printNumeration S.stdout sentence
+           ("parse","html") -> I.printNodesInHTML S.stdout (nBest options) (showTypeCheck options) nodes
+           ("parse","text") -> I.printNodesInText S.stdout (nBest options) (showTypeCheck options) nodes
+           ("parse","tex")  -> I.printNodesInTeX  S.stdout (nBest options) (showTypeCheck options) nodes
+           ("parse","xml")  -> I.printNodesInXML  S.stdout sentence (nBest options) nodes
+           (t,f) -> S.hPutStrLn S.stderr $ show $ parserUsage defaultPrefs optionParser $ "task=" ++ t ++ ", format=" ++ f ++ ": Not supported."
   stop <- Time.getCurrentTime
   let time = Time.diffUTCTime stop start
   if showExecutionTime options 
@@ -210,7 +227,7 @@ proofSearch sig nodes =
 test :: IO()
 test = do
   let nbest = 3;
-      bestNodes =  map (take nbest) [[1,2,3,4],[5],[7,8,9,10]];
+      bestNodes =  map (take nbest) [[1,2,3,4],[5],[7,8,9,10]]::[[Int]];
       doubledNodes = map (map (\node -> (node, show node))) bestNodes
       chozenNodes = choice doubledNodes; 
       zippedNodes = map unzip chozenNodes;
@@ -226,16 +243,16 @@ checkEntailment :: Int -> Int -> (T.Text,[T.Text],T.Text) -> IO()
 checkEntailment beam nbest (jsem_id,premises,hypothesis) = do
   let hline = "<hr size='15' />";
   T.putStrLn HTML.htmlHeader4MathML
-  -- |
-  -- | Showing the sentences
-  -- |
+  --
+  -- Showing the sentences
+  --
   mapM_ T.putStr ["[", jsem_id, "]"]
   mapM_ (\p -> mapM_ T.putStr ["<p>P: ", p, "</p>"]) premises
   mapM_ T.putStr ["<p>H: ", hypothesis, "</p>"]
   T.putStrLn hline
-  -- |
-  -- | Parsing
-  -- |
+  --
+  -- Parsing the sentences
+  --
   let sentences = hypothesis:(reverse premises)
   nodes <- mapM (CP.simpleParse beam) sentences
   let signatureOf = \ns -> foldl L.union [] $ map CP.sig ns;
@@ -246,16 +263,16 @@ checkEntailment beam nbest (jsem_id,premises,hypothesis) = do
       (nss,sss,pss) = if nodeSrPrList == []
                         then head tripledNodes
                         else head nodeSrPrList
-  -- |
-  -- | Showing the parse trees
-  -- |
+  --
+  -- Showing the parse trees
+  --
   T.putStrLn HTML.startMathML
   mapM_ (T.putStrLn . HTML.toMathML) $ reverse nss
   T.putStrLn HTML.endMathML
   T.putStrLn hline
-  -- |
-  -- | Showing the proof diagram
-  -- |
+  --
+  -- Showing the proof diagram
+  --
   if pss == []
      then mapM_ T.putStrLn [
            "No proof diagrams for: ", 
@@ -272,9 +289,20 @@ checkEntailment beam nbest (jsem_id,premises,hypothesis) = do
   T.putStrLn HTML.htmlFooter4MathML
 
 choice :: [[a]] -> [[a]]
-choice [] = []
-choice [a] = [[x] | x <- a] 
+choice [] = [[]]
 choice (a:as) = [x:xs | x <- a, xs <- choice as]
+
+-- | lightblue -t sembank
+-- |
+treebankBuilder :: Int -> IO()
+treebankBuilder beam = do
+  content <- T.getContents
+  nodes <- mapM (CP.simpleParse beam) $ T.lines content
+  T.putStrLn HTML.startMathML
+  T.putStrLn HTML.startMathML
+  T.putStrLn $ DTS.toVerticalMathML $ map (CP.sem . head) nodes
+  T.putStrLn HTML.endMathML
+  T.putStrLn HTML.htmlFooter4MathML
 
 -- | lightblue --corpus filepath
 -- |

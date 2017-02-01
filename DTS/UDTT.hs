@@ -37,6 +37,7 @@ module DTS.UDTT (
   toDeBruijn,
   -- * Judgment
   Context,
+  toVerticalMathML,
   Judgment(..),
   fromDeBruijnContext,
   fromDeBruijnContextLoop,
@@ -590,6 +591,9 @@ instance Typeset Context where
 
 instance MathML Context where
   toMathML = toMathML . fromDeBruijnContext
+
+toVerticalMathML :: Context -> T.Text
+toVerticalMathML = VN.toVerticalMathML . fromDeBruijnContext
 
 -- | translates a context in de Bruijn notation (i.e. [DTS.DependentTypes.Preterm]) 
 -- into one with variable names 
