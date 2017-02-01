@@ -192,7 +192,7 @@ instance MathML Preterm where
     Unit       -> "<mi>()</mi>"
     Top        -> "<mi>&top;</mi>"
     Bot        -> "<mi>&bot;</mi>"
-    Asp j m    -> T.concat["<mrow><msub><mo>@</mo><mn>", T.pack (show j), "</mn></msub><mo>:</mo>", toMathML m, "</mrow>"]
+    Asp j m    -> T.concat["<mrow><msub><mo>@</mo><mn>", T.pack (show j), "</mn></msub><mo>::</mo>", toMathML m, "</mrow>"]
     Nat    -> "<mi>N</mi>"
     Zero   -> "<mi>0</mi>"
     Succ n -> T.concat ["<mrow><mi>s</mi>", toMathML n, "</mrow>"]
@@ -217,7 +217,7 @@ instance MathML Context where
   toMathML cont = T.concat $ ["<mfenced separators=',' open='' close=''>"] ++ (map (\(nm,tm) -> T.concat ["<mrow>", toMathML nm, "<mo>:</mo>", toMathML tm, "</mrow>"]) $ reverse cont) ++ ["</mfenced>"]
 
 toVerticalMathML :: Context -> T.Text
-toVerticalMathML cont = T.concat $ map (\(nm,tm) -> T.concat ["<mrow>", toMathML nm, "<mo>:</mo>", toMathML tm, "</mrow>"]) $ reverse cont
+toVerticalMathML cont = T.concat $ ["<mtable columnalign='left'>"] ++ (map (\(nm,tm) -> T.concat ["<mtr><mtd>", toMathML nm, "<mo>:</mo>", toMathML tm, "</mtd></mtr>"]) $ reverse cont) ++ ["</mtable>"]
 
 -- | The data type for a judgment
 data Judgment = Judgment { 
