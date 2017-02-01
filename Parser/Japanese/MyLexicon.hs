@@ -610,8 +610,8 @@ myLexicon = concat $ [
   mylex ["べき"] "(488)" (defS [Nda] [Attr] `BS` defS verb [Term])       (modalSR "＃ベキ"),
   mylex ["かもしれな"] "new" (defS [Aauo] [Stem] `BS` S [F anyPos,F[Term,NStem],F[P,M],F[P,M],F[P,M],F[M],F[M]]) (modalSR "＃カモシレナイ"),
   -- 状詞性接尾語
-  mylex ["よう"] "(493)" (defS [Nda,Nna,Nni] [NStem] `BS` defS anyPos [Attr]) (modalSR "＃ヨウダ"),
-  mylex ["そう"] "(497)" (defS [Nda] [NStem] `BS` defS anyPos [Term])         (modalSR "＃ソウダ伝聞"),
+  mylex ["よう"] "(493)" (defS [Nda,Nna,Nni] [NStem] `BS` S [F anyPos,F[Attr],F[P,M],F[M],F[P,M],F[M],F[M]]) (modalSR "＃ヨウダ"),
+  mylex ["そう"] "(497)" (defS [Nda] [NStem] `BS` S [F anyPos,F[Term],F[P,M],F[M],F[P,M],F[M],F[M]])         (modalSR "＃ソウダ伝聞"),
   mylex ["そう"] "(498)" (defS [Nda,Nna,Nni] [NStem] `BS` defS anyPos [ModS]) (modalSR "＃ソウダ推量"),
   mylex ["がち"] "(506)" (defS [Nda,Nna,Nni] [NStem] `BS` defS anyPos [Cont]) (modalSR "＃ガチダ"),
   mylex ["みたい"] "(507)" (defS [Nda,Nna,Nni] [NStem] `BS` defS verb [Term]) (modalSR "＃ミタイダ"),
@@ -627,10 +627,10 @@ myLexicon = concat $ [
   mylex ["つもり"] "new"            (defS [Nda] [NStem] `BS` S [F anyPos,F[Attr],F[P,M],F[M],F[P,M],F[M],F[M]])            (modalSR "＃ツモリダ"),
   mylex ["もの","もん"] "(511)"      (defS [Nda] [NStem] `BS` S [F anyPos,F[Attr],F[P,M],F[M],F[P,M],F[M],F[M]])      (modalSR "＃モノダ"),
   mylex ["等","など"] "new" (defS [Nda,Nno] [NStem] `BS` S [F anyPos,F[Term,NStem],F[P,M],F[M],F[P,M],F[M],F[M]]) (modalSR "＃ナド"),
-  -- べきだ
-  -- ふうだ
-  -- ことだ
-  -- ばかりだ、ばっかりだ、ばっかだ、
+  mylex ["べき"] "new"      (defS [Nda] [NStem] `BS` S [F anyPos,F[Attr],F[M],F[M],F[M],F[M],F[M]]) (modalSR "＃ベキダ"),
+  mylex ["風","ふう"] "new"      (defS [Nda] [NStem] `BS` S [F anyPos,F[Attr],F[P,M],F[M],F[P,M],F[M],F[M]]) (modalSR "＃フウダ"),
+  mylex ["こと"] "new"      (defS [Nda] [NStem] `BS` S [F anyPos,F[Attr],F[P,M],F[P,M],F[P,M],F[M],F[M]]) (modalSR "＃コトダ"),
+  mylex ["ばかり","ばっかり","ばっか"] "new" (defS [Nda] [NStem] `BS` S [F anyPos,F[Attr],F[P,M],F[M],F[M],F[M],F[M]]) (modalSR "＃バカリダ"),
   -- 照応代名詞
   mylex ["これ","それ","あれ","どれ"] "new" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) 
         ((Lam (App (Var 0) (Proj Fst (Asp 1 (Sigma entity (Not (App (Con "＃有生") (Var 0)))))))), [("＃有生",Pi entity Type)]),
