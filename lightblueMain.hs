@@ -22,12 +22,14 @@ import qualified Interface.JSeM as J
 import qualified DTS.UDTT as DTS
 import qualified DTS.Prover.TypeChecker as Ty
 import qualified DTS.Prover.Judgement as Ty
+import qualified DTStoProlog as D2P
 
 data Options =  
   Version 
   | Stat 
   | JSEM FilePath
   | Corpus FilePath
+  | Coq
   | Debug Int Int
   | Test
   | Options
@@ -78,6 +80,10 @@ optionParser =
         ( long "corpus"
         <> metavar "FILEPATH"
         <> help "Parse BCCWJ corpus (Specify '-' to use stdin)" )
+  <|>
+  flag' Coq 
+        ( long "coq"
+        <> help "Inference with Coq" )
   <|>
   subparser (command "debug" (info (Debug
                                      <$> argument auto idm
@@ -146,6 +152,7 @@ lightblueMain Version = showVersion
 lightblueMain Stat = showStat
 lightblueMain (JSEM filepath) = processJSeM filepath
 lightblueMain (Corpus filepath) = processCorpus 24 filepath
+lightblueMain Coq = D2P.dts2prolog
 lightblueMain (Debug i j) =  do
   sentence <- T.getLine
   chart <- CP.parse 24 sentence

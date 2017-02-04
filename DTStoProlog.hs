@@ -1,6 +1,18 @@
 {-# OPTIONS -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+{-|
+Description : DTStoProlog
+Copyright   : (c) Ribeka Tanaka, 2016
+Licence     : All right reserved
+Maintainer  : Ribeka Tanaka
+Stability   : beta
+-}
+
+module DTStoProlog (
+  dts2prolog
+  ) where
+
 import qualified Data.Text.Lazy as T     -- text
 import qualified Data.Text.Lazy.IO as T  -- text
 import qualified Data.List as L          -- base
@@ -193,9 +205,8 @@ neg_currying :: [DTS.Preterm] -> DTS.Preterm -> DTS.Preterm
 neg_currying [] preterm = DTS.Not preterm
 neg_currying (p:ps) preterm = DTS.Pi p (neg_currying ps preterm)
 
-
-main :: IO()
-main = do
+dts2prolog :: IO()
+dts2prolog = do
   sentences <- T.getContents
   parse_start <- Time.getCurrentTime
   parseresult <- mapM (\t -> do
