@@ -105,7 +105,7 @@ printNodesInHTML handle typeCheck nodes = do
                   if typeCheck 
                      then do
                           T.hPutStrLn handle $ HTML.startMathML;
-                          mapM_ ((T.hPutStrLn handle) . Ty.utreeToMathML) $ Ty.checkFelicity (CCG.sig node) (CCG.sem node);
+                          mapM_ ((T.hPutStrLn handle) . Ty.utreeToMathML) $ Ty.checkFelicity (CCG.sig node) [] (CCG.sem node);
                           T.hPutStrLn handle $ HTML.endMathML 
                      else return ()
           ) nodes

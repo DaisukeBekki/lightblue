@@ -15,6 +15,7 @@ module DTS.Prover.TypeChecker
   typeCheckU,
   typeInferU,
   checkFelicity,
+  sequentialTypeCheck,
   proofSearch,
   dismantle,
   dismantleSig,
@@ -35,10 +36,6 @@ import qualified Data.List as L           -- base
 --import Interface.TeX
 --import Interface.HTML
 import DTS.Prover.Judgement
-
-
-
-
 
 -- transP : UDTTの項をDTTの項に変換する関数
 -- (Asp)は変換先がないので、[]が返る(?)
@@ -390,8 +387,16 @@ typeInferU typeEnv _ (UD.DRel i t preM preN) = do
 typeInferU _ _ _ = []
 
 -- | checks felicity condition
-checkFelicity :: [UD.Signature] -> UD.Preterm -> [UTree UJudgement]
-checkFelicity signature preterm = typeCheckU [] (signature++[("evt",UD.Type),("entity",UD.Type)]) preterm (UD.Type)
+checkFelicity :: [UD.Signature] -> [UD.Preterm] -> UD.Preterm -> [UTree UJudgement]
+checkFelicity signature context preterm = typeCheckU context (signature++[("evt",UD.Type),("entity",UD.Type)]) preterm (UD.Type)
+
+-- | executes type check to a context
+sequentialTypeCheck :: [UD.Signature] -> [UD.Preterm] -> [UD.Preterm]
+sequentialTypeCheck signature = foldr (\sr acc -> (repositP $ head $ do
+                                                    t1 <- checkFelicity signature acc sr
+                                                    t2 <- aspElim t1
+                                                    getTerm t2
+                                                    ):acc) []
 
 -- Proof Search
 proofSearch :: TUEnv -> SUEnv -> UD.Preterm -> [UTree UJudgement]

@@ -318,7 +318,7 @@ checkEntailment beam nbest (premises,hypothesis) = do
   let signatureOf = \ns -> foldl L.union [] $ map CP.sig ns;
       doubledNodes = map (map (\node -> (node, DTS.betaReduce $ DTS.sigmaElimination $ CP.sem node))) $ map (take nbest) nodes;
       zippedNodes = map unzip $ choice doubledNodes; 
-      tripledNodes = map (\(nds,srs) -> (nds,srs,proofSearch (signatureOf nds) (DTS.sequentialTypeCheck srs))) zippedNodes;
+      tripledNodes = map (\(nds,srs) -> (nds,srs,proofSearch (signatureOf nds) (Ty.sequentialTypeCheck (signatureOf nds) srs))) zippedNodes;
       nodeSrPrList = dropWhile (\(_,_,ps) -> ps /= []) tripledNodes;
       (nss,sss,pss) = if nodeSrPrList == []
                         then head tripledNodes

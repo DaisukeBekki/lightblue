@@ -653,6 +653,3 @@ printProofSearchQuery cont ty =
                             return (vcontext, vtyp)
   in T.concat ["<mrow>", toMathML vcontext', "<mo>&vdash;</mo><mo>?</mo><mo>:</mo>", toMathML vtyp', "</mrow>"]
 
--- | 
-sequentialTypeCheck :: [Signature] -> Context -> Context
-sequentialTypeCheck signature = foldr (\acc sr -> getTerm $ head $ checkFelicity acc signature sr Type) []
