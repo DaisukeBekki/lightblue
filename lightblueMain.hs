@@ -24,24 +24,19 @@ import qualified DTS.Prover.TypeChecker as Ty
 import qualified DTS.Prover.Judgement as Ty
 import qualified DTStoProlog as D2P
 
-data Options =  
-  Version 
-  | Stat 
-  | JSEM FilePath
-  | Corpus FilePath
-  | Coq
-  | Debug Int Int
+data Options =
+  Version
+  | Stat
   | Test
-  | Options
-  { task :: String
-  , input :: String
-  , format :: String
-  , file :: FilePath
-  , nBest  :: Int
-  , beamW :: Int
-  , showTypeCheck :: Bool
-  , showExecutionTime :: Bool
-  } deriving (Show, Eq)
+  | Options Command FilePath Int Int Bool Bool
+    deriving (Show, Eq)
+
+data Command =
+  Parse String String I.Style
+  | Infer String String
+  | Demo
+  | Debug Int Int
+    deriving (Show, Eq)
 
 main :: IO()
 main = execParser opts >>= lightblueMain 
@@ -50,10 +45,8 @@ main = execParser opts >>= lightblueMain
                  <> progDesc "echo <sentence> | ./lightblue\n echo <sentence> | ./lightblue"
                  <> header "lightblue - a Japanese CCG parser with DTS representations (c) Bekki Laboratory" )
 
-{-
-  <$> :: (a -> b) -> Parser a -> Parser b
-  <*> :: Parser (a -> b) -> Parser a -> Parser b
--}
+--  <$> :: (a -> b) -> Parser a -> Parser b
+--  <*> :: Parser (a -> b) -> Parser a -> Parser b
 
 optionParser :: Parser Options
 optionParser = 
@@ -69,56 +62,23 @@ optionParser =
              <> internal
              <> help "Execute the test code" )
   <|>
-  JSEM 
-    <$> strOption
-        ( long "jsem"
-        <> metavar "FILEPATH"
-        <> help "Parse JSeM data (Specify '-' to use stdin)" )
-  <|>
-  Corpus 
-    <$> strOption
-        ( long "corpus"
-        <> metavar "FILEPATH"
-        <> help "Parse BCCWJ corpus (Specify '-' to use stdin)" )
-  <|>
-  flag' Coq 
-        ( long "coq"
-        <> help "Inference with Coq" )
-  <|>
-  subparser (command "debug" (info (Debug
-                                     <$> argument auto idm
-                                       --( help "from" <> showDefault <> value 0 <> metavar "N" )
-                                     <*> argument auto 
-                                       ( help "to" <> showDefault <> value 1 <> metavar "N" ))
-                                   (progDesc "'lightblue debug i j' shows all the parsing results between the pivots i and j." )))
-  <|>
-  Options 
-    <$> strOption
-      ( long "task"
-      <> short 't'
-      <> metavar "parse|infer|postag|numeration|sembank"
-      <> help ("Execute the specified task"
-                --"Usage for parse: cat <sentence> | lightblue -t parse > output.html "
-                --"Usage for infer: cat <textfile> | lightblue -t infer > output.html "
-                --"where <textfile> consists of premises and a coclusion" 
-                --"(with one sentence per each line)"
-              )
-      <> showDefault
-      <> value "parse" )
-    <*> strOption 
-      ( long "input-format"
-      <> short 'i' 
-      <> metavar "sentence|corpus|jsem"
-      <> help "Specify the style of input texts"
-      <> showDefault
-      <> value "sentence" )
-    <*> strOption 
-      ( long "output-format"
-      <> short 'o'
-      <> metavar "text|tex|xml|html"
-      <> help "Print results in the specified format"
-      <> showDefault
-      <> value "html" )
+  Options
+    <$> subparser 
+      (command "parse"
+           (info parseOptionParser
+                 (progDesc "parse --task parse|postag|numeration|sembank --input sentence|corpus --output text|tex|xml|html" ))
+      <> command "infer"
+           (info inferOptionParser
+                 (progDesc "infer --prover dts|coq --input paragraph|jsem" ))
+      <> command "demo"
+           (info (pure Demo)
+                 (progDesc "demo" ))
+      <> command "debug"
+           (info debugOptionParser
+                 (progDesc "debug i j: shows all the parsing results between the pivots i and j." ))
+      <> metavar "parse|infer|debug"
+      <> help "Commands to execute.  See 'Available commands' below for options for each command"
+      )
     <*> strOption 
       ( long "file"
       <> short 'f'
@@ -142,43 +102,154 @@ optionParser =
       <> metavar "N" )
     <*> switch 
       ( long "typecheck"
-      <> help "Execute typechecking for the SR" )
+      <> help "Show type-checking trees for the SR" )
     <*> switch 
       ( long "time"
       <> help "Show the execution time in stderr" )
 
+debugOptionParser :: Parser Command
+debugOptionParser = Debug
+  <$> argument auto idm
+  <*> argument auto idm
+
+inferOptionParser :: Parser Command
+inferOptionParser = Infer
+  <$> strOption
+    ( long "prover"
+      <> short 'p' 
+      <> metavar "dts|coq" 
+      <> showDefault
+      <> value "dts"
+      <> help "Choose prover" )
+  <*> strOption
+    ( long "input"
+      <> short 'i' 
+      <> metavar "paragraph|jsem"
+      <> showDefault
+      <> value "paragraph"
+      <> help "Specify input" )
+
+parseOptionParser :: Parser Command
+parseOptionParser = Parse
+  <$> strOption
+    ( long "task"
+    <> short 't'
+    <> metavar "parse|postag|numeration|sembank"
+    <> help ("Execute the specified task"
+             --"Usage for parse: cat <sentence> | lightblue -t parse > output.html "
+             --"Usage for infer: cat <textfile> | lightblue -t infer > output.html "
+             --"where <textfile> consists of premises and a coclusion" 
+             --"(with one sentence per each line)"
+            )
+    <> showDefault
+    <> value "parse" )
+  <*> strOption 
+    ( long "input"
+    <> short 'i' 
+    <> metavar "sentence|corpus"
+    <> help "Specify the style of input texts"
+    <> showDefault
+    <> value "sentence" )
+  <*> option auto
+    ( long "output"
+    <> short 'o'
+    <> metavar "text|tex|xml|html"
+    <> help "Print results in the specified format"
+    <> showDefault
+    <> value I.HTML )
+
+unknownOptionError :: String -> IO()
+unknownOptionError unknown = do
+  S.hPutStr S.stderr "Unknown option: "
+  S.hPutStrLn S.stderr $ show $ parserUsage defaultPrefs optionParser unknown
+
 lightblueMain :: Options -> IO()
 lightblueMain Version = showVersion
 lightblueMain Stat = showStat
-lightblueMain (JSEM filepath) = processJSeM filepath
-lightblueMain (Corpus filepath) = processCorpus 24 filepath
-lightblueMain Coq = D2P.dts2prolog
-lightblueMain (Debug i j) =  do
-  sentence <- T.getLine
-  chart <- CP.parse 24 sentence
-  I.printNodesInHTML S.stdout 100 False $ L.concat $ map (\(_,nodes) -> nodes) $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
 lightblueMain Test = test
-lightblueMain options = do
+lightblueMain (Options commands filepath nbest beamw iftypecheck iftime) = do
   start <- Time.getCurrentTime
-  case task options of
-    "infer" -> processInferenceText (beamW options) (nBest options)
-    "sembank" -> treebankBuilder (beamW options)
-    _ -> do
-         sentence <- T.getLine
-         nodes    <- CP.simpleParse (beamW options) sentence
-         case (task options, format options) of
-           ("postag",_) -> I.posTagger S.stdout nodes
-           ("numeration",_) -> I.printNumeration S.stdout sentence
-           ("parse","html") -> I.printNodesInHTML S.stdout (nBest options) (showTypeCheck options) nodes
-           ("parse","text") -> I.printNodesInText S.stdout (nBest options) (showTypeCheck options) nodes
-           ("parse","tex")  -> I.printNodesInTeX  S.stdout (nBest options) (showTypeCheck options) nodes
-           ("parse","xml")  -> I.printNodesInXML  S.stdout sentence (nBest options) nodes
-           (t,f) -> S.hPutStrLn S.stderr $ show $ parserUsage defaultPrefs optionParser $ "task=" ++ t ++ ", format=" ++ f ++ ": Not supported."
+  -- Main routine
+  lightblueMainLocal commands
+  -- Show execution time
   stop <- Time.getCurrentTime
   let time = Time.diffUTCTime stop start
-  if showExecutionTime options 
+  if iftime
      then S.hPutStrLn S.stderr $ "Total Execution Time: " ++ show time
      else return ()
+  where
+    -- |
+    -- | Parse
+    -- |
+    lightblueMainLocal (Parse task input output) = do
+      let handle = S.stdout
+      sentences <- case filepath of
+        "-" -> case input of
+                 "sentence" -> (\x -> [x]) <$> T.getLine
+                 "corpus"   -> T.lines <$> T.getContents
+                 _          -> do
+                               unknownOptionError input
+                               return []
+        _   -> T.lines <$> T.readFile filepath
+      S.hPutStrLn handle $ I.headerOf output
+      mapM_
+        (\sentence -> do
+          nodes <- CP.simpleParse beamw sentence
+          let nbestnodes = take nbest nodes
+          case (task, output) of
+            ("postag",_)     -> I.posTagger       handle output nbestnodes
+            ("numeration",_) -> I.printNumeration handle output sentence
+            ("parse",I.HTML) -> I.printNodesInHTML handle iftypecheck nbestnodes
+            ("parse",I.TEXT) -> do
+                                I.printNodesInText handle iftypecheck nbestnodes
+                                let l = length nodes;
+                                    b = length nbestnodes
+                                S.hPutStrLn handle $ show (min b l) ++ " parse result(s) shown out of " ++ show l ++ "\n"
+            ("parse",I.TEX)  -> I.printNodesInTeX  handle iftypecheck nbestnodes
+            ("parse",I.XML)  -> I.printNodesInXML  handle sentence nbestnodes
+            (t,f) -> unknownOptionError $ "task=" ++ t ++ ", output=" ++ (show f)
+          ) sentences
+      S.hPutStrLn handle $ I.footerOf output
+    -- |
+    -- | Infer
+    -- |
+    lightblueMainLocal (Infer prover input) = do
+      contents <- case filepath of
+        "-" -> T.getContents
+        _   -> T.readFile filepath
+      let proverf = case prover of
+           "dts" -> checkEntailment beamw nbest
+           "coq" -> D2P.dts2prolog beamw nbest
+           _     -> checkEntailment beamw nbest
+      case input of --  $ ligthblue infer -i jsem -f ../JSeM_beta/JSeM_beta_150415.xml
+        "paragraph" -> do
+          let sentences = T.lines contents;
+              (premises,hypothesis) = if sentences == []
+                                         then ([],T.empty)
+                                         else (L.init sentences,L.last sentences)
+          S.hPutStrLn S.stdout $ I.headerOf I.HTML
+          proverf (premises, hypothesis)
+          S.hPutStrLn S.stdout $ I.footerOf I.HTML
+        "jsem" -> mapM_ (\j -> do
+                          mapM_ T.putStr ["JSeM [", J.jsem_id j, "] "]
+                          proverf (J.premise j, J.hypothesis j)
+                          ) $ J.parseJSeM contents
+        _ -> unknownOptionError input
+    -- |
+    -- | Corpus (Parsing demo)
+    -- |
+    lightblueMainLocal Demo = do
+      contents <- case filepath of
+        "-" -> T.getContents
+        _   -> T.readFile filepath
+      processCorpus beamw $ T.lines contents
+    -- |
+    -- | Debug
+    -- |
+    lightblueMainLocal (Debug i j) = do
+      sentence <- T.getLine
+      chart <- CP.parse beamw sentence
+      I.printNodesInHTML S.stdout iftypecheck $ L.concat $ map (\(_,nodes) -> nodes) $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
 
 -- | lightblue --version
 -- |
@@ -206,23 +277,6 @@ showStat = do
   putStr $ show $ length $ T.lines jumandic
   putStrLn " lexical entries for open words from JUMAN++"
 
--- | $ ligthblue --jsem ../JSeM_beta/JSeM_beta_150415.xml
--- | 
-processJSeM :: FilePath -> IO()
-processJSeM filepath = do
-  content <- case () of
-    _ | filepath == "-" -> T.getContents
-      | otherwise       -> T.readFile filepath
-  mapM_ (checkEntailment 24 3 . (\j -> (T.concat ["JSeM ", J.jsem_id j], J.premise j, J.hypothesis j))) $ J.parseJSeM content
-
--- | lightblue --task infer
--- |
-processInferenceText :: Int -> Int -> IO()
-processInferenceText beam nbest = do
-  content <- T.getContents
-  let sentences = T.lines content
-  checkEntailment beam nbest ("1",L.init sentences,L.last sentences)
-
 proofSearch :: [DTS.Signature] 
                -> [DTS.Preterm]  -- ^ hypothesis:premises
                -> [Ty.UTree Ty.UJudgement]
@@ -246,14 +300,13 @@ test = do
   print zippedNodes
   print tripledNodes
 
-checkEntailment :: Int -> Int -> (T.Text,[T.Text],T.Text) -> IO()
-checkEntailment beam nbest (jsem_id,premises,hypothesis) = do
+checkEntailment :: Int -> Int -> ([T.Text],T.Text) -> IO()
+checkEntailment beam nbest (premises,hypothesis) = do
   let hline = "<hr size='15' />";
-  T.putStrLn HTML.htmlHeader4MathML
   --
   -- Showing the sentences
   --
-  mapM_ T.putStr ["[", jsem_id, "]"]
+  --mapM_ T.putStr ["[", jsem_id, "]"]
   mapM_ (\p -> mapM_ T.putStr ["<p>P: ", p, "</p>"]) premises
   mapM_ T.putStr ["<p>H: ", hypothesis, "</p>"]
   T.putStrLn hline
@@ -265,7 +318,7 @@ checkEntailment beam nbest (jsem_id,premises,hypothesis) = do
   let signatureOf = \ns -> foldl L.union [] $ map CP.sig ns;
       doubledNodes = map (map (\node -> (node, DTS.betaReduce $ DTS.sigmaElimination $ CP.sem node))) $ map (take nbest) nodes;
       zippedNodes = map unzip $ choice doubledNodes; 
-      tripledNodes = map (\(ns,ss) -> (ns,ss,proofSearch (signatureOf ns) ss)) zippedNodes;
+      tripledNodes = map (\(nds,srs) -> (nds,srs,proofSearch (signatureOf nds) (DTS.sequentialTypeCheck srs))) zippedNodes;
       nodeSrPrList = dropWhile (\(_,_,ps) -> ps /= []) tripledNodes;
       (nss,sss,pss) = if nodeSrPrList == []
                         then head tripledNodes
@@ -293,7 +346,6 @@ checkEntailment beam nbest (jsem_id,premises,hypothesis) = do
            mapM_ (T.putStrLn . Ty.utreeToMathML) pss
            T.putStrLn HTML.endMathML
   T.putStrLn hline
-  T.putStrLn HTML.htmlFooter4MathML
 
 choice :: [[a]] -> [[a]]
 choice [] = [[]]
@@ -305,35 +357,40 @@ treebankBuilder :: Int -> IO()
 treebankBuilder beam = do
   content <- T.getContents
   nodes <- mapM (CP.simpleParse beam) $ T.lines content
-  T.putStrLn HTML.startMathML
+  S.putStrLn HTML.htmlHeader4MathML
   T.putStrLn HTML.startMathML
   T.putStrLn $ DTS.toVerticalMathML $ map (CP.sem . head) nodes
   T.putStrLn HTML.endMathML
-  T.putStrLn HTML.htmlFooter4MathML
+  S.putStrLn HTML.htmlFooter4MathML
 
 -- | lightblue --corpus filepath
 -- |
-processCorpus :: Int -> FilePath -> IO()
-processCorpus beam filepath = do
-    content <- case () of
-      _ | filepath == "-" -> T.getContents
-        | otherwise        -> T.readFile filepath
+processCorpus :: Int -> [T.Text] -> IO()
+processCorpus beam contents = do
     start <- Time.getCurrentTime
-    (i,j,k,total) <- L.foldl' (parseSentence beam) (return (0,0,0,0)) $ filter isSentence $ T.lines content
+    (i,j,k,total) <- L.foldl' (parseSentence beam) (return (0,0,0,0)) $ filter isSentence contents
     stop <- Time.getCurrentTime
     let totaltime = Time.diffUTCTime stop start
-    S.hPutStrLn S.stdout $ "Results: Full:Partial:Error = " 
-                           ++(show i)++":"++(show j)++":"++(show k)
-                           ++ ", Full/Total = "
-                           ++(show i)++"/"++(show total)
-                           ++" (" 
-                           ++ (show $ ((fromRational ((toEnum i R.% toEnum total)*100))::F.Fixed F.E3)) 
-                           ++ "%)"
-    S.hPutStrLn S.stdout $ "Execution Time: " 
-                           ++ show totaltime 
-                           ++ " (average: " 
-                           ++ (show $ ((fromRational ((toEnum (fromEnum totaltime)) R.% toEnum (j*1000000000000)))::F.Fixed F.E3)) 
-                           ++ "s/sentence)"
+    mapM_ (S.hPutStr S.stdout) [
+                             "Results: Full:Partial:Error = ",
+                             show i,
+                             ":",
+                             show j,
+                             ":",
+                             show k,
+                             ", Full/Total = ",
+                             show i,
+                             "/",
+                             show total,
+                             " (",
+                             show ((fromRational ((toEnum i R.% toEnum total)*100))::F.Fixed F.E3),
+                             "%)\n",
+                             "Execution Time: ",
+                             show totaltime,
+                             " (average: ",
+                             show ((fromRational ((toEnum (fromEnum totaltime)) R.% toEnum (total*1000000000000)))::F.Fixed F.E3),
+                             "s/sentence)\n"
+                             ]
     where isSentence t = not (t == T.empty || "（" `T.isSuffixOf` t)
 
 parseSentence :: Int                    -- ^ beam width

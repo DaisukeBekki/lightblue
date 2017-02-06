@@ -205,20 +205,19 @@ neg_currying :: [DTS.Preterm] -> DTS.Preterm -> DTS.Preterm
 neg_currying [] preterm = DTS.Not preterm
 neg_currying (p:ps) preterm = DTS.Pi p (neg_currying ps preterm)
 
-dts2prolog :: IO()
-dts2prolog = do
-  sentences <- T.getContents
+dts2prolog :: Int -> Int -> ([T.Text],T.Text) -> IO()
+dts2prolog beamw _ (premises,hypothesis) = do
   parse_start <- Time.getCurrentTime
-  parseresult <- mapM (\t -> do
-                              nodes <- CP.simpleParse 24 t
+  parseresults <- mapM (\sentence -> do
+                              nodes <- CP.simpleParse beamw sentence
                               let representative = head nodes
                               return ((CP.sem $ representative), (CP.sig $ representative))
-                       ) (T.lines sentences)
-  let (srlist, siglists) = unzip parseresult
-      premises = L.init $ srlist
-      conclusion = L.last $ srlist
-      formula = DTS.initializeIndex . (DTS.fromDeBruijn []) . DTS.betaReduce $ (currying premises conclusion)
-      neg_formula = DTS.initializeIndex . (DTS.fromDeBruijn []) . DTS.betaReduce $ (neg_currying premises conclusion)
+                       ) $ reverse $ hypothesis:(reverse premises)
+  let (srlist, siglists) = unzip parseresults
+      premisesSR = L.init $ srlist
+      conclusionSR = L.last $ srlist
+      formula = DTS.initializeIndex . (DTS.fromDeBruijn []) . DTS.betaReduce $ (currying premisesSR conclusionSR)
+      neg_formula = DTS.initializeIndex . (DTS.fromDeBruijn []) . DTS.betaReduce $ (neg_currying premisesSR conclusionSR)
       coqsig = makeCoqSigList (L.concat siglists)
   parse_stop <- Time.getCurrentTime
   let parse_time = Time.diffUTCTime parse_stop parse_start

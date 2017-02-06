@@ -10,6 +10,9 @@ Stability   : beta
 -}
 
 module Interface (
+  Style(..),
+  headerOf,
+  footerOf,
   printNodesInHTML,
   printNodesInText,
   printNodesInXML,
@@ -24,7 +27,7 @@ import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.Map as M            --container
 import qualified System.IO as S           --base
-import Data.Fixed                         --base
+--import Data.Fixed                         --base
 import qualified Parser.ChartParser as CP
 import qualified Parser.CCG as CCG
 import qualified Parser.Japanese.Lexicon as LEX
@@ -61,10 +64,34 @@ printNodes handle nBest typeCheck format nodes = do
                            | format == "xml"  -> "</sentences></document></root>"
 -}
 
+data Style = HTML | TEXT | XML | TEX deriving (Eq,Show,Read)
+
+{-
+instance Read Style where
+  readsPrec _ input = case input of
+    "html" -> HTML
+    "text" -> TEXT
+    "tex"  -> TEX
+    "xml"  -> XML
+-}
+
+headerOf :: Style -> String
+headerOf style = case style of
+  HTML -> HTML.htmlHeader4MathML
+  TEXT -> take 100 $ repeat '-'
+  XML  -> "<?xml version='1.0' encoding='UTF-8'?><root><document id='d0'><sentences>"
+  TEX  -> ""
+
+footerOf :: Style -> String
+footerOf style = case style of
+  HTML -> HTML.htmlFooter4MathML
+  TEXT -> take 100 $ repeat '-'
+  XML  -> "</sentences></document></root>"
+  TEX  -> ""
+
 -- | prints CCG nodes (=a parsing result) as a TeX source code.
-printNodesInHTML :: S.Handle -> Int -> Bool -> [CCG.Node] -> IO()
-printNodesInHTML handle nBest typeCheck nodes = do
-  T.hPutStrLn handle HTML.htmlHeader4MathML
+printNodesInHTML :: S.Handle -> Bool -> [CCG.Node] -> IO()
+printNodesInHTML handle typeCheck nodes = do
   mapM_ (\node -> do
                   mapM_ (T.hPutStrLn handle) ["<p>", 
                                              CCG.pf node,
@@ -81,31 +108,25 @@ printNodesInHTML handle nBest typeCheck nodes = do
                           mapM_ ((T.hPutStrLn handle) . Ty.utreeToMathML) $ Ty.checkFelicity (CCG.sig node) (CCG.sem node);
                           T.hPutStrLn handle $ HTML.endMathML 
                      else return ()
-          ) $ take nBest nodes
-  T.hPutStrLn handle HTML.htmlFooter4MathML
+          ) nodes
 
 -- | prints CCG nodes (=a parsing result) as a plain text.
-printNodesInText :: S.Handle -> Int -> Bool -> [CCG.Node] -> IO()
-printNodesInText handle nBest _ nodes = do
-  S.hPutStrLn handle (take 100 $ repeat '-')
+printNodesInText :: S.Handle -> Bool -> [CCG.Node] -> IO()
+printNodesInText handle _ nodes = do
   mapM_ (\node -> do 
                   T.hPutStr handle $ T.toText node
                   S.hPutStrLn handle $ take 100 $ repeat '-'
-        ) $ take nBest nodes
-  let l = length nodes
-  S.hPutStrLn handle $ show (min nBest l) ++ " parse result(s) shown out of " ++ show l
+        ) $ nodes
 
-printNodesInXML :: S.Handle -> T.Text -> Int -> [CCG.Node] -> IO()
-printNodesInXML handle sentence nBest nodes = do
-  S.hPutStrLn handle "<?xml version='1.0' encoding='UTF-8'?><root><document id='d0'><sentences>"
+printNodesInXML :: S.Handle -> T.Text -> [CCG.Node] -> IO()
+printNodesInXML handle sentence nodes = do
   mapM_ (\node -> do 
-                  T.hPutStrLn handle $ NLP.node2NLP 0 sentence node
-        ) $ take nBest nodes
-  S.hPutStrLn handle "</sentences></document></root>"
+                  T.hPutStrLn handle $ NLP.node2NLP 0 False sentence node
+        ) nodes
 
 -- | prints CCG nodes (=a parsing result) as a TeX source code.
-printNodesInTeX :: S.Handle -> Int -> Bool -> [CCG.Node] -> IO()
-printNodesInTeX handle nBest _ nodes = 
+printNodesInTeX :: S.Handle -> Bool -> [CCG.Node] -> IO()
+printNodesInTeX handle _ nodes = 
   mapM_ (\node -> T.hPutStrLn handle $ T.concat [
             "\\noindent\\kern-2em\\scalebox{.2",
             TEX.scaleboxsize $ CCG.pf node,
@@ -114,34 +135,40 @@ printNodesInTeX handle nBest _ nodes =
             TEX.toTeX node,
             "}}\\medskip"
             ]
-            ) $ take nBest nodes
+            ) nodes
 
 -- | prints every box in the (parsed) CYK chart as a TeX source code.
-printChartInTeX :: S.Handle -> Int -> Bool -> CP.Chart -> IO()
-printChartInTeX handle nBest typeCheck chart = mapM_ printList $ M.toList $ M.filter (/= []) chart
+printChartInTeX :: S.Handle -> Bool -> CP.Chart -> IO()
+printChartInTeX handle typeCheck chart = mapM_ printList $ M.toList $ M.filter (/= []) chart
   where printList (key,nodes) = do -- list化したChartを画面表示する。
           S.hPutStr handle $ "\\subsubsection*{" ++ show key ++ ": ノード数 " ++ (show $ length nodes) ++ "}"
-          printNodesInTeX handle nBest typeCheck nodes
+          printNodesInTeX handle typeCheck nodes
 
 -- | prints n-nodes (n is a natural number) from given list of CCG nodes (=a parsing result) as a TeX source code.
-printNNodesInTeX :: S.Handle -> Int -> Bool -> [CCG.Node] -> IO()
-printNNodesInTeX handle nBest _ nodes = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-2em\\scalebox{.2}{" ++ T.unpack (TEX.toTeX node) ++ "\\\\}\\par\\medskip") $ take nBest nodes
+printNNodesInTeX :: S.Handle -> Bool -> [CCG.Node] -> IO()
+printNNodesInTeX handle _ nodes = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-2em\\scalebox{.2}{" ++ T.unpack (TEX.toTeX node) ++ "\\\\}\\par\\medskip") nodes
 
 -- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style
-posTagger :: S.Handle -> [CCG.Node] -> IO()
-posTagger handle nodes = 
-  case nodes of
-    [] -> S.hPutStrLn handle "No results."
-    (n:_) -> mapM_ ((S.hPutStrLn handle) . T.unpack) $ node2PosTags n
+posTagger :: S.Handle -> Style -> [CCG.Node] -> IO()
+posTagger handle style nodes = case style of
+  XML -> mapM_ ((T.hPutStrLn handle) . (NLP.node2NLP 0 True T.empty)) nodes
+  _ -> mapM_ (\node -> mapM_ (T.hPutStrLn handle) $ node2PosTags style node) nodes
 
 -- | A subroutine for `posTagger` function
-node2PosTags :: CCG.Node -> [T.Text]
-node2PosTags node@(CCG.Node _ _ _ _ _ _ _ _) =
+node2PosTags :: Style -> CCG.Node -> [T.Text]
+node2PosTags style node =
   case CCG.daughters node of
-    [] -> [T.concat [CCG.pf node, "\t", T.toText (CCG.cat node), " \t", T.toText (CCG.sem node), "\t", CCG.source node, "\t[", T.pack (show ((fromRational $ CCG.score node)::Fixed E2)), "]"]]
-    dtrs -> [t | dtr <- dtrs, t <- node2PosTags dtr]
+    [] -> [printLexicalItem style node]
+    dtrs -> [t | dtr <- dtrs, t <- node2PosTags style dtr]
 
-printNumeration :: S.Handle -> T.Text -> IO()
-printNumeration handle sentence = do 
+printLexicalItem :: Style -> CCG.Node -> T.Text
+printLexicalItem style node = case style of
+  TEXT -> T.concat [CCG.pf node, "\t", T.toText (CCG.cat node), " \t", T.toText (CCG.sem node), "\t", CCG.source node, "\t[", CCG.showScore node, "]"]
+  TEX  -> TEX.toTeX node
+  HTML -> T.concat $ [HTML.startMathML, HTML.toMathML node, HTML.endMathML]
+  XML  -> NLP.node2NLP 0 True (CCG.pf node) node
+
+printNumeration :: S.Handle -> Style -> T.Text -> IO()
+printNumeration handle style sentence = do 
   numeration <- LEX.setupLexicon sentence
-  mapM_ ((T.hPutStrLn handle). T.toText) numeration
+  mapM_ (T.putStrLn . (printLexicalItem style)) numeration

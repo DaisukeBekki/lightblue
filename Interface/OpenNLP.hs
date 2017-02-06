@@ -52,22 +52,25 @@ popResults = Indexed (\c t cs ts -> ((cs,ts),c,t,cs,ts))
 initializeIndex :: Indexed a -> a
 initializeIndex (Indexed m) = let (m',_,_,_,_) = m 0 0 [] [] in m'
 
-loop :: Int -> CCG.Node -> Indexed T.Text
-loop i node = 
+loop :: Int -> Bool -> CCG.Node -> Indexed T.Text
+loop i lexonly node = 
   case CCG.daughters node of
     [] -> do
           j <- terminalIndex
           let id = T.concat ["s", T.pack $ show i, "_", T.pack $ show j]
           pushTerminal id $ T.concat ["<token surf='", CCG.pf node, "' base='", CCG.pf node, "' category='", printCat $ CCG.cat node, "' id='", id, "' />"]
     _ -> do
-         ids <- mapM (loop i) $ CCG.daughters node
-         j <- childIndex
-         let id = T.concat ["s", T.pack $ show i, "_sp", T.pack $ show j]
-         pushChild id $ T.concat ["<span child='", T.unwords ids, "' rule='", toMathML $ CCG.rs node, "' category='", printCat $ CCG.cat node,"' id='", id, "' />"]
+         ids <- mapM (loop i lexonly) $ CCG.daughters node
+         if lexonly 
+            then return T.empty
+            else do
+             j <- childIndex
+             let id = T.concat ["s", T.pack $ show i, "_sp", T.pack $ show j]
+             pushChild id $ T.concat ["<span child='", T.unwords ids, "' rule='", toMathML $ CCG.rs node, "' category='", printCat $ CCG.cat node,"' id='", id, "' />"]
 
-node2NLP :: Int -> T.Text -> CCG.Node -> T.Text
-node2NLP i sentence node = initializeIndex $ do
-                    id <- loop i node
+node2NLP :: Int -> Bool -> T.Text -> CCG.Node -> T.Text
+node2NLP i lexonly sentence node = initializeIndex $ do
+                    id <- loop i lexonly node
                     (cs,ts) <- popResults
                     return $ T.concat $ (header id) ++ (reverse ts) ++ (mediate id $ CCG.showScore node) ++ (reverse cs) ++ footer
   where header id = ["<sentence id='", id, "'>", sentence, "<tokens>"]
