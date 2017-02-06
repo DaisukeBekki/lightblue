@@ -99,6 +99,7 @@ transE (udtt:rest) =
     [] -> (DT.Con (T.pack "miss")):(transE rest)
     term -> term ++ (transE rest)
 
+
 -- @-Elimination
 aspElim :: (UTree UJudgement) -> [Tree Judgement]
 -- (@)規則
