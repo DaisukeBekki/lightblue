@@ -76,11 +76,11 @@ $ chmod 755 tidy
 
 To parse a Japanese sentence and get a text|HTML|TeX|XML representation, execute:
 ```
-$ echo 太郎がパンを食べた。 | lightblue -o {text|HTML|TeX}
+$ echo 太郎がパンを食べた。 | lightblue parse -o {TEXT|HTML|TEX}
 ```
 or
 ```
-$ echo 太郎がパンを食べた。 | lightblue -o XML | ./tidy
+$ echo 太郎がパンを食べた。 | lightblue parse -o XML | ./tidy
 ```
 
 With '-n|--nbest' option, *lightblue* will show the N-best parse results.
@@ -89,22 +89,22 @@ With '--time' option, *lightblue* will show the execution time for parsing.
 
 *lightblue* can be used as a part-of-speech tagger when the `-postag` option is specified:
 ```
-$ echo 太郎がパンを食べた。 | lightblue -t postag
+$ echo 太郎がパンを食べた。 | lightblue parse -t postag
 ```
 
 The following command shows the list of lexical items prepared for pasing the given sentence:
 ```
-$ echo 太郎がパンを食べた。| lightblue --t numeration
+$ echo 太郎がパンを食べた。| lightblue parse -t numeration
 ```
 
 If you have a text file (one sentence per line) <corpusfile>, then you can feed it to *lightblue* by:
 ```
-$ lightblue --corpus  <corpusfile>
+$ lightblue demo -f <corpusfile>
 ```
 
 To parse a JSeM file and execute inferences therein, then you can feed it to *lightblue* by:
 ```
-$ lightblue --jsem  <jsemfile>
+$ lightblue parse -i jsem -f <jsemfile>
 ```
 
 Check also:

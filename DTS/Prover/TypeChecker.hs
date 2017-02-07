@@ -14,13 +14,15 @@ module DTS.Prover.TypeChecker
 ( aspElim,
   typeCheckU,
   typeInferU,
-  checkFelicity,
-  sequentialTypeCheck,
   proofSearch,
   dismantle,
   dismantleSig,
   changeSig,
-  execute
+  execute,
+  defaultTypeCheck,
+  defaultProofSearch,
+  checkFelicity,
+  sequentialTypeCheck
 ) where
 
 
@@ -97,7 +99,7 @@ transE (udtt:rest) =
     term -> term ++ (transE rest)
 
 
--- @-Elimination
+-- | @-Elimination
 aspElim :: (UTree UJudgement) -> [Tree Judgement]
 -- (@)規則
 aspElim (ASP (UJudgement uenv (UD.Asp n preA) preA2) left right) = 
@@ -241,7 +243,7 @@ aspElim (UError (UJudgement uenv pretermA pretermB) over text) = do
 
 
 
--- typeCheckU : UDTTの型チェック
+-- | typeCheckU : UDTTの型チェック
 typeCheckU :: TUEnv -> SUEnv -> UD.Preterm -> UD.Preterm -> [UTree UJudgement]
 -- (ΠI) rule
 typeCheckU typeEnv sig (UD.Lam preM) (UD.Pi preA preB) = do
@@ -289,7 +291,7 @@ typeCheckU typeEnv sig preE value = do
 -}
 
 
--- typeInferU : UDTTの型推論
+-- | typeInferU : UDTTの型推論
 typeInferU :: TUEnv -> SUEnv -> UD.Preterm -> [UTree UJudgement]
 -- (typeF) rule
 typeInferU typeEnv _ UD.Type = do
@@ -386,19 +388,7 @@ typeInferU typeEnv _ (UD.DRel i t preM preN) = do
 -- otherwise
 typeInferU _ _ _ = []
 
--- | checks felicity condition
-checkFelicity :: [UD.Signature] -> [UD.Preterm] -> UD.Preterm -> [UTree UJudgement]
-checkFelicity signature context preterm = typeCheckU context (signature++[("evt",UD.Type),("entity",UD.Type)]) preterm (UD.Type)
-
--- | executes type check to a context
-sequentialTypeCheck :: [UD.Signature] -> [UD.Preterm] -> [UD.Preterm]
-sequentialTypeCheck signature = foldr (\sr acc -> (repositP $ head $ do
-                                                    t1 <- checkFelicity signature acc sr
-                                                    t2 <- aspElim t1
-                                                    getTerm t2
-                                                    ):acc) []
-
--- Proof Search
+-- | Proof Search
 proofSearch :: TUEnv -> SUEnv -> UD.Preterm -> [UTree UJudgement]
 proofSearch typeEnv sig preterm = do
   let candidatesA = (dismantle typeEnv typeEnv [])
@@ -413,7 +403,7 @@ proofSearch typeEnv sig preterm = do
     -- バラすだけではだめで、型がPiの場合(Pi I)
     ([], UD.Pi preM preN) -> piIntro typeEnv sig preterm
     -- 失敗なら
-    ([], oterwise) -> do
+    ([], _) -> do
       let envs = show candidates
       return (UError (UJudgement typeEnv (UD.Con $ T.pack "???") preterm) (T.pack "fail: proofSearch." `T.append` T.pack envs))
     -- 証明項があるなら
@@ -471,7 +461,7 @@ piIntro typeEnv sig (preterm@(UD.Pi preA preB)) = do
 piIntro typeEnv sig _ = []
 
 
--- dismantle : 型環境の中からSigma型を見つけて投射をかける
+-- | dismantle : 型環境の中からSigma型を見つけて投射をかける
 dismantle :: TUEnv -> TUEnv -> [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)]
 dismantle _ [] result = result
 dismantle env (preterm:xs) result = 
@@ -490,8 +480,8 @@ dismantle env (preterm:xs) result =
 -- UD.subst preB (UD.Proj UD.Fst term) 0
 -- UD.subst preB (UD.Proj UD.Fst (UD.Var k)) 0
 
--- execute : シグネチャの中からPi型を見つけて投射をかける
--- シグネチャはあらかじめchangeSigで型を変換しておく
+-- | execute : シグネチャの中からPi型を見つけて投射をかける
+-- | シグネチャはあらかじめchangeSigで型を変換しておく
 execute :: [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)]
 execute [] _ result = result
 execute ((v, preterm):xs) env result = 
@@ -514,7 +504,7 @@ search ((tm, ty):xs) sigma =
   else search xs sigma
 
 
--- dismantleSig : シグネチャの中からSigma型を見つけて投射をかける
+-- | dismantleSig : シグネチャの中からSigma型を見つけて投射をかける
 dismantleSig :: [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)]
 dismantleSig [] result = result
 dismantleSig ((term, preterm):xs) result = 
@@ -525,15 +515,15 @@ dismantleSig ((term, preterm):xs) result =
     _ -> dismantleSig xs ((term, preterm):result)
 
 
--- changeSig : dismantleSigの補助関数
--- シグネチャの型を変更
+-- | changeSig : dismantleSigの補助関数
+-- | シグネチャの型を変更
 changeSig :: SUEnv -> [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)]
 changeSig [] result = result
 changeSig ((text, preterm):xs) result = (UD.Con text, preterm):(changeSig xs result)
 
 
--- changeTenv : executeTの補助関数
--- 型環境の型を変更
+-- | changeTenv : executeTの補助関数
+-- | 型環境の型を変更
 changeTenv :: TUEnv -> TUEnv -> [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)]
 changeTenv _ [] result = result
 changeTenv env (preterm:xs) result = 
@@ -544,8 +534,8 @@ changeTenv env (preterm:xs) result =
     _ -> changeTenv env xs result
 
 
--- searchIndex : executeの補助関数
--- 型環境の中から型Aを持つ項(変数)のIndexを全て返す
+-- | searchIndex : executeの補助関数
+-- | 型環境の中から型Aを持つ項(変数)のIndexを全て返す
 searchIndex :: UD.Preterm -> TUEnv -> TUEnv -> [Int] -> [Int]
 searchIndex _ [] _ result = result
 searchIndex preA (x:xs) env result = 
@@ -554,10 +544,30 @@ searchIndex preA (x:xs) env result =
     Just k -> searchIndex preA xs env (k:result)
     Nothing -> searchIndex preA xs env result
 
-
--- make : executeの補助関数
--- Pi型の項の、関数適用した結果の項と型を返す
+-- | make : executeの補助関数
+-- | Pi型の項の、関数適用した結果の項と型を返す
 make :: UD.Preterm -> UD.Preterm -> UD.Preterm -> (UD.Preterm, UD.Preterm)
 make v preB p = (UD.App v p, UD.shiftIndices (UD.subst preB (UD.shiftIndices p 1 0) 0) (-1) 0)
 
+
+-- | type check with the default signature = entity:type, evt:type
+defaultTypeCheck :: SUEnv -> TUEnv -> UD.Preterm -> UD.Preterm -> [UTree UJudgement]
+defaultTypeCheck sig cont term typ = typeCheckU cont (("evt",UD.Type):("entity",UD.Type):sig) term typ
+
+-- | proof search with the default signature = entity:type, evt:type
+defaultProofSearch :: SUEnv -> TUEnv -> UD.Preterm -> [UTree UJudgement]
+defaultProofSearch sig cont typ = proofSearch cont (("evt",UD.Type):("entity",UD.Type):sig) typ
+
+-- | checks felicity condition
+checkFelicity :: [UD.Signature] -> [UD.Preterm] -> UD.Preterm -> [UTree UJudgement]
+checkFelicity sig cont term = defaultTypeCheck sig cont term (UD.Type)
+
+-- | executes type check to a context
+sequentialTypeCheck :: [UD.Signature] -> [UD.Preterm] -> [UD.Preterm]
+sequentialTypeCheck sig = foldr (\sr cont -> (head $ do
+                                                     t1 <- checkFelicity sig cont sr;
+                                                     t2 <- aspElim t1;
+                                                     t3 <- getTerm t2
+                                                     return $ repositP t3
+                                                     ):cont) []
 

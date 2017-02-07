@@ -35,6 +35,7 @@ import qualified Interface.Text as T
 import qualified Interface.TeX as TEX
 import qualified Interface.HTML as HTML
 import qualified Interface.OpenNLP as NLP
+--import qualified DTS.UDTT as DTS
 import qualified DTS.Prover.TypeChecker as Ty
 import qualified DTS.Prover.Judgement as Ty
 
@@ -171,4 +172,4 @@ printLexicalItem style node = case style of
 printNumeration :: S.Handle -> Style -> T.Text -> IO()
 printNumeration handle style sentence = do 
   numeration <- LEX.setupLexicon sentence
-  mapM_ (T.putStrLn . (printLexicalItem style)) numeration
+  mapM_ ((T.hPutStrLn handle) . (printLexicalItem style)) numeration

@@ -27,16 +27,19 @@ import qualified DTStoProlog as D2P
 data Options =
   Version
   | Stat
+  | Treebank
   | Test
   | Options Command FilePath Int Int Bool Bool
     deriving (Show, Eq)
 
 data Command =
   Parse String String I.Style
-  | Infer String String
+  | Infer Prover String
   | Demo
   | Debug Int Int
     deriving (Show, Eq)
+
+data Prover = DTS | Coq deriving (Eq,Show,Read)
 
 main :: IO()
 main = execParser opts >>= lightblueMain 
@@ -57,6 +60,9 @@ optionParser =
   flag' Stat ( long "stat" 
              <> help "Print the lightblue statistics" )
   <|> 
+  flag' Stat ( long "treebank" 
+             <> help "Print a semantic treebank build from a given corpus" )
+  <|> 
   flag' Test ( long "test" 
              <> hidden 
              <> internal
@@ -66,10 +72,10 @@ optionParser =
     <$> subparser 
       (command "parse"
            (info parseOptionParser
-                 (progDesc "parse --task parse|postag|numeration|sembank --input sentence|corpus --output text|tex|xml|html" ))
+                 (progDesc "parse --task parse|postag|numeration|sembank --input sentence|corpus --output HTML|TEXT|TEX|XML" ))
       <> command "infer"
            (info inferOptionParser
-                 (progDesc "infer --prover dts|coq --input paragraph|jsem" ))
+                 (progDesc "infer --prover DTS|Coq --input paragraph|jsem" ))
       <> command "demo"
            (info (pure Demo)
                  (progDesc "demo" ))
@@ -114,12 +120,12 @@ debugOptionParser = Debug
 
 inferOptionParser :: Parser Command
 inferOptionParser = Infer
-  <$> strOption
+  <$> option auto
     ( long "prover"
       <> short 'p' 
-      <> metavar "dts|coq" 
+      <> metavar "DTS|Coq" 
       <> showDefault
-      <> value "dts"
+      <> value DTS
       <> help "Choose prover" )
   <*> strOption
     ( long "input"
@@ -166,6 +172,7 @@ unknownOptionError unknown = do
 lightblueMain :: Options -> IO()
 lightblueMain Version = showVersion
 lightblueMain Stat = showStat
+lightblueMain Treebank = treebankBuilder 24
 lightblueMain Test = test
 lightblueMain (Options commands filepath nbest beamw iftypecheck iftime) = do
   start <- Time.getCurrentTime
@@ -218,9 +225,8 @@ lightblueMain (Options commands filepath nbest beamw iftypecheck iftime) = do
         "-" -> T.getContents
         _   -> T.readFile filepath
       let proverf = case prover of
-           "dts" -> checkEntailment beamw nbest
-           "coq" -> D2P.dts2prolog beamw nbest
-           _     -> checkEntailment beamw nbest
+           DTS -> checkEntailment beamw nbest
+           Coq -> D2P.dts2prolog beamw nbest
       case input of --  $ ligthblue infer -i jsem -f ../JSeM_beta/JSeM_beta_150415.xml
         "paragraph" -> do
           let sentences = T.lines contents;
@@ -277,6 +283,7 @@ showStat = do
   putStr $ show $ length $ T.lines jumandic
   putStrLn " lexical entries for open words from JUMAN++"
 
+{-
 proofSearch :: [DTS.Signature] 
                -> [DTS.Preterm]  -- ^ hypothesis:premises
                -> [Ty.UTree Ty.UJudgement]
@@ -284,6 +291,7 @@ proofSearch sig nodes =
   case nodes of
     [] -> []
     (t:ts) -> Ty.proofSearch ts (("evt",DTS.Type):("entity",DTS.Type):sig) t
+-}
 
 test :: IO()
 test = do
@@ -314,12 +322,17 @@ checkEntailment beam nbest (premises,hypothesis) = do
   -- Parsing the sentences
   --
   let sentences = hypothesis:(reverse premises)
-  nodes <- mapM (CP.simpleParse beam) sentences
-  let signatureOf = \ns -> foldl L.union [] $ map CP.sig ns;
-      doubledNodes = map (map (\node -> (node, DTS.betaReduce $ DTS.sigmaElimination $ CP.sem node))) $ map (take nbest) nodes;
-      zippedNodes = map unzip $ choice doubledNodes; 
-      tripledNodes = map (\(nds,srs) -> (nds,srs,proofSearch (signatureOf nds) (Ty.sequentialTypeCheck (signatureOf nds) srs))) zippedNodes;
-      nodeSrPrList = dropWhile (\(_,_,ps) -> ps /= []) tripledNodes;
+  nodeslist <- mapM (CP.simpleParse beam) sentences
+  let pairslist = map (map (\node -> (node, DTS.betaReduce $ DTS.sigmaElimination $ CP.sem node))) $ map (take nbest) nodeslist;
+      nodeSRlist = map unzip $ choice pairslist;
+      tripledNodes = map (\(nds,srs) -> let newsig = foldl L.union [] $ map CP.sig nds;
+                                            typecheckedSRs = reverse $ Ty.sequentialTypeCheck newsig $ reverse srs;
+                                            proofdiagrams = case typecheckedSRs of
+                                                              [] -> []
+                                                              (hype:prems) -> Ty.defaultProofSearch newsig prems hype;
+                                        in (nds,typecheckedSRs,proofdiagrams)
+                         ) nodeSRlist;
+  let nodeSrPrList = dropWhile (\(_,_,ps) -> ps == []) tripledNodes;
       (nss,sss,pss) = if nodeSrPrList == []
                         then head tripledNodes
                         else head nodeSrPrList
