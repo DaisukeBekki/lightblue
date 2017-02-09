@@ -19,11 +19,7 @@ module DTS.Prover.TypeChecker
   dismantleSig,
   changeSig,
   execute,
-  repositP,
-  defaultTypeCheck,
-  defaultProofSearch,
-  checkFelicity,
-  sequentialTypeCheck
+  repositP
 ) where
 
 
@@ -549,29 +545,3 @@ searchIndex preA (x:xs) env result =
 -- | Pi型の項の、関数適用した結果の項と型を返す
 make :: UD.Preterm -> UD.Preterm -> UD.Preterm -> (UD.Preterm, UD.Preterm)
 make v preB p = (UD.App v p, UD.shiftIndices (UD.subst preB (UD.shiftIndices p 1 0) 0) (-1) 0)
-
-
--- | type check with the default signature = entity:type, evt:type
-defaultTypeCheck :: SUEnv -> TUEnv -> UD.Preterm -> UD.Preterm -> [UTree UJudgement]
-defaultTypeCheck sig cont term typ = typeCheckU cont (("evt",UD.Type):("entity",UD.Type):sig) term typ
-
--- | proof search with the default signature = entity:type, evt:type
-defaultProofSearch :: SUEnv -> TUEnv -> UD.Preterm -> [UTree UJudgement]
-defaultProofSearch sig cont typ = proofSearch cont (("evt",UD.Type):("entity",UD.Type):sig) typ
-
--- | checks felicity condition
-checkFelicity :: [UD.Signature] -> [UD.Preterm] -> UD.Preterm -> [UTree UJudgement]
-checkFelicity sig cont term = defaultTypeCheck sig cont term (UD.Type)
-
--- | executes type check to a context
-sequentialTypeCheck :: [UD.Signature] -> [UD.Preterm] -> [UD.Preterm]
-sequentialTypeCheck sig = foldr (\sr cont -> let result = do
-                                                          t1 <- checkFelicity sig cont sr;
-                                                          t2 <- aspElim t1;
-                                                          t3 <- getTerm t2
-                                                          return $ repositP t3 in
-                                             if result == []
-                                                then (UD.Con "Typecheck or aspElim failed"):cont
-                                                else (head result):cont
-                                ) []
-

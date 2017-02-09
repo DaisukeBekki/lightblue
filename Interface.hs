@@ -27,7 +27,6 @@ import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.Map as M            --container
 import qualified System.IO as S           --base
---import Data.Fixed                         --base
 import qualified Parser.ChartParser as CP
 import qualified Parser.CCG as CCG
 import qualified Parser.Japanese.Lexicon as LEX
@@ -35,8 +34,7 @@ import qualified Interface.Text as T
 import qualified Interface.TeX as TEX
 import qualified Interface.HTML as HTML
 import qualified Interface.OpenNLP as NLP
-import qualified DTS.UDTT as DTS
-import qualified DTS.Prover.TypeChecker as Ty
+import qualified DTS.Prover as Prover
 import qualified DTS.Prover.Judgement as Ty
 
 {- Some functions for pretty printing Chart/Nodes -}
@@ -106,11 +104,12 @@ printNodesInHTML handle typeCheck nodes = do
                   if typeCheck 
                      then do
                           T.hPutStrLn handle $ HTML.startMathML;
-                          T.hPutStrLn handle $ DTS.toVerticalMathML $ do
-                            t1 <- Ty.checkFelicity (CCG.sig node) [] (CCG.sem node);
-                            t2 <- Ty.aspElim t1
-                            t3 <- Ty.getTerm t2
-                            return $ DTS.betaReduce $ Ty.repositP t3
+                          mapM_ ((T.hPutStrLn handle) . Ty.utreeToMathML) $ Prover.checkFelicity (CCG.sig node) [] (CCG.sem node);
+                          -- T.hPutStrLn handle $ DTS.toVerticalMathML $ do
+                          --   t1 <- Ty.checkFelicity (CCG.sig node) [] (CCG.sem node);
+                          --   t2 <- Ty.aspElim t1
+                          --   t3 <- Ty.getTerm t2
+                          --   return $ DTS.betaReduce $ Ty.repositP t3
                           T.hPutStrLn handle $ HTML.endMathML 
                      else return ()
           ) nodes

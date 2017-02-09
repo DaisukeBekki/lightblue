@@ -20,8 +20,7 @@ import qualified Interface.Text as T
 import qualified Interface.HTML as HTML
 import qualified Interface.JSeM as J
 import qualified DTS.UDTT as DTS
-import qualified DTS.Prover.TypeChecker as Ty
-import qualified DTS.Prover.Judgement as Ty
+import qualified DTS.Prover as Prover
 import qualified DTStoProlog as D2P
 
 data Options =
@@ -225,7 +224,7 @@ lightblueMain (Options commands filepath nbest beamw iftypecheck iftime) = do
         "-" -> T.getContents
         _   -> T.readFile filepath
       let proverf = case prover of
-           DTS -> checkEntailment beamw nbest
+           DTS -> Prover.checkEntailment beamw nbest
            Coq -> D2P.dts2prolog beamw nbest
       case input of --  $ ligthblue infer -i jsem -f ../JSeM_beta/JSeM_beta_150415.xml
         "paragraph" -> do
@@ -283,22 +282,12 @@ showStat = do
   putStr $ show $ length $ T.lines jumandic
   putStrLn " lexical entries for open words from JUMAN++"
 
-{-
-proofSearch :: [DTS.Signature] 
-               -> [DTS.Preterm]  -- ^ hypothesis:premises
-               -> [Ty.UTree Ty.UJudgement]
-proofSearch sig nodes = 
-  case nodes of
-    [] -> []
-    (t:ts) -> Ty.proofSearch ts (("evt",DTS.Type):("entity",DTS.Type):sig) t
--}
-
 test :: IO()
 test = do
   let nbest = 3;
       bestNodes =  map (take nbest) [[1,2,3,4],[5],[7,8,9,10]]::[[Int]];
       doubledNodes = map (map (\node -> (node, show node))) bestNodes
-      chozenNodes = choice doubledNodes; 
+      chozenNodes = Prover.choice doubledNodes; 
       zippedNodes = map unzip chozenNodes;
       tripledNodes = map (\(ns,ss) -> (ns,ss,[sum ns])) zippedNodes;
       --nodeSrPrList = dropWhile (\(_,_,ps) -> ps /= []) tripledNodes;
@@ -307,72 +296,6 @@ test = do
   print chozenNodes
   print zippedNodes
   print tripledNodes
-
-checkEntailment :: Int -> Int -> ([T.Text],T.Text) -> IO()
-checkEntailment beam nbest (premises,hypothesis) = do
-  let hline = "<hr size='15' />";
-  --
-  -- Show premises and hypothesis
-  --
-  --mapM_ T.putStr ["[", jsem_id, "]"]
-  mapM_ (\p -> mapM_ T.putStr ["<p>P: ", p, "</p>"]) premises
-  mapM_ T.putStr ["<p>H: ", hypothesis, "</p>"]
-  T.putStrLn hline
-  --
-  -- Parse sentences
-  --
-  let sentences = hypothesis:(reverse premises)     -- reverse the order of sentences (hypothesis first, the first premise last)
-  nodeslist <- mapM (CP.simpleParse beam) sentences -- parse sentences
-  let pairslist = map ((map (\node -> (node, DTS.betaReduce $ DTS.sigmaElimination $ CP.sem node))).(take nbest)) nodeslist;
-      -- Example: [[(nodeA1,srA1),(nodeA2,srA2)],[(nodeB1,srB1),(nodeB2,srB2)],[(nodeC1,srC1),(nodeC2,srC2)]]
-      --          where sentences = A,B,C (where A is the hypothesis), nbest = 2_
-      chosenlist = choice pairslist;
-      -- Example: [[(nodeA1,srA1),(nodeB1,srB1),(nodeC1,srC1)],[(nodeA1,srA1),(nodeB1,srB1),(nodeC2,srC2)],...]
-      nodeSRlist = map unzip chosenlist;
-      -- Example: [([nodeA1,nodeB1,nodeC1],[srA1,srB1,srC1]),([nodeA1,nodeB1,nodeC2],[srA1,srB1,srC2]),...]
-  --S.hPutStrLn S.stderr $ show nodeSRlist
-  tripledNodes <- mapM (\(nds,srs) -> do
-                         let newsig = foldl L.union [] $ map CP.sig nds;
-                             typecheckedSRs = Ty.sequentialTypeCheck newsig srs;
-                             -- Example: u0:srA1, u1:srB1, u2:srC1 (where A1 is the hyp.)
-                             -- この時点で一文目はtypecheck of aspElim failed
-                             proofdiagrams = case typecheckedSRs of
-                                               [] -> []
-                                               (hype:prems) -> Ty.defaultProofSearch newsig prems hype;
-                         S.hPutStrLn S.stderr $ show typecheckedSRs
-                         return (nds,typecheckedSRs,proofdiagrams)
-                       ) nodeSRlist;
-  let nodeSrPrList = dropWhile (\(_,_,p) -> p == []) tripledNodes;
-      (nds,srs,pds) = if nodeSrPrList == []
-                        then head tripledNodes
-                        else head nodeSrPrList
-  --
-  -- Show parse trees
-  --
-  T.putStrLn HTML.startMathML
-  mapM_ (T.putStrLn . HTML.toMathML) $ reverse nds
-  T.putStrLn HTML.endMathML
-  T.putStrLn hline
-  --
-  -- Show proof diagrams
-  --
-  if pds == []
-     then mapM_ T.putStrLn [
-           "No proof diagrams for: ", 
-           HTML.startMathML, 
-           DTS.printProofSearchQuery (tail srs) (head srs),
-           HTML.endMathML
-           ]
-      else do
-           T.putStrLn "Proved: "
-           T.putStrLn HTML.startMathML
-           mapM_ (T.putStrLn . Ty.utreeToMathML) pds
-           T.putStrLn HTML.endMathML
-  T.putStrLn hline
-
-choice :: [[a]] -> [[a]]
-choice [] = [[]]
-choice (a:as) = [x:xs | x <- a, xs <- choice as]
 
 -- | lightblue -t sembank
 -- |
@@ -450,6 +373,14 @@ percent (i,j) = if j == 0
                    else show ((fromRational (toEnum i R.% toEnum j)::F.Fixed F.E2) * 100)
 
 {-
+proofSearch :: [DTS.Signature] 
+               -> [DTS.Preterm]  -- ^ hypothesis:premises
+               -> [Ty.UTree Ty.UJudgement]
+proofSearch sig nodes = 
+  case nodes of
+    [] -> []
+    (t:ts) -> Ty.proofSearch ts (("evt",DTS.Type):("entity",DTS.Type):sig) t
+
 -- | lightblue --fuman (hidden option)
 -- | transforms an input (from stdin) each of whose line is a json entry
 -- | into an output (to stdout) each of whose line is a paragraph.
