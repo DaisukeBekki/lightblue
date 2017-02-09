@@ -312,51 +312,61 @@ checkEntailment :: Int -> Int -> ([T.Text],T.Text) -> IO()
 checkEntailment beam nbest (premises,hypothesis) = do
   let hline = "<hr size='15' />";
   --
-  -- Showing the sentences
+  -- Show premises and hypothesis
   --
   --mapM_ T.putStr ["[", jsem_id, "]"]
   mapM_ (\p -> mapM_ T.putStr ["<p>P: ", p, "</p>"]) premises
   mapM_ T.putStr ["<p>H: ", hypothesis, "</p>"]
   T.putStrLn hline
   --
-  -- Parsing the sentences
+  -- Parse sentences
   --
-  let sentences = hypothesis:(reverse premises)
-  nodeslist <- mapM (CP.simpleParse beam) sentences
-  let pairslist = map (map (\node -> (node, DTS.betaReduce $ DTS.sigmaElimination $ CP.sem node))) $ map (take nbest) nodeslist;
-      nodeSRlist = map unzip $ choice pairslist;
-      tripledNodes = map (\(nds,srs) -> let newsig = foldl L.union [] $ map CP.sig nds;
-                                            typecheckedSRs = reverse $ Ty.sequentialTypeCheck newsig $ reverse srs;
-                                            proofdiagrams = case typecheckedSRs of
-                                                              [] -> []
-                                                              (hype:prems) -> Ty.defaultProofSearch newsig prems hype;
-                                        in (nds,typecheckedSRs,proofdiagrams)
-                         ) nodeSRlist;
-  let nodeSrPrList = dropWhile (\(_,_,ps) -> ps == []) tripledNodes;
-      (nss,sss,pss) = if nodeSrPrList == []
+  let sentences = hypothesis:(reverse premises)     -- reverse the order of sentences (hypothesis first, the first premise last)
+  nodeslist <- mapM (CP.simpleParse beam) sentences -- parse sentences
+  let pairslist = map ((map (\node -> (node, DTS.betaReduce $ DTS.sigmaElimination $ CP.sem node))).(take nbest)) nodeslist;
+      -- Example: [[(nodeA1,srA1),(nodeA2,srA2)],[(nodeB1,srB1),(nodeB2,srB2)],[(nodeC1,srC1),(nodeC2,srC2)]]
+      --          where sentences = A,B,C (where A is the hypothesis), nbest = 2_
+      chosenlist = choice pairslist;
+      -- Example: [[(nodeA1,srA1),(nodeB1,srB1),(nodeC1,srC1)],[(nodeA1,srA1),(nodeB1,srB1),(nodeC2,srC2)],...]
+      nodeSRlist = map unzip chosenlist;
+      -- Example: [([nodeA1,nodeB1,nodeC1],[srA1,srB1,srC1]),([nodeA1,nodeB1,nodeC2],[srA1,srB1,srC2]),...]
+  --S.hPutStrLn S.stderr $ show nodeSRlist
+  tripledNodes <- mapM (\(nds,srs) -> do
+                         let newsig = foldl L.union [] $ map CP.sig nds;
+                             typecheckedSRs = Ty.sequentialTypeCheck newsig srs;
+                             -- Example: u0:srA1, u1:srB1, u2:srC1 (where A1 is the hyp.)
+                             -- この時点で一文目はtypecheck of aspElim failed
+                             proofdiagrams = case typecheckedSRs of
+                                               [] -> []
+                                               (hype:prems) -> Ty.defaultProofSearch newsig prems hype;
+                         S.hPutStrLn S.stderr $ show typecheckedSRs
+                         return (nds,typecheckedSRs,proofdiagrams)
+                       ) nodeSRlist;
+  let nodeSrPrList = dropWhile (\(_,_,p) -> p == []) tripledNodes;
+      (nds,srs,pds) = if nodeSrPrList == []
                         then head tripledNodes
                         else head nodeSrPrList
   --
-  -- Showing the parse trees
+  -- Show parse trees
   --
   T.putStrLn HTML.startMathML
-  mapM_ (T.putStrLn . HTML.toMathML) $ reverse nss
+  mapM_ (T.putStrLn . HTML.toMathML) $ reverse nds
   T.putStrLn HTML.endMathML
   T.putStrLn hline
   --
-  -- Showing the proof diagram
+  -- Show proof diagrams
   --
-  if pss == []
+  if pds == []
      then mapM_ T.putStrLn [
            "No proof diagrams for: ", 
            HTML.startMathML, 
-           DTS.printProofSearchQuery (tail sss) (head sss),
+           DTS.printProofSearchQuery (tail srs) (head srs),
            HTML.endMathML
            ]
       else do
            T.putStrLn "Proved: "
            T.putStrLn HTML.startMathML
-           mapM_ (T.putStrLn . Ty.utreeToMathML) pss
+           mapM_ (T.putStrLn . Ty.utreeToMathML) pds
            T.putStrLn HTML.endMathML
   T.putStrLn hline
 
@@ -450,9 +460,7 @@ fuman2text :: IO()
 fuman2text = do
   jsonStrings <- T.getContents
   mapM_ T.putStrLn $ M.catMaybes $ map (\j -> j ^? key "fuman" . _String) $ T.lines jsonStrings
--}
 
-{-
 processJSeMData :: J.JSeMData -> IO()
 processJSeMData jsemdata = do
   let sem = DTS.betaReduce $ currying psems hsem

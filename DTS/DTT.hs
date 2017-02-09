@@ -14,7 +14,7 @@ module DTS.DTT (
   Preterm(..),
   Selector(..),
   Signature,
-  printSignatures,
+  printSignature,
   toUDTT,
   toDTT
   ) where
@@ -91,8 +91,8 @@ instance SimpleText Signature where
   toText = toText . toUDTTsig
 
 -- | prints a signature in text.
-printSignatures :: [Signature] -> T.Text
-printSignatures = UDTT.printSignatures . (map toUDTTsig)
+printSignature :: [Signature] -> T.Text
+printSignature = UDTT.printSignature . (map toUDTTsig)
 
 -- | DTT to UDTT
 toUDTT :: Preterm -> UDTT.Preterm

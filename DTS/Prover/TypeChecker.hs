@@ -19,6 +19,7 @@ module DTS.Prover.TypeChecker
   dismantleSig,
   changeSig,
   execute,
+  repositP,
   defaultTypeCheck,
   defaultProofSearch,
   checkFelicity,
@@ -34,7 +35,7 @@ import qualified Data.List as L           -- base
 --import qualified Control.Applicative as M -- base
 --import qualified Control.Monad as M       -- base
 --import qualified DTS.UDTTwithName as VN
---import Interface.Text
+import Interface.Text
 --import Interface.TeX
 --import Interface.HTML
 import DTS.Prover.Judgement
@@ -404,8 +405,8 @@ proofSearch typeEnv sig preterm = do
     ([], UD.Pi preM preN) -> piIntro typeEnv sig preterm
     -- 失敗なら
     ([], _) -> do
-      let envs = show candidates
-      return (UError (UJudgement typeEnv (UD.Con $ T.pack "???") preterm) (T.pack "fail: proofSearch." `T.append` T.pack envs))
+      let envs = T.intercalate "," $ map (\(x,y) -> T.concat ["(",toText x,",",toText y,")"]) candidates
+      return (UError (UJudgement typeEnv (UD.Con $ T.pack "???") preterm) (T.pack "fail: proofSearch." `T.append` envs))
     -- 証明項があるなら
     (pTerms, _) -> do
       ansTerm <- pTerms
@@ -564,10 +565,13 @@ checkFelicity sig cont term = defaultTypeCheck sig cont term (UD.Type)
 
 -- | executes type check to a context
 sequentialTypeCheck :: [UD.Signature] -> [UD.Preterm] -> [UD.Preterm]
-sequentialTypeCheck sig = foldr (\sr cont -> (head $ do
-                                                     t1 <- checkFelicity sig cont sr;
-                                                     t2 <- aspElim t1;
-                                                     t3 <- getTerm t2
-                                                     return $ repositP t3
-                                                     ):cont) []
+sequentialTypeCheck sig = foldr (\sr cont -> let result = do
+                                                          t1 <- checkFelicity sig cont sr;
+                                                          t2 <- aspElim t1;
+                                                          t3 <- getTerm t2
+                                                          return $ repositP t3 in
+                                             if result == []
+                                                then (UD.Con "Typecheck or aspElim failed"):cont
+                                                else (head result):cont
+                                ) []
 

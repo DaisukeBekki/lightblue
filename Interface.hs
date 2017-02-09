@@ -35,7 +35,7 @@ import qualified Interface.Text as T
 import qualified Interface.TeX as TEX
 import qualified Interface.HTML as HTML
 import qualified Interface.OpenNLP as NLP
---import qualified DTS.UDTT as DTS
+import qualified DTS.UDTT as DTS
 import qualified DTS.Prover.TypeChecker as Ty
 import qualified DTS.Prover.Judgement as Ty
 
@@ -106,7 +106,11 @@ printNodesInHTML handle typeCheck nodes = do
                   if typeCheck 
                      then do
                           T.hPutStrLn handle $ HTML.startMathML;
-                          mapM_ ((T.hPutStrLn handle) . Ty.utreeToMathML) $ Ty.checkFelicity (CCG.sig node) [] (CCG.sem node);
+                          T.hPutStrLn handle $ DTS.toVerticalMathML $ do
+                            t1 <- Ty.checkFelicity (CCG.sig node) [] (CCG.sem node);
+                            t2 <- Ty.aspElim t1
+                            t3 <- Ty.getTerm t2
+                            return $ DTS.betaReduce $ Ty.repositP t3
                           T.hPutStrLn handle $ HTML.endMathML 
                      else return ()
           ) nodes

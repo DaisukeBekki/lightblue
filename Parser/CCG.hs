@@ -35,7 +35,7 @@ module Parser.CCG (
   -- * Partial Parsing
   wrapNode,
   conjoinNodes,
-  drel,
+  -- drel,
   numberOfArgs
   ) where
 
@@ -81,7 +81,7 @@ showScore node = T.pack (show ((fromRational $ score node)::Fixed E2))
 
 instance SimpleText Node where
   toText n -- @(Node _ _ _ _ sig' _ _ _) 
-    = T.concat [toTextLoop "" n, "Sig. ", printSignatures (sig n), "\n"]
+    = T.concat [toTextLoop "" n, "Sig. ", printSignature (sig n), "\n"]
     where toTextLoop indent node =
             case daughters node of 
               [] -> T.concat [(T.pack indent), toText (rs node), " ", pf node, " ", toText (cat node), " ", toText (sem node), " ", source node, " [", showScore node, "]\n"]
@@ -1239,6 +1239,7 @@ conjoinNodes lnode rnode =
     sig = sig(lnode) ++ sig(rnode)
     }
 
+{-
 -- | receives an Sbar node, and returns an Sbar node with DRel between a given node and some (anaphorically determined) preceding node.
 drel :: Node -> Node
 drel node =
@@ -1252,6 +1253,7 @@ drel node =
     source = "",
     sig = sig node
     }
+-}
 
 -- | receives a category and returns an integer based on the number of arguments of the category, which is used for sorting nodes with respect to which node is considered to be a better result of the parsing.  Lesser is better, but non-propositional categories (such as NP, CONJ, LPAREN and RPAREN) are the worst (=10) even if they take no arguments.
 numberOfArgs :: Cat -> Int

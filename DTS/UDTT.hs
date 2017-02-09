@@ -16,7 +16,7 @@ module DTS.UDTT (
   Preterm(..),
   Selector(..),
   Signature,
-  printSignatures,
+  printSignature,
   toTextDeBruijn,
   -- * Syntactic Operations
   subst,
@@ -147,8 +147,8 @@ instance SimpleText Signature where
   toText (cname,ty) = T.concat $ [toText (Con cname), ":", toText ty]
 
 -- | prints a signature in text.
-printSignatures :: [Signature] -> T.Text
-printSignatures sigs = T.concat ["[", (T.intercalate ", " $ map toText sigs), "]"]
+printSignature :: [Signature] -> T.Text
+printSignature sigs = T.concat ["[", (T.intercalate ", " $ map toText sigs), "]"]
 
 {- Syntactic Operations -}
 
@@ -647,7 +647,7 @@ printProofSearchQuery :: Context -> Preterm -> T.Text
 printProofSearchQuery cont ty = 
   let (vcontext', vtyp') 
         = initializeIndex $ do
-                            vcontext <- fromDeBruijnContextLoop [] $ reverse $ cont
+                            vcontext <- fromDeBruijnContextLoop [] cont
                             let varnames = reverse $ fst $ unzip vcontext
                             vtyp <- fromDeBruijn varnames ty
                             return (vcontext, vtyp)
