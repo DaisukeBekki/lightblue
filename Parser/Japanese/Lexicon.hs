@@ -150,11 +150,11 @@ constructVerb daihyo caseframe posF conjF =
       caseframelist = T.split (=='#') caseframe' in
   [(verbCat cf posF conjF, verbSR daihyo event cf) | cf <- caseframelist]
 
-constructNominalSuffix :: T.Text -> [(Cat, (Preterm, [Signature]))]
-constructNominalSuffix daihyo = [(N `SL` N, nominalModifier daihyo)]
-
 constructNominalPrefix :: T.Text -> [(Cat, (Preterm, [Signature]))]
-constructNominalPrefix daihyo = [(N `BS` N, nominalModifier daihyo)]
+constructNominalPrefix daihyo = [(N `SL` N, nominalModifier daihyo)]
+
+constructNominalSuffix :: T.Text -> [(Cat, (Preterm, [Signature]))]
+constructNominalSuffix daihyo = [(N `BS` N, nominalModifier daihyo)]
 
 constructConjunction :: T.Text -> [(Cat, (Preterm, [Signature]))]
 constructConjunction daihyo = 

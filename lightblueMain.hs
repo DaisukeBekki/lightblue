@@ -342,15 +342,15 @@ parseSentence beam score sentence = do
   case CP.extractParseResult beam chart of
     CP.Full nodes -> 
        do
+       T.putStrLn $ T.toText $ head $ nodes
        T.putStr $ T.concat ["Fully parsed, Full:Partial:Failed = ", T.pack (show $ i+1), ":", T.pack (show j), ":", T.pack (show k), ", Full/Total = ", T.pack (show $ i+1), "/", T.pack (show $ total+1), " ("] 
        S.putStrLn $ percent (i+1,total+1) ++ "%)\n"
-       T.putStrLn $ T.toText $ head $ nodes
        return (i+1,j,k,total+1)
     CP.Partial nodes -> 
        do
+       T.putStrLn $ T.toText $ head $ nodes
        T.putStr $ T.concat ["Partially parsed, Full:Partial:Failed = ", T.pack (show i), ":", T.pack (show $ j+1), ":", T.pack (show k), ", Full/Total = ", T.pack (show $ j+1), "/", T.pack (show $ total+1), " ("]
        S.putStrLn $ percent (i,total+1) ++ "%)\n"
-       T.putStrLn $ T.toText $ head $ nodes
        return (i,j+1,k,total+1)
     CP.Failed ->
        do
