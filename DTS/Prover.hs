@@ -52,8 +52,8 @@ sequentialTypeCheck sig = foldr (\sr cont -> let result = do
                                                 else (head result):cont
                                 ) []
 
-checkEntailment :: Int -> Int -> ([T.Text],T.Text) -> IO()
-checkEntailment beam nbest (premises,hypothesis) = do
+checkEntailment :: Int -> Int -> [T.Text] -> T.Text -> IO()
+checkEntailment beam nbest premises hypothesis = do
   let hline = "<hr size='15' />";
   --
   -- Show premises and hypothesis
@@ -74,7 +74,6 @@ checkEntailment beam nbest (premises,hypothesis) = do
       -- Example: [[(nodeA1,srA1),(nodeB1,srB1),(nodeC1,srC1)],[(nodeA1,srA1),(nodeB1,srB1),(nodeC2,srC2)],...]
       nodeSRlist = map unzip chosenlist;
       -- Example: [([nodeA1,nodeB1,nodeC1],[srA1,srB1,srC1]),([nodeA1,nodeB1,nodeC2],[srA1,srB1,srC2]),...]
-  --S.hPutStrLn S.stderr $ show nodeSRlist
   tripledNodes <- mapM (\(nds,srs) -> do
                          let newsig = foldl L.union [] $ map CP.sig nds;
                              typecheckedSRs = sequentialTypeCheck newsig srs;
@@ -83,9 +82,9 @@ checkEntailment beam nbest (premises,hypothesis) = do
                              proofdiagrams = case typecheckedSRs of
                                                [] -> []
                                                (hype:prems) -> defaultProofSearch newsig prems hype;
-                         S.hPutStrLn S.stderr $ show typecheckedSRs
                          return (nds,typecheckedSRs,proofdiagrams)
                        ) nodeSRlist;
+  S.hPutStrLn S.stderr $ show tripledNodes
   let nodeSrPrList = dropWhile (\(_,_,p) -> p == []) tripledNodes;
       (nds,srs,pds) = if nodeSrPrList == []
                         then head tripledNodes

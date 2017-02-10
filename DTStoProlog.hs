@@ -205,8 +205,8 @@ neg_currying :: [DTS.Preterm] -> DTS.Preterm -> DTS.Preterm
 neg_currying [] preterm = DTS.Not preterm
 neg_currying (p:ps) preterm = DTS.Pi p (neg_currying ps preterm)
 
-dts2prolog :: Int -> Int -> ([T.Text],T.Text) -> IO()
-dts2prolog beamw _ (premises,hypothesis) = do
+dts2prolog :: Int -> Int -> [T.Text] -> T.Text -> IO()
+dts2prolog beamw _ premises hypothesis = do
   parse_start <- Time.getCurrentTime
   parseresults <- mapM (\sentence -> do
                               nodes <- CP.simpleParse beamw sentence

@@ -233,11 +233,11 @@ lightblueMain (Options commands filepath nbest beamw iftypecheck iftime) = do
                                          then ([],T.empty)
                                          else (L.init sentences,L.last sentences)
           S.hPutStrLn S.stdout $ I.headerOf I.HTML
-          proverf (premises, hypothesis)
+          proverf premises hypothesis
           S.hPutStrLn S.stdout $ I.footerOf I.HTML
         "jsem" -> mapM_ (\j -> do
                           mapM_ T.putStr ["JSeM [", J.jsem_id j, "] "]
-                          proverf (J.premise j, J.hypothesis j)
+                          proverf (J.premise j) (J.hypothesis j)
                           ) $ J.parseJSeM contents
         _ -> unknownOptionError input
     -- |
