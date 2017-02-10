@@ -81,7 +81,7 @@ showScore node = T.pack (show ((fromRational $ score node)::Fixed E2))
 
 instance SimpleText Node where
   toText n -- @(Node _ _ _ _ sig' _ _ _) 
-    = T.concat [toTextLoop "" n, "Sig. ", printSignature (sig n), "\n"]
+    = T.concat [toTextLoop "" n, "Sig. ", toText (sig n), "\n"]
     where toTextLoop indent node =
             case daughters node of 
               [] -> T.concat [(T.pack indent), toText (rs node), " ", pf node, " ", toText (cat node), " ", toText (sem node), " ", source node, " [", showScore node, "]\n"]

@@ -16,7 +16,7 @@ module DTS.UDTT (
   Preterm(..),
   Selector(..),
   Signature,
-  printSignature,
+  --printSignature,
   toTextDeBruijn,
   -- * Syntactic Operations
   subst,
@@ -96,7 +96,8 @@ data Preterm =
   deriving (Eq)
 
 instance Show Preterm where
-  show = T.unpack . toTextDeBruijn
+  --show = T.unpack . toTextDeBruijn
+  show = T.unpack . toText
 
 -- | translates a DTS preterm into a simple text notation.
 instance SimpleText Preterm where
@@ -146,9 +147,8 @@ type Signature = (T.Text,Preterm)
 instance SimpleText Signature where
   toText (cname,ty) = T.concat $ [toText (Con cname), ":", toText ty]
 
--- | prints a signature in text.
-printSignature :: [Signature] -> T.Text
-printSignature sigs = T.concat ["[", (T.intercalate ", " $ map toText sigs), "]"]
+instance SimpleText [Signature] where
+  toText sigs = T.concat ["[", (T.intercalate ", " $ map toText sigs), "]"]
 
 {- Syntactic Operations -}
 
@@ -599,18 +599,16 @@ toVerticalMathML = VN.toVerticalMathML . fromDeBruijnContext
 -- into one with variable names 
 -- (i.e. [(DTS.DTSwithVarName.VarName, DTS.DTSwithVarName.Preterm)]).
 fromDeBruijnContext :: Context -> VN.Context
-fromDeBruijnContext = reverse . initializeIndex . (fromDeBruijnContextLoop []) . reverse
+fromDeBruijnContext = snd . initializeIndex . fromDeBruijnContextLoop
 
 -- | the internal function of the fromDeBruijnContext function
-fromDeBruijnContextLoop :: [VN.VarName] -> Context -> Indexed VN.Context
-fromDeBruijnContextLoop _ [] = return []
-fromDeBruijnContextLoop vs (c:cs) = do
-  varname <- variableNameFor c
-  -- i <- sentenceIndex
-  -- let newvar = VN.VarName 'u' i
-  ic <- fromDeBruijn vs c
-  ics <- fromDeBruijnContextLoop (varname:vs) cs
-  return $ (varname, ic):ics
+fromDeBruijnContextLoop :: Context -> Indexed ([VN.VarName], VN.Context)
+fromDeBruijnContextLoop [] = return ([],[])
+fromDeBruijnContextLoop (x:xs) = do
+  (varnames,ixs) <- fromDeBruijnContextLoop xs
+  varname <- variableNameFor x
+  ix <- fromDeBruijn varnames x
+  return $ (varname:varnames,(varname,ix):ixs)
 
 -- | The data type for a judgment
 data Judgment = Judgment { 
@@ -630,15 +628,14 @@ instance MathML Judgment where
 
 -- | translates a judgment in de Bruijn notation into one with variable names 
 fromDeBruijnJudgment :: Judgment -> VN.Judgment
-fromDeBruijnJudgment j = 
+fromDeBruijnJudgment judgment = 
   let (vcontext', vterm', vtyp') 
         = initializeIndex $ do
-                            vcontext <- fromDeBruijnContextLoop [] $ reverse $ context j
-                            let varnames = reverse $ fst $ unzip vcontext
-                            vterm <- fromDeBruijn varnames (term j)
-                            vtyp <- fromDeBruijn varnames (typ j)
+                            (varnames,vcontext) <- fromDeBruijnContextLoop $ context judgment
+                            vterm <- fromDeBruijn varnames (term judgment)
+                            vtyp <- fromDeBruijn varnames (typ judgment)
                             return (vcontext, vterm, vtyp)
-  in VN.Judgment { VN.context = reverse vcontext',
+  in VN.Judgment { VN.context = vcontext',
                    VN.term = vterm',
                    VN.typ = vtyp' }
 
@@ -647,8 +644,7 @@ printProofSearchQuery :: Context -> Preterm -> T.Text
 printProofSearchQuery cont ty = 
   let (vcontext', vtyp') 
         = initializeIndex $ do
-                            vcontext <- fromDeBruijnContextLoop [] cont
-                            let varnames = reverse $ fst $ unzip vcontext
+                            (varnames,vcontext) <- fromDeBruijnContextLoop cont
                             vtyp <- fromDeBruijn varnames ty
                             return (vcontext, vtyp)
   in T.concat ["<mrow>", toMathML vcontext', "<mo>&vdash;</mo><mo>?</mo><mo>:</mo>", toMathML vtyp', "</mrow>"]

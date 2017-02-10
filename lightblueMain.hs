@@ -284,18 +284,9 @@ showStat = do
 
 test :: IO()
 test = do
-  let nbest = 3;
-      bestNodes =  map (take nbest) [[1,2,3,4],[5],[7,8,9,10]]::[[Int]];
-      doubledNodes = map (map (\node -> (node, show node))) bestNodes
-      chozenNodes = Prover.choice doubledNodes; 
-      zippedNodes = map unzip chozenNodes;
-      tripledNodes = map (\(ns,ss) -> (ns,ss,[sum ns])) zippedNodes;
-      --nodeSrPrList = dropWhile (\(_,_,ps) -> ps /= []) tripledNodes;
-  print bestNodes
-  print doubledNodes
-  print chozenNodes
-  print zippedNodes
-  print tripledNodes
+  let context = [DTS.Con "hoge", DTS.Con "evt", DTS.Con "entity"]
+  T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 0) DTS.Type
+  T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 2) DTS.Type
 
 -- | lightblue -t sembank
 -- |
@@ -371,6 +362,21 @@ percent :: (Int,Int) -> String
 percent (i,j) = if j == 0
                    then show (0::F.Fixed F.E2)
                    else show ((fromRational (toEnum i R.% toEnum j)::F.Fixed F.E2) * 100)
+
+{-  
+  let nbest = 3;
+      bestNodes =  map (take nbest) [[1,2,3,4],[5],[7,8,9,10]]::[[Int]];
+      doubledNodes = map (map (\node -> (node, show node))) bestNodes
+      chozenNodes = Prover.choice doubledNodes; 
+      zippedNodes = map unzip chozenNodes;
+      tripledNodes = map (\(ns,ss) -> (ns,ss,[sum ns])) zippedNodes;
+      --nodeSrPrList = dropWhile (\(_,_,ps) -> ps /= []) tripledNodes;
+  print bestNodes
+  print doubledNodes
+  print chozenNodes
+  print zippedNodes
+  print tripledNodes
+-}
 
 {-
 proofSearch :: [DTS.Signature] 

@@ -14,17 +14,13 @@ module DTS.DTT (
   Preterm(..),
   Selector(..),
   Signature,
-  printSignature,
+  --printSignature,
   toUDTT,
   toDTT
   ) where
 
 import qualified Data.Text.Lazy as T      -- text
---import qualified Data.List as L           -- base
---import qualified Control.Applicative as M -- base
---import qualified Control.Monad as M       -- base
 import qualified DTS.UDTT as UDTT
---import qualified DTS.UDTTwithName as VN
 import Interface.Text
 import Interface.TeX
 import Interface.HTML
@@ -90,9 +86,8 @@ type Signature = (T.Text,Preterm)
 instance SimpleText Signature where
   toText = toText . toUDTTsig
 
--- | prints a signature in text.
-printSignature :: [Signature] -> T.Text
-printSignature = UDTT.printSignature . (map toUDTTsig)
+instance SimpleText [Signature] where
+  toText = toText . (map toUDTTsig)
 
 -- | DTT to UDTT
 toUDTT :: Preterm -> UDTT.Preterm
