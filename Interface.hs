@@ -111,19 +111,6 @@ printNodes handle TEX _ nodes =
             ]
             ) nodes
 
-{-
--- | prints every box in the (parsed) CYK chart as a TeX source code.
-printChartInTeX :: S.Handle -> Bool -> CP.Chart -> IO()
-printChartInTeX handle typeCheck chart = mapM_ printList $ M.toList $ M.filter (/= []) chart
-  where printList (key,nodes) = do -- list化したChartを画面表示する。
-          S.hPutStr handle $ "\\subsubsection*{" ++ show key ++ ": ノード数 " ++ (show $ length nodes) ++ "}"
-          printNodesInTeX handle typeCheck nodes
-
--- | prints n-nodes (n is a natural number) from given list of CCG nodes (=a parsing result) as a TeX source code.
-printNNodesInTeX :: S.Handle -> Bool -> [CCG.Node] -> IO()
-printNNodesInTeX handle _ nodes = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-2em\\scalebox{.2}{" ++ T.unpack (TEX.toTeX node) ++ "\\\\}\\par\\medskip") nodes
--}
-
 -- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style
 posTagger :: S.Handle -> Style -> [CCG.Node] -> IO()
 posTagger handle style nodes = case style of
@@ -163,6 +150,17 @@ treebankBuilder beam = do
   S.putStrLn HTML.htmlFooter4MathML
 
 {-
+-- | prints every box in the (parsed) CYK chart as a TeX source code.
+printChartInTeX :: S.Handle -> Bool -> CP.Chart -> IO()
+printChartInTeX handle typeCheck chart = mapM_ printList $ M.toList $ M.filter (/= []) chart
+  where printList (key,nodes) = do -- list化したChartを画面表示する。
+          S.hPutStr handle $ "\\subsubsection*{" ++ show key ++ ": ノード数 " ++ (show $ length nodes) ++ "}"
+          printNodesInTeX handle typeCheck nodes
+
+-- | prints n-nodes (n is a natural number) from given list of CCG nodes (=a parsing result) as a TeX source code.
+printNNodesInTeX :: S.Handle -> Bool -> [CCG.Node] -> IO()
+printNNodesInTeX handle _ nodes = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-2em\\scalebox{.2}{" ++ T.unpack (TEX.toTeX node) ++ "\\\\}\\par\\medskip") nodes
+
 -- | prints CCG nodes (=a parsing result) in a specified format.
 printNodes :: S.Handle  -- ^ handle for output
               -> Int    -- ^ N-best

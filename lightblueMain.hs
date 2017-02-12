@@ -62,7 +62,7 @@ main :: IO()
 main = execParser opts >>= lightblueMain 
   where opts = info (helper <*> optionParser)
                  ( fullDesc
-                 <> progDesc "echo <sentence> | ./lightblue\n echo <sentence> | ./lightblue"
+                 <> progDesc "Usage: lightblue COMMAND <local options> <global options>"
                  <> header "lightblue - a Japanese CCG parser with DTS representations (c) Bekki Laboratory" )
 
 -- <$> :: (a -> b) -> Parser a -> Parser b
@@ -86,20 +86,20 @@ optionParser =
     <$> subparser 
       (command "parse"
            (info parseOptionParser
-                 (progDesc "parse --task parse|postag|numeration|sembank --input sentence|corpus --style html|text|tex|xml" ))
+                 (progDesc "Local options: [-t|--task parse|postag|numeration|sembank] [-i|--input sentence|corpus] [-s|--style html|text|tex|xml]" ))
       <> command "infer"
            (info inferOptionParser
-                 (progDesc "infer --prover dts|coq --input paragraph|jsem" ))
+                 (progDesc "Local options: [--prover dts|coq] [-i|--input paragraph|jsem]" ))
       <> command "debug"
            (info debugOptionParser
-                 (progDesc "debug INT INT: shows all the parsing results between the two pivots." ))
+                 (progDesc "shows all the parsing results between the two pivots. Local options: INT INT" ))
       <> command "demo"
            (info (pure Demo)
-                 (progDesc "demo FILENAME: sequentially shows parsing results of the corpus FILENAME" ))
+                 (progDesc "sequentially shows parsing results of the corpus FILENAME.  No local options." ))
       <> command "treebank"
            (info treebankOptionParser
-                 (progDesc "Print a semantic treebank build from a given corpus" ))
-      <> metavar "parse|infer|debug|demo|treebank"
+                 (progDesc "print a semantic treebank build from a given corpus. No local options" ))
+      <> metavar "commands (=[parse|infer|debug|demo|treebank])"
       <> help "specifies the task.  See 'Available commands' below for options for each command"
       )
     <*> strOption 
