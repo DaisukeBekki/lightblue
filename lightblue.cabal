@@ -3,12 +3,12 @@
 
 name:                lightblue
 version:             0.1.6.2
-synopsis:            A CCG parser with DTS-representation
+synopsis:            A CCG parser with DTS-representations
 --description:       
 license:             AllRightsReserved
 license-file:        LICENSE
-copyright:           Copyright: (c) Bekki Laboratory
-author:              Bekki Laboratory
+copyright:           Copyright: (c) Bekki Daisuke and Bekki Laboratory
+author:              Bekki Daisuke and Bekki Laboratory
 maintainer:          Daisuke Bekki
 stability:           beta
 homepage:            https://bitbucket.org/DaisukeBekki/lightblue

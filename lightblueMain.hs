@@ -6,6 +6,7 @@ import Options.Applicative.Help.Core (parserUsage) -- optparse-applicative
 import Data.Semigroup ((<>))              -- semigroup
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
+import qualified Data.Char as C           --base
 import qualified Data.List as L           --base
 import qualified Data.Ratio as R          --base
 import qualified Data.Fixed as F          --base
@@ -33,13 +34,19 @@ data Options =
 
 data Command =
   Parse String String I.Style
-  | Infer Prover String
+  | Infer ProverName String
   | Demo
   | Debug Int Int
     deriving (Show, Eq)
 
-data Prover = DTS | Coq deriving (Eq,Show,Read)
+data ProverName = DTS | Coq deriving (Eq,Show)
 
+instance Read ProverName where
+  readsPrec _ r =
+    [(DTS,s) | (x,s) <- lex r, map C.toLower x == "dts"]
+    ++ [(Coq,s) | (x,s) <- lex r, map C.toLower x == "coq"]
+
+-- | Main function.  Check README.md for the usage.
 main :: IO()
 main = execParser opts >>= lightblueMain 
   where opts = info (helper <*> optionParser)
@@ -47,8 +54,8 @@ main = execParser opts >>= lightblueMain
                  <> progDesc "echo <sentence> | ./lightblue\n echo <sentence> | ./lightblue"
                  <> header "lightblue - a Japanese CCG parser with DTS representations (c) Bekki Laboratory" )
 
---  <$> :: (a -> b) -> Parser a -> Parser b
---  <*> :: Parser (a -> b) -> Parser a -> Parser b
+-- <$> :: (a -> b) -> Parser a -> Parser b
+-- <*> :: Parser (a -> b) -> Parser a -> Parser b
 
 optionParser :: Parser Options
 optionParser = 
@@ -74,7 +81,7 @@ optionParser =
                  (progDesc "parse --task parse|postag|numeration|sembank --input sentence|corpus --output html|text|tex|xml" ))
       <> command "infer"
            (info inferOptionParser
-                 (progDesc "infer --prover DTS|Coq --input paragraph|jsem" ))
+                 (progDesc "infer --prover dts|coq --input paragraph|jsem" ))
       <> command "demo"
            (info (pure Demo)
                  (progDesc "demo FILENAME: shows parsing results of the corpus FILENAME" ))
