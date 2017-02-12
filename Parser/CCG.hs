@@ -458,7 +458,7 @@ isBunsetsu c = case c of
   S (_:(f:_)) -> let katsuyo = case f of 
                                  F feat -> feat
                                  SF _ feat -> feat in
-                 if L.intersect katsuyo [Cont,Term,Attr,Hyp,Imper,Pre,NTerm,NStem,TeForm,NiForm] == []
+                 if null $ L.intersect katsuyo [Cont,Term,Attr,Hyp,Imper,Pre,NTerm,NStem,TeForm,NiForm]
                     then False
                     else True
   _ -> True
@@ -1149,30 +1149,30 @@ unifyFeature fsub f1 f2 = case (f1,f2) of
                            then
                              let (i',v1') = fetchValue fsub i v1;
                                  v3 = L.intersect v1' v2 in
-                             if v3 == []
+                             if null v3
                                 then Nothing
                                 else Just (SF i' v3, (alter i' (SubstVal v3) fsub))
                            else
                              let (i',v1') = fetchValue fsub i v1;
                                  (j',v2') = fetchValue fsub j v2;
                                  v3 = L.intersect v1' v2' in
-                             if v3 == []
+                             if null v3
                                 then Nothing
                                 else
                                   let ijmax = max i' j'; ijmin = min i' j' in
                                   Just (SF ijmin v3, (alter ijmax (SubstLink ijmin) (alter ijmin (SubstVal v3) fsub)))
   (SF i v1, F v2) -> let (i',v1') = fetchValue fsub i v1;
                          v3 = L.intersect v1' v2 in
-                     if v3 == []
+                     if null v3
                         then Nothing
                         else Just (SF i' v3, (alter i' (SubstVal v3) fsub))
   (F v1, SF j v2) -> let (j',v2') = fetchValue fsub j v2;
                          v3 = L.intersect v1 v2' in
-                     if v3 == []
+                     if null v3
                         then Nothing
                         else Just (SF j' v3, (alter j' (SubstVal v3) fsub))
   (F v1, F v2) -> let v3 = L.intersect v1 v2 in
-                  if v3 == []
+                  if null v3
                      then Nothing
                      else Just (F v3, fsub)
 

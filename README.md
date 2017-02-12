@@ -76,11 +76,11 @@ $ chmod 755 tidy
 
 To parse a Japanese sentence and get a text|HTML|TeX|XML representation, execute:
 ```
-$ echo 太郎がパンを食べた。 | lightblue parse -o {TEXT|HTML|TEX}
+$ echo 太郎がパンを食べた。 | lightblue parse -o {text|html|tex}
 ```
 or
 ```
-$ echo 太郎がパンを食べた。 | lightblue parse -o XML | ./tidy
+$ echo 太郎がパンを食べた。 | lightblue parse -o xml | ./tidy
 ```
 
 With '-n|--nbest' option, *lightblue* will show the N-best parse results.
@@ -105,6 +105,18 @@ $ lightblue demo -f <corpusfile>
 To parse a JSeM file and execute inferences therein, then you can feed it to *lightblue* by:
 ```
 $ lightblue parse -i jsem -f <jsemfile>
+```
+
+To check the inference relations <premise_1>, ..., <premise_n> |- <hypothesis>, execute:
+```
+$ lightblue infer -f <filename>
+```
+where <filename> is the path of a text file of the form:
+```
+<premise_1>
+...
+<premise_n>
+<hypothesis>
 ```
 
 Check also:

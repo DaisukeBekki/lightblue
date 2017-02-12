@@ -47,7 +47,7 @@ sequentialTypeCheck sig = foldr (\sr cont -> let result = do
                                                           t2 <- Ty.aspElim t1;
                                                           t3 <- Ty.getTerm t2
                                                           return $ Ty.repositP t3 in
-                                             if result == []
+                                             if null result
                                                 then (UD.Con "Typecheck or aspElim failed"):cont
                                                 else (head result):cont
                                 ) []
@@ -85,8 +85,8 @@ checkEntailment beam nbest premises hypothesis = do
                          return (nds,typecheckedSRs,proofdiagrams)
                        ) nodeSRlist;
   S.hPutStrLn S.stderr $ show tripledNodes
-  let nodeSrPrList = dropWhile (\(_,_,p) -> p == []) tripledNodes;
-      (nds,srs,pds) = if nodeSrPrList == []
+  let nodeSrPrList = dropWhile (\(_,_,p) -> null p) tripledNodes;
+      (nds,srs,pds) = if null nodeSrPrList
                         then head tripledNodes
                         else head nodeSrPrList
   --
@@ -99,7 +99,7 @@ checkEntailment beam nbest premises hypothesis = do
   --
   -- Show proof diagrams
   --
-  if pds == []
+  if null pds
      then mapM_ T.putStrLn [
            "No proof diagrams for: ", 
            HTML.startMathML, 

@@ -23,6 +23,7 @@ module Interface (
   printNumeration
   ) where
 
+import qualified Data.Char as C           --base
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.Map as M            --container
@@ -63,9 +64,14 @@ printNodes handle nBest typeCheck format nodes = do
                            | format == "xml"  -> "</sentences></document></root>"
 -}
 
-data Style = HTML | TEXT | XML | TEX deriving (Eq,Show,Read)
+data Style = HTML | TEXT | XML | TEX deriving (Eq,Show)
 
-{-
+{-instance Show Style where
+  show HTML = "html"
+  show TEXT = "text"
+  show XML = "xml"
+  show TEX = "tex"
+
 instance Read Style where
   readsPrec _ input = case input of
     "html" -> HTML
@@ -73,6 +79,13 @@ instance Read Style where
     "tex"  -> TEX
     "xml"  -> XML
 -}
+
+instance Read Style where
+  readsPrec _ r = 
+    [(HTML,s) | (x,s) <- lex r, map C.toLower x == "html"]
+    ++ [(TEXT,s) | (x,s) <- lex r, map C.toLower x == "text"]
+    ++ [(TEX,s) | (x,s) <- lex r, map C.toLower x == "tex"]
+    ++ [(XML,s) | (x,s) <- lex r, map C.toLower x == "xml"]
 
 headerOf :: Style -> String
 headerOf style = case style of

@@ -71,13 +71,13 @@ optionParser =
     <$> subparser 
       (command "parse"
            (info parseOptionParser
-                 (progDesc "parse --task parse|postag|numeration|sembank --input sentence|corpus --output HTML|TEXT|TEX|XML" ))
+                 (progDesc "parse --task parse|postag|numeration|sembank --input sentence|corpus --output html|text|tex|xml" ))
       <> command "infer"
            (info inferOptionParser
                  (progDesc "infer --prover DTS|Coq --input paragraph|jsem" ))
       <> command "demo"
            (info (pure Demo)
-                 (progDesc "demo" ))
+                 (progDesc "demo FILENAME: shows parsing results of the corpus FILENAME" ))
       <> command "debug"
            (info debugOptionParser
                  (progDesc "debug i j: shows all the parsing results between the pivots i and j." ))
@@ -229,7 +229,7 @@ lightblueMain (Options commands filepath nbest beamw iftypecheck iftime) = do
       case input of --  $ ligthblue infer -i jsem -f ../JSeM_beta/JSeM_beta_150415.xml
         "paragraph" -> do
           let sentences = T.lines contents;
-              (premises,hypothesis) = if sentences == []
+              (premises,hypothesis) = if null sentences
                                          then ([],T.empty)
                                          else (L.init sentences,L.last sentences)
           S.hPutStrLn S.stdout $ I.headerOf I.HTML
@@ -328,7 +328,7 @@ processCorpus beam contents = do
                              show ((fromRational ((toEnum (fromEnum totaltime)) R.% toEnum (total*1000000000000)))::F.Fixed F.E3),
                              "s/sentence)\n"
                              ]
-    where isSentence t = not (t == T.empty || "（" `T.isSuffixOf` t)
+    where isSentence t = not (T.null t || "（" `T.isSuffixOf` t)
 
 parseSentence :: Int                    -- ^ beam width
                  -> IO(Int,Int,Int,Int) -- ^ (The number of fully succeeded, partially succeeded, failed, and total parses)
