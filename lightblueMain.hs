@@ -18,7 +18,6 @@ import qualified Parser.ChartParser as CP
 import qualified Parser.Japanese.MyLexicon as LEX
 import qualified Interface as I
 import qualified Interface.Text as T
-import qualified Interface.HTML as HTML
 import qualified Interface.JSeM as J
 import qualified DTS.UDTT as DTS
 import qualified DTS.Prover as Prover
@@ -27,20 +26,32 @@ import qualified DTStoProlog as D2P
 data Options =
   Version
   | Stat
-  | Treebank
   | Test
   | Options Command FilePath Int Int Bool Bool
     deriving (Show, Eq)
 
 data Command =
-  Parse String String I.Style
+  Parse TaskName InputType I.Style
   | Infer ProverName String
-  | Demo
   | Debug Int Int
+  | Demo
+  | Treebank
     deriving (Show, Eq)
 
-data ProverName = DTS | Coq deriving (Eq,Show)
+data TaskName = PARSE | POSTAG | NUMERATION deriving (Eq,Show)
+instance Read TaskName where
+  readsPrec _ r =
+    [(PARSE,s) | (x,s) <- lex r, map C.toLower x == "parse"]
+    ++ [(POSTAG,s) | (x,s) <- lex r, map C.toLower x == "postag"]
+    ++ [(NUMERATION,s) | (x,s) <- lex r, map C.toLower x == "numeration"]
 
+data InputType = SENTENCE | CORPUS deriving (Eq,Show)
+instance Read InputType where
+  readsPrec _ r =
+    [(SENTENCE,s) | (x,s) <- lex r, map C.toLower x == "sentence"]
+    ++ [(CORPUS,s) | (x,s) <- lex r, map C.toLower x == "corpus"]
+
+data ProverName = DTS | Coq deriving (Eq,Show)
 instance Read ProverName where
   readsPrec _ r =
     [(DTS,s) | (x,s) <- lex r, map C.toLower x == "dts"]
@@ -66,9 +77,6 @@ optionParser =
   flag' Stat ( long "stat" 
              <> help "Print the lightblue statistics" )
   <|> 
-  flag' Stat ( long "treebank" 
-             <> help "Print a semantic treebank build from a given corpus" )
-  <|> 
   flag' Test ( long "test" 
              <> hidden 
              <> internal
@@ -78,18 +86,21 @@ optionParser =
     <$> subparser 
       (command "parse"
            (info parseOptionParser
-                 (progDesc "parse --task parse|postag|numeration|sembank --input sentence|corpus --output html|text|tex|xml" ))
+                 (progDesc "parse --task parse|postag|numeration|sembank --input sentence|corpus --style html|text|tex|xml" ))
       <> command "infer"
            (info inferOptionParser
                  (progDesc "infer --prover dts|coq --input paragraph|jsem" ))
-      <> command "demo"
-           (info (pure Demo)
-                 (progDesc "demo FILENAME: shows parsing results of the corpus FILENAME" ))
       <> command "debug"
            (info debugOptionParser
-                 (progDesc "debug i j: shows all the parsing results between the pivots i and j." ))
-      <> metavar "parse|infer|debug"
-      <> help "Commands to execute.  See 'Available commands' below for options for each command"
+                 (progDesc "debug INT INT: shows all the parsing results between the two pivots." ))
+      <> command "demo"
+           (info (pure Demo)
+                 (progDesc "demo FILENAME: sequentially shows parsing results of the corpus FILENAME" ))
+      <> command "treebank"
+           (info treebankOptionParser
+                 (progDesc "Print a semantic treebank build from a given corpus" ))
+      <> metavar "parse|infer|debug|demo|treebank"
+      <> help "specifies the task.  See 'Available commands' below for options for each command"
       )
     <*> strOption 
       ( long "file"
@@ -124,6 +135,9 @@ debugOptionParser = Debug
   <$> argument auto idm
   <*> argument auto idm
 
+treebankOptionParser :: Parser Command
+treebankOptionParser = pure Treebank
+
 inferOptionParser :: Parser Command
 inferOptionParser = Infer
   <$> option auto
@@ -143,10 +157,10 @@ inferOptionParser = Infer
 
 parseOptionParser :: Parser Command
 parseOptionParser = Parse
-  <$> strOption
+  <$> option auto
     ( long "task"
     <> short 't'
-    <> metavar "parse|postag|numeration|sembank"
+    <> metavar "parse|postag|numeration"
     <> help ("Execute the specified task"
              --"Usage for parse: cat <sentence> | lightblue -t parse > output.html "
              --"Usage for infer: cat <textfile> | lightblue -t infer > output.html "
@@ -154,19 +168,19 @@ parseOptionParser = Parse
              --"(with one sentence per each line)"
             )
     <> showDefault
-    <> value "parse" )
-  <*> strOption 
+    <> value PARSE )
+  <*> option auto
     ( long "input"
     <> short 'i' 
     <> metavar "sentence|corpus"
     <> help "Specify the style of input texts"
     <> showDefault
-    <> value "sentence" )
+    <> value SENTENCE )
   <*> option auto
-    ( long "output"
-    <> short 'o'
+    ( long "style"
+    <> short 's'
     <> metavar "text|tex|xml|html"
-    <> help "Print results in the specified format"
+    <> help "Print results in the specified style"
     <> showDefault
     <> value I.HTML )
 
@@ -178,7 +192,6 @@ unknownOptionError unknown = do
 lightblueMain :: Options -> IO()
 lightblueMain Version = showVersion
 lightblueMain Stat = showStat
-lightblueMain Treebank = treebankBuilder 24
 lightblueMain Test = test
 lightblueMain (Options commands filepath nbest beamw iftypecheck iftime) = do
   start <- Time.getCurrentTime
@@ -194,35 +207,26 @@ lightblueMain (Options commands filepath nbest beamw iftypecheck iftime) = do
     -- |
     -- | Parse
     -- |
-    lightblueMainLocal (Parse task input output) = do
+    lightblueMainLocal (Parse task input style) = do
       let handle = S.stdout
       sentences <- case filepath of
         "-" -> case input of
-                 "sentence" -> (\x -> [x]) <$> T.getLine
-                 "corpus"   -> T.lines <$> T.getContents
-                 _          -> do
-                               unknownOptionError input
-                               return []
+                 SENTENCE -> (\x -> [x]) <$> T.getLine
+                 CORPUS   -> T.lines <$> T.getContents
         _   -> T.lines <$> T.readFile filepath
-      S.hPutStrLn handle $ I.headerOf output
+      S.hPutStrLn handle $ I.headerOf style
       mapM_
         (\sentence -> do
           nodes <- CP.simpleParse beamw sentence
-          let nbestnodes = take nbest nodes
-          case (task, output) of
-            ("postag",_)     -> I.posTagger       handle output nbestnodes
-            ("numeration",_) -> I.printNumeration handle output sentence
-            ("parse",I.HTML) -> I.printNodesInHTML handle iftypecheck nbestnodes
-            ("parse",I.TEXT) -> do
-                                I.printNodesInText handle iftypecheck nbestnodes
-                                let l = length nodes;
-                                    b = length nbestnodes
-                                S.hPutStrLn handle $ show (min b l) ++ " parse result(s) shown out of " ++ show l ++ "\n"
-            ("parse",I.TEX)  -> I.printNodesInTeX  handle iftypecheck nbestnodes
-            ("parse",I.XML)  -> I.printNodesInXML  handle sentence nbestnodes
-            (t,f) -> unknownOptionError $ "task=" ++ t ++ ", output=" ++ (show f)
+          let nbestnodes = take nbest nodes;
+              len = length nodes;
+          case task of
+            PARSE      -> I.printNodes      handle style iftypecheck nbestnodes
+            POSTAG     -> I.posTagger       handle style nbestnodes
+            NUMERATION -> I.printNumeration handle style sentence
+          S.hPutStrLn S.stderr $ show (min (length nbestnodes) len) ++ " parse result(s) shown out of " ++ show len
+          S.hPutStrLn handle $ I.footerOf style
           ) sentences
-      S.hPutStrLn handle $ I.footerOf output
     -- |
     -- | Infer
     -- |
@@ -248,6 +252,13 @@ lightblueMain (Options commands filepath nbest beamw iftypecheck iftime) = do
                           ) $ J.parseJSeM contents
         _ -> unknownOptionError input
     -- |
+    -- | Debug
+    -- |
+    lightblueMainLocal (Debug i j) = do
+      sentence <- T.getLine
+      chart <- CP.parse beamw sentence
+      I.printNodes S.stdout I.HTML iftypecheck $ L.concat $ map (\(_,nodes) -> nodes) $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
+    -- |
     -- | Corpus (Parsing demo)
     -- |
     lightblueMainLocal Demo = do
@@ -255,13 +266,11 @@ lightblueMain (Options commands filepath nbest beamw iftypecheck iftime) = do
         "-" -> T.getContents
         _   -> T.readFile filepath
       processCorpus beamw $ T.lines contents
-    -- |
-    -- | Debug
-    -- |
-    lightblueMainLocal (Debug i j) = do
-      sentence <- T.getLine
-      chart <- CP.parse beamw sentence
-      I.printNodesInHTML S.stdout iftypecheck $ L.concat $ map (\(_,nodes) -> nodes) $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
+    --
+    -- | Treebank Builder
+    --
+    lightblueMainLocal Treebank = do
+      I.treebankBuilder beamw
 
 -- | lightblue --version
 -- |
@@ -289,25 +298,15 @@ showStat = do
   putStr $ show $ length $ T.lines jumandic
   putStrLn " lexical entries for open words from JUMAN++"
 
+-- | lightblue --test
+-- | 
 test :: IO()
 test = do
   let context = [DTS.Con "hoge", DTS.Con "evt", DTS.Con "entity"]
   T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 0) DTS.Type
   T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 2) DTS.Type
 
--- | lightblue -t sembank
--- |
-treebankBuilder :: Int -> IO()
-treebankBuilder beam = do
-  content <- T.getContents
-  nodes <- mapM (CP.simpleParse beam) $ T.lines content
-  S.putStrLn HTML.htmlHeader4MathML
-  T.putStrLn HTML.startMathML
-  T.putStrLn $ DTS.toVerticalMathML $ map (CP.sem . head) nodes
-  T.putStrLn HTML.endMathML
-  S.putStrLn HTML.htmlFooter4MathML
-
--- | lightblue --corpus filepath
+-- | lightblue demo
 -- |
 processCorpus :: Int -> [T.Text] -> IO()
 processCorpus beam contents = do

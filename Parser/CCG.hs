@@ -76,6 +76,7 @@ instance Ord Node where
 
 {- Printing Nodes -}
 
+-- | shows the score of the given node
 showScore :: Node -> T.Text
 showScore node = T.pack (show ((fromRational $ score node)::Fixed E2))
 

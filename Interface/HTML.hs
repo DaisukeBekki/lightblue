@@ -23,6 +23,7 @@ import qualified Data.Text.Lazy as T
 class MathML a where
   toMathML :: a -> T.Text
 
+-- | <?xml version='1.0'?>...<body>
 htmlHeader4MathML :: String
 htmlHeader4MathML = "\
     \<?xml version='1.0'?>\
@@ -55,11 +56,14 @@ htmlHeader4MathML = "\
     \  </script>\
     \  </head><body>"
 
+-- | </body></html>
 htmlFooter4MathML :: String
 htmlFooter4MathML = "</body></html>"
 
+-- | <math xmlns='http://www.w3.org/1998/Math/MathML'>
 startMathML :: T.Text
 startMathML = "<math xmlns='http://www.w3.org/1998/Math/MathML'>"
 
+-- | </math>
 endMathML :: T.Text
 endMathML = "</math>"

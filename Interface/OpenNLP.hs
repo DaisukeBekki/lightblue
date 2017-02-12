@@ -68,7 +68,12 @@ loop i lexonly node =
              let id = T.concat ["s", T.pack $ show i, "_sp", T.pack $ show j]
              pushChild id $ T.concat ["<span child='", T.unwords ids, "' rule='", toMathML $ CCG.rs node, "' category='", printCat $ CCG.cat node,"' id='", id, "' />"]
 
-node2NLP :: Int -> Bool -> T.Text -> CCG.Node -> T.Text
+-- | prints a node in XML style
+node2NLP :: Int         -- ^ an index to start
+            -> Bool     -- ^ if True, shows lexical items only
+            -> T.Text   -- ^ a parsed sentence
+            -> CCG.Node -- ^ a node (=parse result)
+            -> T.Text
 node2NLP i lexonly sentence node = initializeIndex $ do
                     id <- loop i lexonly node
                     (cs,ts) <- popResults

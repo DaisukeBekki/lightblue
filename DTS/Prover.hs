@@ -14,8 +14,7 @@ module DTS.Prover
 ( defaultTypeCheck,
   defaultProofSearch,
   checkFelicity,
-  checkEntailment,
-  choice
+  checkEntailment
 ) where
 
 import qualified Data.Text.Lazy as T      --text
@@ -52,7 +51,12 @@ sequentialTypeCheck sig = foldr (\sr cont -> let result = do
                                                 else (head result):cont
                                 ) []
 
-checkEntailment :: Int -> Int -> [T.Text] -> T.Text -> IO()
+-- | checks if premises entails hypothesis
+checkEntailment :: Int         -- ^ beam width
+                   -> Int      -- ^ n-best
+                   -> [T.Text] -- ^ premises
+                   -> T.Text   -- ^ a hypothesis
+                   -> IO()
 checkEntailment beam nbest premises hypothesis = do
   let hline = "<hr size='15' />";
   --

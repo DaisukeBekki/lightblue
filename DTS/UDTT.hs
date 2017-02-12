@@ -399,12 +399,12 @@ replaceLambda i preterm = deleteLambda i (addLambda i preterm)
 
 {- Initializing or Re-indexing of vars, @s and DRels -}
 
--- Indexed monad controls indices to be attached to preterms.  Arguments correspond to
--- u for variables for propositions
--- x for variables for entities
--- e for variables for eventualities
--- indices for @ operators
--- and indices for DReL operators
+-- | Indexed monad controls indices to be attached to preterms.  Arguments correspond to:
+--   u for variables for propositions
+-- | x for variables for entities
+-- | e for variables for eventualities
+-- | indices for asp-operators
+-- | indices for DReL operators
 newtype Indexed a = Indexed { indexing :: Int -> Int -> Int -> Int -> Int -> (a,Int,Int,Int,Int,Int) }
 
 instance Monad Indexed where
@@ -592,6 +592,7 @@ instance Typeset Context where
 instance MathML Context where
   toMathML = toMathML . fromDeBruijnContext
 
+-- | prints a context in vertical manner.
 toVerticalMathML :: Context -> T.Text
 toVerticalMathML = VN.toVerticalMathML . fromDeBruijnContext
 
@@ -639,7 +640,7 @@ fromDeBruijnJudgment judgment =
                    VN.term = vterm',
                    VN.typ = vtyp' }
 
--- | 
+-- | prints a proof search query in MathML
 printProofSearchQuery :: Context -> Preterm -> T.Text
 printProofSearchQuery cont ty = 
   let (vcontext', vtyp') 
