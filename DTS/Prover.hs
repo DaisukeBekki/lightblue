@@ -20,7 +20,7 @@ module DTS.Prover
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.List as L           --base
-import qualified System.IO as S           --base
+--import qualified System.IO as S           --base
 import qualified Parser.ChartParser as CP
 import qualified Interface.HTML as HTML
 import qualified DTS.UDTT as UD
@@ -58,7 +58,7 @@ checkEntailment :: Int         -- ^ beam width
                    -> T.Text   -- ^ a hypothesis
                    -> IO()
 checkEntailment beam nbest premises hypothesis = do
-  let hline = "<hr size='15' />";
+  let hline = "<hr size='15' />"
   --
   -- Show premises and hypothesis
   --
@@ -88,7 +88,7 @@ checkEntailment beam nbest premises hypothesis = do
                                                (hype:prems) -> defaultProofSearch newsig prems hype;
                          return (nds,typecheckedSRs,proofdiagrams)
                        ) nodeSRlist;
-  S.hPutStrLn S.stderr $ show tripledNodes
+  --S.hPutStrLn S.stderr $ show tripledNodes
   let nodeSrPrList = dropWhile (\(_,_,p) -> null p) tripledNodes;
       (nds,srs,pds) = if null nodeSrPrList
                         then head tripledNodes

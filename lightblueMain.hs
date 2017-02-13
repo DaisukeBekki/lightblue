@@ -3,7 +3,7 @@
 
 import Options.Applicative                         -- optparse-applicative
 import Options.Applicative.Help.Core (parserUsage) -- optparse-applicative
-import Data.Semigroup ((<>))              -- semigroup
+import Data.Semigroup ((<>))              --semigroup
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.Char as C           --base
@@ -62,7 +62,7 @@ main :: IO()
 main = execParser opts >>= lightblueMain 
   where opts = info (helper <*> optionParser)
                  ( fullDesc
-                 <> progDesc "Usage: lightblue COMMAND <local options> <global options>"
+                 <> progDesc "Usage: lightblue <global options> COMMAND <local options> <global options>"
                  <> header "lightblue - a Japanese CCG parser with DTS representations (c) Bekki Laboratory" )
 
 -- <$> :: (a -> b) -> Parser a -> Parser b
@@ -97,9 +97,9 @@ optionParser =
            (info (pure Demo)
                  (progDesc "sequentially shows parsing results of the corpus FILENAME.  No local options." ))
       <> command "treebank"
-           (info treebankOptionParser
+           (info (pure Treebank)
                  (progDesc "print a semantic treebank build from a given corpus. No local options" ))
-      <> metavar "commands (=[parse|infer|debug|demo|treebank])"
+      <> metavar "COMMAND (=[parse|infer|debug|demo|treebank])"
       <> help "specifies the task.  See 'Available commands' below for options for each command"
       )
     <*> strOption 
@@ -134,9 +134,6 @@ debugOptionParser :: Parser Command
 debugOptionParser = Debug
   <$> argument auto idm
   <*> argument auto idm
-
-treebankOptionParser :: Parser Command
-treebankOptionParser = pure Treebank
 
 inferOptionParser :: Parser Command
 inferOptionParser = Infer
@@ -225,8 +222,9 @@ lightblueMain (Options commands filepath nbest beamw iftypecheck iftime) = do
             POSTAG     -> I.posTagger       handle style nbestnodes
             NUMERATION -> I.printNumeration handle style sentence
           S.hPutStrLn S.stderr $ show (min (length nbestnodes) len) ++ " parse result(s) shown out of " ++ show len
-          S.hPutStrLn handle $ I.footerOf style
+          S.hPutStrLn handle $ I.interimOf style
           ) sentences
+      S.hPutStrLn handle $ I.footerOf style
     -- |
     -- | Infer
     -- |
@@ -237,20 +235,20 @@ lightblueMain (Options commands filepath nbest beamw iftypecheck iftime) = do
       let proverf = case prover of
            DTS -> Prover.checkEntailment beamw nbest
            Coq -> D2P.dts2prolog beamw nbest
+      S.hPutStrLn S.stdout $ I.headerOf I.HTML
       case input of --  $ ligthblue infer -i jsem -f ../JSeM_beta/JSeM_beta_150415.xml
         "paragraph" -> do
           let sentences = T.lines contents;
               (premises,hypothesis) = if null sentences
                                          then ([],T.empty)
                                          else (L.init sentences,L.last sentences)
-          S.hPutStrLn S.stdout $ I.headerOf I.HTML
           proverf premises hypothesis
-          S.hPutStrLn S.stdout $ I.footerOf I.HTML
         "jsem" -> mapM_ (\j -> do
                           mapM_ T.putStr ["JSeM [", J.jsem_id j, "] "]
                           proverf (J.premise j) (J.hypothesis j)
                           ) $ J.parseJSeM contents
         _ -> unknownOptionError input
+      S.hPutStrLn S.stdout $ I.footerOf I.HTML
     -- |
     -- | Debug
     -- |

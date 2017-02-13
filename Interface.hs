@@ -12,10 +12,10 @@ Stability   : beta
 module Interface (
   Style(..),
   headerOf,
+  interimOf,
   footerOf,
+  --
   printNodes,
-  --printChartInTeX,
-  --printNNodesInTeX,
   posTagger,
   printNumeration,
   treebankBuilder
@@ -56,6 +56,14 @@ headerOf style = case style of
   XML  -> "<?xml version='1.0' encoding='UTF-8'?><root><document id='d0'><sentences>"
   TEX  -> ""
 
+-- | interim in style
+interimOf :: Style -> String
+interimOf style = case style of
+  HTML -> "<hr size='15' />"
+  TEXT -> take 100 $ repeat '-'
+  XML  -> ""
+  TEX  -> ""
+
 -- | footer in style
 footerOf :: Style -> String
 footerOf style = case style of
@@ -66,56 +74,48 @@ footerOf style = case style of
 
 -- | prints CCG nodes (=parsing results) in a specified style (=HTML|text|XML|TeX)
 printNodes :: S.Handle -> Style -> Bool -> [CCG.Node] -> IO()
-printNodes handle HTML typeCheck nodes = do
+printNodes handle HTML typeCheck =
   mapM_ (\node -> do
-                  mapM_ (T.hPutStrLn handle) ["<p>", 
-                                             CCG.pf node,
-                                             " [",
-                                             CCG.showScore node,
-                                             "]</p>",
-                                             HTML.startMathML,
-                                             HTML.toMathML node,
-                                             HTML.endMathML
-                                             ]
+                  mapM_ (T.hPutStrLn handle) ["<p>",CCG.pf node," [",CCG.showScore node,"]</p>",HTML.startMathML,HTML.toMathML node,HTML.endMathML]
                   if typeCheck 
                      then do
                           T.hPutStrLn handle $ HTML.startMathML;
-                          mapM_ ((T.hPutStrLn handle) . Ty.utreeToMathML) $ Prover.checkFelicity (CCG.sig node) [] (CCG.sem node);
+                          let trees = map Ty.utreeToMathML $ Prover.checkFelicity (CCG.sig node) [] (CCG.sem node);
                           -- T.hPutStrLn handle $ DTS.toVerticalMathML $ do
                           --   t1 <- Ty.checkFelicity (CCG.sig node) [] (CCG.sem node);
                           --   t2 <- Ty.aspElim t1
                           --   t3 <- Ty.getTerm t2
                           --   return $ DTS.betaReduce $ Ty.repositP t3
+                          if null trees 
+                             then return ()
+                             else T.hPutStrLn handle $ head trees
                           T.hPutStrLn handle $ HTML.endMathML 
                      else return ()
-          ) nodes
+          )
 
-printNodes handle TEXT _ nodes = do
+printNodes handle TEXT _ =
   mapM_ (\node -> do 
                   T.hPutStr handle $ T.toText node
                   S.hPutStrLn handle $ take 100 $ repeat '-'
-        ) $ nodes
+        )
 
-printNodes handle XML _ nodes = do
-  mapM_ (\node -> T.hPutStrLn handle $ NLP.node2NLP 0 False (CCG.pf node) node
-        ) nodes
+printNodes handle XML _ =
+  mapM_ (\node -> T.hPutStrLn handle $ NLP.node2NLP 0 False (CCG.pf node) node)
 
-printNodes handle TEX _ nodes = 
+printNodes handle TEX _ =
   mapM_ (\node -> T.hPutStrLn handle $ T.concat [
             "\\noindent\\kern-2em\\scalebox{.2",
             TEX.scaleboxsize $ CCG.pf node,
             "}{\\ensuremath{", 
             -- TEX.toTeX $ CCG.sem node,
             TEX.toTeX node,
-            "}}\\medskip"
-            ]
-            ) nodes
+            "}}\\medskip"]
+            )
 
 -- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style
 posTagger :: S.Handle -> Style -> [CCG.Node] -> IO()
-posTagger handle style nodes = case style of
-  XML -> mapM_ ((T.hPutStrLn handle) . (NLP.node2NLP 0 True T.empty)) nodes
-  _ -> mapM_ (\node -> mapM_ (T.hPutStrLn handle) $ node2PosTags style node) nodes
+posTagger handle XML = mapM_ ((T.hPutStrLn handle) . (NLP.node2NLP 0 True T.empty))
+posTagger handle style = mapM_ (\node -> mapM_ (T.hPutStrLn handle) $ node2PosTags style node)
 
 -- | A subroutine for `posTagger` function
 node2PosTags :: Style -> CCG.Node -> [T.Text]
@@ -137,8 +137,7 @@ printNumeration handle style sentence = do
   numeration <- LEX.setupLexicon sentence
   mapM_ ((T.hPutStrLn handle) . (printLexicalItem style)) numeration
 
--- | lightblue -t sembank
--- |
+-- | parses sentences in the given corpus and yields a list of SRs in HTML format.
 treebankBuilder :: Int -> IO()
 treebankBuilder beam = do
   content <- T.getContents
@@ -160,27 +159,5 @@ printChartInTeX handle typeCheck chart = mapM_ printList $ M.toList $ M.filter (
 -- | prints n-nodes (n is a natural number) from given list of CCG nodes (=a parsing result) as a TeX source code.
 printNNodesInTeX :: S.Handle -> Bool -> [CCG.Node] -> IO()
 printNNodesInTeX handle _ nodes = mapM_ (\node -> S.hPutStrLn handle $ "\\noindent\\kern-2em\\scalebox{.2}{" ++ T.unpack (TEX.toTeX node) ++ "\\\\}\\par\\medskip") nodes
-
--- | prints CCG nodes (=a parsing result) in a specified format.
-printNodes :: S.Handle  -- ^ handle for output
-              -> Int    -- ^ N-best
-              -> Bool   -- ^ if executing type-check
-              -> String -- ^ format={text|html|xml|tex}
-              -> [CCG.Node] -- ^ CCG nodes (=parsing results) to print
-              -> IO()
-printNodes handle nBest typeCheck format nodes = do
-  T.hPutStrLn handle $ case () of 
-                         _ | format == "text" -> T.pack $ take 100 $ repeat '-'
-                           | format == "html" -> HTML.htmlHeader4MathML
-                           | format == "xml"  -> T.pack "<?xml version='1.0' encoding='UTF-8'?><root><document id='d0'><sentences>"
-  mapM_ (\node -> mapM_ (T.hPutStrLn handle) $ case () of
-                                                 _ | format == "text" -> [T.toText node, take 100 $ repeat '-']
-                                                   | format == "html" -> ["<p>",CCG.pf node," [",CCG.showScore node,"]</p>",HTML.startMathML,HTML.toMathML node,HTML.endMathML]
-                                                   | format == "xml"  -> [NLP.node2NLP 0 sentence node]
-         ) $ take nBest nodes
-  T.hPutStrLn handle $ case () of 
-                         _ | format == "text" -> 
-                           | format == "html" -> HTML.htmlFooter4MathML
-                           | format == "xml"  -> "</sentences></document></root>"
 -}
 
