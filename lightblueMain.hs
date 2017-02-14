@@ -2,7 +2,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import Options.Applicative                         -- optparse-applicative
-import Options.Applicative.Help.Core (parserUsage) -- optparse-applicative
 import Data.Semigroup ((<>))              --semigroup
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
@@ -31,8 +30,8 @@ data Options =
     deriving (Show, Eq)
 
 data Command =
-  Parse TaskName InputType I.Style
-  | Infer ProverName String
+  Parse TaskName ParseInput I.Style
+  | Infer ProverName InferInput
   | Debug Int Int
   | Demo
   | Treebank
@@ -45,11 +44,17 @@ instance Read TaskName where
     ++ [(POSTAG,s) | (x,s) <- lex r, map C.toLower x == "postag"]
     ++ [(NUMERATION,s) | (x,s) <- lex r, map C.toLower x == "numeration"]
 
-data InputType = SENTENCE | CORPUS deriving (Eq,Show)
-instance Read InputType where
+data ParseInput = SENTENCE | CORPUS deriving (Eq,Show)
+instance Read ParseInput where
   readsPrec _ r =
     [(SENTENCE,s) | (x,s) <- lex r, map C.toLower x == "sentence"]
     ++ [(CORPUS,s) | (x,s) <- lex r, map C.toLower x == "corpus"]
+
+data InferInput = PARAGRAPH | JSEM deriving (Eq,Show)
+instance Read InferInput where
+  readsPrec _ r =
+    [(PARAGRAPH,s) | (x,s) <- lex r, map C.toLower x == "paragraph"]
+    ++ [(JSEM,s) | (x,s) <- lex r, map C.toLower x == "jsem"]
 
 data ProverName = DTS | Coq deriving (Eq,Show)
 instance Read ProverName where
@@ -59,11 +64,12 @@ instance Read ProverName where
 
 -- | Main function.  Check README.md for the usage.
 main :: IO()
-main = execParser opts >>= lightblueMain 
+main = customExecParser p opts >>= lightblueMain 
   where opts = info (helper <*> optionParser)
                  ( fullDesc
                  <> progDesc "Usage: lightblue <global options> COMMAND <local options> <global options>"
-                 <> header "lightblue - a Japanese CCG parser with DTS representations (c) Bekki Laboratory" )
+                 <> header "lightblue - a Japanese CCG parser with DTS representations (c) Daisuke Bekki and Bekki Laboratory" )
+        p = prefs showHelpOnEmpty
 
 -- <$> :: (a -> b) -> Parser a -> Parser b
 -- <*> :: Parser (a -> b) -> Parser a -> Parser b
@@ -86,46 +92,47 @@ optionParser =
     <$> subparser 
       (command "parse"
            (info parseOptionParser
-                 (progDesc "Local options: [-t|--task parse|postag|numeration|sembank] [-i|--input sentence|corpus] [-s|--style html|text|tex|xml]" ))
+                 (progDesc "Local options: [-t|--task parse|postag|numeration] [-i|--input sentence|corpus] [-s|--style html|text|tex|xml] (The default values: -t parse -i sentence -s html)" ))
       <> command "infer"
            (info inferOptionParser
-                 (progDesc "Local options: [--prover dts|coq] [-i|--input paragraph|jsem]" ))
+                 (progDesc "Local options: [-p|--prover dts|coq] [-i|--input paragraph|jsem] (The default values: -p dts -i paragraph)" ))
       <> command "debug"
            (info debugOptionParser
-                 (progDesc "shows all the parsing results between the two pivots. Local options: INT INT" ))
+                 (progDesc "shows all the parsing results between the two pivots. Local options: INT INT (No default values)" ))
       <> command "demo"
            (info (pure Demo)
                  (progDesc "sequentially shows parsing results of the corpus FILENAME.  No local options." ))
       <> command "treebank"
            (info (pure Treebank)
                  (progDesc "print a semantic treebank build from a given corpus. No local options" ))
-      <> metavar "COMMAND (=[parse|infer|debug|demo|treebank])"
-      <> help "specifies the task.  See 'Available commands' below for options for each command"
+      <> metavar "COMMAND (=parse|infer|debug|demo|treebank)"
+      <> commandGroup "Available COMMANDs and thier local options"
+      <> help "specifies the task to execute.  See 'Available COMMANDs ...' below about local options for each command"
       )
     <*> strOption 
       ( long "file"
       <> short 'f'
       <> metavar "FILEPATH"
-      <> help "Read input texts from FILEPATH (Specify '-' to use stdin)"
+      <> help "Reads input texts from FILEPATH (Specify '-' to use stdin)"
       <> showDefault
       <> value "-" )
     <*> option auto 
       ( long "nbest"
       <> short 'n'
-      <> help "Show N-best derivations"
+      <> help "Show N-best results"
       <> showDefault
       <> value 1
-      <> metavar "N" )
+      <> metavar "INT" )
     <*> option auto 
       ( long "beam"
       <> short 'b'
       <> help "Specify the beam width"
       <> showDefault
       <> value 24
-      <> metavar "N" )
+      <> metavar "INT" )
     <*> switch 
       ( long "typecheck"
-      <> help "Show type-checking trees for the SR" )
+      <> help "Show type-checking trees for SRs" )
     <*> switch 
       ( long "time"
       <> help "Show the execution time in stderr" )
@@ -139,17 +146,17 @@ inferOptionParser :: Parser Command
 inferOptionParser = Infer
   <$> option auto
     ( long "prover"
-      <> short 'p' 
+      <> short 'p'
       <> metavar "DTS|Coq" 
       <> showDefault
       <> value DTS
       <> help "Choose prover" )
-  <*> strOption
+  <*> option auto
     ( long "input"
       <> short 'i' 
       <> metavar "paragraph|jsem"
       <> showDefault
-      <> value "paragraph"
+      <> value PARAGRAPH
       <> help "Specify input" )
 
 parseOptionParser :: Parser Command
@@ -158,12 +165,7 @@ parseOptionParser = Parse
     ( long "task"
     <> short 't'
     <> metavar "parse|postag|numeration"
-    <> help ("Execute the specified task"
-             --"Usage for parse: cat <sentence> | lightblue -t parse > output.html "
-             --"Usage for infer: cat <textfile> | lightblue -t infer > output.html "
-             --"where <textfile> consists of premises and a coclusion" 
-             --"(with one sentence per each line)"
-            )
+    <> help "Execute the specified task"
     <> showDefault
     <> value PARSE )
   <*> option auto
@@ -180,11 +182,6 @@ parseOptionParser = Parse
     <> help "Print results in the specified style"
     <> showDefault
     <> value I.HTML )
-
-unknownOptionError :: String -> IO()
-unknownOptionError unknown = do
-  S.hPutStr S.stderr "Unknown option: "
-  S.hPutStrLn S.stderr $ show $ parserUsage defaultPrefs optionParser unknown
 
 lightblueMain :: Options -> IO()
 lightblueMain Version = showVersion
@@ -237,17 +234,16 @@ lightblueMain (Options commands filepath nbest beamw iftypecheck iftime) = do
            Coq -> D2P.dts2prolog beamw nbest
       S.hPutStrLn S.stdout $ I.headerOf I.HTML
       case input of --  $ ligthblue infer -i jsem -f ../JSeM_beta/JSeM_beta_150415.xml
-        "paragraph" -> do
+        PARAGRAPH -> do
           let sentences = T.lines contents;
               (premises,hypothesis) = if null sentences
                                          then ([],T.empty)
                                          else (L.init sentences,L.last sentences)
           proverf premises hypothesis
-        "jsem" -> mapM_ (\j -> do
+        JSEM -> mapM_ (\j -> do
                           mapM_ T.putStr ["JSeM [", J.jsem_id j, "] "]
                           proverf (J.premise j) (J.hypothesis j)
                           ) $ J.parseJSeM contents
-        _ -> unknownOptionError input
       S.hPutStrLn S.stdout $ I.footerOf I.HTML
     -- |
     -- | Debug
@@ -366,6 +362,13 @@ percent :: (Int,Int) -> String
 percent (i,j) = if j == 0
                    then show (0::F.Fixed F.E2)
                    else show ((fromRational (toEnum i R.% toEnum j)::F.Fixed F.E2) * 100)
+
+{-
+unknownOptionError :: String -> IO()
+unknownOptionError unknown = do
+  S.hPutStr S.stderr "Not supported: "
+  S.hPutStrLn S.stderr $ show $ parserUsage defaultPrefs optionParser unknown
+-}
 
 {-  
   let nbest = 3;

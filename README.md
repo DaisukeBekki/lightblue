@@ -111,7 +111,7 @@ To check the inference relations <premise_1>, ..., <premise_n> |- <hypothesis>, 
 ```
 $ lightblue infer -f <filename>
 ```
-where <filename> is the path of a text file of the form:
+where <filename> is the path of a text file, consisting of premises and a hypothesis with one sentence per each line:
 ```
 <premise_1>
 ...
