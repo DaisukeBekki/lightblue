@@ -103,7 +103,7 @@ for f in `cat ${plain_dir}/jsem.files`; do
   echo "Evaluating ${f}... ("${count}"/"${total}")"
   count=$((count + 1))
   cat ${plain_dir}/${f} > ${results_dir}/${f/.txt/}.results
-  cat ${plain_dir}/${f} | .././DTStoProlog >> ${results_dir}/${f/.txt/}.results
+  cat ${plain_dir}/${f} | .././dist/build/lightblue/lightblue infer -p coq >> ${results_dir}/${f/.txt/}.results
 
 results=`cat ${results_dir}/${f/.txt/}.results \
   | sed 's/-- Preterm ---------/##/g' \

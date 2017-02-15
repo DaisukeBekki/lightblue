@@ -10,17 +10,16 @@ Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
 -}
 
-module DTS.Prover
-( defaultTypeCheck,
+module DTS.Prover (
+  defaultTypeCheck,
   defaultProofSearch,
   checkFelicity,
   checkEntailment
-) where
+  ) where
 
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.List as L           --base
---import qualified System.IO as S           --base
 import qualified Parser.ChartParser as CP
 import qualified Interface.HTML as HTML
 import qualified DTS.UDTT as UD
