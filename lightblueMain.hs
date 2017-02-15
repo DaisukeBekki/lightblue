@@ -1,13 +1,13 @@
 {-# OPTIONS -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-import Options.Applicative                         -- optparse-applicative
+import Options.Applicative                -- optparse-applicative
 import Data.Semigroup ((<>))              --semigroup
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
+import Data.Ratio ((%))                   --base
 import qualified Data.Char as C           --base
 import qualified Data.List as L           --base
-import qualified Data.Ratio as R          --base
 import qualified Data.Fixed as F          --base
 import qualified System.IO as S           --base
 import qualified System.Environment as E -- base
@@ -238,7 +238,7 @@ lightblueMain (Options commands filepath nbest beamw iftypecheck iftime) = do
           let sentences = T.lines contents;
               (premises,hypothesis) = if null sentences
                                          then ([],T.empty)
-                                         else (L.init sentences,L.last sentences)
+                                         else (init sentences, last sentences)
           proverf premises hypothesis
         JSEM -> mapM_ (\j -> do
                           mapM_ T.putStr ["JSeM [", J.jsem_id j, "] "]
@@ -251,7 +251,7 @@ lightblueMain (Options commands filepath nbest beamw iftypecheck iftime) = do
     lightblueMainLocal (Debug i j) = do
       sentence <- T.getLine
       chart <- CP.parse beamw sentence
-      I.printNodes S.stdout I.HTML iftypecheck $ L.concat $ map (\(_,nodes) -> nodes) $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
+      I.printNodes S.stdout I.HTML iftypecheck $ concat $ map (\(_,nodes) -> nodes) $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
     -- |
     -- | Corpus (Parsing demo)
     -- |
@@ -264,7 +264,10 @@ lightblueMain (Options commands filepath nbest beamw iftypecheck iftime) = do
     -- | Treebank Builder
     --
     lightblueMainLocal Treebank = do
-      I.treebankBuilder beamw
+      contents <- case filepath of
+        "-" -> T.getContents
+        _   -> T.readFile filepath
+      I.treebankBuilder beamw $ T.lines contents
 
 -- | lightblue --version
 -- |
@@ -320,12 +323,12 @@ processCorpus beam contents = do
                              "/",
                              show total,
                              " (",
-                             show ((fromRational ((toEnum i R.% toEnum total)*100))::F.Fixed F.E3),
+                             show ((fromRational ((toEnum i % toEnum total)*100))::F.Fixed F.E3),
                              "%)\n",
                              "Execution Time: ",
                              show totaltime,
                              " (average: ",
-                             show ((fromRational ((toEnum (fromEnum totaltime)) R.% toEnum (total*1000000000000)))::F.Fixed F.E3),
+                             show ((fromRational ((toEnum (fromEnum totaltime)) % toEnum (total*1000000000000)))::F.Fixed F.E3),
                              "s/sentence)\n"
                              ]
     where isSentence t = not (T.null t || "（" `T.isSuffixOf` t)
@@ -361,7 +364,7 @@ parseSentence beam score sentence = do
 percent :: (Int,Int) -> String
 percent (i,j) = if j == 0
                    then show (0::F.Fixed F.E2)
-                   else show ((fromRational (toEnum i R.% toEnum j)::F.Fixed F.E2) * 100)
+                   else show ((fromRational (toEnum i % toEnum j)::F.Fixed F.E2) * 100)
 
 {-
 unknownOptionError :: String -> IO()

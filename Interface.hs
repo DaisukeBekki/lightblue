@@ -133,15 +133,14 @@ printLexicalItem style node = case style of
 
 -- | prints the numeration
 printNumeration :: S.Handle -> Style -> T.Text -> IO()
-printNumeration handle style sentence = do 
+printNumeration handle style sentence = do
   numeration <- LEX.setupLexicon sentence
   mapM_ ((T.hPutStrLn handle) . (printLexicalItem style)) numeration
 
 -- | parses sentences in the given corpus and yields a list of SRs in HTML format.
-treebankBuilder :: Int -> IO()
-treebankBuilder beam = do
-  content <- T.getContents
-  nodes <- mapM (CP.simpleParse beam) $ T.lines content
+treebankBuilder :: Int -> [T.Text] -> IO()
+treebankBuilder beam sentences = do
+  nodes <- mapM (CP.simpleParse beam) sentences
   S.putStrLn HTML.htmlHeader4MathML
   T.putStrLn HTML.startMathML
   T.putStrLn $ DTS.toVerticalMathML $ map (CP.sem . head) nodes
