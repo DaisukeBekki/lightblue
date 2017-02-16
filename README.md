@@ -76,11 +76,11 @@ $ chmod 755 tidy
 
 To parse a Japanese sentence and get a text|HTML|TeX|XML representation, execute:
 ```
-$ echo 太郎がパンを食べた。 | lightblue parse -o {text|html|tex}
+$ echo 太郎がパンを食べた。 | lightblue parse -s {text|html|tex}
 ```
 or
 ```
-$ echo 太郎がパンを食べた。 | lightblue parse -o xml | ./tidy
+$ echo 太郎がパンを食べた。 | lightblue parse -s xml | ./tidy
 ```
 
 With '-n|--nbest' option, *lightblue* will show the N-best parse results.
