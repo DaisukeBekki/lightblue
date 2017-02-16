@@ -67,7 +67,7 @@ main :: IO()
 main = customExecParser p opts >>= lightblueMain 
   where opts = info (helper <*> optionParser)
                  ( fullDesc
-                 <> progDesc "Usage: lightblue <global options> COMMAND <local options> <global options>"
+                 <> progDesc "Usage: lightblue COMMAND <local options> <global options>"
                  <> header "lightblue - a Japanese CCG parser with DTS representations (c) Daisuke Bekki and Bekki Laboratory" )
         p = prefs showHelpOnEmpty
 
@@ -92,7 +92,7 @@ optionParser =
     <$> subparser 
       (command "parse"
            (info parseOptionParser
-                 (progDesc "Local options: [-i|--input sentence|corpus] [-o|--output tree|postag|numeration] [-s|--style html|text|tex|xml] (The default values: -i sentence -o tree -s html)" ))
+                 (progDesc "Local options: [-i|--input sentence|corpus] [-o|--output tree|postag|numeration] [-s|--style html|text|tex|xml] [--typecheck] (The default values: -i sentence -o tree -s html)" ))
       <> command "infer"
            (info inferOptionParser
                  (progDesc "Local options: [-p|--prover dts|coq] [-i|--input paragraph|jsem] (The default values: -p dts -i paragraph)" ))
