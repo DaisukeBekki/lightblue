@@ -52,7 +52,7 @@ instance Read Style where
 headerOf :: Style -> String
 headerOf style = case style of
   HTML -> HTML.htmlHeader4MathML
-  TEXT -> take 100 $ repeat '-'
+  TEXT -> replicate 100 '-'
   XML  -> "<?xml version='1.0' encoding='UTF-8'?><root><document id='d0'><sentences>"
   TEX  -> ""
 
@@ -60,7 +60,7 @@ headerOf style = case style of
 interimOf :: Style -> String
 interimOf style = case style of
   HTML -> "<hr size='15' />"
-  TEXT -> take 100 $ repeat '-'
+  TEXT -> replicate 100 '-'
   XML  -> ""
   TEX  -> ""
 
@@ -68,7 +68,7 @@ interimOf style = case style of
 footerOf :: Style -> String
 footerOf style = case style of
   HTML -> HTML.htmlFooter4MathML
-  TEXT -> take 100 $ repeat '-'
+  TEXT -> ""
   XML  -> "</sentences></document></root>"
   TEX  -> ""
 
@@ -96,7 +96,7 @@ printNodes handle HTML typeCheck =
 printNodes handle TEXT _ =
   mapM_ (\node -> do 
                   T.hPutStr handle $ T.toText node
-                  S.hPutStrLn handle $ take 100 $ repeat '-'
+                  S.hPutStrLn handle $ interimOf TEXT
         )
 
 printNodes handle XML _ =

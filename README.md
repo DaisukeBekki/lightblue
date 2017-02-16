@@ -87,14 +87,14 @@ With '-n|--nbest' option, *lightblue* will show the N-best parse results.
 
 With '--time' option, *lightblue* will show the execution time for parsing.
 
-*lightblue* can be used as a part-of-speech tagger when the `-postag` option is specified:
+*lightblue* can be used as a part-of-speech tagger when the `-o postag` option is specified:
 ```
-$ echo 太郎がパンを食べた。 | lightblue parse -t postag
+$ echo 太郎がパンを食べた。 | lightblue parse -o postag
 ```
 
 The following command shows the list of lexical items prepared for pasing the given sentence:
 ```
-$ echo 太郎がパンを食べた。| lightblue parse -t numeration
+$ echo 太郎がパンを食べた。| lightblue parse -o numeration
 ```
 
 If you have a text file (one sentence per line) <corpusfile>, then you can feed it to *lightblue* by:

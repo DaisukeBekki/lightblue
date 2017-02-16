@@ -26,29 +26,29 @@ data Options =
   Version
   | Stat
   | Test
-  | Options Command FilePath Int Int Bool Bool
+  | Options Command FilePath Int Int Bool
     deriving (Show, Eq)
 
 data Command =
-  Parse TaskName ParseInput I.Style
+  Parse ParseInput ParseOutput I.Style Bool
   | Infer ProverName InferInput
   | Debug Int Int
   | Demo
   | Treebank
     deriving (Show, Eq)
 
-data TaskName = PARSE | POSTAG | NUMERATION deriving (Eq,Show)
-instance Read TaskName where
-  readsPrec _ r =
-    [(PARSE,s) | (x,s) <- lex r, map C.toLower x == "parse"]
-    ++ [(POSTAG,s) | (x,s) <- lex r, map C.toLower x == "postag"]
-    ++ [(NUMERATION,s) | (x,s) <- lex r, map C.toLower x == "numeration"]
-
 data ParseInput = SENTENCE | CORPUS deriving (Eq,Show)
 instance Read ParseInput where
   readsPrec _ r =
     [(SENTENCE,s) | (x,s) <- lex r, map C.toLower x == "sentence"]
     ++ [(CORPUS,s) | (x,s) <- lex r, map C.toLower x == "corpus"]
+
+data ParseOutput = TREE | POSTAG | NUMERATION deriving (Eq,Show)
+instance Read ParseOutput where
+  readsPrec _ r =
+    [(TREE,s) | (x,s) <- lex r, map C.toLower x == "tree"]
+    ++ [(POSTAG,s) | (x,s) <- lex r, map C.toLower x == "postag"]
+    ++ [(NUMERATION,s) | (x,s) <- lex r, map C.toLower x == "numeration"]
 
 data InferInput = PARAGRAPH | JSEM deriving (Eq,Show)
 instance Read InferInput where
@@ -87,12 +87,12 @@ optionParser =
              <> hidden 
              <> internal
              <> help "Execute the test code" )
-  <|>
+  <|> 
   Options
     <$> subparser 
       (command "parse"
            (info parseOptionParser
-                 (progDesc "Local options: [-t|--task parse|postag|numeration] [-i|--input sentence|corpus] [-s|--style html|text|tex|xml] (The default values: -t parse -i sentence -s html)" ))
+                 (progDesc "Local options: [-i|--input sentence|corpus] [-o|--output tree|postag|numeration] [-s|--style html|text|tex|xml] (The default values: -i sentence -o tree -s html)" ))
       <> command "infer"
            (info inferOptionParser
                  (progDesc "Local options: [-p|--prover dts|coq] [-i|--input paragraph|jsem] (The default values: -p dts -i paragraph)" ))
@@ -131,16 +131,8 @@ optionParser =
       <> value 24
       <> metavar "INT" )
     <*> switch 
-      ( long "typecheck"
-      <> help "Show type-checking trees for SRs" )
-    <*> switch 
       ( long "time"
       <> help "Show the execution time in stderr" )
-
-debugOptionParser :: Parser Command
-debugOptionParser = Debug
-  <$> argument auto idm
-  <*> argument auto idm
 
 inferOptionParser :: Parser Command
 inferOptionParser = Infer
@@ -159,16 +151,14 @@ inferOptionParser = Infer
       <> value PARAGRAPH
       <> help "Specify input" )
 
+debugOptionParser :: Parser Command
+debugOptionParser = Debug
+  <$> argument auto idm
+  <*> argument auto idm
+
 parseOptionParser :: Parser Command
 parseOptionParser = Parse
   <$> option auto
-    ( long "task"
-    <> short 't'
-    <> metavar "parse|postag|numeration"
-    <> help "Execute the specified task"
-    <> showDefault
-    <> value PARSE )
-  <*> option auto
     ( long "input"
     <> short 'i' 
     <> metavar "sentence|corpus"
@@ -176,18 +166,28 @@ parseOptionParser = Parse
     <> showDefault
     <> value SENTENCE )
   <*> option auto
+    ( long "output"
+    <> short 't'
+    <> metavar "tree|postag|numeration"
+    <> help "Specify the output content"
+    <> showDefault
+    <> value TREE )
+  <*> option auto
     ( long "style"
     <> short 's'
     <> metavar "text|tex|xml|html"
     <> help "Print results in the specified style"
     <> showDefault
     <> value I.HTML )
+  <*> switch 
+    ( long "typecheck"
+    <> help "Show type-checking trees for SRs" )
 
 lightblueMain :: Options -> IO()
 lightblueMain Version = showVersion
 lightblueMain Stat = showStat
 lightblueMain Test = test
-lightblueMain (Options commands filepath nbest beamw iftypecheck iftime) = do
+lightblueMain (Options commands filepath nbest beamw iftime) = do
   start <- Time.getCurrentTime
   -- Main routine
   lightblueMainLocal commands
@@ -201,7 +201,7 @@ lightblueMain (Options commands filepath nbest beamw iftypecheck iftime) = do
     -- |
     -- | Parse
     -- |
-    lightblueMainLocal (Parse task input style) = do
+    lightblueMainLocal (Parse input output style iftypecheck) = do
       let handle = S.stdout
       sentences <- case filepath of
         "-" -> case input of
@@ -214,11 +214,11 @@ lightblueMain (Options commands filepath nbest beamw iftypecheck iftime) = do
           nodes <- CP.simpleParse beamw sentence
           let nbestnodes = take nbest nodes;
               len = length nodes;
-          case task of
-            PARSE      -> I.printNodes      handle style iftypecheck nbestnodes
+          case output of
+            TREE       -> I.printNodes      handle style iftypecheck nbestnodes
             POSTAG     -> I.posTagger       handle style nbestnodes
             NUMERATION -> I.printNumeration handle style sentence
-          S.hPutStrLn S.stderr $ show (min (length nbestnodes) len) ++ " parse result(s) shown out of " ++ show len
+          S.hPutStrLn S.stderr $ "[" ++ show (min (length nbestnodes) len) ++ " parse result(s) shown out of " ++ show len ++ "]"
           S.hPutStrLn handle $ I.interimOf style
           ) sentences
       S.hPutStrLn handle $ I.footerOf style
@@ -252,7 +252,7 @@ lightblueMain (Options commands filepath nbest beamw iftypecheck iftime) = do
     lightblueMainLocal (Debug i j) = do
       sentence <- T.getLine
       chart <- CP.parse beamw sentence
-      I.printNodes S.stdout I.HTML iftypecheck $ concat $ map (\(_,nodes) -> nodes) $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
+      I.printNodes S.stdout I.HTML False $ concat $ map (\(_,nodes) -> nodes) $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
     -- |
     -- | Corpus (Parsing demo)
     -- |
