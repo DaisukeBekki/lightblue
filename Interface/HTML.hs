@@ -24,10 +24,12 @@ class MathML a where
   toMathML :: a -> T.Text
 
 -- | <?xml version='1.0'?>...<body>
+-- original source of MathML stylesheet: http://www.w3.org/Math/XSL/mathml.xsl
+-- original soruce of MathJax script: http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML
 htmlHeader4MathML :: String
 htmlHeader4MathML = "\
     \<?xml version='1.0'?>\
-    \<?xml-stylesheet type='text/xsl' href='http://www.w3.org/Math/XSL/mathml.xsl'?>\
+    \<?xml-stylesheet type='text/xsl' href='Interface/mathml.xsl'?>\
     \<html xmlns='http://www.w3.org/1999/xhtml'>\
     \<head>\
     \  <meta charset='UTF-8'>\
@@ -37,7 +39,7 @@ htmlHeader4MathML = "\
     \    }\
     \  </style>\
     \  <script type='text/javascript'\
-    \    src='http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'>\
+    \    src='Interface/MathJax/MathJax.js?config=TeX-AMS-MML_HTMLorMML'>\
     \  </script>\
     \  <script type='text/x-mathjax-config'>\
     \    MathJax.Hub.Config({\
