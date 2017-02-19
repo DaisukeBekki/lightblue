@@ -15,10 +15,12 @@ module DTS.UDTTwithName (
   Preterm(..),
   Context,
   toVerticalMathML,
+  printVerticalMathML,
   Judgment(..)
   ) where
 
 import qualified Data.Text.Lazy as T
+import qualified Data.Text.Lazy.IO as T
 import Interface.Text
 import Interface.TeX
 import Interface.HTML
@@ -219,6 +221,18 @@ instance MathML Context where
 -- | prints a context vertically.
 toVerticalMathML :: Context -> T.Text
 toVerticalMathML cont = T.concat $ ["<mtable columnalign='left'>"] ++ (map (\(nm,tm) -> T.concat ["<mtr><mtd>", toMathML nm, "<mo>:</mo>", toMathML tm, "</mtd></mtr>"]) $ reverse cont) ++ ["</mtable>"]
+
+-- | prints an SR list vertically.
+printVerticalMathML :: [(VarName,Preterm)] -> IO()
+printVerticalMathML cont = do
+  T.putStr "<mtable columnalign='left'>"
+  mapM_ (\(nm,tm) -> mapM_ T.putStr ["<mtr><mtd>",
+                                     toMathML nm,
+                                     "<mo>:</mo>",
+                                     toMathML tm,
+                                     "</mtd></mtr>"
+                                     ]) cont
+  T.putStrLn "</mtable>"
 
 -- | The data type for a judgment
 data Judgment = Judgment { 

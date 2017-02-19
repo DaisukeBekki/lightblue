@@ -140,10 +140,10 @@ printNumeration handle style sentence = do
 -- | parses sentences in the given corpus and yields a list of SRs in HTML format.
 treebankBuilder :: Int -> [T.Text] -> IO()
 treebankBuilder beam sentences = do
-  nodes <- mapM (CP.simpleParse beam) sentences
   S.putStrLn HTML.htmlHeader4MathML
   T.putStrLn HTML.startMathML
-  T.putStrLn $ DTS.toVerticalMathML $ map (CP.sem . head) nodes
+  nodes <- mapM (CP.simpleParse beam) sentences
+  DTS.printVerticalMathML $ map (CP.sem . head) nodes
   T.putStrLn HTML.endMathML
   S.putStrLn HTML.htmlFooter4MathML
 

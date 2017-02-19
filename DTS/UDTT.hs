@@ -38,6 +38,7 @@ module DTS.UDTT (
   -- * Judgment
   Context,
   toVerticalMathML,
+  printVerticalMathML,
   Judgment(..),
   fromDeBruijnContext,
   fromDeBruijnContextLoop,
@@ -405,13 +406,14 @@ replaceLambda i preterm = deleteLambda i (addLambda i preterm)
 -- | e for variables for eventualities
 -- | indices for asp-operators
 -- | indices for DReL operators
-newtype Indexed a = Indexed { indexing :: Int -> Int -> Int -> Int -> Int -> (a,Int,Int,Int,Int,Int) }
+newtype Indexed a = Indexed { indexing :: Int -> Int -> Int -> Int -> Int -> Int -> (a,Int,Int,Int,Int,Int,Int) }
 
 instance Monad Indexed where
-  return m = Indexed (\u x e a d -> (m,u,x,e,a,d))
-  (Indexed m) >>= f = Indexed (\u x e a d -> let (m',u',x',e',a',d') = m u x e a d;
-                                                 (Indexed n) = f m' in
-                                             n u' x' e' a' d')
+  return m = Indexed (\s u x e a d -> (m,s,u,x,e,a,d))
+  (Indexed m) >>= f = Indexed (\s u x e a d -> let (m',s',u',x',e',a',d') = m s u x e a d;
+                                                   (Indexed n) = f m';
+                                               in
+                                               n s' u' x' e' a' d')
 
 instance Functor Indexed where
   fmap = M.liftM
@@ -421,24 +423,27 @@ instance M.Applicative Indexed where
   (<*>) = M.ap
 
 -- | A sequential number for variable names (i.e. x_1, x_2, ...) in a context
+sIndex :: Indexed Int
+sIndex = Indexed (\s u x e a d -> (s,s+1,u,x,e,a,d))
+
 uIndex :: Indexed Int
-uIndex = Indexed (\u x e a d -> (u,u+1,x,e,a,d))
+uIndex = Indexed (\s u x e a d -> (u,s,u+1,x,e,a,d))
 
 xIndex :: Indexed Int
-xIndex = Indexed (\u x e a d -> (x,u,x+1,e,a,d))
+xIndex = Indexed (\s u x e a d -> (x,s,u,x+1,e,a,d))
 
 eIndex :: Indexed Int
-eIndex = Indexed (\u x e a d -> (e,u,x,e+1,a,d))
+eIndex = Indexed (\s u x e a d -> (e,s,u,x,e+1,a,d))
 
 aspIndex :: Indexed Int
-aspIndex = Indexed (\u x e a d -> (a,u,x,e,a+1,d))
+aspIndex = Indexed (\s u x e a d -> (a,s,u,x,e,a+1,d))
 
 dRelIndex :: Indexed Int
-dRelIndex = Indexed (\u x e a d -> (d,u,x,e,a,d+1))
+dRelIndex = Indexed (\s u x e a d -> (d,s,u,x,e,a,d+1))
 
 -- | re-assigns sequential indices to all asperands that appear in a given preterm.
 initializeIndex :: Indexed a -> a
-initializeIndex (Indexed m) = let (m',_,_,_,_,_) = m 0 0 0 0 0 in m'
+initializeIndex (Indexed m) = let (m',_,_,_,_,_,_) = m 0 0 0 0 0 0 in m'
 
 -- | translates a preterm in de Bruijn notation into a preterm with variable name.
 fromDeBruijn :: [VN.VarName] -- ^ A context (= a list of variable names)
@@ -592,10 +597,6 @@ instance Typeset Context where
 instance MathML Context where
   toMathML = toMathML . fromDeBruijnContext
 
--- | prints a context in vertical manner.
-toVerticalMathML :: Context -> T.Text
-toVerticalMathML = VN.toVerticalMathML . fromDeBruijnContext
-
 -- | translates a context in de Bruijn notation (i.e. [DTS.DependentTypes.Preterm]) 
 -- into one with variable names 
 -- (i.e. [(DTS.DTSwithVarName.VarName, DTS.DTSwithVarName.Preterm)]).
@@ -607,9 +608,32 @@ fromDeBruijnContextLoop :: Context -> Indexed ([VN.VarName], VN.Context)
 fromDeBruijnContextLoop [] = return ([],[])
 fromDeBruijnContextLoop (x:xs) = do
   (varnames,ixs) <- fromDeBruijnContextLoop xs
-  varname <- variableNameFor x
+  i <- sIndex
+  let varname = VN.VarName 's' i
   ix <- fromDeBruijn varnames x
   return $ (varname:varnames,(varname,ix):ixs)
+
+-- | prints a context in vertical manner.
+toVerticalMathML :: Context -> T.Text
+toVerticalMathML = VN.toVerticalMathML . fromDeBruijnContext
+
+-- | A list of semantic representations (the first element is for the first sentence)
+fromDeBruijnSRlist :: [Preterm] -> [(VN.VarName,VN.Preterm)]
+fromDeBruijnSRlist = initializeIndex . (fromDeBruijnSRlistLoop [])
+
+-- | the internal function of the fromDeBruijnSRlist function
+fromDeBruijnSRlistLoop :: [VN.VarName] -> [Preterm] -> Indexed ([(VN.VarName,VN.Preterm)])
+fromDeBruijnSRlistLoop _ [] = return []
+fromDeBruijnSRlistLoop varnames (x:xs) = do
+  i <- sIndex
+  let varname = VN.VarName 's' i
+  ix <- fromDeBruijn varnames x
+  ixs <- fromDeBruijnSRlistLoop (varname:varnames) xs
+  return ((varname,ix):ixs)
+
+-- | prints an SR list in vertical manner.
+printVerticalMathML :: [Preterm] -> IO()
+printVerticalMathML = VN.printVerticalMathML . fromDeBruijnSRlist
 
 -- | The data type for a judgment
 data Judgment = Judgment { 
