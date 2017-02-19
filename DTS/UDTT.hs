@@ -143,13 +143,10 @@ toTextDeBruijn preterm = case preterm of
 
 -- | A type of an element of a type signature, that is, a list of pairs of a preterm and a type.
 -- ex. [entity:type, state:type, event:type, student:entity->type]
-type Signature = (T.Text,Preterm)
+type Signature = [(T.Text,Preterm)]
 
 instance SimpleText Signature where
-  toText (cname,ty) = T.concat $ [toText (Con cname), ":", toText ty]
-
-instance SimpleText [Signature] where
-  toText sigs = T.concat ["[", (T.intercalate ", " $ map toText sigs), "]"]
+  toText sigs = T.concat ["[", (T.intercalate ", " $ map (\(cname,ty) -> T.concat $ [toText (Con cname), ":", toText ty]) sigs), "]"]
 
 {- Syntactic Operations -}
 

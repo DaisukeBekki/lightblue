@@ -37,7 +37,7 @@ type TUEnv = [UD.Preterm]
 type TEnv = [DT.Preterm]
 
 -- SUEnv : UDTTのシグネチャの型
-type SUEnv = [UD.Signature]
+type SUEnv = UD.Signature
 
 -- getList : 環境 env の中で変数 var の値をすべて返す
 getList :: (Eq k, Show k) => [(k, v)] -> k -> [v]

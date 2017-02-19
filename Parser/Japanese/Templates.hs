@@ -75,7 +75,7 @@ lexicalitem :: T.Text                    -- ^ A phonetic form
                -> T.Text                 -- ^ A source of a lexical item, such as a number in the CCG textbook.
                -> Integer                -- ^ A score (0 to 100)
                -> Cat                    -- ^ A syntactic category
-               -> (Preterm, [Signature]) -- ^ A semantic representation (in DTS) and a list of signatures
+               -> (Preterm, Signature) -- ^ A semantic representation (in DTS) and a list of signatures
                -> Node
 lexicalitem pf' source' score' cat' (sem',sig') = Node {rs=LEX, pf=pf', cat=cat', sem=sem', daughters=[], score=(score' % 100), source=source', sig=sig'}
 
@@ -172,7 +172,7 @@ verbCat' caseframe ct = case T.uncons caseframe of
 -- i==2 -> S\NP\NP:       \y.\x.\c.(e:event)X(op(e,x,y)X(ce)
 -- i==3 -> S\NP\NP\NP: \z.\y.\x.\c.(e:event)X(op(e,x,y,z)X(ce)
 -- ...
-verbSR :: T.Text -> Preterm -> T.Text -> (Preterm, [Signature])
+verbSR :: T.Text -> Preterm -> T.Text -> (Preterm, Signature)
 verbSR daihyo eventuality caseframe = 
   let predname = T.concat [daihyo, "/", caseframe] in
   (verbSR' predname caseframe caseframe, [(predname, nPlaceVerbType eventuality caseframe)])
@@ -225,84 +225,84 @@ nPlacePredType i
   | otherwise = Pi entity (nPlaceStateType (i-1))
 
 -- | S\NP: \x.\c.(s:state)Xop(s,x)X(ce)
-predSR :: Int -> T.Text -> (Preterm,[Signature])
+predSR :: Int -> T.Text -> (Preterm,Signature)
 predSR i op | i == 1 = ((Lam (Lam (Sigma state (Sigma (App (App (Con op) (Var 2)) (Var 0)) (App (Var 2) (Var 1)))))), [(op, nPlacePredType 1)])
             | i == 2 = ((Lam (Lam (Lam (Sigma state (Sigma (App (App (App (Con op) (Var 3)) (Var 2)) (Var 0)) (App (Var 2) (Var 1))))))), [(op, nPlacePredType 2)])
             | otherwise = ((Con $ T.concat ["predSR: pred ",op," of ", T.pack (show i), " arguments"]), [])
 
 -- | NP: 
-properNameSR :: T.Text -> (Preterm, [Signature])
+properNameSR :: T.Text -> (Preterm,Signature)
 properNameSR op = ((Lam (App (Var 0) (Con op))), [(op, entity)])
 
 -- | N: 
-commonNounSR :: T.Text -> (Preterm, [Signature])
+commonNounSR :: T.Text -> (Preterm,Signature)
 commonNounSR op = ((Lam (Lam (Sigma state (Sigma (App (App (Con op) (Var 2)) (Var 0)) (App (Var 2) (Var 1)))))), [(op, nPlacePredType 1)])
 
 -- | S\S, S/S: \p.\c.op (pc)
-modalSR :: T.Text -> (Preterm,[Signature])
+modalSR :: T.Text -> (Preterm,Signature)
 modalSR op = ((Lam (Lam (App (Con op) (App (Var 1) (Var 0))))), [(op, Pi Type Type)])
 
 -- | N\N, N/N
---modifierSR :: T.Text -> (Preterm,[Signature])
+--modifierSR :: T.Text -> (Preterm,Signature)
 --modifierSR op = ((Lam (Lam (Lam (App (App (Var 2) (Var 1)) (Lam (Sigma (App (Con op) (Var 0)) (App (Var 2) (Var 1)))))))), [(op, nPlacePredType 1)])
 
 -- | 
 -- >>> S\NP\(S\NP):    \p.\x.\c.op(x,\z.(pz)c)
 -- >>> S\NP\NP\(S\NP): \p.\y.\x.\c.op(x,\z.((py)z)c)
-intensionalEvent :: Int -> T.Text -> (Preterm,[Signature])
+intensionalEvent :: Int -> T.Text -> (Preterm,Signature)
 intensionalEvent i op | i == 1 = ((Lam (Lam (Lam (Sigma event (Sigma (App (App (App (Con op) (Lam (App (App (Var 4) (Var 0)) (Lam Top)))) (Var 2)) (Var 0)) (App (Var 2) (Var 1))))))), [(op,sg)])
                       | i == 2 = ((Lam (Lam (Lam (Lam (App (App (Con op) (Lam (App (App (Var 4) (Var 3)) (Var 1)))) (Var 1)))))), [(op,sg)])
                       | otherwise = (Con $ T.concat ["intensionalEvent: verb ",op," of ", T.pack (show i), " arguments"],[])
   where sg = Pi (Pi entity Type) (Pi entity (Pi event Type))
 
-intensionalState :: Int -> T.Text -> (Preterm, [Signature])
+intensionalState :: Int -> T.Text -> (Preterm,Signature)
 intensionalState i op | i == 1 = ((Lam (Lam (Lam (Sigma state (Sigma (App (App (App (Con op) (Lam (App (App (Var 4) (Var 0)) (Lam Top)))) (Var 2)) (Var 0)) (App (Var 2) (Var 1))))))), [(op,sg)])
                       | i == 2 = ((Lam (Lam (Lam (Lam (App (App (Con op) (Lam (App (App (Var 4) (Var 3)) (Var 1)))) (Var 1)))))), [(op,sg)])
                       | otherwise = (Con $ T.concat ["intensionalState: verb ",op," of ", T.pack (show i), " arguments"], [])
   where sg = Pi (Pi entity Type) (Pi entity (Pi state Type))
 
 -- | T/T: \p.\v.\c.pv(\e.(op e) X ce)
-mannerAdverb :: T.Text -> (Preterm, [Signature])
+mannerAdverb :: T.Text -> (Preterm,Signature)
 mannerAdverb op = ((Lam (Lamvec (Lam (App (Appvec 1 (Var 2)) (Lam (Sigma (App (Con op) (Var 0)) (App (Var 3) (Var 0)))))))), [(op, Pi entity Type)])
 
 -- | N/N, N\N: \n.\x.\c. (nx (\s.(op x) × cs))
-nominalModifier :: T.Text -> (Preterm, [Signature])
+nominalModifier :: T.Text -> (Preterm,Signature)
 nominalModifier op = ((Lam (Lam (Lam (App (App (Var 2) (Var 1)) (Lam (Sigma (App (Con op) (Var 0)) (App (Var 2) (Var 1)))))))), [(op, Pi state Type)])
 
 -- | S\S: \p.\c.p(\e.(op e) X ce)
-eventModifier :: T.Text -> (Preterm, [Signature])
+eventModifier :: T.Text -> (Preterm,Signature)
 eventModifier op = ((Lam (Lam (App (Var 1) (Lam (Sigma (App (Con op) (Var 0)) (App (Var 2) (Var 1))))))), [(op, Pi event Type)])
 
 -- | negation operator
 -- S\S: \p.\c.not (pc)
-negOperator :: (Preterm, [Signature])
+negOperator :: (Preterm, Signature)
 negOperator = ((Lam (Lam (Not (App (Var 1) (Var 0))))), [])
 
 -- | negation operator 2
 -- S\NP\(S\NP): \p.\x.\c.not ((px)c)
-negOperator2 :: (Preterm, [Signature])
+negOperator2 :: (Preterm, Signature)
 negOperator2 = ((Lam (Lam (Lam (Not (App (App (Var 2) (Var 1)) (Var 0)))))), [])
 
 -- | argument case marker
 -- T/(T\NP[cm])\NP[nc]: \x.\p.px
-argumentCM :: (Preterm, [Signature])
+argumentCM :: (Preterm, Signature)
 argumentCM = ((Lam (Lam (App (Var 0) (Var 1)))), [])
 
 -- | adjunct case marker
 -- S1/S1\NP[nc]: \x.\p.\c.p (\e.op(e,x) X ce)
-adjunctCM :: T.Text -> (Preterm, [Signature])
+adjunctCM :: T.Text -> (Preterm, Signature)
 adjunctCM c = ((Lam (Lam (Lam (App (Var 1) (Lam (Sigma (App (App (Con c) (Var 3)) (Var 0)) (App (Var 2) (Var 1)))))))), [(c, nPlaceEventType 1)])
 
 -- | adjunct nominal modifier
 -- N/N\(T/T\NP[nc]): \p.\n.\x.\c.(nx (\s.p(\z.op(s,z)) X cs)
-adjunctNM :: T.Text -> (Preterm, [Signature])
+adjunctNM :: T.Text -> (Preterm, Signature)
 adjunctNM c = ((Lam (Lam (Lam (Lam (Lamvec (App (App (Var 3) (Var 2)) (Lam (Sigma (Appvec 1 (App (Var 5) (Lam (App (App (Con c) (Var 0)) (Var 1))))) (App (Var 3) (Var 1)))))))))), [(c, nPlaceStateType 1)])
 
-andSR :: (Preterm, [Signature])
+andSR :: (Preterm, Signature)
 andSR = ((Lam (Lam (Sigma (Var 1) (Var 1)))), [])
 
-orSR :: (Preterm, [Signature])
+orSR :: (Preterm, Signature)
 orSR = ((Lam (Lam (Pi (Not (Var 1)) (Var 1)))), [])
 
-conjunctionSR :: T.Text -> (Preterm, [Signature])
+conjunctionSR :: T.Text -> (Preterm, Signature)
 conjunctionSR c = ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (Sigma (App (Var 2) (Var 1)) (DRel 0 c (Var 0) (Var 1))))))), [])

@@ -57,7 +57,7 @@ data Node = Node {
   pf :: T.Text,        -- ^ The phonetic form
   cat :: Cat,          -- ^ The syntactic category (in CCG)
   sem :: Preterm,      -- ^ The semantic representation (in DTS)
-  sig :: [Signature],   -- ^ Signature
+  sig :: Signature,    -- ^ Signature
   daughters :: [Node], -- ^ The daughter nodes
   score :: Rational,   -- ^ The score (between 0.00 to 1.00, larger the better)
   source :: T.Text    -- ^ The source of the lexical entry

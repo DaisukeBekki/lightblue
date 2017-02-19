@@ -130,7 +130,7 @@ convcoq preterm = case preterm of
   D.Idpeel m n   -> T.concat ["Idpeel ", (convcoq $ m), " ", (convcoq $ n)]
   D.DRel _ _ _ _ -> "True"
 
-makeCoqSigList :: [DTS.Signature] -> T.Text
+makeCoqSigList :: DTS.Signature -> T.Text
 makeCoqSigList siglist = T.concat (L.nub (map (\ (text, preterm) -> T.concat ["Parameter _", (cname_f text), " : ", (convcoq $ DTS.initializeIndex $ DTS.fromDeBruijn [] $ preterm), ". \n"]) siglist))
 
 runMyCommand :: T.Text -> IO T.Text

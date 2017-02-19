@@ -22,7 +22,7 @@ import Parser.Japanese.Templates
 import DTS.UDTT
 
 -- | defines a lexical entry for an empty category
-ec :: T.Text -> T.Text -> Integer -> Cat -> (Preterm, [Signature]) -> Node
+ec :: T.Text -> T.Text -> Integer -> Cat -> (Preterm, Signature) -> Node
 ec word num r c (s,sg) = Node {rs=EC, pf=word, cat=c, sem=s, daughters=[], score=(r % 100), source=num, sig=sg}
 --ec pf source score cat sem sig = Node EC pf cat sem [] (score % 100) source sig
 
@@ -148,10 +148,10 @@ emptyCategories = [
 {- Some Macros for adding lexical items to lexicon -}
 
 -- | 語彙項目登録用マクロ
-mylex :: [T.Text] -> T.Text -> Cat -> (Preterm, [Signature]) -> [Node]
+mylex :: [T.Text] -> T.Text -> Cat -> (Preterm, Signature) -> [Node]
 mylex wds num cat' (sem',sig') = [(lexicalitem wd num 100 cat' (sem',sig')) | wd <- wds ]
 
-mylex' :: [T.Text] -> T.Text -> Integer -> Cat -> (Preterm, [Signature]) -> [Node]
+mylex' :: [T.Text] -> T.Text -> Integer -> Cat -> (Preterm, Signature) -> [Node]
 mylex' wds num sco cat' (sem',sig') = [(lexicalitem wd num sco cat' (sem',sig')) | wd <- wds ]
 
 verblex :: [T.Text] -> T.Text -> [FeatureValue] -> [FeatureValue] -> T.Text -> T.Text -> Preterm -> [Node]

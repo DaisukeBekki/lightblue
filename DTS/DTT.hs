@@ -81,13 +81,10 @@ instance MathML Preterm where
 
 -- | A type of an element of a type signature, that is, a list of pairs of a preterm and a type.
 -- ex. [entity:type, state:type, event:type, student:entity->type]
-type Signature = (T.Text,Preterm)
+type Signature = [(T.Text,Preterm)]
 
 instance SimpleText Signature where
   toText = toText . toUDTTsig
-
-instance SimpleText [Signature] where
-  toText = toText . (map toUDTTsig)
 
 -- | DTT to UDTT
 toUDTT :: Preterm -> UDTT.Preterm
@@ -120,7 +117,8 @@ toUDTTselector Fst = UDTT.Fst
 toUDTTselector Snd = UDTT.Snd
 
 toUDTTsig :: Signature -> UDTT.Signature
-toUDTTsig (cname,typ) = (cname, toUDTT typ)
+toUDTTsig [] = []
+toUDTTsig ((cname,typ):sigs) = (cname, toUDTT typ):(toUDTTsig sigs)
 
 -- | UDTT to DTT
 toDTT :: UDTT.Preterm -> Preterm
