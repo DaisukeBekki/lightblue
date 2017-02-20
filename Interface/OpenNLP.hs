@@ -35,19 +35,19 @@ instance M.Applicative Indexed where
 
 -- | A sequential number for variable names (i.e. x_1, x_2, ...) in a context
 spanIndex :: Indexed Int
-spanIndex = Indexed (\c t cs ts -> (c,c+1,t,cs,ts))
+spanIndex = Indexed (\spanI tokenI spans tokens -> (spanI,spanI+1,tokenI,spans,tokens))
 
 tokenIndex :: Indexed Int
-tokenIndex = Indexed (\c t cs ts -> (t,c,t+1,cs,ts))
+tokenIndex = Indexed (\spanI tokenI spans tokens -> (tokenI,spanI,tokenI+1,spans,tokens))
 
 pushSpan :: T.Text -> T.Text -> Indexed T.Text
-pushSpan id text = Indexed (\c t cs ts -> (id,c,t,text:cs,ts))
+pushSpan id text = Indexed (\spanI tokenI spans tokens -> (id,spanI,tokenI,text:spans,tokens))
 
 pushToken :: T.Text -> T.Text -> Indexed T.Text
-pushToken id text = Indexed (\c t cs ts -> (id,c,t,cs,text:ts))
+pushToken id text = Indexed (\spanI tokenI spans tokens -> (id,spanI,tokenI,spans,text:tokens))
 
 popResults :: Indexed ([T.Text],[T.Text])
-popResults = Indexed (\c t cs ts -> ((cs,ts),c,t,cs,ts))
+popResults = Indexed (\spanI tokenI spans tokens -> ((spans,tokens),spanI,tokenI,spans,tokens))
 
 initializeIndex :: Indexed a -> a
 initializeIndex (Indexed m) = let (m',_,_,_,_) = m 0 0 [] [] in m'
@@ -59,33 +59,38 @@ node2NLP :: Int         -- ^ an index to start
             -> CCG.Node -- ^ a node (=parse result)
             -> T.Text
 node2NLP i lexonly sentence node = initializeIndex $ do
-                    id <- traverseNode i lexonly node
+                    let sid = "s" ++ (show i)
+                    id <- traverseNode sid lexonly node
                     (cs,ts) <- popResults
-                    return $ T.concat $ (header id) ++ (reverse ts) ++ (mediate id $ CCG.showScore node) ++ (reverse cs) ++ footer
-  where header id = ["<sentence id='", id, "'>", sentence, "<tokens>"]
-        mediate id score = ["</tokens><ccg score='", score, "' id='s0_ccg0' root='", id, "'>"]
+                    return $ T.concat $ (header sid) ++ (reverse ts) ++ (mediate sid id $ CCG.showScore node) ++ (reverse cs) ++ footer
+  where header sid = ["<sentence id='", T.pack sid, "'>", sentence, "<tokens>"]
+        mediate sid id score = ["</tokens><ccg score='", score, "' id='", T.pack sid, "_ccg0' root='", id, "'>"]
         footer = ["</ccg></sentence>"]
 
-traverseNode :: Int -> Bool -> CCG.Node -> Indexed T.Text
-traverseNode i lexonly node = 
+traverseNode :: String            -- ^ Sentence ID
+                -> Bool           -- ^ If True, only lexical items will be printed
+                -> CCG.Node       -- ^ A given node
+                -> Indexed T.Text -- ^ The XML code
+traverseNode sid lexonly node = 
   case CCG.daughters node of
     [] -> do
           j <- tokenIndex
-          let id = T.concat ["s", T.pack $ show i, "_", T.pack $ show j];
+          let id = T.pack $ sid ++ "_" ++ (show j);
               terminalcat = printCat $ CCG.cat node;
           tokenid <- pushToken id $ T.concat ["<token surf='", CCG.pf node, "' base='", CCG.pf node, "' category='", terminalcat, "' id='", id, "' />"]
           k <- spanIndex
-          let id' = T.concat ["s", T.pack $ show i, "_sp", T.pack $ show k]
+          let id' = T.pack $ sid ++ "_sp" ++ (show k)
           pushSpan id' $ T.concat ["<span terminal='", tokenid, "' category='", terminalcat, "' id='", id', "' />"]
     _ -> do
-         ids <- mapM (traverseNode i lexonly) $ CCG.daughters node
+         ids <- mapM (traverseNode sid lexonly) $ CCG.daughters node
          if lexonly 
             then return T.empty
             else do
              j <- spanIndex
-             let id = T.concat ["s", T.pack $ show i, "_sp", T.pack $ show j]
+             let id = T.pack $ sid ++ "_sp" ++ (show j)
              pushSpan id $ T.concat ["<span child='", T.unwords ids, "' rule='", toMathML $ CCG.rs node, "' category='", printCat $ CCG.cat node,"' id='", id, "' />"]
 
+-- | gives the text representation of a syntactic category as an XML attribute
 printCat :: CCG.Cat -> T.Text
 printCat category = case category of
     CCG.SL x y      -> T.concat [printCat x, "/",  printCat' y]

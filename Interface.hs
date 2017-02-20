@@ -74,10 +74,10 @@ footerOf style = case style of
   TEX  -> ""
 
 -- | prints CCG nodes (=parsing results) in a specified style (=HTML|text|XML|TeX)
-printNodes :: S.Handle -> Style -> Bool -> [CCG.Node] -> IO()
-printNodes handle HTML typeCheck =
+printNodes :: S.Handle -> Style -> Int -> T.Text -> Bool -> [CCG.Node] -> IO()
+printNodes handle HTML sid sentence typeCheck =
   mapM_ (\node -> do
-                  mapM_ (T.hPutStrLn handle) ["<p>",CCG.pf node," [",CCG.showScore node,"]</p>",HTML.startMathML,HTML.toMathML node,HTML.endMathML]
+                  mapM_ (T.hPutStrLn handle) ["<p>[",T.pack $ show sid,"] ",sentence," [score=",CCG.showScore node,"]</p>",HTML.startMathML,HTML.toMathML node,HTML.endMathML]
                   if typeCheck 
                      then do
                           T.hPutStrLn handle $ HTML.startMathML;
@@ -94,21 +94,23 @@ printNodes handle HTML typeCheck =
                      else return ()
           )
 
-printNodes handle TEXT _ =
-  mapM_ (\node -> do 
-                  T.hPutStr handle $ T.toText node
-                  S.hPutStrLn handle $ interimOf TEXT
-        )
+printNodes handle TEXT sid sentence _ =
+  mapM_ (\node -> mapM_ (T.hPutStr handle) ["[",T.pack $ show sid,"] ",sentence,"\n",T.toText node,T.pack $ interimOf TEXT])
 
-printNodes handle XML _ =
-  mapM_ (\node -> T.hPutStrLn handle $ NLP.node2NLP 0 False (CCG.pf node) node)
+printNodes handle XML sid sentence _ =
+  mapM_ (\node -> T.hPutStrLn handle $ NLP.node2NLP sid False sentence node)
 
-printNodes handle TEX _ =
+printNodes handle TEX sid sentence _ =
   mapM_ (\node -> T.hPutStrLn handle $ T.concat [
             "\\noindent\\kern-2em\\scalebox{.2",
-            TEX.scaleboxsize $ CCG.pf node,
+            TEX.scaleboxsize sentence,
             "}{\\ensuremath{", 
             -- TEX.toTeX $ CCG.sem node,
+            "]",
+            T.pack $ show sid,
+            "] ",
+            sentence,
+            "\\\\",
             TEX.toTeX node,
             "}}\\medskip"]
             )
