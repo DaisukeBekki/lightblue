@@ -33,6 +33,7 @@ import qualified Interface.TeX as TEX
 import qualified Interface.HTML as HTML
 import qualified Interface.OpenNLP as NLP
 import qualified DTS.UDTT as DTS
+import qualified DTS.UDTTwithName as VN
 import qualified DTS.Prover as Prover
 import qualified DTS.Prover.Judgement as Ty
 
@@ -143,7 +144,10 @@ treebankBuilder beam sentences = do
   S.putStrLn HTML.htmlHeader4MathML
   T.putStrLn HTML.startMathML
   nodes <- mapM (CP.simpleParse beam) sentences
-  DTS.printVerticalMathML $ map (CP.sem . head) nodes
+  (\l -> do
+         VN.printVerticalMathML l
+         VN.srlist2drelTSV l
+         ) $ DTS.fromDeBruijnSRlist $ map (CP.sem . head) nodes
   T.putStrLn HTML.endMathML
   S.putStrLn HTML.htmlFooter4MathML
 

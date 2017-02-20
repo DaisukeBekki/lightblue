@@ -41,7 +41,7 @@ module DTS.UDTT (
   printVerticalMathML,
   Judgment(..),
   fromDeBruijnContext,
-  fromDeBruijnContextLoop,
+  fromDeBruijnSRlist,
   printProofSearchQuery
   ) where
 
