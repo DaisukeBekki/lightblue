@@ -54,17 +54,18 @@ initializeIndex (Indexed m) = let (m',_,_,_,_) = m 0 0 [] [] in m'
 
 -- | prints a node as an XML tag <sentence>...</sentence>
 node2NLP :: Int         -- ^ an index to start
+            -> Int      -- ^ n-th parse
             -> Bool     -- ^ if True, shows lexical items only
             -> T.Text   -- ^ a parsed sentence
             -> CCG.Node -- ^ a node (=parse result)
             -> T.Text
-node2NLP i lexonly sentence node = initializeIndex $ do
+node2NLP i j lexonly sentence node = initializeIndex $ do
                     let sid = "s" ++ (show i)
                     id <- traverseNode sid lexonly node
                     (cs,ts) <- popResults
                     return $ T.concat $ (header sid) ++ (reverse ts) ++ (mediate sid id $ CCG.showScore node) ++ (reverse cs) ++ footer
   where header sid = ["<sentence id='", T.pack sid, "'>", sentence, "<tokens>"]
-        mediate sid id score = ["</tokens><ccg score='", score, "' id='", T.pack sid, "_ccg0' root='", id, "'>"]
+        mediate sid id score = ["</tokens><ccg score='", score, "' id='", T.pack sid, "_ccg",T.pack $ show j,"' root='", id, "'>"]
         footer = ["</ccg></sentence>"]
 
 traverseNode :: String            -- ^ Sentence ID

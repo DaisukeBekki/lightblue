@@ -77,7 +77,7 @@ footerOf style = case style of
 printNodes :: S.Handle -> Style -> Int -> T.Text -> Bool -> [CCG.Node] -> IO()
 printNodes handle HTML sid sentence typeCheck =
   mapM_ (\node -> do
-                  mapM_ (T.hPutStrLn handle) ["<p>[",T.pack $ show sid,"] ",sentence," [score=",CCG.showScore node,"]</p>",HTML.startMathML,HTML.toMathML node,HTML.endMathML]
+                  mapM_ (T.hPutStrLn handle) ["<p>[",T.pack $ show sid,"] ",sentence," [ score=",CCG.showScore node,"]</p>",HTML.startMathML,HTML.toMathML node,HTML.endMathML]
                   if typeCheck 
                      then do
                           T.hPutStrLn handle $ HTML.startMathML;
@@ -97,8 +97,8 @@ printNodes handle HTML sid sentence typeCheck =
 printNodes handle TEXT sid sentence _ =
   mapM_ (\node -> mapM_ (T.hPutStr handle) ["[",T.pack $ show sid,"] ",sentence,"\n",T.toText node,T.pack $ interimOf TEXT])
 
-printNodes handle XML sid sentence _ =
-  mapM_ (\node -> T.hPutStrLn handle $ NLP.node2NLP sid False sentence node)
+printNodes handle XML sid sentence _  =
+  (mapM_ (\(ith,node) -> T.hPutStrLn handle $ NLP.node2NLP sid ith False sentence node)) . (zip ([0..]::[Int]))
 
 printNodes handle TEX sid sentence _ =
   mapM_ (\node -> T.hPutStrLn handle $ T.concat [
@@ -117,7 +117,7 @@ printNodes handle TEX sid sentence _ =
 
 -- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style
 posTagger :: S.Handle -> Style -> [CCG.Node] -> IO()
-posTagger handle XML = mapM_ ((T.hPutStrLn handle) . (NLP.node2NLP 0 True T.empty))
+posTagger handle XML = mapM_ ((T.hPutStrLn handle) . (NLP.node2NLP 0 0 True T.empty))
 posTagger handle style = mapM_ (\node -> mapM_ (T.hPutStrLn handle) $ node2PosTags style node)
 
 -- | A subroutine for `posTagger` function
@@ -132,7 +132,7 @@ printLexicalItem style node = case style of
   TEXT -> T.concat [CCG.pf node, "\t", T.toText (CCG.cat node), " \t", T.toText (CCG.sem node), "\t", CCG.source node, "\t[", CCG.showScore node, "]"]
   TEX  -> TEX.toTeX node
   HTML -> T.concat $ [HTML.startMathML, HTML.toMathML node, HTML.endMathML]
-  XML  -> NLP.node2NLP 0 True (CCG.pf node) node
+  XML  -> NLP.node2NLP 0 0 True (CCG.pf node) node
 
 -- | prints the numeration
 printNumeration :: S.Handle -> Style -> T.Text -> IO()
