@@ -34,17 +34,17 @@ instance M.Applicative Indexed where
   (<*>) = M.ap
 
 -- | A sequential number for variable names (i.e. x_1, x_2, ...) in a context
-childIndex :: Indexed Int
-childIndex = Indexed (\c t cs ts -> (c,c+1,t,cs,ts))
+spanIndex :: Indexed Int
+spanIndex = Indexed (\c t cs ts -> (c,c+1,t,cs,ts))
 
-terminalIndex :: Indexed Int
-terminalIndex = Indexed (\c t cs ts -> (t,c,t+1,cs,ts))
+tokenIndex :: Indexed Int
+tokenIndex = Indexed (\c t cs ts -> (t,c,t+1,cs,ts))
 
-pushChild :: T.Text -> T.Text -> Indexed T.Text
-pushChild id text = Indexed (\c t cs ts -> (id,c,t,text:cs,ts))
+pushSpan :: T.Text -> T.Text -> Indexed T.Text
+pushSpan id text = Indexed (\c t cs ts -> (id,c,t,text:cs,ts))
 
-pushTerminal :: T.Text -> T.Text -> Indexed T.Text
-pushTerminal id text = Indexed (\c t cs ts -> (id,c,t,cs,text:ts))
+pushToken :: T.Text -> T.Text -> Indexed T.Text
+pushToken id text = Indexed (\c t cs ts -> (id,c,t,cs,text:ts))
 
 popResults :: Indexed ([T.Text],[T.Text])
 popResults = Indexed (\c t cs ts -> ((cs,ts),c,t,cs,ts))
@@ -52,35 +52,39 @@ popResults = Indexed (\c t cs ts -> ((cs,ts),c,t,cs,ts))
 initializeIndex :: Indexed a -> a
 initializeIndex (Indexed m) = let (m',_,_,_,_) = m 0 0 [] [] in m'
 
-loop :: Int -> Bool -> CCG.Node -> Indexed T.Text
-loop i lexonly node = 
-  case CCG.daughters node of
-    [] -> do
-          j <- terminalIndex
-          let id = T.concat ["s", T.pack $ show i, "_", T.pack $ show j]
-          pushTerminal id $ T.concat ["<token surf='", CCG.pf node, "' base='", CCG.pf node, "' category='", printCat $ CCG.cat node, "' id='", id, "' />"]
-    _ -> do
-         ids <- mapM (loop i lexonly) $ CCG.daughters node
-         if lexonly 
-            then return T.empty
-            else do
-             j <- childIndex
-             let id = T.concat ["s", T.pack $ show i, "_sp", T.pack $ show j]
-             pushChild id $ T.concat ["<span child='", T.unwords ids, "' rule='", toMathML $ CCG.rs node, "' category='", printCat $ CCG.cat node,"' id='", id, "' />"]
-
--- | prints a node in XML style
+-- | prints a node as an XML tag <sentence>...</sentence>
 node2NLP :: Int         -- ^ an index to start
             -> Bool     -- ^ if True, shows lexical items only
             -> T.Text   -- ^ a parsed sentence
             -> CCG.Node -- ^ a node (=parse result)
             -> T.Text
 node2NLP i lexonly sentence node = initializeIndex $ do
-                    id <- loop i lexonly node
+                    id <- traverseNode i lexonly node
                     (cs,ts) <- popResults
                     return $ T.concat $ (header id) ++ (reverse ts) ++ (mediate id $ CCG.showScore node) ++ (reverse cs) ++ footer
   where header id = ["<sentence id='", id, "'>", sentence, "<tokens>"]
         mediate id score = ["</tokens><ccg score='", score, "' id='s0_ccg0' root='", id, "'>"]
         footer = ["</ccg></sentence>"]
+
+traverseNode :: Int -> Bool -> CCG.Node -> Indexed T.Text
+traverseNode i lexonly node = 
+  case CCG.daughters node of
+    [] -> do
+          j <- tokenIndex
+          let id = T.concat ["s", T.pack $ show i, "_", T.pack $ show j];
+              terminalcat = printCat $ CCG.cat node;
+          tokenid <- pushToken id $ T.concat ["<token surf='", CCG.pf node, "' base='", CCG.pf node, "' category='", terminalcat, "' id='", id, "' />"]
+          k <- spanIndex
+          let id' = T.concat ["s", T.pack $ show i, "_sp", T.pack $ show k]
+          pushSpan id' $ T.concat ["<span terminal='", tokenid, "' category='", terminalcat, "' id='", id', "' />"]
+    _ -> do
+         ids <- mapM (traverseNode i lexonly) $ CCG.daughters node
+         if lexonly 
+            then return T.empty
+            else do
+             j <- spanIndex
+             let id = T.concat ["s", T.pack $ show i, "_sp", T.pack $ show j]
+             pushSpan id $ T.concat ["<span child='", T.unwords ids, "' rule='", toMathML $ CCG.rs node, "' category='", printCat $ CCG.cat node,"' id='", id, "' />"]
 
 printCat :: CCG.Cat -> T.Text
 printCat category = case category of
