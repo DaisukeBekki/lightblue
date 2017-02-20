@@ -104,10 +104,10 @@ $ lightblue demo -f <corpusfile>
 
 To parse a JSeM file and execute inferences therein, then you can feed it to *lightblue* by:
 ```
-$ lightblue parse -i jsem -f <jsemfile>
+$ lightblue infer -i jsem -f <jsemfile>
 ```
 
-To check the inference relations <premise_1>, ..., <premise_n> |- <hypothesis>, execute:
+To check the inference relations <premise_1>, ..., <premise_n> |- <hypothesis>, simply execute:
 ```
 $ lightblue infer -f <filename>
 ```
