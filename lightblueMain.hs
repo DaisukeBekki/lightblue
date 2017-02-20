@@ -26,22 +26,22 @@ data Options =
   Version
   | Stat
   | Test
-  | Options Command FilePath Int Int Bool
+  | Options Command ParseInput FilePath Int Int Bool
     deriving (Show, Eq)
 
 data Command =
-  Parse ParseInput ParseOutput I.Style Bool
-  | Infer ProverName InferInput
+  Parse ParseOutput I.Style Bool
+  | Infer ProverName
   | Debug Int Int
   | Demo
   | Treebank
     deriving (Show, Eq)
 
-data ParseInput = SENTENCE | CORPUS deriving (Eq,Show)
+data ParseInput = SENTENCES | JSEM deriving (Eq,Show)
 instance Read ParseInput where
   readsPrec _ r =
-    [(SENTENCE,s) | (x,s) <- lex r, map C.toLower x == "sentence"]
-    ++ [(CORPUS,s) | (x,s) <- lex r, map C.toLower x == "corpus"]
+    [(SENTENCES,s) | (x,s) <- lex r, map C.toLower x == "sentences"]
+    ++ [(JSEM,s) | (x,s) <- lex r, map C.toLower x == "jsem"]
 
 data ParseOutput = TREE | POSTAG | NUMERATION deriving (Eq,Show)
 instance Read ParseOutput where
@@ -49,12 +49,6 @@ instance Read ParseOutput where
     [(TREE,s) | (x,s) <- lex r, map C.toLower x == "tree"]
     ++ [(POSTAG,s) | (x,s) <- lex r, map C.toLower x == "postag"]
     ++ [(NUMERATION,s) | (x,s) <- lex r, map C.toLower x == "numeration"]
-
-data InferInput = PARAGRAPH | JSEM deriving (Eq,Show)
-instance Read InferInput where
-  readsPrec _ r =
-    [(PARAGRAPH,s) | (x,s) <- lex r, map C.toLower x == "paragraph"]
-    ++ [(JSEM,s) | (x,s) <- lex r, map C.toLower x == "jsem"]
 
 data ProverName = DTS | Coq deriving (Eq,Show)
 instance Read ProverName where
@@ -92,10 +86,10 @@ optionParser =
     <$> subparser 
       (command "parse"
            (info parseOptionParser
-                 (progDesc "Local options: [-i|--input sentence|corpus] [-o|--output tree|postag|numeration] [-s|--style html|text|tex|xml] [--typecheck] (The default values: -i sentence -o tree -s html)" ))
+                 (progDesc "Local options: [-o|--output tree|postag|numeration] [-s|--style html|text|tex|xml] [--typecheck] (The default values: -o tree -s html)" ))
       <> command "infer"
            (info inferOptionParser
-                 (progDesc "Local options: [-p|--prover dts|coq] [-i|--input paragraph|jsem] (The default values: -p dts -i paragraph)" ))
+                 (progDesc "Local options: [-p|--prover dts|coq] (The default values: -p dts)" ))
       <> command "debug"
            (info debugOptionParser
                  (progDesc "shows all the parsing results between the two pivots. Local options: INT INT (No default values)" ))
@@ -109,6 +103,12 @@ optionParser =
       <> commandGroup "Available COMMANDs and thier local options"
       <> help "specifies the task to execute.  See 'Available COMMANDs ...' below about local options for each command"
       )
+    <*> option auto
+      ( long "input"
+        <> short 'i' 
+        <> metavar "sentences|jsem"
+        <> value SENTENCES
+        <> help "Specify input type (default: sentences)" )
     <*> strOption 
       ( long "file"
       <> short 'f'
@@ -143,13 +143,6 @@ inferOptionParser = Infer
       <> showDefault
       <> value DTS
       <> help "Choose prover" )
-  <*> option auto
-    ( long "input"
-      <> short 'i' 
-      <> metavar "paragraph|jsem"
-      <> showDefault
-      <> value PARAGRAPH
-      <> help "Specify input" )
 
 debugOptionParser :: Parser Command
 debugOptionParser = Debug
@@ -159,13 +152,6 @@ debugOptionParser = Debug
 parseOptionParser :: Parser Command
 parseOptionParser = Parse
   <$> option auto
-    ( long "input"
-    <> short 'i' 
-    <> metavar "sentence|corpus"
-    <> help "Specify the style of input texts"
-    <> showDefault
-    <> value SENTENCE )
-  <*> option auto
     ( long "output"
     <> short 't'
     <> metavar "tree|postag|numeration"
@@ -187,10 +173,13 @@ lightblueMain :: Options -> IO()
 lightblueMain Version = showVersion
 lightblueMain Stat = showStat
 lightblueMain Test = test
-lightblueMain (Options commands filepath nbest beamw iftime) = do
+lightblueMain (Options commands input filepath nbest beamw iftime) = do
   start <- Time.getCurrentTime
+  contents <- case filepath of
+    "-" -> T.getContents
+    _   -> T.readFile filepath
   -- Main routine
-  lightblueMainLocal commands
+  lightblueMainLocal commands contents
   -- Show execution time
   stop <- Time.getCurrentTime
   let time = Time.diffUTCTime stop start
@@ -201,16 +190,14 @@ lightblueMain (Options commands filepath nbest beamw iftime) = do
     -- |
     -- | Parse
     -- |
-    lightblueMainLocal (Parse input output style iftypecheck) = do
-      let handle = S.stdout
-      sentences <- case filepath of
-        "-" -> case input of
-                 SENTENCE -> (\x -> [x]) <$> T.getLine
-                 CORPUS   -> T.lines <$> T.getContents
-        _   -> T.lines <$> T.readFile filepath
+    lightblueMainLocal (Parse output style iftypecheck) contents = do
+      let handle = S.stdout;
+          sentences = case input of 
+            SENTENCES -> T.lines contents
+            JSEM -> concat $ map (\j -> (J.premise j) ++ [J.hypothesis j]) $ J.parseJSeM contents
       S.hPutStrLn handle $ I.headerOf style
       mapM_
-        (\(sid,sentence) -> do
+        (\(sentence,sid) -> do
           nodes <- CP.simpleParse beamw sentence
           let nbestnodes = take nbest nodes;
               len = length nodes;
@@ -220,20 +207,19 @@ lightblueMain (Options commands filepath nbest beamw iftime) = do
             NUMERATION -> I.printNumeration handle style sentence
           S.hPutStrLn S.stderr $ "[" ++ show (min (length nbestnodes) len) ++ " parse result(s) shown out of " ++ show len ++ "]"
           S.hPutStrLn handle $ I.interimOf style
-          ) $ zip ([0..]::[Int]) sentences
+          ) $ zip sentences ([0..]::[Int])
       S.hPutStrLn handle $ I.footerOf style
     -- |
     -- | Infer
     -- |
-    lightblueMainLocal (Infer prover input) = do
-      contents <- case filepath of
-        "-" -> T.getContents
-        _   -> T.readFile filepath
-      let proverf = case prover of
+    lightblueMainLocal (Infer prover) contents = do
+      let handle = S.stdout;
+          proverf = case prover of
            DTS -> Prover.checkEntailment beamw nbest
            Coq -> D2P.dts2prolog beamw nbest
+      S.hPutStrLn handle $ I.headerOf I.HTML
       case input of --  $ ligthblue infer -i jsem -f ../JSeM_beta/JSeM_beta_150415.xml
-        PARAGRAPH -> do
+        SENTENCES -> do
           let sentences = T.lines contents;
               (premises,hypothesis) = if null sentences
                                          then ([],T.empty)
@@ -246,28 +232,28 @@ lightblueMain (Options commands filepath nbest beamw iftime) = do
                           proverf (J.premise j) (J.hypothesis j)
                           ) $ J.parseJSeM contents
                 --S.hPutStrLn S.stdout $ I.footerOf I.HTML
+      S.hPutStrLn handle $ I.footerOf I.HTML
     -- |
     -- | Debug
     -- |
-    lightblueMainLocal (Debug i j) = do
-      sentence <- T.getLine
-      chart <- CP.parse beamw sentence
-      I.printNodes S.stdout I.HTML 0 sentence False $ concat $ map (\(_,nodes) -> nodes) $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
+    lightblueMainLocal (Debug i j) contents = do
+      let sentences = case input of 
+            SENTENCES -> T.lines contents
+            JSEM -> concat $ map (\jsem -> (J.premise jsem) ++ [J.hypothesis jsem]) $ J.parseJSeM contents
+      mapM_
+        (\(sentence,sid) -> do
+          chart <- CP.parse beamw sentence
+          I.printNodes S.stdout I.HTML sid sentence False $ concat $ map (\(_,nodes) -> nodes) $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
+          ) $ zip sentences ([0..]::[Int])
     -- |
     -- | Corpus (Parsing demo)
     -- |
-    lightblueMainLocal Demo = do
-      contents <- case filepath of
-        "-" -> T.getContents
-        _   -> T.readFile filepath
+    lightblueMainLocal Demo contents = do
       processCorpus beamw $ T.lines contents
     --
     -- | Treebank Builder
     --
-    lightblueMainLocal Treebank = do
-      contents <- case filepath of
-        "-" -> T.getContents
-        _   -> T.readFile filepath
+    lightblueMainLocal Treebank contents = do
       I.treebankBuilder beamw $ T.lines contents
 
 -- | lightblue --version
