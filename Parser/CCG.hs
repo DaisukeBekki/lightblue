@@ -209,7 +209,7 @@ instance MathML Cat where
     -- newcat = T.replace ">" "&gt;" $ T.replace "<" "&lt;" $ toText (cat node);
     where toMathML' c = if isBaseCategory c 
                         then toMathML c
-                        else T.concat ["<mrow><mo>(</mo>", toMathML' c, "<mo>)</mo></mrow>"]
+                        else T.concat ["<mrow><mo>(</mo>", toMathML c, "<mo>)</mo></mrow>"]
 
 -- | Syntactic features of 
 data Feature = 

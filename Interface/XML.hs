@@ -62,10 +62,10 @@ node2XML :: Int         -- ^ an index to start
             -> T.Text   -- ^ a parsed sentence
             -> Node -- ^ a node (=parse result)
             -> T.Text
-node2XML i j lexonly sentence node =
+node2XML i j iflexonly sentence node =
   initializeIndex $ do
                     let sid = "s" ++ (show i)
-                    id <- traverseNode sid lexonly node
+                    id <- traverseNode sid iflexonly True node
                     (cs,ts) <- popResults
                     return $ T.concat $ (header sid) ++ (reverse ts) ++ (mediate sid id $ showScore node) ++ (reverse cs) ++ footer
   where header sid = ["<sentence id='", T.pack sid, "'>", sentence, "<tokens>"]
@@ -74,9 +74,13 @@ node2XML i j lexonly sentence node =
 
 traverseNode :: String            -- ^ Sentence ID
                 -> Bool           -- ^ If True, only lexical items will be printed
-                -> Node       -- ^ A given node
+                -> Bool           -- ^ True if the node is the root node
+                -> Node           -- ^ A given node
                 -> Indexed T.Text -- ^ The XML code
-traverseNode sid lexonly node = 
+traverseNode sid iflexonly ifroot node =
+  let rootmark = if ifroot
+                    then T.pack "root='true' "
+                    else T.empty in
   case daughters node of
     [] -> do
           j <- tokenIndex
@@ -85,15 +89,15 @@ traverseNode sid lexonly node =
           tokenid <- pushToken id $ T.concat ["<token surf='", pf node, "' base='", pf node, "' category='", terminalcat, "' id='", id, "' />"]
           k <- spanIndex
           let id' = T.pack $ sid ++ "_sp" ++ (show k)
-          pushSpan id' $ T.concat ["<span terminal='", tokenid, "' category='", terminalcat, "' id='", id', "' />"]
+          pushSpan id' $ T.concat ["<span terminal='", tokenid, "' category='", terminalcat, "' ", rootmark, "id='", id', "' />"]
     _ -> do
-         ids <- mapM (traverseNode sid lexonly) $ daughters node
-         if lexonly 
+         ids <- mapM (traverseNode sid iflexonly False) $ daughters node
+         if iflexonly 
             then return T.empty
             else do
              j <- spanIndex
              let id = T.pack $ sid ++ "_sp" ++ (show j)
-             pushSpan id $ T.concat ["<span child='", T.unwords ids, "' rule='", toMathML $ rs node, "' category='", toXML $ cat node,"' id='", id, "' />"]
+             pushSpan id $ T.concat ["<span child='", T.unwords ids, "' rule='", toMathML $ rs node, "' category='", toXML $ cat node,"' ", rootmark, "id='", id, "'/>"]
 
 -- | gives the text representation of a syntactic category as an XML attribute
 
@@ -120,7 +124,7 @@ instance XML Cat where
     where -- A bracketed version of `toText'` function
     toXML' c = if isBaseCategory c
                   then toXML c
-                  else T.concat ["(", toXML' c, ")"]
+                  else T.concat ["(", toXML c, ")"]
 
 instance XML Feature where
   toXML (SF _ f) = T.intercalate "|" $ map (T.pack . show) f

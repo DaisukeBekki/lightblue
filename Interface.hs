@@ -82,7 +82,7 @@ printNodes handle HTML sid sentence ith node typecheck = do
     T.pack $ show ith,
     "] ",
     sentence,
-    " [ score=",
+    " [score=",
     CCG.showScore node,
     "]</p>",
     HTML.startMathML,
