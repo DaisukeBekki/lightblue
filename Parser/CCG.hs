@@ -1,5 +1,5 @@
 {-# OPTIONS -Wall #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, FlexibleInstances #-}
 
 {-|
 Description : Combinatory Categorial Grammar
@@ -19,8 +19,6 @@ module Parser.CCG (
   FeatureValue(..),
   -- * Text and TeX interface
   showScore,
-  -- printF,
-  printPMFs,
   -- * Tests
   isBaseCategory,
   isBunsetsu,
@@ -41,7 +39,6 @@ module Parser.CCG (
 
 import Prelude hiding (id)
 import qualified Data.Text.Lazy as T --text
---import qualified Data.Text.Lazy.IO as T -- for test only
 import qualified Data.List as L      --base
 import qualified Data.Maybe as Maybe --base
 import Data.Fixed                    --base
@@ -145,7 +142,7 @@ instance SimpleText Cat where
                        "S[",
                        toText pos,"][",
                        toText conj,"][",
-                       printPMFs pmf,
+                       toText pmf,
                        "]"
                        ]
     NP [cas]    -> T.concat ["NP[", toText cas, "]"]
@@ -171,7 +168,7 @@ instance Typeset Cat where
                      "S\\f{",
                      toTeX pos,",",
                      toTeX conj,",",
-                     pmfs2TeX pm,
+                     toTeX pm,
                      "}"
                      ]
     NP [cas]    -> T.concat ["\\np\\f{", toText cas, "}"]
@@ -196,7 +193,7 @@ instance MathML Cat where
                      "<msub><mi>S</mi><mstyle color='Purple'><mtable columnalign='left'><mtr><mtd>",
                      toMathML pos,"</mtd></mtr><mtr><mtd><mpadded height='-0.5em'>",
                      toMathML conj,
-                     let x = (pmfs2MathML pm) in 
+                     let x = toMathML pm in 
                        if T.null x
                        then T.empty
                        else T.append "</mtd></mtr><mtr><mtd><mpadded height='-0.5em'>" x,
@@ -212,7 +209,7 @@ instance MathML Cat where
     -- newcat = T.replace ">" "&gt;" $ T.replace "<" "&lt;" $ toText (cat node);
     where toMathML' c = if isBaseCategory c 
                         then toMathML c
-                        else T.concat ["<mrow><mo>(</mo>", toMathML c, "<mo>)</mo></mrow>"]
+                        else T.concat ["<mrow><mo>(</mo>", toMathML' c, "<mo>)</mo></mrow>"]
 
 -- | Syntactic features of 
 data Feature = 
@@ -325,20 +322,20 @@ unifiable f1 f2 = case unifyFeatures [] f1 f2 of
 {- Text interface -}
 
 instance SimpleText Feature where
-  toText (SF i f) = T.concat [fVal2Text f, "<", T.pack (show i), ">"]
-  toText (F f) = fVal2Text f
+  toText (SF i f) = T.concat [toText f, "<", T.pack (show i), ">"]
+  toText (F f) = toText f
 
 -- | prints a value of a syntactic feature.
-fVal2Text :: [FeatureValue] -> T.Text
-fVal2Text [] = T.empty
-fVal2Text [pos] = T.pack $ show pos
-fVal2Text [pos1,pos2] = T.pack $ (show pos1) ++ "|" ++ (show pos2)
-fVal2Text (pos1:(pos2:_)) = T.pack $ (show pos1) ++ "|" ++ (show pos2) ++ "|+"
+instance SimpleText [FeatureValue] where
+  toText [] = T.empty
+  toText [pos] = T.pack $ show pos
+  toText [pos1,pos2] = T.pack $ (show pos1) ++ "|" ++ (show pos2)
+  toText (pos1:(pos2:_)) = T.pack $ (show pos1) ++ "|" ++ (show pos2) ++ "|+"
 
 -- | prints a list of syntactic features each of which ranges over {P,M,PM}.
-printPMFs :: [Feature] -> T.Text
-printPMFs pmfs = T.intercalate "," $ Maybe.catMaybes $ printPMFsLoop ["t","p","n","N","T"] pmfs
- 
+instance SimpleText [Feature] where
+  toText pmfs = T.intercalate "," $ Maybe.catMaybes $ printPMFsLoop ["t","p","n","N","T"] pmfs
+
 printPMFsLoop :: [T.Text] -> [Feature] -> [Maybe T.Text]
 printPMFsLoop labels pmfs = case (labels,pmfs) of
   ([],[])         -> []
@@ -360,14 +357,14 @@ printPMF label pmf = case (label,pmf) of
 {- TeX Interface -}
 
 instance Typeset Feature where
-  toTeX (SF i ft) = T.concat [fVal2TeX ft, ":\\sq{", T.pack (show i), "}"]
-  toTeX (F ft)    = fVal2TeX ft
+  toTeX (SF i ft) = T.concat [toTeX ft, ":\\sq{", T.pack (show i), "}"]
+  toTeX (F ft)    = toTeX ft
 
-fVal2TeX :: [FeatureValue] -> T.Text
-fVal2TeX [] = T.empty
-fVal2TeX [pos] = T.pack $ show pos
-fVal2TeX [pos1,pos2] = T.pack $ (show pos1) ++ "|" ++ (show pos2)
-fVal2TeX (pos1:(pos2:_)) = T.pack $ (show pos1) ++ "|" ++ (show pos2) ++ "|+"
+instance Typeset [FeatureValue] where
+  toTeX [] = T.empty
+  toTeX [pos] = T.pack $ show pos
+  toTeX [pos1,pos2] = T.pack $ (show pos1) ++ "|" ++ (show pos2)
+  toTeX (pos1:(pos2:_)) = T.pack $ (show pos1) ++ "|" ++ (show pos2) ++ "|+"
 
 pmf2TeX :: Bool -> T.Text -> Feature -> Maybe T.Text
 pmf2TeX _ label pmf = case (label,pmf) of
@@ -380,8 +377,8 @@ pmf2TeX _ label pmf = case (label,pmf) of
                  return $ T.concat [x,":\\sq{",T.pack (show i),"}"]
     _ -> return $ T.pack "Error: pmf2TeX"
 
-pmfs2TeX :: [Feature] -> T.Text
-pmfs2TeX pmfs = T.intercalate "{,}" $ Maybe.catMaybes $ pmfs2TeXLoop ["t","p","n","N","T"] pmfs
+instance Typeset [Feature] where
+  toTeX pmfs = T.intercalate "{,}" $ Maybe.catMaybes $ pmfs2TeXLoop ["t","p","n","N","T"] pmfs
 
 pmfs2TeXLoop :: [T.Text] -> [Feature] -> [Maybe T.Text]
 pmfs2TeXLoop labels pmfs = case (labels,pmfs) of
@@ -392,8 +389,8 @@ pmfs2TeXLoop labels pmfs = case (labels,pmfs) of
 {- MathML Interface -}
 
 instance MathML Feature where 
-  toMathML (SF i f) = T.concat ["<mtext>", fVal2TeX f, "</mtext><mo>:</mo><menclose notation='box'><mn>", T.pack (show i), "</mn></menclose>"]
-  toMathML (F f) = T.concat ["<mtext>", fVal2TeX f, "</mtext>"]
+  toMathML (SF i f) = T.concat ["<mtext>", toTeX f, "</mtext><mo>:</mo><menclose notation='box'><mn>", T.pack (show i), "</mn></menclose>"]
+  toMathML (F f) = T.concat ["<mtext>", toTeX f, "</mtext>"]
 
 pmf2MathML :: T.Text -> Feature -> Maybe T.Text
 pmf2MathML label pmf = case (label,pmf) of
@@ -406,8 +403,8 @@ pmf2MathML label pmf = case (label,pmf) of
                  return $ T.concat [x, ":<menclose notation='box'><mn>", T.pack $ show i, "</mn></menclose>"]
   _ -> return $ T.pack "Error: pmf2MathML"
 
-pmfs2MathML :: [Feature] -> T.Text
-pmfs2MathML pmfs = T.intercalate "," $ Maybe.catMaybes $ pmfs2MathMLLoop ["t","p","n","N","T"] pmfs
+instance MathML [Feature] where
+  toMathML pmfs = T.intercalate "," $ Maybe.catMaybes $ pmfs2MathMLLoop ["t","p","n","N","T"] pmfs
 
 pmfs2MathMLLoop :: [T.Text] -> [Feature] -> [Maybe T.Text]
 pmfs2MathMLLoop labels pmfs = case (labels,pmfs) of
@@ -415,7 +412,7 @@ pmfs2MathMLLoop labels pmfs = case (labels,pmfs) of
   ((l:ls),(p:ps)) -> (pmf2MathML l p):(pmfs2MathMLLoop ls ps)
   _ -> [Just $ T.concat ["Error: mismatch in ", T.pack (show labels), " and ", T.pack (show pmfs)]]
 
-{- Tests for syntactic -}
+{- Tests for syntactic categories -}
 
 -- | A test to check if a given category is a base category (i.e. not a functional category nor a category variable).
 isBaseCategory :: Cat -> Bool

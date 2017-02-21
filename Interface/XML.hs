@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances #-}
 
 module Interface.XML (
---  Indexed(..),
+  XML(..),
   node2XML
   ) where
 
@@ -10,7 +10,7 @@ import Prelude hiding (id)
 import qualified Data.Text.Lazy as T      -- text
 import qualified Control.Applicative as M -- base
 import qualified Control.Monad as M       -- base
-import qualified Parser.CCG as CCG
+import Parser.CCG
 import Interface.Text
 import Interface.HTML
 
@@ -60,89 +60,89 @@ node2XML :: Int         -- ^ an index to start
             -> Int      -- ^ n-th parse
             -> Bool     -- ^ if True, shows lexical items only
             -> T.Text   -- ^ a parsed sentence
-            -> CCG.Node -- ^ a node (=parse result)
+            -> Node -- ^ a node (=parse result)
             -> T.Text
 node2XML i j lexonly sentence node =
   initializeIndex $ do
                     let sid = "s" ++ (show i)
                     id <- traverseNode sid lexonly node
                     (cs,ts) <- popResults
-                    return $ T.concat $ (header sid) ++ (reverse ts) ++ (mediate sid id $ CCG.showScore node) ++ (reverse cs) ++ footer
+                    return $ T.concat $ (header sid) ++ (reverse ts) ++ (mediate sid id $ showScore node) ++ (reverse cs) ++ footer
   where header sid = ["<sentence id='", T.pack sid, "'>", sentence, "<tokens>"]
-        mediate sid id score = ["</tokens><ccg score='", score, "' id='", T.pack sid, "_ccg",T.pack $ show j,"' root='", id, "'>"]
+        mediate sid id scor = ["</tokens><ccg score='", scor, "' id='", T.pack sid, "_ccg",T.pack $ show j,"' root='", id, "'>"]
         footer = ["</ccg></sentence>"]
 
 traverseNode :: String            -- ^ Sentence ID
                 -> Bool           -- ^ If True, only lexical items will be printed
-                -> CCG.Node       -- ^ A given node
+                -> Node       -- ^ A given node
                 -> Indexed T.Text -- ^ The XML code
 traverseNode sid lexonly node = 
-  case CCG.daughters node of
+  case daughters node of
     [] -> do
           j <- tokenIndex
           let id = T.pack $ sid ++ "_" ++ (show j);
-              terminalcat = toXML $ CCG.cat node;
-          tokenid <- pushToken id $ T.concat ["<token surf='", CCG.pf node, "' base='", CCG.pf node, "' category='", terminalcat, "' id='", id, "' />"]
+              terminalcat = toXML $ cat node;
+          tokenid <- pushToken id $ T.concat ["<token surf='", pf node, "' base='", pf node, "' category='", terminalcat, "' id='", id, "' />"]
           k <- spanIndex
           let id' = T.pack $ sid ++ "_sp" ++ (show k)
           pushSpan id' $ T.concat ["<span terminal='", tokenid, "' category='", terminalcat, "' id='", id', "' />"]
     _ -> do
-         ids <- mapM (traverseNode sid lexonly) $ CCG.daughters node
+         ids <- mapM (traverseNode sid lexonly) $ daughters node
          if lexonly 
             then return T.empty
             else do
              j <- spanIndex
              let id = T.pack $ sid ++ "_sp" ++ (show j)
-             pushSpan id $ T.concat ["<span child='", T.unwords ids, "' rule='", toMathML $ CCG.rs node, "' category='", toXML $ CCG.cat node,"' id='", id, "' />"]
+             pushSpan id $ T.concat ["<span child='", T.unwords ids, "' rule='", toMathML $ rs node, "' category='", toXML $ cat node,"' id='", id, "' />"]
 
 -- | gives the text representation of a syntactic category as an XML attribute
 
-instance XML CCG.Cat where
+instance XML Cat where
   toXML category = case category of
-    CCG.SL x y      -> T.concat [toXML x, "/",  toXML' y]
-    CCG.BS x y      -> T.concat [toXML x, "\\", toXML' y]
-    CCG.T True i _     -> T.concat ["T", T.pack $ show i]
-    CCG.T False i c     -> T.concat [toXML c, (T.pack $ show i)]
-    CCG.S (pos:(conj:pmf)) -> 
+    SL x y      -> T.concat [toXML x, "/",  toXML' y]
+    BS x y      -> T.concat [toXML x, "\\", toXML' y]
+    T True i _     -> T.concat ["T", T.pack $ show i]
+    T False i c     -> T.concat [toXML c, (T.pack $ show i)]
+    S (pos:(conj:pmf)) -> 
               T.concat [
                        "S[pos=",
                        toXML pos,",conj=",
                        toXML conj,",",
                        toXML pmf,"]"
                        ]
-    CCG.NP [cas]    -> T.concat ["NP[case=", toText cas, "]"]
-    CCG.Sbar [sf]   -> T.concat ["Sbar[form=", toText sf, "]"]
-    CCG.N           -> "N"
-    CCG.CONJ        -> "CONJ"
-    CCG.LPAREN      -> "LPAREN"
-    CCG.RPAREN      -> "RPAREN"
+    NP [cas]    -> T.concat ["NP[case=", toText cas, "]"]
+    Sbar [sf]   -> T.concat ["Sbar[form=", toText sf, "]"]
+    N           -> "N"
+    CONJ        -> "CONJ"
+    LPAREN      -> "LPAREN"
+    RPAREN      -> "RPAREN"
     _ -> "Error in Simpletext Cat"
     where -- A bracketed version of `toText'` function
-    toXML' c = if CCG.isBaseCategory c
+    toXML' c = if isBaseCategory c
                   then toXML c
                   else T.concat ["(", toXML' c, ")"]
 
-instance XML CCG.Feature where
-  toXML (CCG.SF _ f) = T.intercalate "|" $ map (T.pack . show) f
-  toXML (CCG.F f) = T.intercalate "|" $ map (T.pack . show) f
+instance XML Feature where
+  toXML (SF _ f) = T.intercalate "|" $ map (T.pack . show) f
+  toXML (F f) = T.intercalate "|" $ map (T.pack . show) f
 
 -- | prints a list of syntactic features each of which ranges over {P,M,PM}.
-instance XML [CCG.Feature] where
+instance XML [Feature] where
   toXML pmfs = T.intercalate "," $ pmFeatures2XMLloop ["t","p","n","N","T"] pmfs
 
-pmFeatures2XMLloop :: [T.Text] -> [CCG.Feature] -> [T.Text]
+pmFeatures2XMLloop :: [T.Text] -> [Feature] -> [T.Text]
 pmFeatures2XMLloop labels pmfs = case (labels,pmfs) of
       ([],[])         -> []
       ((l:ls),(p:ps)) -> (pmFeature2XML l p):(pmFeatures2XMLloop ls ps)
       _ -> [T.concat ["Error: mismatch in ", T.pack (show labels), " and ", T.pack (show pmfs)]]
 
 -- | prints a syntactic feature that ranges over {P,M,PM}.
-pmFeature2XML :: T.Text -> CCG.Feature -> T.Text
+pmFeature2XML :: T.Text -> Feature -> T.Text
 pmFeature2XML label pmf = case (label,pmf) of
-    (l,CCG.F [CCG.P])   -> T.append l "=+"
-    (l,CCG.F [CCG.M])   -> T.append l "=-"
-    (l,CCG.F [CCG.P,CCG.M]) -> T.append l "=±"
-    (l,CCG.F [CCG.M,CCG.P]) -> T.append l "=±"
-    (l,CCG.SF _ f)  -> pmFeature2XML l (CCG.F f)
+    (l,F [P])   -> T.append l "=+"
+    (l,F [M])   -> T.append l "=-"
+    (l,F [P,M]) -> T.append l "=±"
+    (l,F [M,P]) -> T.append l "=±"
+    (l,SF _ f)  -> pmFeature2XML l (F f)
     _ -> T.concat ["Error: printPMF", T.pack $ show pmf]
 
