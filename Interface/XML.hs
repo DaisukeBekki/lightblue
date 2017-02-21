@@ -1,76 +1,148 @@
 {-# OPTIONS -Wall #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances #-}
 
-{-|
-Description : XML interface
-Copyright   : (c) Daisuke Bekki, 2016
-Licence     : All right reserved
-Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
-Stability   : beta
--}
 module Interface.XML (
-  render
+--  Indexed(..),
+  node2XML
   ) where
 
+import Prelude hiding (id)
+import qualified Data.Text.Lazy as T      -- text
+import qualified Control.Applicative as M -- base
+import qualified Control.Monad as M       -- base
 import qualified Parser.CCG as CCG
-import qualified Interface.Text as T
-import qualified Data.Text.Lazy as T   --text
-import qualified Data.Map as M         --container
-import qualified Text.XML as X         --xml-conduit
-import qualified Data.Fixed as F       --base
-import qualified System.IO as S        --base
+import Interface.Text
+import Interface.HTML
 
---class XMLable a where
---  toXML :: a -> X.Node
+-- | A class with a 'toXML' method.
+class XML a where
+  toXML :: a -> T.Text
 
-myname :: T.Text -> X.Name
-myname t = X.Name (T.toStrict t) Nothing Nothing 
+{- Initializing or Re-indexing -}
 
--- | instance XMLable CCG.Node where
-toXML :: CCG.Node -> X.Node
-toXML node@(CCG.Node _ _ _ _ _ _ _ _) = 
-    case CCG.daughters node of 
-      [] -> X.NodeElement $ X.Element 
-                              (myname $ T.pack $ show $ CCG.rs node)
-                              (M.fromList [
-                                ("pf", T.toStrict $ CCG.pf node),          
-                                ("cat", T.toStrict $ T.toText $ CCG.cat node),
-                                ("dts", T.toStrict $ T.toText $ CCG.sem node),
-                                ("score", T.toStrict $ T.pack $ show ((fromRational $ CCG.score node)::F.Fixed F.E2)),
-                                ("source", T.toStrict $ CCG.source node)
-                                ]) 
-                              []
-      dtrs -> X.NodeElement $ X.Element 
-                                (myname $ T.pack $ show $ CCG.rs node)
-                                (M.fromList [
-                                --("pf", T.toStrict $ CCG.pf (node)),          
-                                 ("cat", T.toStrict $ T.toText $ CCG.cat node),
-                                 ("dts", T.toStrict $ T.toText $ CCG.sem node),
-                                 ("score", T.toStrict $ T.pack $ show ((fromRational $ CCG.score node)::F.Fixed F.E2))
-                                 ]) 
-                                (map toXML dtrs)
+-- | Indexed monad controls indices to be attached to preterms.
+newtype Indexed a = Indexed (Int -> Int -> [T.Text] -> [T.Text] -> (a,Int,Int,[T.Text],[T.Text]))
 
--- | combines a set of CCG nodes into an XML document.
-toXMLDocument :: [CCG.Node] -> X.Document
-toXMLDocument nodes = 
-  X.Document
-    (X.Prologue [X.MiscInstruction (X.Instruction "target" "Daisuke Bekki")] Nothing [])
-    (X.Element (myname "parse-trees") (M.fromList []) $ reverse $ foldNodes (1::Int) $ map toXML nodes)
-    []
-  where foldNodes i ns = case ns of
-          [] -> []
-          (x:xs) -> (X.NodeElement $ X.Element (myname "parse-tree") (M.fromList [("id", T.toStrict $ T.pack $ show i)]) [x]):(foldNodes (i+1) xs)
+instance Monad Indexed where
+  return m = Indexed (\c t cs ts -> (m,c,t,cs,ts))
+  (Indexed m) >>= f = Indexed (\c t cs ts -> let (m',c',t',cs',ts') = m c t cs ts;
+                                                 (Indexed n) = f m' in
+                                             n c' t' cs' ts')
 
--- | This function takes a handle (= stdin, stdout or stderr), a list of CCG nodes, converts it to XML format and prints it out to the handle.
-render :: S.Handle -> [CCG.Node] -> IO()
-render handle nodes = do
-  let text = X.renderText X.def (toXMLDocument nodes)
-  S.hPutStr handle $ T.unpack text
+instance Functor Indexed where
+  fmap = M.liftM
 
---renderSettings :: X.RenderSettings
---renderSettings = X.RenderSettings True [] (X.orderAttrs [("LEX",["pf","cat","dts","soruce","score"])]) (\c -> False)
+instance M.Applicative Indexed where
+  pure = return
+  (<*>) = M.ap
 
-{-
-render2 :: S.Handle -> CCG.Node -> IO()
-render2 handle node = do
--}
+-- | A sequential number for variable names (i.e. x_1, x_2, ...) in a context
+spanIndex :: Indexed Int
+spanIndex = Indexed (\spanI tokenI spans tokens -> (spanI,spanI+1,tokenI,spans,tokens))
+
+tokenIndex :: Indexed Int
+tokenIndex = Indexed (\spanI tokenI spans tokens -> (tokenI,spanI,tokenI+1,spans,tokens))
+
+pushSpan :: T.Text -> T.Text -> Indexed T.Text
+pushSpan id text = Indexed (\spanI tokenI spans tokens -> (id,spanI,tokenI,text:spans,tokens))
+
+pushToken :: T.Text -> T.Text -> Indexed T.Text
+pushToken id text = Indexed (\spanI tokenI spans tokens -> (id,spanI,tokenI,spans,text:tokens))
+
+popResults :: Indexed ([T.Text],[T.Text])
+popResults = Indexed (\spanI tokenI spans tokens -> ((spans,tokens),spanI,tokenI,spans,tokens))
+
+initializeIndex :: Indexed a -> a
+initializeIndex (Indexed m) = let (m',_,_,_,_) = m 0 0 [] [] in m'
+
+-- | prints a node as an XML tag <sentence>...</sentence>
+node2XML :: Int         -- ^ an index to start
+            -> Int      -- ^ n-th parse
+            -> Bool     -- ^ if True, shows lexical items only
+            -> T.Text   -- ^ a parsed sentence
+            -> CCG.Node -- ^ a node (=parse result)
+            -> T.Text
+node2XML i j lexonly sentence node =
+  initializeIndex $ do
+                    let sid = "s" ++ (show i)
+                    id <- traverseNode sid lexonly node
+                    (cs,ts) <- popResults
+                    return $ T.concat $ (header sid) ++ (reverse ts) ++ (mediate sid id $ CCG.showScore node) ++ (reverse cs) ++ footer
+  where header sid = ["<sentence id='", T.pack sid, "'>", sentence, "<tokens>"]
+        mediate sid id score = ["</tokens><ccg score='", score, "' id='", T.pack sid, "_ccg",T.pack $ show j,"' root='", id, "'>"]
+        footer = ["</ccg></sentence>"]
+
+traverseNode :: String            -- ^ Sentence ID
+                -> Bool           -- ^ If True, only lexical items will be printed
+                -> CCG.Node       -- ^ A given node
+                -> Indexed T.Text -- ^ The XML code
+traverseNode sid lexonly node = 
+  case CCG.daughters node of
+    [] -> do
+          j <- tokenIndex
+          let id = T.pack $ sid ++ "_" ++ (show j);
+              terminalcat = toXML $ CCG.cat node;
+          tokenid <- pushToken id $ T.concat ["<token surf='", CCG.pf node, "' base='", CCG.pf node, "' category='", terminalcat, "' id='", id, "' />"]
+          k <- spanIndex
+          let id' = T.pack $ sid ++ "_sp" ++ (show k)
+          pushSpan id' $ T.concat ["<span terminal='", tokenid, "' category='", terminalcat, "' id='", id', "' />"]
+    _ -> do
+         ids <- mapM (traverseNode sid lexonly) $ CCG.daughters node
+         if lexonly 
+            then return T.empty
+            else do
+             j <- spanIndex
+             let id = T.pack $ sid ++ "_sp" ++ (show j)
+             pushSpan id $ T.concat ["<span child='", T.unwords ids, "' rule='", toMathML $ CCG.rs node, "' category='", toXML $ CCG.cat node,"' id='", id, "' />"]
+
+-- | gives the text representation of a syntactic category as an XML attribute
+
+instance XML CCG.Cat where
+  toXML category = case category of
+    CCG.SL x y      -> T.concat [toXML x, "/",  toXML' y]
+    CCG.BS x y      -> T.concat [toXML x, "\\", toXML' y]
+    CCG.T True i _     -> T.concat ["T", T.pack $ show i]
+    CCG.T False i c     -> T.concat [toXML c, (T.pack $ show i)]
+    CCG.S (pos:(conj:pmf)) -> 
+              T.concat [
+                       "S[pos=",
+                       toXML pos,",conj=",
+                       toXML conj,",",
+                       toXML pmf,"]"
+                       ]
+    CCG.NP [cas]    -> T.concat ["NP[case=", toText cas, "]"]
+    CCG.Sbar [sf]   -> T.concat ["Sbar[form=", toText sf, "]"]
+    CCG.N           -> "N"
+    CCG.CONJ        -> "CONJ"
+    CCG.LPAREN      -> "LPAREN"
+    CCG.RPAREN      -> "RPAREN"
+    _ -> "Error in Simpletext Cat"
+    where -- A bracketed version of `toText'` function
+    toXML' c = if CCG.isBaseCategory c
+                  then toXML c
+                  else T.concat ["(", toXML' c, ")"]
+
+instance XML CCG.Feature where
+  toXML (CCG.SF _ f) = T.intercalate "|" $ map (T.pack . show) f
+  toXML (CCG.F f) = T.intercalate "|" $ map (T.pack . show) f
+
+-- | prints a list of syntactic features each of which ranges over {P,M,PM}.
+instance XML [CCG.Feature] where
+  toXML pmfs = T.intercalate "," $ pmFeatures2XMLloop ["t","p","n","N","T"] pmfs
+
+pmFeatures2XMLloop :: [T.Text] -> [CCG.Feature] -> [T.Text]
+pmFeatures2XMLloop labels pmfs = case (labels,pmfs) of
+      ([],[])         -> []
+      ((l:ls),(p:ps)) -> (pmFeature2XML l p):(pmFeatures2XMLloop ls ps)
+      _ -> [T.concat ["Error: mismatch in ", T.pack (show labels), " and ", T.pack (show pmfs)]]
+
+-- | prints a syntactic feature that ranges over {P,M,PM}.
+pmFeature2XML :: T.Text -> CCG.Feature -> T.Text
+pmFeature2XML label pmf = case (label,pmf) of
+    (l,CCG.F [CCG.P])   -> T.append l "=+"
+    (l,CCG.F [CCG.M])   -> T.append l "=-"
+    (l,CCG.F [CCG.P,CCG.M]) -> T.append l "=±"
+    (l,CCG.F [CCG.M,CCG.P]) -> T.append l "=±"
+    (l,CCG.SF _ f)  -> pmFeature2XML l (CCG.F f)
+    _ -> T.concat ["Error: printPMF", T.pack $ show pmf]
+

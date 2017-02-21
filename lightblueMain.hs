@@ -139,7 +139,7 @@ inferOptionParser = Infer
   <$> option auto
     ( long "prover"
       <> short 'p'
-      <> metavar "DTS|Coq" 
+      <> metavar "DTS|Coq"
       <> showDefault
       <> value DTS
       <> help "Choose prover" )
@@ -197,17 +197,17 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
             JSEM -> concat $ map (\j -> (J.premise j) ++ [J.hypothesis j]) $ J.parseJSeM contents
       S.hPutStrLn handle $ I.headerOf style
       mapM_
-        (\(sentence,sid) -> do
+        (\(sid,sentence) -> do
           nodes <- CP.simpleParse beamw sentence
           let nbestnodes = take nbest nodes;
               len = length nodes;
           case output of
-            TREE       -> I.printNodes      handle style sid sentence iftypecheck nbestnodes
+            TREE       -> mapM_ (\(node,ith) -> I.printNodes handle style sid sentence ith node iftypecheck) $ zip nbestnodes ([0..]::[Int])
             POSTAG     -> I.posTagger       handle style nbestnodes
             NUMERATION -> I.printNumeration handle style sentence
           S.hPutStrLn S.stderr $ "[" ++ show (min (length nbestnodes) len) ++ " parse result(s) shown out of " ++ show len ++ "]"
           S.hPutStrLn handle $ I.interimOf style
-          ) $ zip sentences ([0..]::[Int])
+          ) $ zip ([0..]::[Int]) sentences
       S.hPutStrLn handle $ I.footerOf style
     -- |
     -- | Infer
@@ -241,10 +241,11 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
             SENTENCES -> T.lines contents
             JSEM -> concat $ map (\jsem -> (J.premise jsem) ++ [J.hypothesis jsem]) $ J.parseJSeM contents
       mapM_
-        (\(sentence,sid) -> do
+        (\(sid,sentence) -> do
           chart <- CP.parse beamw sentence
-          I.printNodes S.stdout I.HTML sid sentence False $ concat $ map (\(_,nodes) -> nodes) $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
-          ) $ zip sentences ([0..]::[Int])
+          let filterednodes = concat $ map (\(_,nodes) -> nodes) $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
+          mapM_ (\(ith,node) -> I.printNodes S.stdout I.HTML sid sentence ith node False) $ zip ([0..]::[Int]) filterednodes
+          ) $ zip ([0..]::[Int]) sentences
     -- |
     -- | Corpus (Parsing demo)
     -- |
@@ -299,25 +300,25 @@ processCorpus beam contents = do
     stop <- Time.getCurrentTime
     let totaltime = Time.diffUTCTime stop start
     mapM_ (S.hPutStr S.stdout) [
-                             "Results: Full:Partial:Error = ",
-                             show i,
-                             ":",
-                             show j,
-                             ":",
-                             show k,
-                             ", Full/Total = ",
-                             show i,
-                             "/",
-                             show total,
-                             " (",
-                             show ((fromRational ((toEnum i % toEnum total)*100))::F.Fixed F.E3),
-                             "%)\n",
-                             "Execution Time: ",
-                             show totaltime,
-                             " (average: ",
-                             show ((fromRational ((toEnum (fromEnum totaltime)) % toEnum (total*1000000000000)))::F.Fixed F.E3),
-                             "s/sentence)\n"
-                             ]
+      "Results: Full:Partial:Error = ",
+      show i,
+      ":",
+      show j,
+      ":",
+      show k,
+      ", Full/Total = ",
+      show i,
+      "/",
+      show total,
+      " (",
+      show ((fromRational ((toEnum i % toEnum total)*100))::F.Fixed F.E3),
+      "%)\n",
+      "Execution Time: ",
+      show totaltime,
+      " (average: ",
+      show ((fromRational ((toEnum (fromEnum totaltime)) % toEnum (total*1000000000000)))::F.Fixed F.E3),
+      "s/sentence)\n"
+      ]
     where isSentence t = not (T.null t || "（" `T.isSuffixOf` t)
 
 parseSentence :: Int                    -- ^ beam width

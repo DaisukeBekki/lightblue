@@ -14,7 +14,6 @@ module Interface (
   headerOf,
   interimOf,
   footerOf,
-  --
   printNodes,
   posTagger,
   printNumeration,
@@ -31,7 +30,7 @@ import qualified Parser.Japanese.Lexicon as LEX
 import qualified Interface.Text as T
 import qualified Interface.TeX as TEX
 import qualified Interface.HTML as HTML
-import qualified Interface.OpenNLP as NLP
+import qualified Interface.XML as X
 import qualified DTS.UDTT as DTS
 import qualified DTS.UDTTwithName as VN
 import qualified DTS.Prover as Prover
@@ -73,51 +72,75 @@ footerOf style = case style of
   XML  -> "</sentences></document></root>"
   TEX  -> ""
 
--- | prints CCG nodes (=parsing results) in a specified style (=HTML|text|XML|TeX)
-printNodes :: S.Handle -> Style -> Int -> T.Text -> Bool -> [CCG.Node] -> IO()
-printNodes handle HTML sid sentence typeCheck =
-  mapM_ (\node -> do
-                  mapM_ (T.hPutStrLn handle) ["<p>[",T.pack $ show sid,"] ",sentence," [ score=",CCG.showScore node,"]</p>",HTML.startMathML,HTML.toMathML node,HTML.endMathML]
-                  if typeCheck 
-                     then do
-                          T.hPutStrLn handle $ HTML.startMathML;
-                          let trees = map Ty.utreeToMathML $ Prover.checkFelicity (CCG.sig node) [] (CCG.sem node);
-                          -- T.hPutStrLn handle $ DTS.toVerticalMathML $ do
-                          --   t1 <- Ty.checkFelicity (CCG.sig node) [] (CCG.sem node);
-                          --   t2 <- Ty.aspElim t1
-                          --   t3 <- Ty.getTerm t2
-                          --   return $ DTS.betaReduce $ Ty.repositP t3
-                          if null trees 
-                             then return ()
-                             else T.hPutStrLn handle $ head trees
-                          T.hPutStrLn handle $ HTML.endMathML 
-                     else return ()
-          )
+-- | prints a CCG node (=i-th parsing result for a sid-th sentence) in a specified style (=HTML|text|XML|TeX)
+printNodes :: S.Handle -> Style -> Int -> T.Text -> Int -> CCG.Node -> Bool -> IO()
+printNodes handle HTML sid sentence ith node typecheck = do
+  mapM_ (T.hPutStr handle) [
+    "<p>[s",
+    T.pack $ show sid,
+    "-",
+    T.pack $ show ith,
+    "] ",
+    sentence,
+    " [ score=",
+    CCG.showScore node,
+    "]</p>",
+    HTML.startMathML,
+    HTML.toMathML node,
+    HTML.endMathML
+    ]
+  if typecheck 
+     then do
+          T.hPutStrLn handle $ HTML.startMathML;
+          let trees = map Ty.utreeToMathML $ Prover.checkFelicity (CCG.sig node) [] (CCG.sem node);
+              -- T.hPutStrLn handle $ DTS.toVerticalMathML $ do
+              --   t1 <- Ty.checkFelicity (CCG.sig node) [] (CCG.sem node);
+              --   t2 <- Ty.aspElim t1
+              --   t3 <- Ty.getTerm t2
+              --   return $ DTS.betaReduce $ Ty.repositP t3
+          if null trees 
+            then return ()
+            else T.hPutStrLn handle $ head trees
+          T.hPutStrLn handle $ HTML.endMathML
+     else return ()
 
-printNodes handle TEXT sid sentence _ =
-  mapM_ (\node -> mapM_ (T.hPutStr handle) ["[",T.pack $ show sid,"] ",sentence,"\n",T.toText node,T.pack $ interimOf TEXT])
+printNodes handle TEXT sid sentence ith node _ =
+  mapM_ (T.hPutStr handle) [
+    "[s",
+    T.pack $ show sid,
+    "-",
+    T.pack $ show ith,
+    "] ",
+    sentence,
+    "\n",
+    T.toText node,
+    T.pack $ interimOf TEXT,
+    "\n"
+    ]
 
-printNodes handle XML sid sentence _  =
-  (mapM_ (\(ith,node) -> T.hPutStrLn handle $ NLP.node2NLP sid ith False sentence node)) . (zip ([0..]::[Int]))
+printNodes handle XML sid sentence ith node _ =
+  T.hPutStrLn handle $ X.node2XML sid ith False sentence node
 
-printNodes handle TEX sid sentence _ =
-  mapM_ (\node -> T.hPutStrLn handle $ T.concat [
-            "\\noindent\\kern-2em\\scalebox{.2",
-            TEX.scaleboxsize sentence,
-            "}{\\ensuremath{", 
-            -- TEX.toTeX $ CCG.sem node,
-            "]",
-            T.pack $ show sid,
-            "] ",
-            sentence,
-            "\\\\",
-            TEX.toTeX node,
-            "}}\\medskip"]
-            )
+printNodes handle TEX sid sentence ith node _ =
+  mapM_ (T.hPutStr handle) [
+    "\\noindent\\kern-2em\\scalebox{",
+    TEX.scaleboxsize sentence,
+    "}{\\ensuremath{", 
+    -- TEX.toTeX $ CCG.sem node,
+    "[s",
+    T.pack $ show sid,
+    "-",
+    T.pack $ show ith,
+    "] ",
+    sentence,
+    "\\\\",
+    TEX.toTeX node,
+    "}}\\medskip"
+    ]
 
 -- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style
 posTagger :: S.Handle -> Style -> [CCG.Node] -> IO()
-posTagger handle XML = mapM_ ((T.hPutStrLn handle) . (NLP.node2NLP 0 0 True T.empty))
+posTagger handle XML = mapM_ ((T.hPutStrLn handle) . (X.node2XML 0 0 True T.empty))
 posTagger handle style = mapM_ (\node -> mapM_ (T.hPutStrLn handle) $ node2PosTags style node)
 
 -- | A subroutine for `posTagger` function
@@ -132,7 +155,7 @@ printLexicalItem style node = case style of
   TEXT -> T.concat [CCG.pf node, "\t", T.toText (CCG.cat node), " \t", T.toText (CCG.sem node), "\t", CCG.source node, "\t[", CCG.showScore node, "]"]
   TEX  -> TEX.toTeX node
   HTML -> T.concat $ [HTML.startMathML, HTML.toMathML node, HTML.endMathML]
-  XML  -> NLP.node2NLP 0 0 True (CCG.pf node) node
+  XML  -> X.node2XML 0 0 True (CCG.pf node) node
 
 -- | prints the numeration
 printNumeration :: S.Handle -> Style -> T.Text -> IO()
