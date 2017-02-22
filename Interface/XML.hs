@@ -67,10 +67,10 @@ node2XML i j iflexonly sentence node =
                     let sid = "s" ++ (show i)
                     id <- traverseNode sid iflexonly True node
                     (cs,ts) <- popResults
-                    return $ T.concat $ (header sid) ++ (reverse ts) ++ (mediate sid id $ showScore node) ++ (reverse cs) ++ footer
-  where header sid = ["<sentence id='", T.pack sid, "'>", sentence, "<tokens>"]
+                    return $ T.concat $ header ++ (reverse ts) ++ (mediate sid id $ showScore node) ++ (reverse cs) ++ footer
+  where header = ["<tokens>"]
         mediate sid id scor = ["</tokens><ccg score='", scor, "' id='", T.pack sid, "_ccg",T.pack $ show j,"' root='", id, "'>"]
-        footer = ["</ccg></sentence>"]
+        footer = ["</ccg>"]
 
 traverseNode :: String            -- ^ Sentence ID
                 -> Bool           -- ^ If True, only lexical items will be printed
