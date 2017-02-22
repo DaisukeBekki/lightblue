@@ -35,6 +35,7 @@ import qualified DTS.UDTT as DTS
 import qualified DTS.UDTTwithName as VN
 import qualified DTS.Prover as Prover
 import qualified DTS.Prover.Judgement as Ty
+import qualified Classifier.DiscourseRelation as DR
 
 {- Some functions for pretty printing Chart/Nodes -}
 
@@ -111,8 +112,7 @@ printNodes handle TEXT sid sentence _ nodes = do
             sentence,
             "\n"
             ]
-  mapM_ (\(node,ith) ->
-          do
+  mapM_ (\(node,ith) -> do
           mapM_ (T.hPutStr handle) [
             "[parse ",
             T.pack $ show ith,
@@ -183,10 +183,33 @@ treebankBuilder beam sentences = do
   nodes <- mapM (CP.simpleParse beam) sentences
   (\l -> do
          VN.printVerticalMathML l
-         VN.srlist2drelTSV l
+         mapM_ (\(_,preterm) -> sr2drelTSV preterm) l
          ) $ DTS.fromDeBruijnSRlist $ map (CP.sem . head) nodes
   T.putStrLn HTML.endMathML
   S.putStrLn HTML.htmlFooter4MathML
+
+sr2drelTSV :: VN.Preterm -> IO()
+sr2drelTSV preterm = case preterm of
+  VN.Pi _ a b -> do {sr2drelTSV a; sr2drelTSV b}
+  VN.Not a    -> sr2drelTSV a
+  VN.Lam _ m  -> sr2drelTSV m
+  VN.App m n  -> do {sr2drelTSV m; sr2drelTSV n}
+  VN.Sigma _ a b -> do {sr2drelTSV a; sr2drelTSV b}
+  VN.Pair m n -> do {sr2drelTSV m; sr2drelTSV n}
+  VN.Proj _ m -> sr2drelTSV m
+  VN.Lamvec _ m -> sr2drelTSV m
+  VN.Appvec _ m -> sr2drelTSV m
+  VN.Asp _ m -> sr2drelTSV m
+  VN.Succ n -> sr2drelTSV n
+  VN.Natrec e g n -> do{sr2drelTSV e; sr2drelTSV g; sr2drelTSV n}
+  VN.Eq a m n -> do{sr2drelTSV a; sr2drelTSV m; sr2drelTSV n}
+  VN.Refl a m -> do{sr2drelTSV a; sr2drelTSV m}
+  VN.Idpeel m n -> do{sr2drelTSV m; sr2drelTSV n}
+  VN.DRel i t a b -> do
+                     DR.outputTSV i t a b
+                     sr2drelTSV a
+                     sr2drelTSV b
+  _ -> return ()
 
 {-
 -- | prints every box in the (parsed) CYK chart as a TeX source code.
