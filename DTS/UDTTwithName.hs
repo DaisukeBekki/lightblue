@@ -17,12 +17,11 @@ module DTS.UDTTwithName (
   toVerticalMathML,
   printVerticalMathML,
   Judgment(..),
-  srlist2drelTSV
   ) where
 
 import qualified Data.Text.Lazy as T    -- text
 import qualified Data.Text.Lazy.IO as T -- text
-import qualified System.IO as S         -- base
+--import qualified System.IO as S         -- base
 --import Control.Applicative              -- base
 --import Data.Traversable                 -- base
 import Interface.Text
@@ -254,37 +253,3 @@ instance Typeset Judgment where
 instance MathML Judgment where
   toMathML j = T.concat ["<mrow>", toMathML $ context j, "<mo>&vdash;</mo>", toMathML $ term j, "<mo>:</mo>", toMathML $ typ j, "</mrow>"]
 
-srlist2drelTSV :: [(VarName,Preterm)] -> IO()
-srlist2drelTSV = 
-  mapM_ (\(_,preterm) -> f preterm)
-  where f preterm = -- Preterm -> IO()
-          case preterm of
-            Pi _ a b -> do {f a; f b}
-            Not a    -> f a
-            Lam _ m  -> f m
-            App m n  -> do {f m; f n}
-            Sigma _ a b -> do {f a; f b}
-            Pair m n -> do {f m; f n}
-            Proj _ m -> f m
-            Lamvec _ m -> f m
-            Appvec _ m -> f m
-            Asp _ m -> f m
-            Succ n -> f n
-            Natrec e g n -> do{f e; f g; f n}
-            Eq a m n -> do{f a; f m; f n}
-            Refl a m -> do{f a; f m}
-            Idpeel m n -> do{f m; f n}
-            DRel i t a b -> do
-                            mapM_ (T.hPutStr S.stderr) 
-                                  [T.pack $ show i,
-                                   "\t",
-                                   t,
-                                   "\t",
-                                   "subj",
-                                   "\t",
-                                   "obj",
-                                   "\n"
-                                   ]
-                            f a
-                            f b
-            _ -> return ()
