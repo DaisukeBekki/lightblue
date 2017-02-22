@@ -73,70 +73,82 @@ footerOf style = case style of
   TEX  -> ""
 
 -- | prints a CCG node (=i-th parsing result for a sid-th sentence) in a specified style (=HTML|text|XML|TeX)
-printNodes :: S.Handle -> Style -> Int -> T.Text -> Int -> CCG.Node -> Bool -> IO()
-printNodes handle HTML sid sentence ith node typecheck = do
-  mapM_ (T.hPutStr handle) [
-    "<p>[s",
-    T.pack $ show sid,
-    "-",
-    T.pack $ show ith,
-    "] ",
-    sentence,
-    " [score=",
-    CCG.showScore node,
-    "]</p>",
-    HTML.startMathML,
-    HTML.toMathML node,
-    HTML.endMathML
-    ]
-  if typecheck 
-     then do
-          T.hPutStrLn handle $ HTML.startMathML;
-          let trees = map Ty.utreeToMathML $ Prover.checkFelicity (CCG.sig node) [] (CCG.sem node);
-              -- T.hPutStrLn handle $ DTS.toVerticalMathML $ do
-              --   t1 <- Ty.checkFelicity (CCG.sig node) [] (CCG.sem node);
-              --   t2 <- Ty.aspElim t1
-              --   t3 <- Ty.getTerm t2
-              --   return $ DTS.betaReduce $ Ty.repositP t3
-          if null trees 
-            then return ()
-            else T.hPutStrLn handle $ head trees
-          T.hPutStrLn handle $ HTML.endMathML
-     else return ()
+printNodes :: S.Handle -> Style -> Int -> T.Text -> Bool -> [CCG.Node] -> IO()
+printNodes handle HTML sid sentence typecheck nodes = do
+  mapM_ (T.hPutStr handle) ["<p>[s",T.pack $ show sid,"] ",sentence,"</p>"]
+  mapM_ (\(node,ith) -> 
+          do
+          mapM_ (T.hPutStr handle) [
+            "<p>[parse ",
+            T.pack $ show ith,
+            ": score=",CCG.showScore node,
+            "]</p>",
+            HTML.startMathML,
+            HTML.toMathML node,
+            HTML.endMathML
+            ]
+          if typecheck 
+             then do
+                  T.hPutStrLn handle $ HTML.startMathML;
+                  let trees = map Ty.utreeToMathML $ Prover.checkFelicity (CCG.sig node) [] (CCG.sem node);
+                      -- T.hPutStrLn handle $ DTS.toVerticalMathML $ do
+                      --   t1 <- Ty.checkFelicity (CCG.sig node) [] (CCG.sem node);
+                      --   t2 <- Ty.aspElim t1
+                      --   t3 <- Ty.getTerm t2
+                      --   return $ DTS.betaReduce $ Ty.repositP t3
+                  if null trees 
+                    then return ()
+                    else T.hPutStrLn handle $ head trees
+                  T.hPutStrLn handle $ HTML.endMathML
+             else return ()
+        ) $ zip nodes ([0..]::[Int])
 
-printNodes handle TEXT sid sentence ith node _ =
+printNodes handle TEXT sid sentence _ nodes = do
   mapM_ (T.hPutStr handle) [
-    "[s",
-    T.pack $ show sid,
-    "-",
-    T.pack $ show ith,
-    "] ",
-    sentence,
-    "\n",
-    T.toText node,
-    T.pack $ interimOf TEXT,
-    "\n"
-    ]
+            "[s",
+            T.pack $ show sid,
+            "] ",
+            sentence,
+            "\n"
+            ]
+  mapM_ (\(node,ith) ->
+          do
+          mapM_ (T.hPutStr handle) [
+            "[parse ",
+            T.pack $ show ith,
+            "]\n",
+            T.toText node,
+            T.pack $ interimOf TEXT,
+            "\n"
+            ]
+        ) $ zip nodes ([0..]::[Int])
 
-printNodes handle XML sid sentence ith node _ =
-  T.hPutStrLn handle $ X.node2XML sid ith False sentence node
+printNodes handle XML sid sentence _ nodes = do
+  mapM_ (T.hPutStr handle) ["<sentence id='s", T.pack $ show sid, "'>", sentence]
+  mapM_ (\(node,ith) ->
+    T.hPutStr handle $ X.node2XML sid ith False sentence node
+    ) $ zip nodes ([0..]::[Int])
+  T.hPutStrLn handle "</sentence>"
 
-printNodes handle TEX sid sentence ith node _ =
-  mapM_ (T.hPutStr handle) [
-    "\\noindent\\kern-2em\\scalebox{",
-    TEX.scaleboxsize sentence,
-    "}{\\ensuremath{", 
-    -- TEX.toTeX $ CCG.sem node,
-    "[s",
-    T.pack $ show sid,
-    "-",
-    T.pack $ show ith,
-    "] ",
-    sentence,
-    "\\\\",
-    TEX.toTeX node,
-    "}}\\medskip"
-    ]
+printNodes handle TEX sid sentence _ nodes =
+  mapM_ (\(node,ith) -> 
+          do
+          mapM_ (T.hPutStr handle) [
+            "\\noindent\\kern-2em\\scalebox{",
+            TEX.scaleboxsize sentence,
+            "}{\\ensuremath{", 
+            -- TEX.toTeX $ CCG.sem node,
+            "[s",
+            T.pack $ show sid,
+            "-",
+            T.pack $ show ith,
+            "] ",
+            sentence,
+            "\\\\",
+            TEX.toTeX node,
+            "}}\\medskip"
+            ]
+        ) $ zip nodes ([0..]::[Int])
 
 -- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style
 posTagger :: S.Handle -> Style -> [CCG.Node] -> IO()

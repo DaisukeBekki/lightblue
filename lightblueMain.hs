@@ -202,7 +202,7 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
           let nbestnodes = take nbest nodes;
               len = length nodes;
           case output of
-            TREE       -> mapM_ (\(node,ith) -> I.printNodes handle style sid sentence ith node iftypecheck) $ zip nbestnodes ([0..]::[Int])
+            TREE       -> I.printNodes handle style sid sentence iftypecheck nbestnodes
             POSTAG     -> I.posTagger       handle style nbestnodes
             NUMERATION -> I.printNumeration handle style sentence
           S.hPutStrLn S.stderr $ "[" ++ show (min (length nbestnodes) len) ++ " parse result(s) shown out of " ++ show len ++ "]"
@@ -244,7 +244,7 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
         (\(sid,sentence) -> do
           chart <- CP.parse beamw sentence
           let filterednodes = concat $ map (\(_,nodes) -> nodes) $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
-          mapM_ (\(ith,node) -> I.printNodes S.stdout I.HTML sid sentence ith node False) $ zip ([0..]::[Int]) filterednodes
+          I.printNodes S.stdout I.HTML sid sentence False filterednodes
           ) $ zip ([0..]::[Int]) sentences
     -- |
     -- | Corpus (Parsing demo)
