@@ -1,7 +1,7 @@
 {-# OPTIONS -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-import Options.Applicative                --optparse-applicative
+import Options.Applicative hiding ((<>))  --optparse-applicative
 import Data.Semigroup ((<>))              --semigroup
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
