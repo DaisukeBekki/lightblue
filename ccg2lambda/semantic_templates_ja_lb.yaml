@@ -1,0 +1,64 @@
+##### Semantic templates for lightblue (Japanese) #####
+
+##### Unary lexical rules #####
+
+# S ==> Sbar
+- category: Sbar
+  rule: WRAP
+  child0_category: S
+  semantics: \S. S(\v.True)
+
+##### Semantic templates #####
+
+# Proper name
+- category: T1/(T1\NP)
+  semantics: \E F. F(E)
+  coq_type: Entity
+
+# Case marker
+- category: T1/(T1\NP)\NP #T1/(T1\NP[case=ga])\NP
+  semantics: \E Q F. F(Q)
+
+- category: N
+  semantics: \E x. E(x)
+
+# - category: T1/(T1\NP)/N
+#   semantics: \E F S K. exists x. F(x) & ,S,K)
+#   surf: ∃ # it seems NLTK/python does not accept this symbol
+
+# Postposition
+- category: S[pos=v:5:k|v:5:s|v:5:t|v:5:n|v:5:m|v:5:r|v:5:w|v:5:g|v:5:z|v:5:b|v:5:IKU|v:5:YUK|v:5:ARU|v:5:NAS|v:5:TOW|v:1|v:K|v:S|v:SN|v:Z|v:URU|a:i:auo|a:i:i|a:i:NAS|a:i:TII|a:BES|n:da|n:na|n:no|n:ni|n:\emp|n:tar,conj=neg|cont|term|attr|hyp|imp|pre|nstem|vo:r|vo:s|vo:e|neg+l|te,t=±,p=±,n=±,N=-,T=-]1/S[pos=v:5:k|v:5:s|v:5:t|v:5:n|v:5:m|v:5:r|v:5:w|v:5:g|v:5:z|v:5:b|v:5:IKU|v:5:YUK|v:5:ARU|v:5:NAS|v:5:TOW|v:1|v:K|v:S|v:SN|v:Z|v:URU|a:i:auo|a:i:i|a:i:NAS|a:i:TII|a:BES|n:da|n:na|n:no|n:ni|n:\emp|n:tar,conj=neg|cont|term|attr|hyp|imp|pre|nstem|vo:r|vo:s|vo:e|neg+l|te,t=±,p=±,n=±,N=-,T=-]1\NP[case=nc]
+# This category cannote abbreviated as S1/(S1\NP)
+# "S" and "1" are separated by a list of features, as S[...]1/S[...]1\NP
+  semantics: \E x S K. S(\e.(E(e,x) & K(e)))
+  coq_type: Event -> Entity -> Prop
+  # eg. で
+
+- category: S\NP
+  coq_type: Event -> Entity -> Prop
+  semantics: \E x K. exists e. (E(e,x) & K(e))
+  # semantics: \E x K. sigma(event,\v.sigma(E(v,x),\u.K(v)))
+
+- category: S\NP\NP
+  coq_type: Event -> Entity -> Entity -> Prop
+  semantics: \E y x K. exists e. (E(e,x,y) & K(e))
+
+- category: S\NP\NP\NP
+  coq_type: Event -> Entity -> Entity -> Prop
+  semantics: \E z y x K. exists e. (E(e,x,y,z) & K(e))
+
+- category: S\S
+  semantics: \E X. X
+  # surf: ん
+
+##### Lexical entries #####
+
+# Past tense marker
+- category: S\S
+  semantics: \E S K. S(\e.(past(e) & K(e)))
+  # semantics: \E S K. S(\v.sigma(past(v),\u.K(v)))
+  surf: た
+
+- category: S\S
+  semantics: \E S K. S(\e.(past(e) & K(e)))
+  surf: だ
