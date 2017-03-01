@@ -10,13 +10,13 @@ Maintainer  :
 Stability   : beta
 -}
 
-import qualified Data.Text.Lazy as T
-import qualified Logic.DependentTypes as DTS
-
 module Logic.DTS2Coq (
   sigmaElimination,
   dts2coq
   ) where
+
+import qualified Data.Text.Lazy as T
+import qualified DTS.UDTT as DTS
 
 sigmaElimination :: DTS.Preterm -> DTS.Preterm
 sigmaElimiantion preterm = case preterm of
@@ -46,6 +46,7 @@ sigmaElimiantion preterm = case preterm of
     Idpeel m n -> Idpell m n
 
 dts2coq :: DTS.Preterm -> T.Text
+dts2coq preterm = case preterm of
     Var i   -> T.pack (show i)
     Con c   -> c
     Type    -> "type"

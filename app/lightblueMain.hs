@@ -20,7 +20,7 @@ import qualified Interface.Text as T
 import qualified Interface.JSeM as J
 import qualified DTS.UDTT as DTS
 import qualified DTS.Prover as Prover
-import qualified DTStoProlog as D2P
+import qualified DTS.DTStoProlog as D2P
 
 data Options =
   Version
@@ -202,13 +202,12 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
           let nbestnodes = take nbest nodes;
               len = length nodes;
           case output of
-            TREE       -> I.printNodes handle style sid sentence iftypecheck nbestnodes
+            TREE       -> I.printNodes      handle style sid sentence iftypecheck nbestnodes
             POSTAG     -> I.posTagger       handle style nbestnodes
             NUMERATION -> I.printNumeration handle style sentence
-          S.hPutStrLn S.stderr $ "[" ++ show (min (length nbestnodes) len) ++ " parse result(s) shown out of " ++ show len ++ "]"
-          S.hPutStrLn handle $ I.interimOf style
+          S.hPutStrLn handle $ I.interimOf style $ "[" ++ show (min (length nbestnodes) len) ++ " parse result(s) shown out of " ++ show len ++ " for s" ++ show sid ++ "]"
           ) $ zip ([0..]::[Int]) sentences
-      S.hPutStrLn handle $ I.footerOf style
+      S.hPutStr handle $ I.footerOf style
     -- |
     -- | Infer
     -- |

@@ -9,7 +9,7 @@ Maintainer  : Ribeka Tanaka
 Stability   : beta
 -}
 
-module DTStoProlog (
+module DTS.DTStoProlog (
   dts2prolog
   ) where
 

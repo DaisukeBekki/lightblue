@@ -59,10 +59,9 @@ initializeIndex (Indexed m) = let (m',_,_,_,_) = m 0 0 [] [] in m'
 node2XML :: Int         -- ^ an index to start
             -> Int      -- ^ n-th parse
             -> Bool     -- ^ if True, shows lexical items only
-            -> T.Text   -- ^ a parsed sentence
             -> Node -- ^ a node (=parse result)
             -> T.Text
-node2XML i j iflexonly sentence node =
+node2XML i j iflexonly node =
   initializeIndex $ do
                     let sid = "s" ++ (show i)
                     id <- traverseNode sid iflexonly True node

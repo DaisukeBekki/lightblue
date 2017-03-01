@@ -112,7 +112,7 @@ printNodes handle XML sid sentence _ nodes = do
   S.hPutStr handle $ "<sentence id='s" ++ show sid ++ "'>"
   T.hPutStr handle sentence
   mapM_ (\(node,ith) ->
-          T.hPutStr handle $ X.node2XML sid ith False sentence node
+          T.hPutStr handle $ X.node2XML sid ith False node
         ) $ zip nodes ([0..]::[Int])
   S.hPutStr handle "</sentence>"
 
@@ -134,7 +134,7 @@ printNodes handle TEX sid sentence _ nodes = do
 
 -- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style
 posTagger :: S.Handle -> Style -> [CCG.Node] -> IO()
-posTagger handle XML = mapM_ ((T.hPutStrLn handle) . (X.node2XML 0 0 True T.empty))
+posTagger handle XML = mapM_ ((T.hPutStrLn handle) . (X.node2XML 0 0 True))
 posTagger handle style = mapM_ (\node -> mapM_ (T.hPutStrLn handle) $ node2PosTags style node)
 
 -- | A subroutine for `posTagger` function
@@ -149,7 +149,7 @@ printLexicalItem style node = case style of
   TEXT -> T.concat [CCG.pf node, "\t", T.toText (CCG.cat node), " \t", T.toText (CCG.sem node), "\t", CCG.source node, "\t[", CCG.showScore node, "]"]
   TEX  -> TEX.toTeX node
   HTML -> T.concat $ [HTML.startMathML, HTML.toMathML node, HTML.endMathML]
-  XML  -> X.node2XML 0 0 True (CCG.pf node) node
+  XML  -> X.node2XML 0 0 True node
 
 -- | prints the numeration
 printNumeration :: S.Handle -> Style -> T.Text -> IO()
