@@ -1,8 +1,8 @@
 # README
 ## What is this repository for?
 
-* *lightblue* is a Japanese CCG parser with DTS representations.  
-* Current version: 0.1.6.0.  
+* *lightblue* is a Japanese CCG parser with DTS representations
+* Current version: 0.1.6.4  
 * Copyright owner: Daisuke Bekki
 
 

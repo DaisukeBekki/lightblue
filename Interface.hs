@@ -58,10 +58,10 @@ headerOf style = case style of
   TEX  -> ""
 
 -- | interim in style
-interimOf :: Style -> String
-interimOf style = case style of
+interimOf :: Style -> String -> String
+interimOf style text = case style of
   HTML -> "<hr size='15' />"
-  TEXT -> replicate 100 '-'
+  TEXT -> "------" ++ text ++ (replicate (94-(length text)) '-')
   XML  -> ""
   TEX  -> ""
 
@@ -76,18 +76,14 @@ footerOf style = case style of
 -- | prints a CCG node (=i-th parsing result for a sid-th sentence) in a specified style (=HTML|text|XML|TeX)
 printNodes :: S.Handle -> Style -> Int -> T.Text -> Bool -> [CCG.Node] -> IO()
 printNodes handle HTML sid sentence typecheck nodes = do
-  mapM_ (T.hPutStr handle) ["<p>[s",T.pack $ show sid,"] ",sentence,"</p>"]
-  mapM_ (\(node,ith) -> 
-          do
-          mapM_ (T.hPutStr handle) [
-            "<p>[parse ",
-            T.pack $ show ith,
-            ": score=",CCG.showScore node,
-            "]</p>",
-            HTML.startMathML,
-            HTML.toMathML node,
-            HTML.endMathML
-            ]
+  S.hPutStr handle $ "<p>[s" ++ show sid ++ "] "
+  T.hPutStr handle sentence
+  S.hPutStr handle "</p>"
+  mapM_ (\(node,ith) -> do
+          S.hPutStr handle $ "<p>[parse " ++ show ith ++ ": score="
+          T.hPutStr handle $ CCG.showScore node 
+          S.hPutStr handle "]</p>"
+          mapM_ (T.hPutStr handle) [HTML.startMathML,HTML.toMathML node,HTML.endMathML]
           if typecheck 
              then do
                   T.hPutStrLn handle $ HTML.startMathML;
@@ -105,46 +101,32 @@ printNodes handle HTML sid sentence typecheck nodes = do
         ) $ zip nodes ([0..]::[Int])
 
 printNodes handle TEXT sid sentence _ nodes = do
-  mapM_ (T.hPutStr handle) [
-            "[s",
-            T.pack $ show sid,
-            "] ",
-            sentence,
-            "\n"
-            ]
+  S.hPutStr handle $ "[s" ++ show sid ++ "] "
+  T.hPutStrLn handle sentence
   mapM_ (\(node,ith) -> do
-          mapM_ (T.hPutStr handle) [
-            "[parse ",
-            T.pack $ show ith,
-            "]\n",
-            T.toText node,
-            T.pack $ interimOf TEXT,
-            "\n"
-            ]
+           S.hPutStrLn handle $ interimOf TEXT $ "[parse tree No." ++ (show ith) ++ " for s" ++ (show sid) ++ "]"
+           T.hPutStr handle $ T.toText node
         ) $ zip nodes ([0..]::[Int])
 
 printNodes handle XML sid sentence _ nodes = do
-  mapM_ (T.hPutStr handle) ["<sentence id='s", T.pack $ show sid, "'>", sentence]
+  S.hPutStr handle $ "<sentence id='s" ++ show sid ++ "'>"
+  T.hPutStr handle sentence
   mapM_ (\(node,ith) ->
-    T.hPutStr handle $ X.node2XML sid ith False sentence node
-    ) $ zip nodes ([0..]::[Int])
-  T.hPutStrLn handle "</sentence>"
+          T.hPutStr handle $ X.node2XML sid ith False sentence node
+        ) $ zip nodes ([0..]::[Int])
+  S.hPutStr handle "</sentence>"
 
-printNodes handle TEX sid sentence _ nodes =
-  mapM_ (\(node,ith) -> 
-          do
+printNodes handle TEX sid sentence _ nodes = do
+  S.hPutStr handle $ "\\noindent\\kern-2em[s" ++ show sid ++ "] "
+  T.hPutStr handle sentence
+  S.hPutStr handle "\\\\"
+  mapM_ (\(node,ith) -> do
           mapM_ (T.hPutStr handle) [
-            "\\noindent\\kern-2em\\scalebox{",
+            "\\scalebox{",
             TEX.scaleboxsize sentence,
-            "}{\\ensuremath{", 
-            -- TEX.toTeX $ CCG.sem node,
-            "[s",
-            T.pack $ show sid,
-            "-",
+            "}{\\ensuremath{[parse ", 
             T.pack $ show ith,
-            "] ",
-            sentence,
-            "\\\\",
+            "]",
             TEX.toTeX node,
             "}}\\medskip"
             ]
@@ -188,6 +170,7 @@ treebankBuilder beam sentences = do
   T.putStrLn HTML.endMathML
   S.putStrLn HTML.htmlFooter4MathML
 
+-- | traverses a DTS preterm and output a TSV line when finding a DRel (used in the `lightblue treebank` command)
 sr2drelTSV :: VN.Preterm -> IO()
 sr2drelTSV preterm = case preterm of
   VN.Pi _ a b -> do {sr2drelTSV a; sr2drelTSV b}
