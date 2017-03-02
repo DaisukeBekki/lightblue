@@ -163,10 +163,22 @@ treebankBuilder beam sentences = do
   S.putStrLn HTML.htmlHeader4MathML
   T.putStrLn HTML.startMathML
   nodes <- mapM (CP.simpleParse beam) sentences
-  (\l -> do
-         VN.printVerticalMathML l
-         mapM_ (\(_,preterm) -> sr2drelTSV preterm) l
-         ) $ DTS.fromDeBruijnSRlist $ map (CP.sem . head) nodes
+  --S.putStr "Nodes: "
+  --S.putStrLn $ show $ length nodes
+  let srs = DTS.fromDeBruijnSRlist $ map (CP.sem . head) nodes
+  S.putStrLn "<mtable columnalign='left'>"
+  mapM_ (\(sentence,(v,term)) -> 
+            mapM_ T.putStr ["<mtr><mtd><mtext color='Purple'>",
+                            sentence,
+                            "</mtext></mtd></mtr><mtr><mtd>",
+                            HTML.toMathML v,
+                            "<mo>:</mo>",
+                            HTML.toMathML term,
+                            "</mtd></mtr>"
+                            ]
+        ) $ zip sentences srs
+  S.putStrLn "</mtable>"
+  mapM_ (\(_,preterm) -> sr2drelTSV preterm) srs
   T.putStrLn HTML.endMathML
   S.putStrLn HTML.htmlFooter4MathML
 

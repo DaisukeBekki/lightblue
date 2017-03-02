@@ -43,7 +43,7 @@ setupLexicon :: T.Text -> IO(LexicalItems)
 setupLexicon sentence = do
   --  1. Setting up lexical items provided by JUMAN++
   lightbluepath <- E.getEnv "LIGHTBLUE"
-  jumandic <- T.readFile $ lightbluepath ++ "Parser/Japanese/Juman.dic"
+  jumandic <- T.readFile $ lightbluepath ++ "src/Parser/Japanese/Juman.dic"
   let jumandicFiltered = filter (\l -> (head l) `T.isInfixOf` sentence) $ map (T.split (=='\t')) (T.lines jumandic)
   let (jumandicParsed,(cn,pn)) = L.foldl' parseJumanLine ([],(M.empty,M.empty)) $ jumandicFiltered
   --  2. Setting up private lexicon
@@ -163,7 +163,6 @@ constructConjunction daihyo =
     `SL` (T False 1 (S [F anyPos, F[Term,NTerm,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]]))), 
     ((Lam (Lam (Sigma (App (Var 1) (Lam Top)) (DRel 0 daihyo (Proj Snd $ Asp 1 (Sigma Type (Var 0))) (Var 0))))), []))
     ]
-
 
 constructSubordinateConjunction :: T.Text -> [(Cat, (Preterm, Signature))]
 constructSubordinateConjunction daihyo = 

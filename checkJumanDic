@@ -1,2 +1,2 @@
 #!/bin/bash
-cat Parser/Japanese/Juman.dic | grep -E "^$1(\s)"
+cat src/Parser/Japanese/Juman.dic | grep -E "^$1(\s)"
