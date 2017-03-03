@@ -79,7 +79,7 @@ footerOf style = case style of
 -- | prints a CCG node (=i-th parsing result for a sid-th sentence) in a specified style (=HTML|text|XML|TeX)
 printNodes :: S.Handle -> Style -> Int -> T.Text -> Bool -> [CCG.Node] -> IO()
 printNodes handle HTML sid sentence typecheck nodes = do
-  S.hPutStr handle $ "<p>[s" ++ show sid ++ "] "
+  S.hPutStr handle $ "<p>[s" ++ (show sid) ++ "] "
   T.hPutStr handle sentence
   S.hPutStr handle "</p>"
   mapM_ (\(node,ith) -> do
@@ -104,15 +104,15 @@ printNodes handle HTML sid sentence typecheck nodes = do
         ) $ zip nodes ([0..]::[Int])
 
 printNodes handle TEXT sid sentence _ nodes = do
-  S.hPutStr handle $ "[s" ++ show sid ++ "] "
+  S.hPutStr handle $ "[s" ++ (show sid) ++ "] "
   T.hPutStrLn handle sentence
   mapM_ (\(node,ith) -> do
-           S.hPutStrLn handle $ interimOf TEXT $ "[parse tree No." ++ (show ith) ++ " for s" ++ (show sid) ++ "]"
+           S.hPutStrLn handle $ interimOf TEXT $ "[parse tree No." ++ (show $ ith+1) ++ " for s" ++ (show sid) ++ "]"
            T.hPutStr handle $ T.toText node
         ) $ zip nodes ([0..]::[Int])
 
 printNodes handle XML sid sentence _ nodes = do
-  S.hPutStr handle $ "<sentence id='s" ++ show sid ++ "'>"
+  S.hPutStr handle $ "<sentence id='s" ++ (show sid) ++ "'>"
   T.hPutStr handle sentence
   mapM_ (\(node,ith) ->
           T.hPutStr handle $ X.node2XML sid ith False node
@@ -120,7 +120,7 @@ printNodes handle XML sid sentence _ nodes = do
   S.hPutStr handle "</sentence>"
 
 printNodes handle TEX sid sentence _ nodes = do
-  S.hPutStr handle $ "\\noindent\\kern-2em[s" ++ show sid ++ "] "
+  S.hPutStr handle $ "\\noindent\\kern-2em[s" ++ (show sid) ++ "] "
   T.hPutStr handle sentence
   S.hPutStr handle "\\\\"
   mapM_ (\(node,ith) -> do
