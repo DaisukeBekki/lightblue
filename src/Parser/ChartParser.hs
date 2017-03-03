@@ -3,11 +3,12 @@
 
 {-|
 Module      : ChartParser
-Description : A left-corner CKY-parser for lexical grammars
 Copyright   : (c) Daisuke Bekki, 2016
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
+
+A left-corner CKY-parser for lexical grammars.
 -}
 
 module Parser.ChartParser (

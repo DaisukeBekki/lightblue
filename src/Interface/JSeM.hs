@@ -2,11 +2,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 {-|
-Description : JSeM interface
-Copyright   : (c) Daisuke Bekki, 2016
+Module      : Interface.JSeM
+Copyright   : (c) Daisuke Bekki, 2017
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
+
+JSeM interface
 -}
 module Interface.JSeM (
   JSeMData(..),

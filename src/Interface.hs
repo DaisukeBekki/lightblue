@@ -1,13 +1,16 @@
 {-# OPTIONS -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-{-|
-Description : Interface
-Copyright   : (c) Daisuke Bekki, 2016
-Licence     : All right reserved
-Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
-Stability   : beta
--}
+-------------------------------------------------
+-- |
+-- Module      : Interface
+-- Copyright   : (c) Daisuke Bekki, 2016
+-- Licence     : All right reserved
+-- Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
+-- Stability   : beta
+-- 
+-- Interfaces.
+-------------------------------------------------
 
 module Interface (
   Style(..),

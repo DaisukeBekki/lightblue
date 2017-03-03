@@ -1,6 +1,15 @@
 {-# OPTIONS -Wall #-}
 {-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances #-}
 
+{-|
+Module      : Interface.XML
+Copyright   : (c) Daisuke Bekki, 2017
+Licence     : All right reserved
+Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
+Stability   : beta
+
+XML interface
+-}
 module Interface.XML (
   XML(..),
   node2XML

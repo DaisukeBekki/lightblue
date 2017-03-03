@@ -2,13 +2,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 {-|
-Description : LexicalTemplates
+Module      : Parser.Japanese.Template
 Copyright   : (c) Daisuke Bekki, 2016
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
 
-A set of templates for building a lexicon.
+A set of lexical templates for building a lexicon.
 -}
 
 module Parser.Japanese.Templates (

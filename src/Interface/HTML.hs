@@ -2,11 +2,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 {-|
-Description : MathML interface
+Module      : Interface.HTML
 Copyright   : (c) Daisuke Bekki, 2016
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
+
+MathML interface
 -}
 module Interface.HTML (
   MathML(..),

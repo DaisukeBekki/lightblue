@@ -2,11 +2,13 @@
 {-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances #-}
 
 {-|
-Description : Underspecified Dependent Type Theory (with variable names)
+Module      : DTS.UDTTwithName
 Copyright   : (c) Daisuke Bekki, 2016
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
+
+Underspecified Dependent Type Theory (with variable names).
 -}
 
 module DTS.UDTTwithName (

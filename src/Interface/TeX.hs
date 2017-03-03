@@ -1,9 +1,14 @@
+{-# OPTIONS -Wall #-}
+{-# LANGUAGE OverloadedStrings #-}
+
 {-|
-Description : TeX interface
+Module      : Interface.TeX
 Copyright   : (c) Daisuke Bekki, 2016
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
+
+TeX interface
 -}
 module Interface.TeX (
   Typeset(..),

@@ -2,12 +2,12 @@
 {-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances #-}
 
 {-|
-Description : Dependent Type Theory (in de Bruijn index)
 Copyright   : (c) Daisuke Bekki, 2016
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
 
+Dependent Type Theory (in de Bruijn index)
 -}
 module DTS.DTT (
   -- * Types

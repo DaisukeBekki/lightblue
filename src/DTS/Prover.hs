@@ -2,12 +2,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 {-|
-Module      : Prover
-Description : A Prover(-Interface) for DTS
+Module      : DTS.Prover
 Copyright   : Daisuke Bekki
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
+
+A Prover-Interfaces for DTS.
 -}
 
 module DTS.Prover (

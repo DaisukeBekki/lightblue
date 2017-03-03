@@ -1,9 +1,14 @@
+{-# OPTIONS -Wall #-}
+{-# LANGUAGE OverloadedStrings #-}
+
 {-|
-Description : Data.Text.Lazy interface
+Module      : Interface.Text
 Copyright   : (c) Daisuke Bekki, 2016
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
+
+Data.Text.Lazy interface
 -}
 
 module Interface.Text (

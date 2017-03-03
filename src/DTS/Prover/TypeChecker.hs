@@ -1,14 +1,14 @@
 {-#OPTIONS -Wall#-}
 {-# LANGUAGE OverloadedStrings #-}
 
-
 {-|
-Module      : TypeChecker
-Description : A Typechecker for DTS
+Module      : DTS.Prover.TypeChecker
 Copyright   : Miho Sato
 Licence     : All right reserved
 Maintainer  : Miho Sato <satoh.miho@is.ocha.ac.jp>
 Stability   : beta
+
+A Typechecker and a theorem prover for DTS.
 -}
 module DTS.Prover.TypeChecker 
 ( aspElim,

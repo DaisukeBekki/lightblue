@@ -2,12 +2,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 {-|
-Module      : CallJuman
-Description : A module for compound nouns in Japanese
+Module      : Parser.Japanese.CallJuman
 Copyright   : (c) Daisuke Bekki, 2016
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
+
+A module for compound nouns in Japanese.
 -}
 module Parser.Japanese.CallJuman (
   jumanCompoundNouns

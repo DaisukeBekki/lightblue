@@ -2,12 +2,13 @@
 {-# LANGUAGE OverloadedStrings, DeriveGeneric, DefaultSignatures #-}
 
 {-|
-Module      : MyLexicon
-Description : A user-defined lexicon of Japanese
+Module      : Parser.Japanese.MyLexicon
 Copyright   : (c) Daisuke Bekki, 2016
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
+
+The lexicon for functional lexical items in Japanese.
 -}
 module Parser.Japanese.MyLexicon (
   emptyCategories,

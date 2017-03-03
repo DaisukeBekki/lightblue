@@ -2,14 +2,12 @@
 {-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances #-}
 
 {-|
---Description : Underspecified Dependent Type Theory (in de Bruijn index)
 Copyright   : (c) Daisuke Bekki, 2016
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
 
 Implementation of Underspecified Dependent Type Theory (Bekki forthcoming).
-
 -}
 module DTS.UDTT (
   -- * Types
@@ -30,7 +28,7 @@ module DTS.UDTT (
   sigmaElimination,
   add,
   multiply,
-  -- * De Bruijn notation <-> Variable-name notation
+  -- * De Bruijn notation from/to Variable-name notation
   Indexed(..),
   initializeIndex,
   fromDeBruijn,

@@ -2,12 +2,13 @@
 {-# LANGUAGE OverloadedStrings, DeriveGeneric, DefaultSignatures #-}
 
 {-|
-Module      : JapaneseLexicon
-Description : A Japanese CCG lexicon
+Module      : Parser.Japanese.Lexicon
 Copyright   : (c) Daisuke Bekki, 2016
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
+
+A Japanese CCG lexicon.
 -}
 module Parser.Japanese.Lexicon (
   --Node(..),

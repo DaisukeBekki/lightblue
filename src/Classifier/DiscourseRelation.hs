@@ -2,11 +2,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 {-|
-Description : Interface
+Module      : Classifier.DiscourseRelation
 Copyright   : (c) Kimi Kaneko, 2017
 Licence     : All right reserved
 Maintainer  : Kimi Kaneko <kaneko.kimi@is.ocha.ac.jp>
 Stability   : beta
+
+Tools for discourse relation annotation and classifiers.
 -}
 
 module Classifier.DiscourseRelation (
