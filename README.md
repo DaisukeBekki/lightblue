@@ -63,7 +63,7 @@ If succeeded, executable is found at `<lightblue>/.cabal-sandbox/bin/lightblue`.
 ### Generating the Document
 The HTML document is created by the following command in <lightblue>:
 ```
-$ cabal --executable haddock
+$ cabal haddock
 ```
 The generated document is found at: `<lightblue>/dist/doc/html/lightblue/index.html`
 
