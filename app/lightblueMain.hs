@@ -216,7 +216,9 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
           proverf = case prover of
            DTS -> Prover.checkEntailment beamw nbest
            Coq -> D2P.dts2prolog beamw nbest
-      S.hPutStrLn handle $ I.headerOf I.HTML
+      case prover of
+        DTS -> S.hPutStrLn handle $ I.headerOf I.HTML
+        Coq -> return ()
       case input of --  $ ligthblue infer -i jsem -f ../JSeM_beta/JSeM_beta_150415.xml
         SENTENCES -> do
           let sentences = T.lines contents;
@@ -231,7 +233,9 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
                           proverf (J.premise j) (J.hypothesis j)
                           ) $ J.parseJSeM contents
                 --S.hPutStrLn S.stdout $ I.footerOf I.HTML
-      S.hPutStrLn handle $ I.footerOf I.HTML
+      case prover of
+        DTS -> S.hPutStrLn handle $ I.footerOf I.HTML
+        Coq -> return ()
     -- |
     -- | Debug
     -- |
