@@ -1,3 +1,4 @@
 #!/bin/bash
-dist/build/lightblue/lightblue $@
+#dist/build/lightblue/lightblue $@
+stack exec lightblue -- $@
 

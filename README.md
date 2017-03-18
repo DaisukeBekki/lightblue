@@ -7,7 +7,7 @@
 
 
 ## Installing lightblue
-
+<!--
 ### Prerequisite: Haskell Platform
   1. GHC (>= version 7.4)/Cabal (>= version 1.20)
     * Linux: [The Glasgow Haskell Compiler](https://www.haskell.org/ghc/) 
@@ -24,6 +24,18 @@ Installing Haskell-mode for Emacs will help.
 ```
 $ sudo apt-get install haskell-mode
 ```
+-->
+
+### Prerequisite: Haskell Stack
+In Unix:
+```
+$ wget -qO- https://get.haskellstack.org/ | sh
+```
+In Mac:
+```
+$ brew install haskell-stack
+```
+See https://docs/haskellstack.org/en/stable/README/#how-to-install for details.
 
 ### Prerequisite: command-line tools
 The followint tools must be installed before executing *lightblue*.
@@ -32,6 +44,8 @@ The followint tools must be installed before executing *lightblue*.
   1. tidy (only for prettyprinting XML outputs)
     * Debian: `sudo apt-get install tidy`
     * Mac: `sudo port install tidy`
+  1. blas and lapack
+     `sudo apt-get install libblas-dev liblapack-dev`
 
 ### Download
 Do the following in the directory under which you'd like to install *lightblue*.
@@ -43,6 +57,7 @@ This operation will create the directory *lightblue* (henceforth we will refer t
 ### Configuration and Installation
 First you need to add the environment variable LIGHTBLUE and set its value as <lightblue>.  You may add the line `export LIGHTBLUE=<lightblue>` to .bashrc, .bash.profile, .bash_profile, or whatever configuration file for your shell.
 
+<!--
 Then move to <lightblue>, create a sandbox environment there, and check the dependencies as follows.
 ```
 $ cd <lightblue>
@@ -59,11 +74,19 @@ If the build is successful, then you may install *lightblue-0.1.6.0* in the sand
 $ cabal install
 ```
 If succeeded, executable is found at `<lightblue>/.cabal-sandbox/bin/lightblue`.  You may want to add a path to `<lightblue>/.cabal-sandbox/bin`.
+-->
+
+Then move to <lightblue> and:
+```
+$ cd <lightblue>
+$ stack setup
+$ stack build
+```
 
 ### Generating the Document
 The HTML document is created by the following command in <lightblue>:
 ```
-$ cabal haddock
+$ stack haddock
 ```
 The generated document is found at: `<lightblue>/dist/doc/html/lightblue/index.html`
 
