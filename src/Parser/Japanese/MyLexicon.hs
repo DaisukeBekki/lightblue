@@ -568,6 +568,7 @@ myLexicon = concat $ [
   mylex ["あぐ"] "(412)" (defS [V5m] [Stem] `BS` defS verb [Cont])                            (eventModifier "あぐむ"),
   mylex ["かね"] "(412)" (defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` defS verb [Cont])         (eventModifier "かねる"),
   mylex ["やが"] "(412)" (defS [V5r] [Stem] `BS` defS verb [Cont])                            (eventModifier "やがる"),
+  -- mylex ["入れ","容れ"] 
   -- 6.1.4 補助動詞（テ形接続）
   mylex ["お"] "(416)" (defS [V5k] [Stem] `BS` defS verb [TeForm])        (eventModifier "＃テオク"),
   mylex ["仕舞","しま"] "(416)" (defS [V5w] [Stem] `BS` defS verb [TeForm]) (eventModifier "＃テシマウ"),

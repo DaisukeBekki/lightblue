@@ -1,8 +1,7 @@
 {-# OPTIONS -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
 
--------------------------------------------------
--- |
+{-
 -- Module      : Interface
 -- Copyright   : (c) Daisuke Bekki, 2016
 -- Licence     : All right reserved
@@ -10,7 +9,7 @@
 -- Stability   : beta
 -- 
 -- Interfaces.
--------------------------------------------------
+-}
 
 module Interface (
   Style(..),

@@ -95,7 +95,7 @@ optionParser =
                  (progDesc "shows all the parsing results between the two pivots. Local options: INT INT (No default values)" ))
       <> command "demo"
            (info (pure Demo)
-                 (progDesc "sequentially shows parsing results of the corpus FILENAME.  No local options." ))
+                 (progDesc "sequentially shows parsing results of a given corpus. No local options." ))
       <> command "treebank"
            (info (pure Treebank)
                  (progDesc "print a semantic treebank build from a given corpus. No local options" ))
@@ -281,7 +281,7 @@ showStat = do
   putStr $ show $ length $ LEX.myLexicon
   putStrLn " lexical entries for closed words from CCG book"
   jumandicpath <- E.getEnv "LIGHTBLUE"
-  jumandic <- T.readFile $ jumandicpath ++ "Parser/Japanese/Juman.dic"
+  jumandic <- T.readFile $ jumandicpath ++ "src/Parser/Japanese/Juman.dic"
   putStr "  "
   putStr $ show $ length $ T.lines jumandic
   putStrLn " lexical entries for open words from JUMAN++"
