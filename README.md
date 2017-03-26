@@ -27,7 +27,7 @@ The followint tools must be installed before executing *lightblue*.
     * Mac: `sudo port install tidy`
 
 <!--
-  1. blas and lapack
+  1. blas and lapack\
      `sudo apt-get install libblas-dev liblapack-dev`
 -->
 
