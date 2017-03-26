@@ -19,7 +19,8 @@ module DTS.Prover.TypeChecker
   dismantleSig,
   changeSig,
   execute,
-  repositP
+  repositP,
+  searchIndex
 ) where
 
 
@@ -73,12 +74,12 @@ transP (UD.Sigma preA preB) = do
 transP (UD.Not preM) = do
   pretermM <- transP preM
   return (DT.Not pretermM)
-transP (UD.Asp n preM) = []
+transP (UD.Asp _ _) = []
 transP (UD.DRel i t preM preN) = do
   pretermA <- transP preM
   pretermB <- transP preN
   return (DT.DRel i t pretermA pretermB)
-transP preterm = []
+transP _ = []
 
 
 -- repositP : DTTの項をUDTTの項に変換する関数
@@ -99,7 +100,7 @@ transE (udtt:rest) =
 -- | @-Elimination
 aspElim :: (UTree UJudgement) -> [Tree Judgement]
 -- (@)規則
-aspElim (ASP (UJudgement uenv (UD.Asp n preA) preA2) left right) = 
+aspElim (ASP (UJudgement _ (UD.Asp _ _) _) _ right) = 
   aspElim right
 -- (Type)規則
 aspElim (UTypeF (UJudgement uenv UD.Type UD.Kind)) = do
@@ -123,7 +124,7 @@ aspElim (UTopI (UJudgement uenv UD.Unit UD.Top)) = do
 aspElim (UBotF (UJudgement uenv UD.Bot UD.Type)) = do
   return (BotF (Judgement (transE uenv) DT.Bot DT.Type))
 -- (ΠF)規則
-aspElim (UPiF (UJudgement uenv (UD.Pi preA preB) sort) left right) = do
+aspElim (UPiF (UJudgement uenv (UD.Pi _ _) _) left right) = do
   resultL <- aspElim left
   resultR <- aspElim right
   preA' <- getTerm resultL
@@ -131,7 +132,7 @@ aspElim (UPiF (UJudgement uenv (UD.Pi preA preB) sort) left right) = do
   sort2 <- getType resultR
   return (PiF (Judgement (transE uenv) (DT.Pi preA' preB') sort2) resultL resultR)
 -- (ΠI)規則
-aspElim (UPiI (UJudgement uenv (UD.Lam preM) (UD.Pi preA preB)) left right) = do
+aspElim (UPiI (UJudgement uenv (UD.Lam _) (UD.Pi _ _)) left right) = do
   resultL <- aspElim left
   resultR <- aspElim right
   preA' <- getTerm resultL
@@ -139,7 +140,7 @@ aspElim (UPiI (UJudgement uenv (UD.Lam preM) (UD.Pi preA preB)) left right) = do
   preB' <- getType resultR
   return (PiI (Judgement (transE uenv) (DT.Lam preM') (DT.Pi preA' preB')) resultL resultR)
 -- (ΠE)規則 ※ 最後のB''を返すところ??? 計算して返すのだろうか??
-aspElim (UPiE (UJudgement uenv (UD.App preM preN) preterm) left right) = do
+aspElim (UPiE (UJudgement uenv (UD.App _ _) preterm) left right) = do
   resultL <- aspElim left
   resultR <- aspElim right
   preM' <- getTerm resultL
@@ -147,7 +148,7 @@ aspElim (UPiE (UJudgement uenv (UD.App preM preN) preterm) left right) = do
   pre' <- transP preterm
   return (PiE (Judgement (transE uenv) (DT.App preM' preN') pre') resultL resultR)
 -- (ΣF)規則
-aspElim (USigF (UJudgement uenv (UD.Sigma preA preB) sort) left right) = do
+aspElim (USigF (UJudgement uenv (UD.Sigma _ _) _) left right) = do
   resultL <- aspElim left
   resultR <- aspElim right
   preA' <- getTerm resultL
@@ -155,7 +156,7 @@ aspElim (USigF (UJudgement uenv (UD.Sigma preA preB) sort) left right) = do
   sort2 <- getType resultR
   return (SigF (Judgement (transE uenv) (DT.Sigma preA' preB') sort2) resultL resultR)
 -- (ΣI)規則 ※ 最後の、B''を返すところ???
-aspElim (USigI (UJudgement uenv (UD.Pair preM preN) (UD.Sigma preA preB)) left right) = do
+aspElim (USigI (UJudgement uenv (UD.Pair _ _) (UD.Sigma _ _)) left right) = do
   resultL <- aspElim left
   resultR <- aspElim right
   preM' <- getTerm resultL
@@ -164,44 +165,44 @@ aspElim (USigI (UJudgement uenv (UD.Pair preM preN) (UD.Sigma preA preB)) left r
   preB' <- getType resultR
   return (SigI (Judgement (transE uenv) (DT.Pair preM' preN') (DT.Sigma preA' preB')) resultL resultR)
 -- (ΣE)規則
-aspElim (USigE (UJudgement uenv (UD.Proj selector preM) preA) over) = do
+aspElim (USigE (UJudgement uenv (UD.Proj selector _) _) over) = do
   case selector of
     UD.Fst -> do
       resultO <- aspElim over
       preM' <- getTerm resultO
       typeS <- getType resultO
       case typeS of
-        DT.Sigma preA' preB' -> return (SigE (Judgement (transE uenv) (DT.Proj DT.Fst preM') (preA')) resultO)
+        DT.Sigma preA' _ -> return (SigE (Judgement (transE uenv) (DT.Proj DT.Fst preM') (preA')) resultO)
         _ -> []
     UD.Snd -> do
       resultO <- aspElim over
       preM' <- getTerm resultO
       typeS <- getType resultO
       case typeS of
-        DT.Sigma preA' preB' -> return (SigE (Judgement (transE uenv) (DT.Proj DT.Snd preM') (preB')) resultO)
+        DT.Sigma _ preB' -> return (SigE (Judgement (transE uenv) (DT.Proj DT.Snd preM') (preB')) resultO)
         _ -> []
 -- (Not F)規則
-aspElim (UNotF (UJudgement uenv (UD.Not preM) utyp) over) = do
+aspElim (UNotF (UJudgement uenv (UD.Not _) _) over) = do
   resultO <- aspElim over
   preM' <- getTerm resultO
   typ <- getType resultO
   return (NotF (Judgement (transE uenv) (DT.Not preM') typ) resultO)
 -- (Not I)規則
-aspElim (UNotI (UJudgement uenv (UD.Lam preM) (UD.Not preA)) left right) = do
+aspElim (UNotI (UJudgement uenv (UD.Lam _) (UD.Not _)) left right) = do
   resultL <- aspElim left
   resultR <- aspElim right
   preA' <- getTerm resultL
   preM' <- getTerm resultR
   return (NotI (Judgement (transE uenv) (DT.Lam preM') (DT.Not preA')) resultL resultR)
 -- (Not E)規則
-aspElim (UNotE (UJudgement uenv (UD.App preM preN) UD.Bot) left right) = do
+aspElim (UNotE (UJudgement uenv (UD.App _ _) UD.Bot) left right) = do
   resultL <- aspElim left
   resultR <- aspElim right
   preM' <- getTerm resultL
   preN' <- getTerm resultR
   return (NotE (Judgement (transE uenv) (DT.App preM' preN') DT.Bot) resultL resultR)
 -- (CHK)規則
-aspElim (UCHK (UJudgement uenv preM preA) over) = do
+aspElim (UCHK (UJudgement uenv _ _) over) = do
   resultO <- aspElim over
   preM' <- getTerm resultO
   preA' <- getType resultO
@@ -213,9 +214,9 @@ aspElim (UDREL (UJudgement uenv (UD.DRel i t preM preN) typ)) = do
   typ' <- transP typ
   return (DREL (Judgement (transE uenv) (DT.DRel i t preM' preN') typ'))
 -- (Error)
-aspElim (UError (UJudgement uenv pretermA pretermB) text) = []
+aspElim (UError (UJudgement _ _ _) _) = []
 -- otherwise
-aspElim uTree = []
+aspElim _ = []
 {-
 aspElim (UError (UJudgement uenv pretermA pretermB) text) = do
   preA' <- transP pretermA
@@ -359,13 +360,13 @@ typeInferU typeEnv sig (UD.Proj selector preM) =
   then do overTree <- typeInferU typeEnv sig preM
           bodyType <- getTypeU overTree
           case bodyType of
-            (UD.Sigma preA preB) ->
+            (UD.Sigma preA _) ->
                return (USigE (UJudgement typeEnv (UD.Proj UD.Fst preM) preA) overTree)
             _ -> do return (UError (UJudgement typeEnv (UD.Proj UD.Fst preM) (UD.Con $ T.pack "???")) (T.pack "Not a Sigma type"))
   else do overTree <- typeInferU typeEnv sig preM
           bodyType <- getTypeU overTree
           case bodyType of
-            (UD.Sigma preA preB) -> do
+            (UD.Sigma _ preB) -> do
                let preB' = UD.betaReduce $ UD.shiftIndices (UD.subst preB (UD.shiftIndices (UD.Proj UD.Fst preM) 1 0) 0) (-1) 0
                return (USigE (UJudgement typeEnv (UD.Proj UD.Snd preM) preB') overTree)
             _ -> do return (UError (UJudgement typeEnv (UD.Proj UD.Snd preM) (UD.Con $ T.pack "???")) (T.pack "Not a Sigma type"))
@@ -396,9 +397,9 @@ proofSearch typeEnv sig preterm = do
   let ansTerms = searchType candidates preterm
   case (ansTerms, preterm) of
     -- バラすだけではだめで、型がSigmaの場合(Sigma I)
-    ([], UD.Sigma preM preN) -> sigIntro typeEnv sig candidates preterm
+    ([], UD.Sigma _ _) -> sigIntro typeEnv sig candidates preterm
     -- バラすだけではだめで、型がPiの場合(Pi I)
-    ([], UD.Pi preM preN) -> piIntro typeEnv sig preterm
+    ([], UD.Pi _ _) -> piIntro typeEnv sig preterm
     -- 失敗なら
     ([], _) -> do
       let envs = T.intercalate "," $ map (\(x,y) -> T.concat ["(",toText x,",",toText y,")"]) candidates
@@ -437,7 +438,7 @@ sigIntro typeEnv sig candidates (preterm@(UD.Sigma preM preN)) = do
 --UD.subst preN (repositP newM) 0
   termN <- searchType candidates newM'
   typeCheckU typeEnv sig (UD.Pair termM termN) preterm
-sigIntro typeEnv sig candidates _ = []
+sigIntro _ _ _ _ = []
 
 
 -- piIntro : (Pi I)規則にしたがって証明探索する関数
@@ -455,7 +456,7 @@ piIntro typeEnv sig (preterm@(UD.Pi preA preB)) = do
   let candidates = candidatesA ++ candidatesB
   termM <- searchType candidates preB
   typeCheckU typeEnv sig (UD.Lam termM) preterm
-piIntro typeEnv sig _ = []
+piIntro _ _ _ = []
 
 
 -- | dismantle : 型環境の中からSigma型を見つけて投射をかける
@@ -535,7 +536,7 @@ changeTenv env (preterm:xs) result =
 -- | 型環境の中から型Aを持つ項(変数)のIndexを全て返す
 searchIndex :: UD.Preterm -> TUEnv -> TUEnv -> [Int] -> [Int]
 searchIndex _ [] _ result = result
-searchIndex preA (x:xs) env result = 
+searchIndex preA (_:xs) env result = 
   let index = L.elemIndex preA env in
   case index of
     Just k -> searchIndex preA xs env (k:result)
