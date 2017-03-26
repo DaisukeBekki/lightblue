@@ -7,26 +7,7 @@
 
 
 ## Installing lightblue
-<!--
-### Prerequisite: Haskell Platform
-  1. GHC (>= version 7.4)/Cabal (>= version 1.20)
-    * Linux: [The Glasgow Haskell Compiler](https://www.haskell.org/ghc/) 
-    * Mac: [Haskell for Mac OS X](https://ghcformacosx.github.io/)
-
-In Debian, you may just do it by `sudo apt-get install haskell-platform`.
-
-After installing GHC, update cabal.
-```
-$ cabal update
-```
-
-Installing Haskell-mode for Emacs will help.
-```
-$ sudo apt-get install haskell-mode
-```
--->
-
-### Prerequisite: Haskell Stack
+### Prerequisite 1: Haskell Stack
 In Unix:
 ```
 $ wget -qO- https://get.haskellstack.org/ | sh
@@ -37,7 +18,7 @@ $ brew install haskell-stack
 ```
 See https://docs/haskellstack.org/en/stable/README/#how-to-install for details.
 
-### Prerequisite: command-line tools
+### Prerequisite 2: command-line tools
 The followint tools must be installed before executing *lightblue*.
 
   1. [JUMAN (a User-Extensible Morphological Analyzer for Japanese)](http://nlp.ist.i.kyoto-u.ac.jp/EN/index.php?JUMAN) (>= version 7.0)
@@ -47,7 +28,7 @@ The followint tools must be installed before executing *lightblue*.
   1. blas and lapack
      `sudo apt-get install libblas-dev liblapack-dev`
 
-### Download
+### Download lightblue
 Do the following in the directory under which you'd like to install *lightblue*.
 ```
 $ git clone git@bitbucket.org:DaisukeBekki/lightblue.git
@@ -55,40 +36,20 @@ $ git clone git@bitbucket.org:DaisukeBekki/lightblue.git
 This operation will create the directory *lightblue* (henceforth we will refer to this directory as <lightblue>) under the directory in which you did the above.
 
 ### Configuration and Installation
-First you need to add the environment variable LIGHTBLUE and set its value as <lightblue>.  You may add the line `export LIGHTBLUE=<lightblue>` to .bashrc, .bash.profile, .bash_profile, or whatever configuration file for your shell.
-
-<!--
-Then move to <lightblue>, create a sandbox environment there, and check the dependencies as follows.
-```
-$ cd <lightblue>
-$ cabal sandbox init
-$ cabal install --only-dependencies
-```
-If everything is ok, then build *lightblue* there.
-
-```
-$ cabal build
-```
-If the build is successful, then you may install *lightblue-0.1.6.0* in the sandbox.
-```
-$ cabal install
-```
-If succeeded, executable is found at `<lightblue>/.cabal-sandbox/bin/lightblue`.  You may want to add a path to `<lightblue>/.cabal-sandbox/bin`.
--->
-
-Then move to <lightblue> and:
+First you need to add the environment variable LIGHTBLUE and set its value as <lightblue>.  You may add the line `export LIGHTBLUE=<lightblue>` to .bashrc, .bash.profile, .bash_profile, or whatever configuration file for your shell.  Then move to <lightblue> and:
 ```
 $ cd <lightblue>
 $ stack setup
-$ stack build
+$ stack build --haddock
 ```
 
-### Generating the Document
-The HTML document is created by the following command in <lightblue>:
+The above command also create an HTML document at: `<lightblue>/dist/doc/html/lightblue/index.html`
+
+### For developpers ###
+Installing Haskell-mode for Emacs will help.
 ```
-$ stack haddock
+$ sudo apt-get install haskell-mode
 ```
-The generated document is found at: `<lightblue>/dist/doc/html/lightblue/index.html`
 
 ### How to run tests
 Set the permission of two shell scripts `lightblue` and `tidy` to executable.
