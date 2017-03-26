@@ -513,7 +513,7 @@ instance SimpleText RuleSymbol where
     FFCx1 -> ">Bx"
     FFCx2 -> ">Bx2"
     FFSx  -> ">Sx"
-    COORD -> "<Phi>"
+    COORD -> "<Φ>"
     PAREN -> "PAREN"
     WRAP  -> "WRAP"
     DC    -> "DC"
@@ -885,7 +885,8 @@ coordinationRule lnode@(Node {rs=r, cat=x1, sem=s1}) cnode@(Node {cat=CONJ, sem=
   if r == COORD
   then prevlist
   else
-    if (endsWithT x2 || isNStem x2 || x2 == N) && x1 == x2
+    if (endsWithT x2 || isNStem x2) && x1 == x2
+    --if (endsWithT x2 || isNStem x2 || x2 == N) && x1 == x2
        then Node {
               rs = COORD,
               pf = T.concat [pf(lnode),pf(cnode),pf(rnode)],
