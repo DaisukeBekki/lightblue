@@ -26,10 +26,10 @@ The followint tools must be installed before executing *lightblue*.
     * Debian: `sudo apt-get install tidy`
     * Mac: `sudo port install tidy`
 
-<!--
+[](
   1. blas and lapack\
      `sudo apt-get install libblas-dev liblapack-dev`
--->
+)
 
 ### Download lightblue
 Do the following in the directory under which you'd like to install *lightblue*.
