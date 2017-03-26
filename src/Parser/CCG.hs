@@ -1260,9 +1260,9 @@ numberOfArgs node = case node of
   BS x _   -> (numberOfArgs x) + 1
   T _ _ c  -> numberOfArgs c
   S _      -> 1
-  NP _     -> 10
+  NP _     -> 100
   Sbar _   -> 0
-  N        -> 2
-  CONJ     -> 10
-  LPAREN   -> 10
-  RPAREN   -> 10
+  N        -> 100
+  CONJ     -> 1000
+  LPAREN   -> 1000
+  RPAREN   -> 1000
