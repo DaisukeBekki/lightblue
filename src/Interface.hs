@@ -106,7 +106,7 @@ printNodes handle TEXT sid sentence _ nodes = do
   S.hPutStr handle $ "[s" ++ (show sid) ++ "] "
   T.hPutStrLn handle sentence
   mapM_ (\(node,ith) -> do
-           S.hPutStrLn handle $ interimOf TEXT $ "[parse tree No." ++ (show $ ith+1) ++ " for s" ++ (show sid) ++ "]"
+           S.hPutStrLn handle $ interimOf TEXT $ "[parse tree " ++ (show $ ith+1) ++ " for s" ++ (show sid) ++ "]"
            T.hPutStr handle $ T.toText node
         ) $ zip nodes ([0..]::[Int])
 
