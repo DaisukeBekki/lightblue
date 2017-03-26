@@ -114,7 +114,7 @@ instance XML Cat where
     SL x y      -> T.concat [toXML x, "/",  toXML' y]
     BS x y      -> T.concat [toXML x, "\\", toXML' y]
     T True i _     -> T.concat ["T", T.pack $ show i]
-    T False i c     -> T.concat [toXML c, (T.pack $ show i)]
+    T False i c     -> toXML c -- T.concat [toXML c, (T.pack $ show i)]
     S (pos:(conj:pmf)) -> 
               T.concat [
                        "S[pos=",
