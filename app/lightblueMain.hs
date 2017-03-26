@@ -205,7 +205,7 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
             TREE       -> I.printNodes      handle style sid sentence iftypecheck nbestnodes
             POSTAG     -> I.posTagger       handle style nbestnodes
             NUMERATION -> I.printNumeration handle style sentence
-          S.hPutStrLn handle $ I.interimOf style $ "[" ++ show (min (length nbestnodes) len) ++ " parse result(s) shown out of " ++ show len ++ " for s" ++ (show $ sid+1) ++ "]"
+          S.hPutStrLn handle $ I.interimOf style $ "[" ++ show (min (length nbestnodes) len) ++ " parse result(s) shown out of " ++ show len ++ " for s" ++ (show $ sid) ++ "]"
           ) $ zip ([0..]::[Int]) sentences
       S.hPutStr handle $ I.footerOf style
     -- |

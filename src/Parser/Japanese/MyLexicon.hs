@@ -789,6 +789,7 @@ myLexicon = concat $ [
         ((Lam (Lam (Lam (Pi (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
   mylex ["ても"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F adjective,F[Cont],F[M],F[M],F[P,M],F[M],F[M]])) 
         ((Lam (Lam (Lam (Pi (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
+  -- 「走っても間に合わない」「飛んでも間に合わない」「学生でもいい」は？
   -- きゃ、しゃ、ちゃ、にゃ、みゃ、りゃ、や、ぎゃ、びゃ、来りゃ、くりゃ、すりゃ、ずりゃ、
   --- とする
   mylex ["と"] "new" ((defS [VS] [Stem]) `BS` (S [F anyPos, F[Pre], F[P,M],F[P,M],F[P,M],F[M],F[M]])) (modalSR "＃トスル"),
