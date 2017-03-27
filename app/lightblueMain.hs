@@ -153,7 +153,7 @@ parseOptionParser :: Parser Command
 parseOptionParser = Parse
   <$> option auto
     ( long "output"
-    <> short 't'
+    <> short 'o'
     <> metavar "tree|postag|numeration"
     <> help "Specify the output content"
     <> showDefault
