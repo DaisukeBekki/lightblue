@@ -719,7 +719,7 @@ myLexicon = concat $ [
         (conjunctionSR "noni"),
   mylex ["けど","けれど","けども","けれども"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Term,NTerm], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
         (conjunctionSR "kedo"),
-  mylex ["と"] "new" (S [F anyPos,F[Term],SF 1 [P,M],SF 2 [P,M],SF 3 [P,M],F[M],F[M]] `SL` S [F anyPos,F[Term],SF 1 [P,M],SF 2 [P,M],SF 3 [P,M],F[M],F[M]]) (id,[]),
+  --mylex ["と"] "new" (S [F anyPos,F[Term],SF 1 [P,M],SF 2 [P,M],SF 3 [P,M],F[M],F[M]] `SL` S [F anyPos,F[Term],SF 1 [P,M],SF 2 [P,M],SF 3 [P,M],F[M],F[M]]) (id,[]),
   -- そして
   -- それとも
   -- それに
