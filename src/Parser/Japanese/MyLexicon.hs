@@ -661,7 +661,8 @@ myLexicon = concat $ [
   mylex ["どういう"] "new" (N `SL` N) (nominalModifier "＃どういう"),
   -- カ節
   mylex ["か","かどうか"] "(603)" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]) `BS` defS anyPos [Term,NStem]) 
-        ((Lam (Lam (App (Var 0) (App (Con "＃ドウカ") (Var 1))))),[("＃ドウカ",Pi entity Type)]), 
+        --((Lam (Lam (App (Var 0) (App (Con "＃ドウカ") (Var 1))))),[("＃ドウカ",Pi entity Type)]), 
+        (Lam (Lam (Lamvec (Sigma entity (Sigma (App (App (Con "＃ドウカ") (App (Var 3) (Lam Top))) (Var 0)) (Appvec 2 (App (Var 3) (Var 1))))))), [("＃ドウカ",Pi entity (Pi Type Type))]),
   -- 受動態・使役態
   mylex ["れ"] "(607)" (((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) `BS` (defS anyPos [VoR] `BS` NP [F[Ga]])) 
         ((Lam (Lam (Lam (Lam (App (App (Var 3) (Var 2)) (Lam (Sigma event (Sigma (App (App (App (Con "＃迷惑") (Var 1)) (Var 3)) (Var 0)) (App (Var 3) (Var 2)))))))))),[("＃迷惑",Pi event (Pi entity (Pi event Type)))]),
