@@ -330,7 +330,8 @@ instance SimpleText [FeatureValue] where
   toText [] = T.empty
   toText [pos] = T.pack $ show pos
   toText [pos1,pos2] = T.pack $ (show pos1) ++ "|" ++ (show pos2)
-  toText (pos1:(pos2:_)) = T.pack $ (show pos1) ++ "|" ++ (show pos2) ++ "|+"
+  --toText (pos1:(pos2:_)) = T.pack $ (show pos1) ++ "|" ++ (show pos2) ++ "|+"
+  toText (pos1:(pos2:(pos3:_))) = T.pack $ (show pos1) ++ "|" ++ (show pos2) ++ "|" ++ (show pos3) ++ "|+"
 
 -- | prints a list of syntactic features each of which ranges over {P,M,PM}.
 instance SimpleText [Feature] where
@@ -459,6 +460,7 @@ isBunsetsu c = case c of
                  if null $ L.intersect katsuyo [Cont,Term,Attr,Hyp,Imper,Pre,NTerm,NStem,TeForm,NiForm]
                     then False
                     else True
+  N -> False
   _ -> True
 
 endsWithT :: Cat -> Bool
@@ -1261,9 +1263,9 @@ numberOfArgs node = case node of
   BS x _   -> (numberOfArgs x) + 1
   T _ _ c  -> numberOfArgs c
   S _      -> 1
-  NP _     -> 100
+  NP _     -> 10
   Sbar _   -> 0
-  N        -> 100
-  CONJ     -> 1000
-  LPAREN   -> 1000
-  RPAREN   -> 1000
+  N        -> 2
+  CONJ     -> 100
+  LPAREN   -> 100
+  RPAREN   -> 100
