@@ -43,8 +43,7 @@ parse :: Int           -- ^ The beam width
          -> IO(Chart) -- ^ A pair of the resulting CYK-chart and a list of CYK-charts for segments
 parse beam sentence 
   | sentence == T.empty = return M.empty -- returns an empty chart, otherwise foldl returns a runtime error when text is empty
-  | otherwise =
-      do
+  | otherwise = do
       lexicon <- L.setupLexicon (T.replace "―" "。" sentence)
       let (chart,_,_,_) = T.foldl' (chartAccumulator beam lexicon) (M.empty,[0],0,T.empty) (purifyText sentence)
       return chart
@@ -54,43 +53,53 @@ purifyText :: T.Text -> T.Text
 purifyText text = 
   case T.uncons text of -- remove a non-literal symbol at the beginning of a sentence (if any)
     Nothing -> T.empty
-    Just (c,t) | isSpace c                                -> purifyText t              -- ignore white spaces
-               | T.any (==c) "！？!?…「」◎○●▲△▼▽■□◆◇★☆※†‡." -> purifyText t              -- ignore some symbols as meaningless
-               | T.any (==c) "，,-―?。．／＼"               -> T.cons '、' $ purifyText t -- punctuations
+    Just (c,t) | isSpace c                                -> purifyText t               -- ignore white spaces
+               | T.any (==c) "！？!?…「」◎○●▲△▼▽■□◆◇★☆※†‡." -> purifyText t              -- ignore meaningless symbols
+               | T.any (==c) "，,-―?／＼"               -> T.cons '、' $ purifyText t -- punctuations
                | otherwise                                -> T.cons c $ purifyText t
 
--- | triples representing a state during parsing:
--- the parsed result (=chart) of the left of the pivot,
--- the stack of positions of the previous 'separators' (i.e. '、','，',etc)
--- the pivot (=the current parsing position),
+-- | quadruples representing a state during parsing:
+-- the parsed result (Chart) of the left of the pivot,
+-- the stack of ending positions of the previous 'separators' (i.e. '、','，',etc), 
+-- the pivot (=the current parsing position), and
 -- the revsersed list of chars that has been parsed
--- the list of partial parse results
 type PartialChart = (Chart,[Int],Int,T.Text)
 
--- | The 'chartAccumulator' function
-chartAccumulator :: Int             -- ^ beam width
-                    -> L.LexicalItems    -- ^ my lexicon
-                    -> PartialChart -- ^ accumulated result (Chart, Int, Text)
-                    -> Char         -- ^ next char of a unparsed text
-                    -> PartialChart
-chartAccumulator beam lexicon (chart,seplist,i,stack) c =
-  let newstack = (T.cons c stack);
-      (sep:seps) = seplist in
-  if c == '、' -- Each seperator is an end of a phase
-    then let newchart = M.fromList $ ((i,i+1),[andCONJ (T.singleton c), emptyCM (T.singleton c)]):(foldl' (punctFilter sep i) [] $ M.toList chart)
-         in (newchart, ((i+1):seps), (i+1), newstack) --, (take 1 (sort (lookupChart sep (i+1) newchart)):parsed))
-    else let (newchart,_,_,_) = T.foldl' (boxAccumulator beam lexicon) (chart,T.empty,i,i+1) newstack;
-             newseps | c `elem` ['「','『'] = (i+1:seplist)
-                     | c `elem` ['」','』'] = seps
-                     | otherwise = seplist 
-         in (newchart,newseps,(i+1),newstack)
+-- | The 'chartAccumulator' function is the accumulator of the 'parse' function
+chartAccumulator :: Int               -- ^ The beam width as the first parameter
+                    -> L.LexicalItems -- ^ my lexicon as the second parameter
+                    -> PartialChart   -- ^ The accumulated result, given
+                    -> Char           -- ^ The next char of a unparsed text
+                    -> PartialChart   -- ^ The accumulated result, updated
+chartAccumulator beam lexicon (chart,seplist@(sep:seps),i,stack) c 
+  -- | The case where the next Char is a punctuation. Recall that each seperator is an end of a phase
+  | c == '、' = let newchart = M.fromList $ ((i,i+1),[andCONJ (T.singleton c), emptyCM (T.singleton c)]):(foldl' (punctFilter sep i) [] $ M.toList chart);
+                    newstack = T.cons c stack
+               in (newchart, ((i+1):seplist), (i+1), newstack) --, (take 1 (sort (lookupChart sep (i+1) newchart)):parsed))
+  | c == '。' = let newchart = M.fromList $ foldl' (punctFilter sep i) [] $ M.toList chart;
+                    newstack = T.cons c stack
+               in (newchart, ((i+1):seplist), (i+1), newstack) --, (take 1 (sort (lookupChart sep (i+1) newchart)):parsed))
+  | otherwise 
+     = let newstack = (T.cons c stack);
+           (newchart,_,_,_) = T.foldl' (boxAccumulator beam lexicon) (chart,T.empty,i,i+1) newstack;
+           newseps | c `elem` ['「','『'] = (i+1:seplist)
+                   | c `elem` ['」','』'] = seps
+                   | otherwise = seplist 
+       in (newchart,newseps,(i+1),newstack)
+-- chartAccumulator _ _ (_,[],_,_) _ = ?
 
-punctFilter :: Int -> Int -> [((Int,Int),[CCG.Node])] -> ((Int,Int),[CCG.Node]) -> [((Int,Int),[CCG.Node])]
+-- | 
+punctFilter :: Int    -- ^ Previous pivot
+               -> Int -- ^ Current pivot
+               -> [((Int,Int),[CCG.Node])] -- ^ The list of nodes that has been endorced
+               -> ((Int,Int),[CCG.Node])   -- ^ With respect to a given entry (=e@((from,to),nodes)), 
+               -> [((Int,Int),[CCG.Node])]
 punctFilter sep i charList e@((from,to),nodes) 
-  | to == i = ((from,to+1),filter (\n -> CCG.isBunsetsu $ CCG.cat n) nodes):(e:charList)
-  | otherwise = if from <= sep
-                   then e:charList
-                   else charList
+  | to == i = ((from,to+1),filter (CCG.isBunsetsu . CCG.cat) nodes):(e:charList) 
+  | otherwise = e:charList
+                -- if from <= sep
+                --    then e:charList
+                --    else charList
 
 andCONJ :: T.Text -> CCG.Node
 andCONJ c = LT.lexicalitem c "punct" 100 CCG.CONJ LT.andSR
@@ -217,7 +226,7 @@ extractParseResult beam chart =
         f c@(((i,_),nodes):_) | i == 0 = Full $ map CCG.wrapNode (sortByNumberOfArgs nodes)
                               | otherwise = Partial $ g (map CCG.wrapNode (sortByNumberOfArgs nodes)) (filter (\((_,j),_) -> j <= i) c)
         g results [] = results
-        g results (((i,_),nodes):cs) = g (take beam [CCG.conjoinNodes x y | x <- map CCG.wrapNode $ sortByNumberOfArgs nodes, y <- results]) $ filter (\((_,j),_) -> j <= i) cs
+        g results (((i,_),nodes):cs) = g (take beam [CCG.conjoinNodes x y | x <- map CCG.wrapNode nodes, y <- results]) $ filter (\((_,j),_) -> j <= i) cs
 
 -- | a `isLessPriviledgedThan` b means that b is more important parse result than a.
 isLessPrivilegedThan :: ((Int,Int),a) -> ((Int,Int),a) -> Ordering
@@ -234,16 +243,19 @@ bestOnly nodes = case nodes of
   (firstnode:ns) -> firstnode:(takeWhile (\node -> CCG.score(node) >= CCG.score(firstnode)) ns)
 
 sortByNumberOfArgs :: [CCG.Node] -> [CCG.Node]
-sortByNumberOfArgs = sortByNumberOfArgs2 20 []
+sortByNumberOfArgs = sortByNumberOfArgsLoop 20 []
 
-sortByNumberOfArgs2 :: Int -> [CCG.Node] -> [CCG.Node] -> [CCG.Node]
-sortByNumberOfArgs2 i selected nodes = case nodes of
+sortByNumberOfArgsLoop :: Int           -- ^ If a node whose number of args exceed this threshold is discarded.
+                          -> [CCG.Node] -- ^ Nodes selected so far.
+                          -> [CCG.Node] -- ^ Nodes to check.
+                          -> [CCG.Node]
+sortByNumberOfArgsLoop th selected nodes = case nodes of
   [] -> L.sort selected
-  (n:ns) -> let j = (CCG.numberOfArgs . CCG.cat) n in
-            case () of
-              _ | j < i  -> sortByNumberOfArgs2 j [n] ns
-                | i < j  -> sortByNumberOfArgs2 i selected ns
-                | otherwise -> sortByNumberOfArgs2 j (n:selected) ns
+  (n:ns) -> let noa = (CCG.numberOfArgs . CCG.cat) n in
+            case () of  
+              _ | noa < th  -> sortByNumberOfArgsLoop noa [n] ns    -- discard the selected ones and update threshold
+                | th < noa -> sortByNumberOfArgsLoop th selected ns -- ignore n and proceed
+                | otherwise -> sortByNumberOfArgsLoop noa (n:selected) ns -- noa = threshold.  Add n to the selected ones and proceed.
 
 
 
