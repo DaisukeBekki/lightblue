@@ -246,8 +246,14 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
       mapM_
         (\(sid,sentence) -> do
           chart <- CP.parse beamw sentence
-          let filterednodes = concat $ map (\(_,nodes) -> nodes) $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
-          I.printNodes S.stdout I.HTML sid sentence False filterednodes
+          --let filterednodes = concat $ map snd $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
+          --I.printNodes S.stdout I.HTML sid sentence False filterednodes
+          mapM_ (\((x,y),node) -> do
+                                  S.putStr $ "(" ++ (show x) ++ "," ++ (show y) ++ ") "
+                                  if null node
+                                     then S.putStrLn ""
+                                     else T.putStrLn $ T.toText $ CP.cat $ head node
+                                  ) $ M.toList chart
           ) $ zip ([0..]::[Int]) sentences
     -- |
     -- | Corpus (Parsing demo)
