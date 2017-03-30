@@ -53,7 +53,7 @@ emptyCategories = [
   ec "be-pred." "(235a)" 100
               ((defS [Nda,Nna,Nno,Ntar] [NStem] `BS` NP [F [Ga]]) `BS` N)
               (id,[]),
-  ec "be-ident." "(235b)" 100
+  ec "be-ident." "(235b)" 99
               ((defS [Nda,Nna] [NStem] `BS` NP [F[Ga]]) `BS` NP [F[Nc]])
               ((Lam (Lam (Lam (Sigma (Eq entity (Var 1) (Var 2)) (App (Var 1) (Var 0)))))),[]),
   -- サ変語幹→状詞語幹
@@ -118,7 +118,7 @@ emptyCategories = [
               (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Ga,No]]))
               ((Lam (App (Var 0) (Asp 3 entity))),[]),
   -- 関係節化演算子(relativizer)
-  ec "rel" "(670)" 100
+  ec "rel" "(670)" 99
               ((N `SL` N) `BS` (S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]] `BS` NP [F[Ga,O,Ni,To]]))
               ((Lam (Lam (Lam (Lam (Sigma (App (App (Var 3) (Var 1)) (Lam Top)) (App (App (Var 3) (Var 2)) (Var 1))))))),[]),
   ec "rel-ext" "(670)+" 96
@@ -622,7 +622,7 @@ myLexicon = concat $ [
   mylex ["的","てき"] "(508)" ((defS [Nda,Nna,Nni] [NStem] `BS` NP [F[Ga]]) `BS` NP [F[Nc]]) ((Lam (Lam (Eq entity (Var 0) (Var 1)))),[]),-- ??
   mylex ["的","てき"] "(508)" ((defS [Nda,Nna,Nni] [NStem] `BS` NP [F[Ga]]) `BS` N) ((Lam (Lam (App (Var 1) (Var 0)))), []),-- ??
   mylex ["気味","ぎみ"] "(509)" ((defS [Nda,Nna,Nno,Nni] [NStem] `BS` NP [F[Ga]]) `BS` N) ((Lam (Lam (App (Var 1) (Var 0)))),[]),-- ??
-  mylex ["なの"] "(510)" (defS [Nda] [NStem] `BS` defS [Nda] [NStem])          (modalSR "＃ナノダ"),
+  --mylex ["なの"] "(510)" (defS [Nda] [NStem] `BS` defS [Nda] [NStem])          (modalSR "＃ナノダ"),
   mylex ["の","ん"] "(511)" (S [F[Nda], F[NStem],F[M],F[M],F[M],F[M],F[M]] `BS` S [F anyPos,F[Attr],F[P,M],F[P,M],F[P,M],F[P,M],F[M]]) (modalSR "＃ノダ"),
   mylex ["筈","はず","ハズ"] "(511)" (defS [Nda] [NStem] `BS` S [F anyPos,F[Attr],F[P,M],F[M],F[P,M],F[M],F[M]]) (modalSR "＃ハズダ"),
   mylex ["訳","わけ","ワケ"] "(511)" (defS [Nda] [NStem] `BS` S [F anyPos,F[Attr],F[P,M],F[M],F[P,M],F[M],F[M]]) (modalSR "＃ワケダ"),
