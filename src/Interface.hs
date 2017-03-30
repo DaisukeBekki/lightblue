@@ -84,7 +84,9 @@ printNodes handle HTML sid sentence typecheck nodes = do
   mapM_ (\(node,ith) -> do
           S.hPutStr handle $ "<p>[parse " ++ show ith ++ ": score="
           T.hPutStr handle $ CCG.showScore node 
-          S.hPutStr handle "]</p>"
+          S.hPutStr handle "] "
+          T.hPutStr handle $ CCG.pf node
+          S.hPutStr handle "</p>"
           mapM_ (T.hPutStr handle) [HTML.startMathML,HTML.toMathML node,HTML.endMathML]
           if typecheck 
              then do
@@ -165,15 +167,14 @@ treebankBuilder beam sentences = do
   S.putStrLn HTML.htmlHeader4MathML
   T.putStrLn HTML.startMathML
   nodes <- mapM (CP.simpleParse beam) sentences
-  --S.putStr "Nodes: "
-  --S.putStrLn $ show $ length nodes
   let srs = DTS.fromDeBruijnSRlist $ map (CP.sem . head) nodes
   S.putStrLn "<mtable columnalign='left'>"
-  mapM_ (\(sentence,(v,term)) -> 
+  mapM_ (\(sentence,(var,term)) -> do
+            T.hPutStrLn S.stderr sentence
             mapM_ T.putStr ["<mtr><mtd><mtext color='Purple'>",
                             sentence,
                             "</mtext></mtd></mtr><mtr><mtd>",
-                            HTML.toMathML v,
+                            HTML.toMathML var,
                             "<mo>:</mo>",
                             HTML.toMathML term,
                             "</mtd></mtr>"
