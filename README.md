@@ -41,18 +41,10 @@ You need to add the environment variable LIGHTBLUE and set its value as <lightbl
 ```
 $ cd <lightblue>
 $ stack setup
-$ stack build --haddock
+$ stack build
 ```
 
-The above command also create an HTML document at: `<lightblue>/.stack-work/dist/.../.../doc/html/lightblue/index.html`
-
-### For developpers ###
-Installing Haskell-mode for Emacs will help.
-```
-$ sudo apt-get install haskell-mode
-```
-
-### How to run tests
+### How to run
 Set the permission of two shell scripts `lightblue` and `tidy` to executable.
 ```
 $ chmod 755 lightblue
@@ -109,6 +101,18 @@ Check also:
 $ lightblue --help
 $ lightblue --version
 $ lightblue --stat
+```
+
+### For developpers ###
+Installing Haskell-mode for Emacs will help.
+```
+$ sudo apt-get install haskell-mode
+```
+
+The following command creates an HTML document at: `<lightblue>/.stack-work/dist/.../.../doc/html/lightblue/index.html`
+
+```
+$ stack build --haddock
 ```
 
 ## Contact ##
