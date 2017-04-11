@@ -35,7 +35,11 @@ data Command =
   | Debug Int Int
   | Demo
   | Treebank
+  | JSeMParser
     deriving (Show, Eq)
+
+--commandReader :: String -> a -> String -> [(a,String)]
+--commandReader r command option = [(command,s) | (x,s) <- lex r, map C.toLower x == option]
 
 data ParseInput = SENTENCES | JSEM deriving (Eq,Show)
 instance Read ParseInput where
@@ -99,7 +103,10 @@ optionParser =
       <> command "treebank"
            (info (pure Treebank)
                  (progDesc "print a semantic treebank build from a given corpus. No local options" ))
-      <> metavar "COMMAND (=parse|infer|debug|demo|treebank)"
+      <> command "jsemparser"
+           (info (pure JSeMParser)
+                 (progDesc "parse a jsem file. No local options" ))
+      <> metavar "COMMAND (=parse|infer|debug|demo)"
       <> commandGroup "Available COMMANDs and thier local options"
       <> help "specifies the task to execute.  See 'Available COMMANDs ...' below about local options for each command"
       )
@@ -265,6 +272,15 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
     --
     lightblueMainLocal Treebank contents = do
       I.treebankBuilder beamw $ T.lines contents
+    --
+    -- | JSeM Parser
+    -- 
+    lightblueMainLocal JSeMParser contents = 
+      mapM_ (\jsem -> do
+                      mapM_ T.putStr $ J.premise jsem
+                      S.putChar '\t' 
+                      T.putStrLn $ J.hypothesis jsem
+                      ) $ J.parseJSeM contents
 
 -- | lightblue --version
 -- |
