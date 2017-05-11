@@ -277,6 +277,8 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
     -- 
     lightblueMainLocal JSeMParser contents = 
       mapM_ (\jsem -> do
+                      T.putStr $ J.answer jsem
+                      S.putChar '\t'
                       mapM_ T.putStr $ J.premise jsem
                       S.putChar '\t' 
                       T.putStrLn $ J.hypothesis jsem
