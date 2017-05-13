@@ -17,11 +17,11 @@ module Parser.ChartParser (
   CCG.Node(..),
   -- * Main parsing functions
   parse,
+  simpleParse,
   -- * Partial parsing function(s)
   ParseResult(..),
-  simpleParse,
   extractParseResult,
-  bestOnly
+  --bestOnly
   ) where
 
 import Data.List as L
@@ -72,7 +72,7 @@ chartAccumulator :: Int               -- ^ The beam width as the first parameter
                     -> Char           -- ^ The next char of a unparsed text
                     -> PartialChart   -- ^ The accumulated result, updated
 chartAccumulator beam lexicon (chart,seplist@(sep:seps),i,stack) c 
-  -- | The case where the next Char is a punctuation. Recall that each seperator is an end of a phase
+  -- The case where the next Char is a punctuation. Recall that each seperator is an end of a phase
   | c == '、' = let newchart = M.fromList $ ((i,i+1),[andCONJ (T.singleton c), emptyCM (T.singleton c)]):(foldl' (punctFilter sep i) [] $ M.toList chart);
                     newstack = T.cons c stack
                in (newchart, ((i+1):seplist), (i+1), newstack) --, (take 1 (sort (lookupChart sep (i+1) newchart)):parsed))
@@ -106,31 +106,6 @@ andCONJ c = LT.lexicalitem c "punct" 100 CCG.CONJ LT.andSR
 
 emptyCM :: T.Text -> CCG.Node
 emptyCM c = LT.lexicalitem c "punct" 99 (((CCG.T True 1 LT.modifiableS) `CCG.SL` ((CCG.T True 1 LT.modifiableS) `CCG.BS` (CCG.NP [CCG.F[CCG.Ga,CCG.O]]))) `CCG.BS` (CCG.NP [CCG.F[CCG.Nc]])) LT.argumentCM
-
---orCONJ :: T.Text -> CCG.Node
---orCONJ c = LT.lexicalitem c "new" 100 CCG.CONJ LT.orSR
-
-{-
-punctFilter i chartList e@((from,to),nodes)
-  | to == i = let filterednodes = Maybe.catMaybes $ map (\n -> case CCG.unifyWithHead [] [] LT.anySExStem (CCG.cat n) of 
-                                                                 Nothing -> CCG.unifyWithHead [] [] N (CCG.cat n) of
-                                                                              Nothing -> Nothing
-                                                                              _ -> Just n
-                                                                 _ -> Just n) nodes
-              in ((from,to+1),filterednodes):(e:chartList)
-  | otherwise = e:chartList
--}
-
-{-
-punctFilter :: Int -> Int -> [((Int,Int),[CCG.Node])] -> ((Int,Int),[CCG.Node]) -> [((Int,Int),[CCG.Node])]
-punctFilter sep i chartList e@((from,to),nodes)
-  | to == i = if from <= sep 
-                 then ((from,to+1),nodes):(e:chartList)
-                 else chartList
-  | otherwise = if from < sep
-                  then e:chartList
-                  else chartList
--}
 
 type PartialBox = (Chart,T.Text,Int,Int)
 
@@ -235,15 +210,22 @@ isLessPrivilegedThan ((i1,j1),_) ((i2,j2),_) | i1 == i2 && j1 == j2 = EQ
                                              | j1 == j2 && i2 < i1 = GT
                                              | otherwise = LT
 
--- | takes only the nodes with the best score.
--- 'nodes' needs to be sorted before applying 'bestOnly' (e.g. bestOnly $ L.sort nodes)
-bestOnly :: [CCG.Node] -> [CCG.Node]
-bestOnly nodes = case nodes of
-  [] -> []
-  (firstnode:ns) -> firstnode:(takeWhile (\node -> CCG.score(node) >= CCG.score(firstnode)) ns)
-
 sortByNumberOfArgs :: [CCG.Node] -> [CCG.Node]
-sortByNumberOfArgs = L.sortOn (\node -> (CCG.numberOfArgs $ CCG.cat node, node))
+sortByNumberOfArgs = L.sortOn (\node -> (numberOfArgs $ CCG.cat node, node))
+
+-- | receives a category and returns an integer based on the number of arguments of the category, which is used for sorting nodes with respect to which node is considered to be a better result of the parsing.  Lesser is better, but non-propositional categories (such as NP, CONJ, LPAREN and RPAREN) are the worst (=10) even if they take no arguments.
+numberOfArgs :: CCG.Cat -> Int
+numberOfArgs node = case node of
+  CCG.SL x _   -> (numberOfArgs x) + 1
+  CCG.BS x _   -> (numberOfArgs x) + 1
+  CCG.T _ _ c  -> numberOfArgs c
+  CCG.S _      -> 1
+  CCG.NP _     -> 10
+  CCG.Sbar _   -> 0
+  CCG.N        -> 2
+  CCG.CONJ     -> 100
+  CCG.LPAREN   -> 100
+  CCG.RPAREN   -> 100
 
 {-
 sortByNumberOfArgs = sortByNumberOfArgsLoop 20 []
@@ -261,4 +243,37 @@ sortByNumberOfArgsLoop threshold selected nodes = case nodes of
                 | otherwise            -> sortByNumberOfArgsLoop numOfArg (n:selected) ns -- noa = threshold.  Add n to the selected ones and proceed.
 -}
 
+{--
+-- | takes only the nodes with the best score.
+-- 'nodes' needs to be sorted before applying 'bestOnly' (e.g. bestOnly $ L.sort nodes)
+bestOnly :: [CCG.Node] -> [CCG.Node]
+bestOnly nodes = case nodes of
+  [] -> []
+  (firstnode:ns) -> firstnode:(takeWhile (\node -> CCG.score(node) >= CCG.score(firstnode)) ns)
+--}
+
+--orCONJ :: T.Text -> CCG.Node
+--orCONJ c = LT.lexicalitem c "new" 100 CCG.CONJ LT.orSR
+
+{-
+punctFilter i chartList e@((from,to),nodes)
+  | to == i = let filterednodes = Maybe.catMaybes $ map (\n -> case CCG.unifyWithHead [] [] LT.anySExStem (CCG.cat n) of 
+                                                                 Nothing -> CCG.unifyWithHead [] [] N (CCG.cat n) of
+                                                                              Nothing -> Nothing
+                                                                              _ -> Just n
+                                                                 _ -> Just n) nodes
+              in ((from,to+1),filterednodes):(e:chartList)
+  | otherwise = e:chartList
+-}
+
+{-
+punctFilter :: Int -> Int -> [((Int,Int),[CCG.Node])] -> ((Int,Int),[CCG.Node]) -> [((Int,Int),[CCG.Node])]
+punctFilter sep i chartList e@((from,to),nodes)
+  | to == i = if from <= sep 
+                 then ((from,to+1),nodes):(e:chartList)
+                 else chartList
+  | otherwise = if from < sep
+                  then e:chartList
+                  else chartList
+-}
 

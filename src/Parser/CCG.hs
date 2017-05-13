@@ -32,9 +32,8 @@ module Parser.CCG (
   unifyWithHead,
   -- * Partial Parsing
   wrapNode,
-  conjoinNodes,
+  conjoinNodes
   -- drel,
-  numberOfArgs
   ) where
 
 import Prelude hiding (id)
@@ -1256,16 +1255,3 @@ drel node =
     }
 -}
 
--- | receives a category and returns an integer based on the number of arguments of the category, which is used for sorting nodes with respect to which node is considered to be a better result of the parsing.  Lesser is better, but non-propositional categories (such as NP, CONJ, LPAREN and RPAREN) are the worst (=10) even if they take no arguments.
-numberOfArgs :: Cat -> Int
-numberOfArgs node = case node of
-  SL x _   -> (numberOfArgs x) + 1
-  BS x _   -> (numberOfArgs x) + 1
-  T _ _ c  -> numberOfArgs c
-  S _      -> 1
-  NP _     -> 10
-  Sbar _   -> 0
-  N        -> 2
-  CONJ     -> 100
-  LPAREN   -> 100
-  RPAREN   -> 100
