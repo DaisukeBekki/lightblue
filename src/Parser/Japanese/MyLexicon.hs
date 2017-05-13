@@ -838,6 +838,11 @@ myLexicon = concat $ [
         ((Lam (Lam (Lamvec (Pi (Sigma entity (App (App (Var 3) (Var 0)) (Lam Top))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[]),
   mylex ["一人"] "(536)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `BS` N) 
         ((Lam (Lam (Lamvec (Sigma (Sigma entity (App (App (Var 3) (Var 0)) (Lam Top))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[]),
+  -- その他GQ
+  mylex ["半数以上の","半数の"] "(GQ)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N) (generalizedQuantifierSR "半数"),  
+  mylex ["の半数以上","の半数","半数","半数以上"] "(GQ)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `BS` N) (generalizedQuantifierSR "半数"),  
+  mylex ["ほとんどの"] "(GQ)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N) (generalizedQuantifierSR "ほとんど"),  
+  mylex ["のほとんど"] "(GQ)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `BS` N) (generalizedQuantifierSR "ほとんど"),  
   -- NPI
   mylex ["ろく","碌","ロク"] "new" (defS [Nna,Nni] [NStem] `BS` NP [F[Ga]]) (predSR 1 "ろく/ろく"), -- NPIなので後でちゃんと効かせる
   -- 遊離数量詞

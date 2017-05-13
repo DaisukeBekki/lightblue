@@ -44,6 +44,7 @@ module Parser.Japanese.Templates (
   nPlacePredType,
   properNameSR,
   commonNounSR,
+  generalizedQuantifierSR,
   intensionalEvent,
   intensionalState,
   modalSR,
@@ -237,6 +238,10 @@ properNameSR op = ((Lam (App (Var 0) (Con op))), [(op, entity)])
 -- | N: 
 commonNounSR :: T.Text -> (Preterm,Signature)
 commonNounSR op = ((Lam (Lam (Sigma state (Sigma (App (App (Con op) (Var 2)) (Var 0)) (App (Var 2) (Var 1)))))), [(op, nPlacePredType 1)])
+
+-- | GQ:
+generalizedQuantifierSR :: T.Text -> (Preterm,Signature)
+generalizedQuantifierSR q = ((Lam (Lam (Lamvec ((App (App (Con q) (Lam (Appvec 1 (App (Var 2) (Var 0)))) ) (Lam (App (App (Var 3) (Var 0)) (Lam Top))) ))))),[(q,Pi (Pi entity Type) (Pi (Pi entity Type) Type))])
 
 -- | S\S, S/S: \p.\c.op (pc)
 modalSR :: T.Text -> (Preterm,Signature)
