@@ -53,10 +53,10 @@ purifyText :: T.Text -> T.Text
 purifyText text = 
   case T.uncons text of -- remove a non-literal symbol at the beginning of a sentence (if any)
     Nothing -> T.empty
-    Just (c,t) | isSpace c                                -> purifyText t               -- ignore white spaces
+    Just (c,t) | isSpace c                                  -> purifyText t               -- ignore white spaces
                | T.any (==c) "！？!?…「」◎○●▲△▼▽■□◆◇★☆※†‡." -> purifyText t              -- ignore meaningless symbols
-               | T.any (==c) "，,-―?／＼"               -> T.cons '、' $ purifyText t -- punctuations
-               | otherwise                                -> T.cons c $ purifyText t
+               | T.any (==c) "，,-―?／＼"                    -> T.cons '、' $ purifyText t -- punctuations
+               | otherwise                                  -> T.cons c $ purifyText t
 
 -- | quadruples representing a state during parsing:
 -- the parsed result (Chart) of the left of the pivot,
@@ -243,19 +243,22 @@ bestOnly nodes = case nodes of
   (firstnode:ns) -> firstnode:(takeWhile (\node -> CCG.score(node) >= CCG.score(firstnode)) ns)
 
 sortByNumberOfArgs :: [CCG.Node] -> [CCG.Node]
+sortByNumberOfArgs = L.sortOn (\node -> (CCG.numberOfArgs $ CCG.cat node, node))
+
+{-
 sortByNumberOfArgs = sortByNumberOfArgsLoop 20 []
 
-sortByNumberOfArgsLoop :: Int           -- ^ If a node whose number of args exceed this threshold is discarded.
+sortByNumberOfArgsLoop :: Int           -- ^ If a node whose number of args exceed this threshold will be discarded.
                           -> [CCG.Node] -- ^ Nodes selected so far.
-                          -> [CCG.Node] -- ^ Nodes to check.
+                          -> [CCG.Node] -- ^ Given set of nodes to filter.
                           -> [CCG.Node]
-sortByNumberOfArgsLoop th selected nodes = case nodes of
+sortByNumberOfArgsLoop threshold selected nodes = case nodes of
   [] -> L.sort selected
-  (n:ns) -> let noa = (CCG.numberOfArgs . CCG.cat) n in
+  (n:ns) -> let numOfArg = (CCG.numberOfArgs . CCG.cat) n in
             case () of  
-              _ | noa < th  -> sortByNumberOfArgsLoop noa [n] ns    -- discard the selected ones and update threshold
-                | th < noa -> sortByNumberOfArgsLoop th selected ns -- ignore n and proceed
-                | otherwise -> sortByNumberOfArgsLoop noa (n:selected) ns -- noa = threshold.  Add n to the selected ones and proceed.
-
+              _ | numOfArg < threshold -> sortByNumberOfArgsLoop numOfArg [n] ns          -- discard the selected ones and update threshold
+                | threshold < numOfArg -> sortByNumberOfArgsLoop threshold selected ns    -- ignore n and proceed
+                | otherwise            -> sortByNumberOfArgsLoop numOfArg (n:selected) ns -- noa = threshold.  Add n to the selected ones and proceed.
+-}
 
 
