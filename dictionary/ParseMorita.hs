@@ -266,7 +266,7 @@ midashigoWithScoreParser =
 katsuyokeiParser :: Parser T.Text
 katsuyokeiParser = do
   string "(活用型"
-  space  
+  space
   katsuyokei <- wordParser
   char ')'
   return katsuyokei 
