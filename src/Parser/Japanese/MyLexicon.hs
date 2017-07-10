@@ -565,6 +565,7 @@ myLexicon = concat $ [
   mylex ["切","き"] "(412)" (defS [V5r] [Stem] `BS` defS verb [Cont])                         (eventModifier "切る"),
   mylex ["付け","つけ"] "(412)" (defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` defS verb [Cont])   (eventModifier "付ける"),
   mylex ["過ぎ","すぎ"] "(412)" (defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` defS verb [Cont])   (eventModifier "過ぎる"),
+  mylex ["過ぎ","すぎ"] "(412)+" (defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` defS (adjective++[Nda]) [Stem,NStem])   (eventModifier "過ぎる"),
   mylex ["あぐ"] "(412)" (defS [V5m] [Stem] `BS` defS verb [Cont])                            (eventModifier "あぐむ"),
   mylex ["かね"] "(412)" (defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` defS verb [Cont])         (eventModifier "かねる"),
   mylex ["やが"] "(412)" (defS [V5r] [Stem] `BS` defS verb [Cont])                            (eventModifier "やがる"),
