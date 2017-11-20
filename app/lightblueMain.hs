@@ -18,7 +18,8 @@ import qualified Parser.Japanese.MyLexicon as LEX
 import qualified Interface as I
 import qualified Interface.Text as T
 import qualified Interface.JSeM as J
-import qualified DTS.UDTT as DTS
+--import qualified DTS.UDTT as DTS
+import qualified DTS.TypeChecker as TC
 import qualified DTS.Prover as Prover
 import qualified DTS.DTStoProlog as D2P
 
@@ -314,9 +315,10 @@ showStat = do
 -- | 
 test :: IO()
 test = do
-  let context = [DTS.Con "hoge", DTS.Con "evt", DTS.Con "entity"]
-  T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 0) DTS.Type
-  T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 2) DTS.Type
+  --let context = [DTS.Con "hoge", DTS.Con "evt", DTS.Con "entity"]
+  --T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 0) DTS.Type
+  --T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 2) DTS.Type
+  TC.test
 
 -- | lightblue demo
 -- |

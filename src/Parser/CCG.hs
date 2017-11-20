@@ -81,20 +81,20 @@ instance SimpleText Node where
     = T.concat [toTextLoop "" n, "Sig. ", toText (sig n), "\n"]
     where toTextLoop indent node =
             case daughters node of 
-              [] -> T.concat [(T.pack indent), toText (rs node), " ", pf node, " ", toText (cat node), " ", toText (sem node), " ", source node, " [", showScore node, "]\n"]
-              dtrs -> T.concat $ [(T.pack indent), toText (rs node), " ", toText (cat node), " ", toText (sem node), " [", showScore node, "]\n"] ++ (map (\d -> toTextLoop (indent++"  ") d) dtrs)
+              [] -> T.concat [T.pack indent, toText (rs node), " ", pf node, " ", toText (cat node), " ", toText (sem node), " ", source node, " [", showScore node, "]\n"]
+              dtrs -> T.concat $ [T.pack indent, toText (rs node), " ", toText (cat node), " ", toText (sem node), " [", showScore node, "]\n"] ++ (map (\d -> toTextLoop (indent++"  ") d) dtrs)
 
 instance Typeset Node where
   toTeX node = -- @(Node _ _ _ _ _ _ _ _) =
     case daughters node of 
       [] -> T.concat ["\\vvlex[", (source node), "]{", (pf node), "}{", toTeX (cat node), "}{", toTeX $ sem node, "}"] --, "\\ensuremath{", (source node), "}"]
-      _ -> T.concat ["\\nd[", toTeX (rs node), "]{\\vvcat{", toTeX (cat node), "}{", toTeX $ sem node, "}}{", T.intercalate "&" $ map toTeX $ daughters node, "}"] --, "\\ensuremath{", (source node), "}"]
+      dtrs -> T.concat ["\\nd[", toTeX (rs node), "]{\\vvcat{", toTeX (cat node), "}{", toTeX $ sem node, "}}{", T.intercalate "&" $ map toTeX dtrs, "}"] --, "\\ensuremath{", (source node), "}"]
 
 instance MathML Node where
   toMathML node = -- @(Node _ _ _ _ _ _ _ _) =
     case daughters node of 
       [] -> T.concat ["<mrow><mfrac linethickness='2px'><mtext fontsize='1.0' color='Black'>", pf node, "</mtext><mfrac linethickness='0px'><mstyle color='Red'>", toMathML $ cat node, "</mstyle><mstyle color='Black'>", toMathML $ betaReduce $ sem node, "</mstyle></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", source node, "</mtext></mrow>"] 
-      _ -> T.concat ["<mrow><mfrac linethickness='2px'><mrow>", T.concat $ map toMathML $ daughters node, "</mrow><mfrac linethickness='0px'><mstyle color='Red'>", toMathML $ cat node, "</mstyle><mstyle color='Black'>", toMathML $ betaReduce $ sem node, "</mstyle></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", toMathML $ rs node, "</mtext></mrow>"] 
+      dtrs -> T.concat ["<mrow><mfrac linethickness='2px'><mrow>", T.concat $ map toMathML dtrs, "</mrow><mfrac linethickness='0px'><mstyle color='Red'>", toMathML $ cat node, "</mstyle><mstyle color='Black'>", toMathML $ betaReduce $ sem node, "</mstyle></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", toMathML $ rs node, "</mtext></mrow>"] 
 
 -- | Syntactic categories of 
 data Cat =

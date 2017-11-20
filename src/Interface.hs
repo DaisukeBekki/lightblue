@@ -41,15 +41,19 @@ import qualified Classifier.DiscourseRelation as DR
 
 {- Some functions for pretty printing Chart/Nodes -}
 
+readerBuilder :: [(a,String)] -> Int -> ReadS a
+readerBuilder list _ r = concat $ map (\(constructor,string) -> [(constructor,s) | (x,s) <- lex r, map C.toLower x == string]) list
+
 -- | values of lightblue -s option
 data Style = HTML | TEXT | XML | TEX deriving (Eq,Show)
 
 instance Read Style where
-  readsPrec _ r = 
-    [(HTML,s) | (x,s) <- lex r, map C.toLower x == "html"]
-    ++ [(TEXT,s) | (x,s) <- lex r, map C.toLower x == "text"]
-    ++ [(TEX,s) | (x,s) <- lex r, map C.toLower x == "tex"]
-    ++ [(XML,s) | (x,s) <- lex r, map C.toLower x == "xml"]
+  readsPrec = readerBuilder [(HTML,"html"),(TEXT,"text"),(TEX,"tex"),(XML,"xml")]
+  --readsPrec _ r = 
+    -- [(HTML,s) | (x,s) <- lex r, map C.toLower x == "html"]
+    -- ++ [(TEXT,s) | (x,s) <- lex r, map C.toLower x == "text"]
+    -- ++ [(TEX,s) | (x,s) <- lex r, map C.toLower x == "tex"]
+    -- ++ [(XML,s) | (x,s) <- lex r, map C.toLower x == "xml"]
 
 -- | header in style
 headerOf :: Style -> String

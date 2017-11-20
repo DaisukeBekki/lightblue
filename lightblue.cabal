@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                lightblue
-version:             0.2.0.1
+version:             0.2.0.2
 synopsis:            A CCG parser with DTS-representations
 --description:       
 license:             AllRightsReserved
@@ -20,7 +20,7 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:    src
-  exposed-modules:   DTS.UDTT, DTS.UDTTwithName, DTS.DTT, Parser.ChartParser, Parser.CCG, Parser.Japanese.Lexicon, Parser.Japanese.CallJuman, Parser.Japanese.MyLexicon, Parser.Japanese.Templates, Interface, Interface.Text, Interface.TeX, Interface.XML, Interface.HTML, Interface.JSeM, DTS.Prover, DTS.Prover.Judgement, DTS.Prover.TypeChecker, DTS.DTStoProlog, Classifier.DiscourseRelation
+  exposed-modules:   DTS.UDTT, DTS.UDTTwithName, DTS.DTT, Parser.ChartParser, Parser.CCG, Parser.Japanese.Lexicon, Parser.Japanese.CallJuman, Parser.Japanese.MyLexicon, Parser.Japanese.Templates, Interface, Interface.Text, Interface.TeX, Interface.XML, Interface.HTML, Interface.JSeM, DTS.ProofDiagram, DTS.TypeChecker, DTS.Prover, DTS.Prover.Judgement, DTS.Prover.TypeChecker, DTS.DTStoProlog, Classifier.DiscourseRelation
   build-depends:     base >= 4.8, containers >= 0.4, time >= 1.4, text >= 1.2, process >= 1.2, xml-conduit >= 1.3
   -- xml-prettify >= 0.1.0.1
   -- hmatrix >= 0.16
