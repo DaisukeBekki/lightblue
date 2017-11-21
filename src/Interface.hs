@@ -38,6 +38,7 @@ import qualified DTS.UDTTwithName as VN
 import qualified DTS.Prover as Prover
 import qualified DTS.Prover.Judgement as Ty
 import qualified Classifier.DiscourseRelation as DR
+import qualified Interface.SVG as SVG
 
 {- Some functions for pretty printing Chart/Nodes -}
 
@@ -45,10 +46,10 @@ readerBuilder :: [(a,String)] -> Int -> ReadS a
 readerBuilder list _ r = concat $ map (\(constructor,string) -> [(constructor,s) | (x,s) <- lex r, map C.toLower x == string]) list
 
 -- | values of lightblue -s option
-data Style = HTML | TEXT | XML | TEX deriving (Eq,Show)
+data Style = HTML | TEXT | XML | TEX | SVG deriving (Eq,Show)
 
 instance Read Style where
-  readsPrec = readerBuilder [(HTML,"html"),(TEXT,"text"),(TEX,"tex"),(XML,"xml")]
+  readsPrec = readerBuilder [(HTML,"html"),(TEXT,"text"),(TEX,"tex"),(XML,"xml"),(SVG,"svg")]
   --readsPrec _ r = 
     -- [(HTML,s) | (x,s) <- lex r, map C.toLower x == "html"]
     -- ++ [(TEXT,s) | (x,s) <- lex r, map C.toLower x == "text"]
@@ -62,6 +63,7 @@ headerOf style = case style of
   TEXT -> replicate 100 '-'
   XML  -> "<?xml version='1.0' encoding='UTF-8'?><root><document id='d0'><sentences>"
   TEX  -> ""
+  SVG  -> SVG.svgHeader
 
 -- | interim in style
 interimOf :: Style -> String -> String
@@ -70,6 +72,7 @@ interimOf style text = case style of
   TEXT -> "------" ++ text ++ (replicate (94-(length text)) '-')
   XML  -> ""
   TEX  -> ""
+  SVG  -> ""
 
 -- | footer in style
 footerOf :: Style -> String
@@ -78,6 +81,7 @@ footerOf style = case style of
   TEXT -> ""
   XML  -> "</sentences></document></root>"
   TEX  -> ""
+  SVG  -> SVG.svgFooter
 
 -- | prints a CCG node (=i-th parsing result for a sid-th sentence) in a specified style (=HTML|text|XML|TeX)
 printNodes :: S.Handle -> Style -> Int -> T.Text -> Bool -> [CCG.Node] -> IO()
@@ -140,6 +144,11 @@ printNodes handle TEX sid sentence _ nodes = do
             ]
         ) $ zip nodes ([0..]::[Int])
 
+printNodes handle SVG _ _ _ nodes = do
+  mapM_ (\(node,ith) ->
+          T.hPutStr handle $ SVG.node2svg node
+        ) $ zip nodes ([0..]::[Int])
+
 -- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style
 posTagger :: S.Handle -> Style -> [CCG.Node] -> IO()
 posTagger handle XML = mapM_ ((T.hPutStrLn handle) . (X.node2XML 0 0 True))
@@ -158,6 +167,7 @@ printLexicalItem style node = case style of
   TEX  -> TEX.toTeX node
   HTML -> T.concat $ [HTML.startMathML, HTML.toMathML node, HTML.endMathML]
   XML  -> X.node2XML 0 0 True node
+  SVG  -> SVG.node2svg node
 
 -- | prints the numeration
 printNumeration :: S.Handle -> Style -> T.Text -> IO()
