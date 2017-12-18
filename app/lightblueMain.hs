@@ -247,12 +247,14 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
     -- |
     -- | Debug
     -- |
-    lightblueMainLocal (Debug i j) contents = do
+    --lightblueMainLocal (Debug i j) contents = do
+    lightblueMainLocal (Debug _ _) contents = do
       let sentences = case input of 
             SENTENCES -> T.lines contents
             JSEM -> concat $ map (\jsem -> (J.premise jsem) ++ [J.hypothesis jsem]) $ J.parseJSeM contents
       mapM_
-        (\(sid,sentence) -> do
+        --(\(sid,sentence) -> do
+        (\(_,sentence) -> do
           chart <- CP.parse beamw sentence
           --let filterednodes = concat $ map snd $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
           --I.printNodes S.stdout I.HTML sid sentence False filterednodes
