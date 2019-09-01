@@ -10,7 +10,7 @@ Maintainer  :
 Stability   : beta
 -}
 
-module Logic.DTS2Coq (
+module DTS.DTS2Coq (
   sigmaElimination,
   dts2coq
   ) where

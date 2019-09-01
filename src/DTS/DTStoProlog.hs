@@ -87,7 +87,7 @@ f preterm = case preterm of
   D.Natrec n e f' -> T.concat ["natrec(", (f $ n), ",", (f $ e), ",", (f $ f'), ")"]
   D.Refl a m     -> T.concat ["refl(", (f $ a), ",", (f $ m), ")"]
   D.Idpeel m n   -> T.concat ["idpeel(", (f $ m), ",", (f $ n), ")"]
-  D.DRel _ _ _ _ -> "true"
+  --D.DRel _ _ _ _ -> "true"
 
 
 -- function: convcoq
@@ -128,7 +128,7 @@ convcoq preterm = case preterm of
   D.Natrec n e f' -> T.concat ["Natec ", (convcoq $ n), " ", (convcoq $ e), " ", (convcoq $ f')]
   D.Refl a m     -> T.concat ["Refl ", (convcoq $ a), " ", (convcoq $ m)]
   D.Idpeel m n   -> T.concat ["Idpeel ", (convcoq $ m), " ", (convcoq $ n)]
-  D.DRel _ _ _ _ -> "True"
+  --D.DRel _ _ _ _ -> "True"
 
 makeCoqSigList :: DTS.Signature -> T.Text
 makeCoqSigList siglist = T.concat (L.nub (map (\ (text, preterm) -> T.concat ["Parameter _", (cname_f text), " : ", (convcoq $ DTS.initializeIndex $ DTS.fromDeBruijn [] $ preterm), ". \n"]) siglist))
