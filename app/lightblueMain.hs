@@ -17,7 +17,7 @@ import qualified Parser.ChartParser as CP
 import qualified Parser.Japanese.MyLexicon as LEX
 import qualified Interface as I
 import qualified Interface.Text as T
-import qualified Interface.JSeM as J
+import qualified JSeM.XML2JSeMData as J
 import qualified DTS.UDTT as DTS
 --import qualified DTS.Prover.TypeChecker as TC
 import qualified DTS.Prover as Prover
@@ -203,7 +203,7 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
       sentences <- case input of 
                      SENTENCES -> return $ T.lines contents
                      JSEM -> do
-                             parsedJSeM <- J.parseJSeM contents
+                             parsedJSeM <- J.xmlFile2JSeMData contents
                              return $ concat $ map (\j -> (J.premise j) ++ [J.hypothesis j]) parsedJSeM
       S.hPutStrLn handle $ I.headerOf style
       mapM_
@@ -238,7 +238,7 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
           proverf premises hypothesis
         JSEM -> do
                 --S.hPutStrLn S.stdout $ I.headerOf I.HTML
-                parsedJSeM <- J.parseJSeM contents
+                parsedJSeM <- J.xmlFile2JSeMData contents
                 mapM_ (\j -> do
                           mapM_ T.putStr ["JSeM [", J.jsem_id j, "] "]
                           proverf (J.premise j) (J.hypothesis j)
@@ -252,7 +252,7 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
     -- |
     --lightblueMainLocal (Debug i j) contents = do
     lightblueMainLocal (Debug _ _) contents = do
-      parsedJSeM <- J.parseJSeM contents
+      parsedJSeM <- J.xmlFile2JSeMData contents
       let sentences = case input of 
             SENTENCES -> T.lines contents
             JSEM -> concat $ map (\jsem -> (J.premise jsem) ++ [J.hypothesis jsem]) parsedJSeM
@@ -283,7 +283,7 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
     -- | JSeM Parser
     -- 
     lightblueMainLocal JSeMParser contents = do
-      parsedJSeM <- J.parseJSeM contents
+      parsedJSeM <- J.xmlFile2JSeMData contents
       mapM_ (\jsem -> do
                       putStr $ show $ J.answer jsem
                       S.putChar '\t'
