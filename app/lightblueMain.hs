@@ -1,10 +1,12 @@
 {-# OPTIONS -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-import Options.Applicative                --optparse-applicative
+import Options.Applicative hiding (style) --optparse-applicative
 import Data.Semigroup ((<>))              --semigroup
+import Control.Monad (forM_)              --base
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
+import qualified Data.Text.IO as StrictT  --text
 import Data.Ratio ((%))                   --base
 import qualified Data.Char as C           --base
 import qualified Data.List as L           --base
@@ -204,7 +206,7 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
                      SENTENCES -> return $ T.lines contents
                      JSEM -> do
                              parsedJSeM <- J.xmlFile2JSeMData contents
-                             return $ concat $ map (\j -> (J.premise j) ++ [J.hypothesis j]) parsedJSeM
+                             return $ concat $ map (\j -> (map T.fromStrict $ J.premise j) ++ [T.fromStrict $ J.hypothesis j]) parsedJSeM
       S.hPutStrLn handle $ I.headerOf style
       mapM_
         (\(sid,sentence) -> do
@@ -240,8 +242,8 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
                 --S.hPutStrLn S.stdout $ I.headerOf I.HTML
                 parsedJSeM <- J.xmlFile2JSeMData contents
                 mapM_ (\j -> do
-                          mapM_ T.putStr ["JSeM [", J.jsem_id j, "] "]
-                          proverf (J.premise j) (J.hypothesis j)
+                          mapM_ T.putStr ["JSeM [", T.fromStrict $ J.jsem_id j, "] "]
+                          proverf (map T.fromStrict $ J.premise j) (T.fromStrict $ J.hypothesis j)
                           ) parsedJSeM
                 --S.hPutStrLn S.stdout $ I.footerOf I.HTML
       case prover of
@@ -255,7 +257,7 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
       parsedJSeM <- J.xmlFile2JSeMData contents
       let sentences = case input of 
             SENTENCES -> T.lines contents
-            JSEM -> concat $ map (\jsem -> (J.premise jsem) ++ [J.hypothesis jsem]) parsedJSeM
+            JSEM -> concat $ map (\jsem -> (map T.fromStrict $ J.premise jsem) ++ [T.fromStrict $ J.hypothesis jsem]) parsedJSeM
       mapM_
         --(\(sid,sentence) -> do
         (\(_,sentence) -> do
@@ -284,13 +286,12 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
     -- 
     lightblueMainLocal JSeMParser contents = do
       parsedJSeM <- J.xmlFile2JSeMData contents
-      mapM_ (\jsem -> do
-                      putStr $ show $ J.answer jsem
-                      S.putChar '\t'
-                      mapM_ T.putStr $ J.premise jsem
-                      S.putChar '\t' 
-                      T.putStrLn $ J.hypothesis jsem
-                      ) parsedJSeM
+      forM_ parsedJSeM $ \jsem -> do
+        putStr $ show $ J.answer jsem
+        S.putChar '\t'
+        mapM_ StrictT.putStr $ J.premise jsem
+        S.putChar '\t' 
+        StrictT.putStrLn $ J.hypothesis jsem
 
 -- | lightblue --version
 -- |
