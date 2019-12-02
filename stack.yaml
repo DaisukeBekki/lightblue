@@ -3,6 +3,6 @@ packages:
 - .
 extra-deps:
   - git: https://github.com/DaisukeBekki/JSeM.git
-    commit: 3a880f3db35f7b44f18067e64520ccd74856193c
+    commit: 2cd9bb78c4072a5db7d53a9682f24f9b58a6d297
 flags: {}
 extra-package-dbs: []
