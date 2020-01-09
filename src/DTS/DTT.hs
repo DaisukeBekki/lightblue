@@ -25,7 +25,7 @@ import Interface.Text
 import Interface.TeX
 import Interface.HTML
 
--- | 'Proj' 'Fst' m is the first projection of m, 
+-- | 'Proj' 'Fst' m is the first projection of m,
 -- while 'Proj' 'Snd' m is the second projection of m.
 data Selector = Fst | Snd deriving (Eq, Show)
 
