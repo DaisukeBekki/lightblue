@@ -60,8 +60,8 @@ data Preterm =
   Natrec Preterm Preterm Preterm | -- ^ natrec
   Eq Preterm Preterm Preterm |     -- ^ Intensional equality types
   Refl Preterm Preterm |           -- ^ refl
-  Idpeel Preterm Preterm |         -- ^ idpeel
-  DRel Int T.Text Preterm Preterm  -- ^ Discourse relations
+  Idpeel Preterm Preterm          -- ^ idpeel
+  --DRel Int T.Text Preterm Preterm  -- ^ Discourse relations
   deriving (Eq)
 
 instance Show Preterm where
@@ -110,7 +110,7 @@ toUDTT preterm = case preterm of
   Eq a m n     -> UDTT.Eq (toUDTT a) (toUDTT m) (toUDTT n)
   Refl a m     -> UDTT.Refl (toUDTT a) (toUDTT m)
   Idpeel m n   -> UDTT.Idpeel (toUDTT m) (toUDTT n)
-  DRel i t m n -> UDTT.DRel i t (toUDTT m) (toUDTT n)
+  --DRel i t m n -> UDTT.DRel i t (toUDTT m) (toUDTT n)
 
 toUDTTselector :: Selector -> UDTT.Selector
 toUDTTselector Fst = UDTT.Fst
@@ -147,7 +147,7 @@ toDTT preterm = case preterm of
   UDTT.Eq a m n     -> Eq (toDTT a) (toDTT m) (toDTT n)
   UDTT.Refl a m     -> Refl (toDTT a) (toDTT m)
   UDTT.Idpeel m n   -> Idpeel (toDTT m) (toDTT n)
-  UDTT.DRel _ _ _ _ -> Top
+  --UDTT.DRel _ _ _ _ -> Top
 
 toDTTselector :: UDTT.Selector -> Selector
 toDTTselector UDTT.Fst = Fst

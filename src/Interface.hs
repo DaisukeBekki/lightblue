@@ -37,7 +37,7 @@ import qualified DTS.UDTT as DTS
 import qualified DTS.UDTTwithName as VN
 import qualified DTS.Prover as Prover
 import qualified DTS.Prover.Judgement as Ty
-import qualified Classifier.DiscourseRelation as DR
+--import qualified Classifier.DiscourseRelation as DR
 import qualified Interface.SVG as SVG
 
 {- Some functions for pretty printing Chart/Nodes -}
@@ -217,10 +217,10 @@ sr2drelTSV preterm = case preterm of
   VN.Eq a m n -> do{sr2drelTSV a; sr2drelTSV m; sr2drelTSV n}
   VN.Refl a m -> do{sr2drelTSV a; sr2drelTSV m}
   VN.Idpeel m n -> do{sr2drelTSV m; sr2drelTSV n}
-  VN.DRel i t a b -> do
-                     DR.outputTSV i t a b
-                     sr2drelTSV a
-                     sr2drelTSV b
+  --VN.DRel i t a b -> do
+  --                   DR.outputTSV i t a b
+  --                   sr2drelTSV a
+  --                   sr2drelTSV b
   _ -> return ()
 
 {-

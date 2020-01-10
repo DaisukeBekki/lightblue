@@ -67,31 +67,31 @@ instance Typeset Selector where
 
 -- | Preterms of Underspecified Dependent Type Theory (UDTT).
 data Preterm =
-  Var Int |               -- ^ Variables
-  Con T.Text |            -- ^ Constant symbols
-  Type |                  -- ^ The sort \"type\"
-  Kind |                  -- ^ The sort \"kind\"
-  Pi Preterm Preterm |    -- ^ Dependent function types (or Pi types)
-  Not Preterm |           -- ^ Negations
-  Lam Preterm |           -- ^ Lambda abstractions
-  App Preterm Preterm |   -- ^ Function Applications
-  Sigma Preterm Preterm | -- ^ Dependent product types (or Sigma types)
-  Pair Preterm Preterm |  -- ^ Pairs
-  Proj Selector Preterm | -- ^ (First and second) Projections
-  Asp Int Preterm |       -- ^ Underspesified terms
-  Lamvec Preterm |        -- ^ Lambda abstractions of a variable vector
-  Appvec Int Preterm |    -- ^ Function applications of a variable vector
-  Unit |                  -- ^ The unit term (of type Top)
-  Top |                   -- ^ The top type
-  Bot |                   -- ^ The bottom type
-  Nat |                   -- ^ Natural number type (Nat)
-  Zero |                  -- ^ 0 (of type Nat)
-  Succ Preterm |          -- ^ The successor function
-  Natrec Preterm Preterm Preterm | -- ^ natrec
-  Eq Preterm Preterm Preterm |     -- ^ Intensional equality types
-  Refl Preterm Preterm |           -- ^ refl
-  Idpeel Preterm Preterm |         -- ^ idpeel
-  DRel Int T.Text Preterm Preterm  -- ^ Discourse relations
+  Var Int                 -- ^ Variables
+  | Con T.Text            -- ^ Constant symbols
+  | Type                  -- ^ The sort \"type\"
+  | Kind                  -- ^ The sort \"kind\"
+  | Pi Preterm Preterm    -- ^ Dependent function types (or Pi types)
+  | Not Preterm           -- ^ Negations
+  | Lam Preterm           -- ^ Lambda abstractions
+  | App Preterm Preterm   -- ^ Function Applications
+  | Sigma Preterm Preterm -- ^ Dependent product types (or Sigma types)
+  | Pair Preterm Preterm  -- ^ Pairs
+  | Proj Selector Preterm -- ^ (First and second) Projections
+  | Asp Int Preterm       -- ^ Underspesified terms
+  | Lamvec Preterm        -- ^ Lambda abstractions of a variable vector
+  | Appvec Int Preterm    -- ^ Function applications of a variable vector
+  | Unit                  -- ^ The unit term (of type Top)
+  | Top                   -- ^ The top type
+  | Bot                   -- ^ The bottom type
+  | Nat                   -- ^ Natural number type (Nat)
+  | Zero                  -- ^ 0 (of type Nat)
+  | Succ Preterm          -- ^ The successor function
+  | Natrec Preterm Preterm Preterm -- ^ natrec
+  | Eq Preterm Preterm Preterm     -- ^ Intensional equality types
+  | Refl Preterm Preterm           -- ^ refl
+  | Idpeel Preterm Preterm         -- ^ idpeel
+  -- DRel Int T.Text Preterm Preterm  -- ^ Discourse relations
   deriving (Eq)
 
 instance Show Preterm where
@@ -137,7 +137,7 @@ toTextDeBruijn preterm = case preterm of
     Eq a m n -> T.concat [toTextDeBruijn m, "=[", toTextDeBruijn a, "]", toTextDeBruijn n]
     Refl a m -> T.concat ["refl", toTextDeBruijn a, "(", toTextDeBruijn m, ")"]
     Idpeel m n -> T.concat ["idpeel(", toTextDeBruijn m, ",", toTextDeBruijn n, ")"]
-    DRel i t m n -> T.concat ["DRel", T.pack (show i), "[", t, "](", toTextDeBruijn m, ",", toTextDeBruijn n, ")"]
+    --DRel i t m n -> T.concat ["DRel", T.pack (show i), "[", t, "](", toTextDeBruijn m, ",", toTextDeBruijn n, ")"]
 
 -- | A type of an element of a type signature, that is, a list of pairs of a preterm and a type.
 -- ex. [entity:type, state:type, event:type, student:entity->type]
@@ -178,7 +178,7 @@ subst preterm l i = case preterm of
   Eq a m n   -> Eq (subst a l i) (subst m l i) (subst n l i)
   Refl a m   -> Refl (subst a l i) (subst m l i)
   Idpeel m n -> Idpeel (subst m l i) (subst n l i)
-  DRel j t m n -> DRel j t (subst m l i) (subst n l i)
+  --DRel j t m n -> DRel j t (subst m l i) (subst n l i)
 
 -- | shiftIndices m d i
 -- add d to all the indices that is greater than or equal to i within m (=d-place shift)
@@ -204,7 +204,7 @@ shiftIndices preterm d i = case preterm of
   Eq a m n   -> Eq (shiftIndices a d i) (shiftIndices m d i) (shiftIndices n d i)
   Refl a m   -> Refl (shiftIndices a d i) (shiftIndices m d i)
   Idpeel m n -> Idpeel (shiftIndices m d i) (shiftIndices n d i)
-  DRel j t m n -> DRel j t (shiftIndices m d i) (shiftIndices n d i)
+  --DRel j t m n -> DRel j t (shiftIndices m d i) (shiftIndices n d i)
   m -> m
 
 -- | Beta reduction
@@ -245,7 +245,7 @@ betaReduce preterm = case preterm of
   Idpeel m n -> case betaReduce m of
                   Refl _ m' -> betaReduce $ (App n m')
                   m' -> Idpeel m' (betaReduce n)
-  DRel i t m n -> DRel i t (betaReduce m) (betaReduce n)
+  --DRel i t m n -> DRel i t (betaReduce m) (betaReduce n)
 
 -- | strong Beta reduction
 strongBetaReduce :: Int -> Preterm -> Preterm
@@ -289,7 +289,7 @@ strongBetaReduce t preterm = case preterm of
   Idpeel m n -> case strongBetaReduce 0 m of
                   Refl _ m' -> strongBetaReduce 0 (App n m')
                   m' -> Idpeel m' (strongBetaReduce 0 n)
-  DRel i text m n -> DRel i text (strongBetaReduce 0 m) (strongBetaReduce 0 n)
+  --DRel i text m n -> DRel i text (strongBetaReduce 0 m) (strongBetaReduce 0 n)
 
 -- | eliminates nested Sigma constructions from a given preterm
 sigmaElimination :: Preterm -> Preterm
@@ -313,7 +313,7 @@ sigmaElimination preterm = case preterm of
   Eq a m n   -> Eq (sigmaElimination a) (sigmaElimination m) (sigmaElimination n)
   Refl a m   -> Refl (sigmaElimination a) (sigmaElimination m)
   Idpeel m n -> Idpeel (sigmaElimination m) (sigmaElimination n)
-  DRel j t m n -> DRel j t (sigmaElimination m) (sigmaElimination n)
+  --DRel j t m n -> DRel j t (sigmaElimination m) (sigmaElimination n)
   m -> m
 
 -- | adds two preterms (of type `Nat`).
@@ -346,7 +346,7 @@ addLambda i preterm = case preterm of
   Appvec j m | j > i     -> Appvec (j+1) (addLambda i m)
              | j < i     -> Appvec j (addLambda i m)
              | otherwise -> Appvec j (App (addLambda i m) (Var (j+1)))
-  DRel j t m n -> DRel j t (addLambda i m) (addLambda i n)
+  --DRel j t m n -> DRel j t (addLambda i m) (addLambda i n)
   m -> m
 
 -- | deleteLambda i preterm: the second subroutine for 'transvec' function,
@@ -368,7 +368,7 @@ deleteLambda i preterm = case preterm of
   Appvec j m | j > i     -> Appvec (j-1) (deleteLambda i m)
              | j < i     -> Appvec j (deleteLambda i m)
              | otherwise -> deleteLambda i m
-  DRel j t m n -> DRel j t (deleteLambda i m) (deleteLambda i n)
+  --DRel j t m n -> DRel j t (deleteLambda i m) (deleteLambda i n)
   m -> m
 
 -- | replaceLambda i preterm: the third subroutine for 'transvec' function,
@@ -524,12 +524,12 @@ fromDeBruijn vnames preterm = case preterm of
     m' <- fromDeBruijn vnames m
     n' <- fromDeBruijn vnames n
     return $ VN.Idpeel m' n'
-  DRel _ t m n -> do
-    j' <- dRelIndex
-    m' <- fromDeBruijn vnames m
-    n' <- fromDeBruijn vnames n
-    return $ VN.DRel j' t m' n'
-    -- App (App (Con (T.concat ["DRel",T.pack $ show j',"[",t,"]"])) m') n'
+  -- DRel _ t m n -> do
+  --   j' <- dRelIndex
+  --   m' <- fromDeBruijn vnames m
+  --   n' <- fromDeBruijn vnames n
+  --   return $ VN.DRel j' t m' n'
+  -- App (App (Con (T.concat ["DRel",T.pack $ show j',"[",t,"]"])) m') n'
 
 variableNameFor :: Preterm -> Indexed VN.VarName
 variableNameFor preterm = 
@@ -576,7 +576,7 @@ toDeBruijn vnames preterm = case preterm of
   VN.Eq a m n -> Eq (toDeBruijn vnames a) (toDeBruijn vnames m) (toDeBruijn vnames n)
   VN.Refl a m -> Refl (toDeBruijn vnames a) (toDeBruijn vnames m)
   VN.Idpeel m n -> Idpeel (toDeBruijn vnames m) (toDeBruijn vnames n)
-  VN.DRel j t m n -> DRel j t (toDeBruijn vnames m) (toDeBruijn vnames n)
+  --VN.DRel j t m n -> DRel j t (toDeBruijn vnames m) (toDeBruijn vnames n)
 
 {- Judgment of UDTT in de Bruijn notation -}
 
