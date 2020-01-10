@@ -14,97 +14,6 @@ import qualified DTS.Prover.Judgement as J
 import Data.Time　as Ti
 import System.Timeout
 
-
--- | Preterms of Underspecified Dependent Type Theory (DTT).
-
-
-
--- data Pseudo_type =
---   Prop |
---   Set
---   deriving (Eq)
---
--- instance Show Pseudo_type where
---   show Prop = "prop"
---   show Set = "set"
---
--- instance Show Pseudo_kind where
---   show Type_prop = "type_prop"
---   show Type_set = "type_set"
---
--- data Pseudo_kind =
---   Type_prop |
---   Type_set
---   deriving (Eq)
---
--- data Selector = Fst | Snd deriving (Eq, Show)
-
--- instance Show Pseudo_term where
---   show = show . toUDTT .toDTT
-
--- data Pseudo_term =
---   Kind Pseudo_kind |
---   Type Pseudo_type |
---   Var Int |               -- ^ Variables
---   Con T.Text |            -- ^ Constant symbols
---   App Pseudo_term Pseudo_term |   -- ^ Function Applications
---   Pair Pseudo_term Pseudo_term |  -- ^ Pairs
---   Proj Selector Pseudo_term | -- ^ (First and second) Projections
---   Lam Pseudo_term Pseudo_term | --l921~         -- ^ Lambda abstractions
---   Pi Pseudo_term Pseudo_term |    -- ^ Dependent function types (or Pi types)
---   Sigma Pseudo_term Pseudo_term | -- ^ Dependent product types (or Sigma types)
---   Bot |
---   Top
---   deriving (Eq)
---
--- instance Show Pseudo_term where
---   show = show . toDTT
-
-
--- fromDTTselector :: DT.Selector -> Selector
--- fromDTTselector DT.Fst = Fst
--- fromDTTselector DT.Snd = Snd
---
--- fromDTT :: DT.Preterm -> Pseudo_term
--- fromDTT (DT.Var i) = Var i
--- fromDTT (DT.Con t) = Con t
--- fromDTT DT.Type = Type Prop
--- fromDTT DT.Kind = Kind Type_prop
--- fromDTT (DT.Pi term1 term2) = Pi (fromDTT term1) (fromDTT term2)
--- fromDTT (DT.Not term) = Pi (fromDTT term) Bot
--- fromDTT (DT.Lam term) = Lam (Type Prop) (fromDTT term)
--- fromDTT (DT.App term1 term2) = App (fromDTT term1) (fromDTT term2)
--- fromDTT (DT.Sigma term1 term2) = Sigma (fromDTT term1) (fromDTT term2)
--- fromDTT (DT.Pair term1 term2) = Pair (fromDTT term1) (fromDTT term2)
--- fromDTT (DT.Proj selector term1) = Proj (fromDTTselector selector) (fromDTT term1)
--- fromDTT DT.Unit = undefined
--- fromDTT DT.Top = Top
--- fromDTT DT.Bot = Bot
--- fromDTT DT.Nat = undefined
--- fromDTT DT.Zero = undefined
--- fromDTT (DT.Succ term) = undefined
--- fromDTT (DT.Natrec term1 term2 term3) = undefined
--- fromDTT (DT.Eq term1 term2 term3) = undefined
--- fromDTT (DT.Refl term1 term2) = undefined
--- fromDTT (DT.Idpeel term1 term2) = undefined
--- fromDTT (DT.DRel i t term1 term2) = undefined
---
--- toDTTselector :: Selector -> DT.Selector
--- toDTTselector Fst = DT.Fst
--- toDTTselector Snd = DT.Snd
---
--- toDTT :: Pseudo_term -> DT.Preterm
--- toDTT (Kind _) = DT.Kind
--- toDTT (Type _) = DT.Type
--- toDTT ( Var i) = DT.Var i
--- toDTT ( Con t) = DT.Con t
--- toDTT ( App term1 term2) = DT.App (toDTT term1) (toDTT term2)
--- toDTT ( Pair term1 term2 )= DT.Pair (toDTT term1) (toDTT term2)
--- toDTT ( Proj selector term) = DT.Proj (toDTTselector selector) (toDTT term)
--- toDTT ( Lam term1 term2) = DT.Lam (toDTT term2)
--- toDTT ( Pi term1 term2 )= DT.Pi (toDTT term1) (toDTT term2)
--- toDTT ( Sigma term1 term2) = DT.Sigma (toDTT term1) (toDTT term2)
-
 data Arrowterm =
   Conclusion DT.Preterm | --Pseudo_term |
   Arrow [Arrowterm]  Arrowterm --[Pseudo_term] DT.Preterm--Arrowterm
@@ -112,14 +21,12 @@ data Arrowterm =
 
 instance Show Arrowterm where
   show (Conclusion p)=   ( show p)
-  show (Arrow env r) =  "[ " ++ (foldr (++) "" $ map show env) ++ " ] =>" ++  (show r)
+  show (Arrow env r) =  "[ " ++ (tail (foldr (\a -> \b -> "," ++ a  ++ b) "" $ map show env)) ++ " ] =>" ++  (show r)
 
-fromAJudgement2term :: AJudgement -> Arrowterm
-fromAJudgement2term ( AJudgement env aterm atype) = Arrow env atype
-
-fromAJudgement2dtpreterm  :: AJudgement -> DT.Preterm
-fromAJudgement2dtpreterm   = arrow2DT . fromAJudgement2term
-
+arrow2DT :: Arrowterm -> DT.Preterm
+arrow2DT (Conclusion a) = a
+arrow2DT (Arrow [] t) = arrow2DT t
+arrow2DT (Arrow (f:r) t) = arrow2DT (Arrow r (Conclusion (DT.Pi (arrow2DT f) (arrow2DT t))))
 
 type TEnv = [DT.Preterm]
 type SUEnv = [(T.Text,DT.Preterm)]
@@ -130,32 +37,11 @@ data AJudgement =
   AJudgement AEnv Arrowterm Arrowterm
     deriving (Eq, Show)
 
---type PTEnv = [Pseudo_term]
+fromAJudgement2term :: AJudgement -> Arrowterm
+fromAJudgement2term ( AJudgement env aterm atype) = Arrow env atype
 
--- -- | Beta reduction
--- betaReduce :: PTEnv ->  Pseudo_term -> Pseudo_term
--- betaReduce env preterm = case preterm of
---   Var i  -> Var i
---   Con c  -> Con c
---   Type   -> Type
---   Kind   -> Kind
---   Pi a b -> Pi (betaReduce env a) (betaReduce  b)
---   Lam m n -> Lam (betaReduce env m) (betaReduce n)
---   App m n -> case betaReduce m of
---     Lam u v ->
---       betaReduce (shiftIndices (subst v (shiftIndices n 1 0) 0) (-1) 0)
---     e -> App e (betaReduce n)
---   Sigma a b -> Sigma (betaReduce a) (betaReduce b)
---   Pair m n  -> Pair (betaReduce m) (betaReduce n)
---   Proj s m  -> case betaReduce m of
---     Pair x y -> case s of
---                   Fst -> x
---                   Snd -> y
---     e -> Proj s e
---   Top  -> Top
---   Bot  -> Bot
-
-
+fromAJudgement2dtpreterm  :: AJudgement -> DT.Preterm
+fromAJudgement2dtpreterm   = arrow2DT . fromAJudgement2term
 
 dne =   DT.Lam ((DT.Pi (DT.Con (T.pack "Prop")) (DT.Pi (DT.Pi (DT.Pi (DT.Var 1)  DT.Bot) (DT.Bot)) (DT.Var 2))))
 efq = DT.Lam (DT.Pi DT.Bot (DT.Var 1))
@@ -165,27 +51,6 @@ classic = [dne,efq]
 getAxiom :: String -> TEnv
 getAxiom "classic"= classic ++ []
 
--- -- | Substitution of the variable i in a preterm M with a preterm L
--- --   "subst M L i" = M[L/i]
--- subst :: UD.Preterm -> UD.Preterm -> UD.Preterm -> UD.Preterm
--- subst preterm l i =
---   if preterm == i then
---     l
---   else
---     case preterm of
---       UD.Pi a b -> UD.Pi (subst a l i) (subst b (UD.shiftIndices l 1 0) (UD.shiftIndices i 1 0))
---       UD.Not m -> UD.Not (subst m l i)
---       UD.Lam m -> UD.Lam (subst m (UD.shiftIndices l 1 0) (UD.shiftIndices i 1 0))
---       UD.App m n    -> UD.App (subst m l i) (subst n l i)
---       UD.Sigma a b  -> UD.Sigma (subst a l i) (subst b (UD.shiftIndices l 1 0) (UD.shiftIndices i 1 0))
---       UD.Pair m n   -> UD.Pair (subst m l i) (subst n l i)
---       UD.Proj s m   -> UD.Proj s (subst m l i)
---       UD.Asp j m    -> UD.Asp j (subst m l i)
---       UD.Eq a m n   -> UD.Eq (subst a l i) (subst m l i) (subst n l i)
---       others -> others
-
--- | Substitution of the variable i in a preterm M with a preterm L
---   "subst M L i" = M[L/i]
 subst :: DT.Preterm -> DT.Preterm -> DT.Preterm -> DT.Preterm
 subst preterm l i =
   if preterm == i then
@@ -229,8 +94,6 @@ prove var_env sig_env preterm =
 -- sigma_rules = [(Type Set,Type Prop),(Type Prop, Type Prop)]
 pi_rules = [(DT.Type, DT.Type),  (DT.Type, DT.Kind),  (DT.Kind, DT.Kind),   (DT.Kind, DT.Type)]
 sigma_rules = [(DT.Type,DT.Type)]
-
-
 
 find_sig :: SUEnv -> T.Text -> Maybe DT.Preterm
 find_sig [] target = Nothing
@@ -336,65 +199,42 @@ arrow_notat (DT.Lam p) =
 arrow_notat _= undefined
 
 --forwardができてからやる
--- forward_context :: AEnv -> AEnv
--- forward_context a_context =
---   let r_a_context = reverse a_context
---   in
-
-arrow2DT :: Arrowterm -> DT.Preterm
-arrow2DT (Conclusion a) = a
-arrow2DT (Arrow [] t) = arrow2DT t
-arrow2DT (Arrow (f:r) t) = arrow2DT (Arrow r (Conclusion (DT.Pi (arrow2DT f) (arrow2DT t))))
+forward_context :: AEnv -> [AJudgement]
+forward_context [] = []
+forward_context (f:r) =
+  (to_forward (length (f:r)) f) ++ forward_context r
 
 sigma_forward :: Arrowterm -> DT.Preterm -> DT.Selector -> DT.Preterm -> [AJudgement]
 sigma_forward origin base  selector (DT.Sigma a b) = forward origin (DT.Proj selector base) $Conclusion (DT.Sigma a b)
 sigma_forward origin base selector preterm_a =  (AJudgement [origin] (Conclusion $ DT.Proj selector base) (Conclusion $ preterm_a)) : (forward origin (DT.Proj selector base) $Conclusion preterm_a)
 
-lam_sigma_forward :: Arrowterm -> DT.Preterm -> DT.Selector -> DT.Preterm -> [AJudgement]
-lam_sigma_forward origin base  selector (DT.Sigma a b) = forward origin (DT.Proj selector base) $Conclusion (DT.Sigma a b)
-lam_sigma_forward origin base selector preterm_a =  (AJudgement [origin] (Conclusion $ DT.Proj selector base) (Conclusion $ preterm_a)) : (forward origin (DT.Proj selector base) $Conclusion preterm_a)
+lam_sigma_forward_hojo :: [Arrowterm] -> AJudgement -> AJudgement
+lam_sigma_forward_hojo hs (AJudgement env (Conclusion term) (a_type)) =
+  AJudgement env  (Conclusion (foldr (\x -> \y -> DT.Lam y) term hs)) (Arrow hs a_type)
 
+lam_sigma_forward ::  [Arrowterm] -> Arrowterm -> DT.Preterm ->  Arrowterm -> [AJudgement]
+lam_sigma_forward  [] origin base (Arrow a (Conclusion ( DT.Sigma preterm_a preterm_b))) =
+  map (lam_sigma_forward_hojo a) (sigma_forward origin base DT.Snd (subst preterm_b (DT.Proj DT.Fst (base)) (DT.Var 0))) ++ (sigma_forward origin base DT.Fst preterm_a)
+lam_sigma_forward (f:r) origin base (Arrow a b) =
+  lam_sigma_forward  r origin (DT.App base (DT.Con (((T.pack . (\x -> (show base )++"_"++x) . show) (length (f:r)))) )) (Arrow a b)
 
+to_forward :: Int -> Arrowterm -> [AJudgement]
+to_forward num aterm =
+  forward aterm (DT.Con (T.pack $ show num)) aterm
 
 show_forward :: Arrowterm -> TEnv
 show_forward aterm =
   map  fromAJudgement2dtpreterm $forward aterm (DT.Con (T.pack "p")) aterm
 
-sigma_subst :: DT.Preterm -> DT.Preterm
---sigma_subst (DT.Sigma a b)  = DT.Pi (DT.Sigma a b) b[(DT.Proj DT.Fst (DT.Var 1))/(DT.Var 0)]
--- sigma_subst (DT.Sigma a b) =
---   DT.Pi (DT.Sigma a b) (DT.Sigma a (subst b (DT.Proj DT.Fst (DT.Var 1)) (DT.Var 0)))
--- sigma_subst pre = pre
-sigma_subst (DT.Sigma a b) =
-  -- DT.Lam  (DT.Sigma a (subst b (DT.Proj DT.Fst (DT.Var 1)) (DT.Var 0)))
-  (DT.Sigma a (subst b (DT.Proj DT.Fst (DT.Con (T.pack "p"))) (DT.Var 0)))
-sigma_subst pre = pre
-
-getsigma :: DT.Preterm -> DT.Preterm
-getsigma preterm =
-  case sigma_subst preterm of
-    DT.Pi a b -> subst b a (DT.Var 0)
-    _ -> undefined
-
 forward :: Arrowterm -> DT.Preterm -> Arrowterm  ->  [AJudgement]
-{-
-?- forward(p:sigma(X:a,f-X),1,R).
-X = pi1(p),
-R = [pi1(p):a, pi2(p):f-pi1(p)].
--}
-{-
-?- forward(p:sigma(X:sigma(Z:b,c),sigma(Y:b,f-X)),1,R).
-X = pi1(p),
-Z = pi1(pi1(p)),
-Y = pi1(pi2(p)),
-R = [pi1(pi1(p)):b, pi2(pi1(p)):c, pi1(pi2(p)):b, pi2(pi2(p)):f-pi1(p)].
--}
+-- sigma = DT.Sigma (DT.Sigma (DT.Con (T.pack "b")) (DT.Con (T.pack "c"))) (DT.Sigma (DT.Var 0) (DT.App (DT.Var 0) (DT.Var 1)))
+-- lamsig = Arrow [Conclusion DT.Type,Conclusion DT.Type] (Conclusion sigma)
 forward origin base (Conclusion (DT.Sigma preterm_a preterm_b)) =
-  -- (sigma_forward origin base DT.Fst preterm_a) ++ (sigma_forward origin base DT.Snd  ((DT.toDTT . UD.betaReduce . DT.toUDTT) (DT.Proj DT.Snd (subst (DT.Pair preterm_a preterm_b) (DT.Var (-1)) (DT.Proj DT.Fst base)))))
-  -- (sigma_forward origin base DT.Fst preterm_a) ++ (sigma_forward origin base DT.Snd  ((DT.toDTT . UD.betaReduce . DT.toUDTT) (DT.Proj DT.Snd (subst (DT.Pair preterm_a preterm_b) (DT.Proj DT.Fst (base)) (DT.Var 0)))))
   (sigma_forward origin base DT.Fst preterm_a) ++ (sigma_forward origin base DT.Snd  (subst preterm_b (DT.Proj DT.Fst (base)) (DT.Var 0)) )
-forward origin base (Arrow a (Conlusion (DT.Sigma b c))) =
-   (lam_sigma_forward origin base DT.Snd  (subst preterm_b (DT.Proj DT.Fst (base)) (DT.Var 0)) ) ++ (lam_sigma_forward origin base DT.Fst preterm_a)
+forward origin base (Arrow a (Conclusion (DT.Sigma preterm_a preterm_b))) =
+  lam_sigma_forward a origin base (Arrow a (Conclusion (DT.Sigma preterm_a preterm_b)))
+forward origin base (Arrow a (Arrow b c)) =
+  forward origin base (Arrow (a ++ b) c)
 forward origin base arrowterm = []
 
 deduce :: AEnv->Arrowterm->Int->DT.Preterm
