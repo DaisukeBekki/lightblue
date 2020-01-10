@@ -4,136 +4,238 @@ module DTS.Alligator.Prover
 ) where
 
 import qualified DTS.DTT as DT            -- DTT
+import qualified DTS.UDTT as UD            -- DTT
 import qualified Data.Text.Lazy as T      -- text
 import qualified Data.List as L           -- base
 import qualified Control.Applicative as M -- base
 import qualified Control.Monad as M       -- base
 import qualified DTS.UDTTwithName as VN
+import qualified DTS.Prover.Judgement as J
 import Data.Time　as Ti
 import System.Timeout
 
--- TEnv : DTTの型環境の型
--- | haddock
-type TEnv = [DT.Preterm]
-
--- -- Judgement : DTTのジャッジメントの定義
--- data Judgement =
---   Judgement TEnv DT.Preterm DT.Preterm
---     deriving (Eq, Show)
-
-type Tterm_Ttype = (DT.Preterm,DT.Preterm)
-
-getTterm :: Tterm_Ttype -> DT.Preterm
-getTterm = fst
-
-getTtype :: Tterm_Ttype -> DT.Preterm
-getTtype = snd
-
--- | Preterms of Underspecified Dependent Type Theory (DTT).
-data Pseudo_type =
-  Prop |
-  Set
-  deriving (Eq)
-
-data Pseudo_sort =
-  Type_prop |
-  Type_set
-  deriving (Eq)
-
-data Selector = Fst | Snd deriving (Eq, Show)
-
-data Pseudo_term =
-  Pseudo_sort |
-  Pseudo_type |
-  Var Int |               -- ^ Variables
-  Con T.Text |            -- ^ Constant symbols
-  App Pseudo_term Pseudo_term |   -- ^ Function Applications
-  Pair Pseudo_term Pseudo_term |  -- ^ Pairs
-  Proj Selector Pseudo_term | -- ^ (First and second) Projections
-  Lam Pseudo_term Pseudo_term | --l921~         -- ^ Lambda abstractions
-  Pi Pseudo_term Pseudo_term |    -- ^ Dependent function types (or Pi types)
-  Sigma Pseudo_term Pseudo_term  -- ^ Dependent product types (or Sigma types)
-  deriving (Eq)
-
-fromDTT :: DT.Preterm -> Pseudo_term
-fromDTT (DT.Var i) = Var i
-fromDTT (DT.Con t) = Con t
-fromDTT DT.Type = undefined
-fromDTT DT.Kind = undefined
-fromDTT (DT.Pi term1 term2) = undefined
-fromDTT (DT.Not term) = undefined
-fromDTT (DT.Lam term) = undefined
-fromDTT (DT.App term1 term2) = undefined
-fromDTT (DT.Sigma term1 term2) = undefined
-fromDTT (DT.Pair term1 term2) = undefined
-fromDTT (DT.Proj selector term1) = undefined
-fromDTT DT.Unit = undefined
-fromDTT DT.Top = undefined
-fromDTT DT.Bot = undefined
-fromDTT DT.Nat = undefined
-fromDTT DT.Zero = undefined
-fromDTT (DT.Succ term) = undefined
-fromDTT (DT.Natrec term1 term2 term3) = undefined
-fromDTT (DT.Eq term1 term2 term3) = undefined
-fromDTT (DT.Refl term1 term2) = undefined
-fromDTT (DT.Idpeel term1 term2) = undefined
-fromDTT (DT.DRel i t term1 term2) = undefined
-
-toDTTselector :: Selector -> DT.Selector
-toDTTselector Fst = DT.Fst
-toDTTselector Snd = DT.Snd
-
-toDTT :: Pseudo_term -> DT.Preterm
-toDTT Pseudo_sort = DT.Kind
-toDTT Pseudo_type = DT.Type
-toDTT ( Var i) = DT.Var i
-toDTT ( Con t) = DT.Con t
-toDTT ( App term1 term2) = DT.App (toDTT term1) (toDTT term2)
-toDTT ( Pair term1 term2 )= DT.Pair (toDTT term1) (toDTT term2)
-toDTT ( Proj selector term) = DT.Proj (toDTTselector selector) (toDTT term)
-toDTT ( Lam term1 term2) = undefined
-toDTT ( Pi term1 term2 )= undefined
-toDTT ( Sigma term1 term2) = undefined
-
 data Arrowterm =
-  Conclusion DT.Preterm |
-  Arrow [DT.Preterm] Arrowterm
-    deriving (Show)
+  Conclusion DT.Preterm | --Pseudo_term |
+  Arrow [Arrowterm]  Arrowterm --[Pseudo_term] DT.Preterm--Arrowterm
+  deriving (Eq)
+
+instance Show Arrowterm where
+  show (Conclusion p)=   ( show p)
+  show (Arrow env r) =  "[ " ++ (tail (foldr (\a -> \b -> "," ++ a  ++ b) "" $ map show env)) ++ " ] =>" ++  (show r)
+
+arrow2DT :: Arrowterm -> DT.Preterm
+arrow2DT (Conclusion a) = a
+arrow2DT (Arrow [] t) = arrow2DT t
+arrow2DT (Arrow (f:r) t) = arrow2DT (Arrow r (Conclusion (DT.Pi (arrow2DT f) (arrow2DT t))))
+
+type TEnv = [DT.Preterm]
+type SUEnv = [(T.Text,DT.Preterm)]
 
 type AEnv = [Arrowterm]
 
-dne =  (DT.Pi (DT.Con (T.pack "Prop")) (DT.Pi (DT.Pi (DT.Pi (DT.Var 0)  DT.Bot) (DT.Bot)) (DT.Var 1)))
-efq = DT.Pi (DT.Con (T.pack "Prop")) (DT.Pi DT.Bot (DT.Var 1))
+data AJudgement =
+  AJudgement AEnv Arrowterm Arrowterm
+    deriving (Eq, Show)
+
+fromAJudgement2term :: AJudgement -> Arrowterm
+fromAJudgement2term ( AJudgement env aterm atype) = Arrow env atype
+
+fromAJudgement2dtpreterm  :: AJudgement -> DT.Preterm
+fromAJudgement2dtpreterm   = arrow2DT . fromAJudgement2term
+
+dne =   DT.Lam ((DT.Pi (DT.Con (T.pack "Prop")) (DT.Pi (DT.Pi (DT.Pi (DT.Var 1)  DT.Bot) (DT.Bot)) (DT.Var 2))))
+efq = DT.Lam (DT.Pi DT.Bot (DT.Var 1))
 
 classic = [dne,efq]
 
+getAxiom :: String -> TEnv
+getAxiom "classic"= classic ++ []
 
+subst :: DT.Preterm -> DT.Preterm -> DT.Preterm -> DT.Preterm
+subst preterm l i =
+  if preterm == i then
+    l
+  else
+    case preterm of
+      DT.Pi a b -> DT.Pi (subst a l i) (subst b (DT.toDTT (UD.shiftIndices (DT.toUDTT l) 1 0))  (DT.toDTT (UD.shiftIndices (DT.toUDTT i) 1 0)))
+      DT.Not m -> DT.Not (subst m l i)
+      DT.Lam m -> DT.Lam (subst m (DT.toDTT (UD.shiftIndices (DT.toUDTT l) 1 0)) (DT.toDTT (UD.shiftIndices (DT.toUDTT i) 1 0)))
+      DT.App m n    -> DT.App (subst m l i) (subst n l i)
+      DT.Sigma a b  -> DT.Sigma (subst a l i) (subst b (DT.toDTT (UD.shiftIndices (DT.toUDTT l) 1 0)) (DT.toDTT (UD.shiftIndices (DT.toUDTT i) 1 0)))
+      DT.Pair m n   -> DT.Pair (subst m l i) (subst n l i)
+      DT.Proj s m   -> DT.Proj s (subst m l i)
+      DT.Eq a m n   -> DT.Eq (subst a l i) (subst m l i) (subst n l i)
+      others -> others
 
-prove ::  TEnv -> DT.Preterm -> DT.Preterm
-prove input_env preterm = undefined
-
-arrow_notat :: DT.Preterm -> Arrowterm
---入力にArrowtermがあることはないとする
-arrow_notat ( DT.Var i )= Conclusion $ DT.Var i
-arrow_notat ( DT.Con i )= Conclusion $ DT.Con i
---arrow_notat Arrowterm context preterm =
-arrow_notat preterm = undefined
-
-arrow_segment_notat :: [Tterm_Ttype] -> AEnv
-arrow_segment_notat = map ( arrow_notat . getTtype)
-{--
- arrow_segment_notat ::
-
-arrow_segment_notat([],[]):-!.
-
-arrow_segment_notat([A:B1|T1],[A:B2|T2]):-
-  arrow_notat(B1,B2),
-  !,
-  arrow_segment_notat(T1,T2).
+{-
+prove([p:prop,q:prop,r:prop,s:pi(X:false,p)],_X: (p \/ ~p) ).
+reverse([p:prop,q:prop,r:prop,s:pi(X:false,p)],I_Context),get_act_contexts(Base_Context),append(I_Context,Base_Context,Context),initialize_fresh_vars(Context,[v,a]),standard_context_notat(Context,N_Context),reduce_context(N_Context,NR_Context),check_context(NR_Context),copy_term(NR_Context,[X:T1|Tail]),check_type(T1,_T3,Tail).
 -}
 
-forward :: Arrowterm -> AEnv
-forward arrowterm = undefined
+prove ::  TEnv -> SUEnv -> DT.Preterm -> DT.Preterm
+--input_env : [DT.Preterm] preterm : リストを使っていない(DT.Pi(DT.Pi ... ...))というような形
+-- @alligator prove([p:prop,q:set,r:prop],_X:p -> r -> p & r). / prove([p:prop,q:set,r:prop],_X:pi(X:p,pi(Y:r,sigma(Z:p,r)))).
+-- @DTS.Alligator.Prover prove
+  --[(DT.Con (T.pack "prop")),(DT.Con (T.pack "set")),(DT.Con (T.pack "prop"))]
+  --(DT.Pi (DT.Var 0) (DT.Sigma (DT.Var 0,DT.Var 3)))
+
+prove var_env sig_env preterm =
+  --TEnvをPTEnvに変える
+  let var_env' = (reverse var_env) ++ (getAxiom "classic")
+      reduce_env = map (DT.toDTT . UD.betaReduce . DT.toUDTT) var_env' in
+      if(check_context reduce_env sig_env) then
+        let arrow_env = map arrow_notat reduce_env
+            arrow_term = (arrow_notat . DT.toDTT . UD.betaReduce . DT.toUDTT) preterm
+        in undefined
+      else undefined--check_contextでtypeが分からないものが出てきた
+--initialize_fresh_vars
+
+-- pi_rules = [(Type Set, Type Set),  (Type Set, Kind Type_prop),  (Kind Type_prop, Kind Type_prop),  (Type Prop, Type Prop),  (Type Set, Type Prop),  (Kind Type_prop, Type Prop)]
+-- sigma_rules = [(Type Set,Type Prop),(Type Prop, Type Prop)]
+pi_rules = [(DT.Type, DT.Type),  (DT.Type, DT.Kind),  (DT.Kind, DT.Kind),   (DT.Kind, DT.Type)]
+sigma_rules = [(DT.Type,DT.Type)]
+
+find_sig :: SUEnv -> T.Text -> Maybe DT.Preterm
+find_sig [] target = Nothing
+find_sig ((ft,fp):r) target =
+  if ft == target then (Just fp) else find_sig r target
+
+check_context :: TEnv -> SUEnv ->Bool
+check_context [] sig_env = True
+check_context (f:r) sig_env  =
+  case check_type r sig_env f of
+    Just _ -> check_context r sig_env
+    Nothing -> False
+
+check_type :: TEnv -> SUEnv -> DT.Preterm -> Maybe DT.Preterm
+check_type var_env _sig_env (DT.Var i) = Just $ var_env !! i
+check_type _var_env sig_env (DT.Con t) = find_sig sig_env t
+check_type _var_env _sig_env DT.Type = Just DT.Kind
+check_type var_env sig_env (DT.Pi h t) =
+  --pi_rulesからlet type_lst = pi_rulesみたいな感じでだす
+  case check_type var_env sig_env h of
+    Just s1 ->  case (check_type (h:var_env) sig_env t) of
+      --Just s2 -> if ( (fromDTT s1,fromDTT s2) `elem` pi_rules) then Just s2 else Nothing
+      Just s2 -> if ( (s1,s2) `elem` pi_rules) then Just s2 else Nothing
+      Nothing -> Nothing
+    Nothing -> Nothing
+check_type var_env sig_env (DT.Sigma h t)=
+  case check_type var_env sig_env h of
+    Just s1 ->  case (check_type (h:var_env) sig_env t) of
+      -- Just s2 -> if ( (fromDTT s1,fromDTT s2) `elem` sigma_rules) then Just s2 else Nothing
+      Just s2 -> if ( (s1,s2) `elem` sigma_rules) then Just s2 else Nothing
+      Nothing -> Nothing
+    Nothing -> Nothing
+check_type var_env sig_env (DT.App f s)=
+  case check_type var_env sig_env s of
+    Just t1 -> case check_type var_env sig_env f of
+      Just (DT.Pi h t) -> undefined
+      Just _ -> Nothing
+      Nothing ->Nothing
+    Nothing -> Nothing
+check_type var_env sig_env (DT.Lam p) =
+  undefined
+--subst (UD.Pair (UD.Pair (UD.Con (T.pack "a")) (UD.Con (T.pack "b"))) (UD.Con (T.pack "c"))) (UD.Con (T.pack "d")) (UD.Pair (UD.Con (T.pack "a")) (UD.Con (T.pack "b")))
+check_type var_env sig_env (DT.Pair f s) =
+  case check_type  var_env sig_env f of
+    Just a -> case check_type  var_env sig_env s of
+      Just b ->
+        Just $ DT.Sigma a (subst b (DT.Var 0) f)
+      Nothing -> Nothing
+    Nothing -> Nothing
+--betareduce後なのでDT.Proj _ (DT.Sigma a b)の形は原則的に残っていない？
+check_type var_env sig_env (DT.Proj s p) =
+  case s of
+    DT.Fst ->
+      case check_type var_env sig_env p of
+        Just (DT.Sigma a b) -> Just a
+        _ -> Nothing
+    DT.Snd ->
+      case check_type var_env sig_env p of
+        Just (DT.Sigma a b) -> Just (subst b (DT.Var 0) a)
+        _ -> Nothing
+
+check_type _var_env _sig_env _preterm = undefined
+
+
+--ex)
+--print $ arrow_notat $ DT.Pi (DT.Pi (DT.Sigma (DT.Con (T.pack "p")) (DT.Con (T.pack "q"))) (DT.Con (T.pack "r"))) (DT.Pi (DT.Con (T.pack "p")) (DT.Pi (DT.Con (T.pack "q")) (DT.Con (T.pack "r"))))
+arrow_notat :: DT.Preterm -> Arrowterm
+-- --入力にArrowtermがあることはないとする
+arrow_notat (DT.Var i) = Conclusion $ DT.Var i
+arrow_notat (DT.Con i) = Conclusion $ DT.Con i
+arrow_notat (DT.Not i) =
+  Arrow [arrow_notat i] $Conclusion DT.Bot
+arrow_notat (DT.Pi h t) =
+  Arrow [arrow_notat h] (arrow_notat t)
+arrow_notat (DT.Sigma h t) =
+  case arrow_notat h of
+    Conclusion arrow_h -> case arrow_notat t of
+      Conclusion arrow_t -> Conclusion $ DT.Sigma arrow_h arrow_t
+      Arrow _ _ -> undefined
+    Arrow _ _ -> undefined
+arrow_notat (DT.App a b) =
+  case arrow_notat a of
+    Conclusion arrow_a -> case arrow_notat b of
+      Conclusion arrow_b -> Conclusion $ DT.App arrow_a arrow_b
+      Arrow _ _ -> undefined
+    Arrow _ _ -> undefined
+--  Conclusion (DT.App (arrow_notat a) (arrow_notat b))
+arrow_notat (DT.Pair a b) =
+  case arrow_notat a of
+    Conclusion arrow_a -> case arrow_notat b of
+      Conclusion arrow_b -> Conclusion $ DT.Pair arrow_a arrow_b
+      Arrow _ _ -> undefined
+    Arrow _ _ -> undefined
+--  Conclusion (DT.Pair (arrow_notat a) (arrow_notat b))
+arrow_notat (DT.Proj selector p) =
+  case arrow_notat p of
+    Conclusion arrow_p ->  Conclusion $ DT.Proj selector arrow_p
+    Arrow _ _ -> undefined
+arrow_notat (DT.Lam p) =
+  case arrow_notat p of
+    Conclusion arrow_p ->  Conclusion $ DT.Lam arrow_p
+    Arrow _ _ -> undefined
+arrow_notat _= undefined
+
+--forwardができてからやる
+forward_context :: AEnv -> [AJudgement]
+forward_context [] = []
+forward_context (f:r) =
+  (to_forward (length (f:r)) f) ++ forward_context r
+
+sigma_forward :: Arrowterm -> DT.Preterm -> DT.Selector -> DT.Preterm -> [AJudgement]
+sigma_forward origin base  selector (DT.Sigma a b) = forward origin (DT.Proj selector base) $Conclusion (DT.Sigma a b)
+sigma_forward origin base selector preterm_a =  (AJudgement [origin] (Conclusion $ DT.Proj selector base) (Conclusion $ preterm_a)) : (forward origin (DT.Proj selector base) $Conclusion preterm_a)
+
+lam_sigma_forward_hojo :: [Arrowterm] -> AJudgement -> AJudgement
+lam_sigma_forward_hojo hs (AJudgement env (Conclusion term) (a_type)) =
+  AJudgement env  (Conclusion (foldr (\x -> \y -> DT.Lam y) term hs)) (Arrow hs a_type)
+
+lam_sigma_forward ::  [Arrowterm] -> Arrowterm -> DT.Preterm ->  Arrowterm -> [AJudgement]
+lam_sigma_forward  [] origin base (Arrow a (Conclusion ( DT.Sigma preterm_a preterm_b))) =
+  map (lam_sigma_forward_hojo a) (sigma_forward origin base DT.Snd (subst preterm_b (DT.Proj DT.Fst (base)) (DT.Var 0))) ++ (sigma_forward origin base DT.Fst preterm_a)
+lam_sigma_forward (f:r) origin base (Arrow a b) =
+  lam_sigma_forward  r origin (DT.App base (DT.Con (((T.pack . (\x -> (show base )++"_"++x) . show) (length (f:r)))) )) (Arrow a b)
+
+to_forward :: Int -> Arrowterm -> [AJudgement]
+to_forward num aterm =
+  forward aterm (DT.Con (T.pack $ show num)) aterm
+
+show_forward :: Arrowterm -> TEnv
+show_forward aterm =
+  map  fromAJudgement2dtpreterm $forward aterm (DT.Con (T.pack "p")) aterm
+
+forward :: Arrowterm -> DT.Preterm -> Arrowterm  ->  [AJudgement]
+-- sigma = DT.Sigma (DT.Sigma (DT.Con (T.pack "b")) (DT.Con (T.pack "c"))) (DT.Sigma (DT.Var 0) (DT.App (DT.Var 0) (DT.Var 1)))
+-- lamsig = Arrow [Conclusion DT.Type,Conclusion DT.Type] (Conclusion sigma)
+forward origin base (Conclusion (DT.Sigma preterm_a preterm_b)) =
+  (sigma_forward origin base DT.Fst preterm_a) ++ (sigma_forward origin base DT.Snd  (subst preterm_b (DT.Proj DT.Fst (base)) (DT.Var 0)) )
+forward origin base (Arrow a (Conclusion (DT.Sigma preterm_a preterm_b))) =
+  lam_sigma_forward a origin base (Arrow a (Conclusion (DT.Sigma preterm_a preterm_b)))
+forward origin base (Arrow a (Arrow b c)) =
+  forward origin base (Arrow (a ++ b) c)
+forward origin base arrowterm = []
 
 deduce :: AEnv->Arrowterm->Int->DT.Preterm
 deduce = undefined
