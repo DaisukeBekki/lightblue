@@ -6,3 +6,12 @@ extra-deps:
     commit: 3a880f3db35f7b44f18067e64520ccd74856193c
 flags: {}
 extra-package-dbs: []
+build:
+  haddock: false
+  haddock-arguments:
+    haddock-args:
+    - --odir=haddock
+  open-haddocks: false
+  haddock-internal: false
+  haddock-hyperlink-source: true
+
