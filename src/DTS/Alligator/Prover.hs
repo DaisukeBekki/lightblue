@@ -14,19 +14,29 @@ import qualified DTS.Prover.Judgement as J
 import Data.Time　as Ti
 import System.Timeout
 
+data ArrowSelector = Arrow_Fst | Arrow_Snd deriving (Eq, Show)
+
 data Arrowterm =
-  Conclusion DT.Preterm | --Pseudo_term |
-  Arrow [Arrowterm]  Arrowterm --[Pseudo_term] DT.Preterm--Arrowterm
+  Conclusion DT.Preterm |
+  Arrow_Sigma Arrowterm Arrowterm |
+  Arrow_App Arrowterm Arrowterm |
+  Arrow_Pair Arrowterm Arrowterm |
+  Arrow_Proj ArrowSelector Arrowterm |
+  Arrow_Lam Arrowterm |
+  Arrow [Arrowterm]  Arrowterm
   deriving (Eq)
 
 instance Show Arrowterm where
   show (Conclusion p)=   ( show p)
   show (Arrow env r) =  "[ " ++ (tail (foldr (\a -> \b -> "," ++ a  ++ b) "" $ map show env)) ++ " ] =>" ++  (show r)
 
+
 arrow2DT :: Arrowterm -> DT.Preterm
 arrow2DT (Conclusion a) = a
+arrow2DT (Arrow_Sigma h t)= DT.Sigma (arrow2DT h) $ DT.toDTT $ UD.shiftIndices (DT.toUDTT (arrow2DT t)) 1 0
+arrow2DT (Arrow_Pair h t)= undefined
 arrow2DT (Arrow [] t) = arrow2DT t
-arrow2DT (Arrow (f:r) t) = arrow2DT (Arrow r (Conclusion (DT.Pi (arrow2DT f) (arrow2DT t))))
+arrow2DT (Arrow (f:r) t) = arrow2DT (Arrow r (Conclusion (DT.Pi (arrow2DT f) (arrow2DT t)))) --shiftindice
 
 type TEnv = [DT.Preterm]
 type SUEnv = [(T.Text,DT.Preterm)]
@@ -37,11 +47,14 @@ data AJudgement =
   AJudgement AEnv Arrowterm Arrowterm
     deriving (Eq, Show)
 
+fromAJudgement2type :: AJudgement -> Arrowterm
+fromAJudgement2type ( AJudgement env aterm atype) = Arrow env atype
+
 fromAJudgement2term :: AJudgement -> Arrowterm
-fromAJudgement2term ( AJudgement env aterm atype) = Arrow env atype
+fromAJudgement2term ( AJudgement env aterm atype) = Arrow env aterm
 
 fromAJudgement2dtpreterm  :: AJudgement -> DT.Preterm
-fromAJudgement2dtpreterm   = arrow2DT . fromAJudgement2term
+fromAJudgement2dtpreterm   = arrow2DT . fromAJudgement2type
 
 dne =   DT.Lam ((DT.Pi (DT.Con (T.pack "Prop")) (DT.Pi (DT.Pi (DT.Pi (DT.Var 1)  DT.Bot) (DT.Bot)) (DT.Var 2))))
 efq = DT.Lam (DT.Pi DT.Bot (DT.Var 1))
@@ -83,11 +96,11 @@ prove var_env sig_env preterm =
   --TEnvをPTEnvに変える
   let var_env' = (reverse var_env) ++ (getAxiom "classic")
       reduce_env = map (DT.toDTT . UD.betaReduce . DT.toUDTT) var_env' in
-      if(check_context reduce_env sig_env) then
+      -- if(check_context reduce_env sig_env) then
         let arrow_env = map arrow_notat reduce_env
             arrow_term = (arrow_notat . DT.toDTT . UD.betaReduce . DT.toUDTT) preterm
         in undefined
-      else undefined--check_contextでtypeが分からないものが出てきた
+      -- else undefined--check_contextでtypeが分からないものが出てきた
 --initialize_fresh_vars
 
 -- pi_rules = [(Type Set, Type Set),  (Type Set, Kind Type_prop),  (Kind Type_prop, Kind Type_prop),  (Type Prop, Type Prop),  (Type Set, Type Prop),  (Kind Type_prop, Type Prop)]
@@ -95,68 +108,86 @@ prove var_env sig_env preterm =
 pi_rules = [(DT.Type, DT.Type),  (DT.Type, DT.Kind),  (DT.Kind, DT.Kind),   (DT.Kind, DT.Type)]
 sigma_rules = [(DT.Type,DT.Type)]
 
-find_sig :: SUEnv -> T.Text -> Maybe DT.Preterm
-find_sig [] target = Nothing
-find_sig ((ft,fp):r) target =
-  if ft == target then (Just fp) else find_sig r target
+-- find_sig :: SUEnv -> T.Text -> Maybe DT.Preterm
+-- find_sig [] target = Nothing
+-- find_sig ((ft,fp):r) target =
+--   if ft == target then (Just fp) else find_sig r target
 
-check_context :: TEnv -> SUEnv ->Bool
-check_context [] sig_env = True
-check_context (f:r) sig_env  =
-  case check_type r sig_env f of
-    Just _ -> check_context r sig_env
-    Nothing -> False
+-- check_context :: TEnv -> SUEnv ->Bool
+-- check_context [] sig_env = True
+-- check_context (f:r) sig_env  =
+--   case check_type r sig_env f of
+--     Just _ -> check_context r sig_env
+--     Nothing -> False
 
-check_type :: TEnv -> SUEnv -> DT.Preterm -> Maybe DT.Preterm
-check_type var_env _sig_env (DT.Var i) = Just $ var_env !! i
-check_type _var_env sig_env (DT.Con t) = find_sig sig_env t
-check_type _var_env _sig_env DT.Type = Just DT.Kind
-check_type var_env sig_env (DT.Pi h t) =
-  --pi_rulesからlet type_lst = pi_rulesみたいな感じでだす
-  case check_type var_env sig_env h of
-    Just s1 ->  case (check_type (h:var_env) sig_env t) of
-      --Just s2 -> if ( (fromDTT s1,fromDTT s2) `elem` pi_rules) then Just s2 else Nothing
-      Just s2 -> if ( (s1,s2) `elem` pi_rules) then Just s2 else Nothing
-      Nothing -> Nothing
-    Nothing -> Nothing
-check_type var_env sig_env (DT.Sigma h t)=
-  case check_type var_env sig_env h of
-    Just s1 ->  case (check_type (h:var_env) sig_env t) of
-      -- Just s2 -> if ( (fromDTT s1,fromDTT s2) `elem` sigma_rules) then Just s2 else Nothing
-      Just s2 -> if ( (s1,s2) `elem` sigma_rules) then Just s2 else Nothing
-      Nothing -> Nothing
-    Nothing -> Nothing
-check_type var_env sig_env (DT.App f s)=
-  case check_type var_env sig_env s of
-    Just t1 -> case check_type var_env sig_env f of
-      Just (DT.Pi h t) -> undefined
-      Just _ -> Nothing
-      Nothing ->Nothing
-    Nothing -> Nothing
-check_type var_env sig_env (DT.Lam p) =
-  undefined
---subst (UD.Pair (UD.Pair (UD.Con (T.pack "a")) (UD.Con (T.pack "b"))) (UD.Con (T.pack "c"))) (UD.Con (T.pack "d")) (UD.Pair (UD.Con (T.pack "a")) (UD.Con (T.pack "b")))
-check_type var_env sig_env (DT.Pair f s) =
-  case check_type  var_env sig_env f of
-    Just a -> case check_type  var_env sig_env s of
-      Just b ->
-        Just $ DT.Sigma a (subst b (DT.Var 0) f)
-      Nothing -> Nothing
-    Nothing -> Nothing
---betareduce後なのでDT.Proj _ (DT.Sigma a b)の形は原則的に残っていない？
-check_type var_env sig_env (DT.Proj s p) =
-  case s of
-    DT.Fst ->
-      case check_type var_env sig_env p of
-        Just (DT.Sigma a b) -> Just a
-        _ -> Nothing
-    DT.Snd ->
-      case check_type var_env sig_env p of
-        Just (DT.Sigma a b) -> Just (subst b (DT.Var 0) a)
-        _ -> Nothing
+--typecheckU でok
+-- check_type :: TEnv -> SUEnv -> DT.Preterm -> Maybe DT.Preterm
+-- check_type var_env _sig_env (DT.Var i) = Just $ var_env !! i
+-- check_type _var_env sig_env (DT.Con t) = find_sig sig_env t
+-- check_type _var_env _sig_env DT.Type = Just DT.Kind
+-- check_type var_env sig_env (DT.Pi h t) =
+--   --pi_rulesからlet type_lst = pi_rulesみたいな感じでだす
+--   case check_type var_env sig_env h of
+--     Just s1 ->  case (check_type (h:var_env) sig_env t) of
+--       --Just s2 -> if ( (fromDTT s1,fromDTT s2) `elem` pi_rules) then Just s2 else Nothing
+--       Just s2 -> if ( (s1,s2) `elem` pi_rules) then Just s2 else Nothing
+--       Nothing -> Nothing
+--     Nothing -> Nothing
+-- check_type var_env sig_env (DT.Sigma h t)=
+--   case check_type var_env sig_env h of
+--     Just s1 ->  case (check_type (h:var_env) sig_env t) of
+--       -- Just s2 -> if ( (fromDTT s1,fromDTT s2) `elem` sigma_rules) then Just s2 else Nothing
+--       Just s2 -> if ( (s1,s2) `elem` sigma_rules) then Just s2 else Nothing
+--       Nothing -> Nothing
+--     Nothing -> Nothing
+-- check_type var_env sig_env (DT.App f s)=
+--   case check_type var_env sig_env s of
+--     Just t1 -> case check_type var_env sig_env f of
+--       Just (DT.Pi h t) -> undefined
+--       Just _ -> Nothing
+--       Nothing ->Nothing
+--     Nothing -> Nothing
+-- check_type var_env sig_env (DT.Lam p) =
+--   undefined
+-- --subst (UD.Pair (UD.Pair (UD.Con (T.pack "a")) (UD.Con (T.pack "b"))) (UD.Con (T.pack "c"))) (UD.Con (T.pack "d")) (UD.Pair (UD.Con (T.pack "a")) (UD.Con (T.pack "b")))
+-- check_type var_env sig_env (DT.Pair f s) =
+--   case check_type  var_env sig_env f of
+--     Just a -> case check_type  var_env sig_env s of
+--       Just b ->
+--         Just $ DT.Sigma a (subst b (DT.Var 0) f)
+--       Nothing -> Nothing
+--     Nothing -> Nothing
+-- --betareduce後なのでDT.Proj _ (DT.Sigma a b)の形は原則的に残っていない？
+-- check_type var_env sig_env (DT.Proj s p) =
+--   case s of
+--     DT.Fst ->
+--       case check_type var_env sig_env p of
+--         Just (DT.Sigma a b) -> Just a
+--         _ -> Nothing
+--     DT.Snd ->
+--       case check_type var_env sig_env p of
+--         Just (DT.Sigma a b) -> Just (subst b (DT.Var 0) a)
+--         _ -> Nothing
+--
+-- check_type _var_env _sig_env _preterm = undefined
 
-check_type _var_env _sig_env _preterm = undefined
+arrow_notat4biop_hojo :: DT.Preterm -> DT.Preterm -> DT.Preterm -> DT.Preterm
+arrow_notat4biop_hojo (DT.Sigma _ _) h t= DT.Sigma h t
 
+arrow_notat4biop :: DT.Preterm -> Arrowterm -> Arrowterm -> Arrowterm
+arrow_notat4biop op (Conclusion arrow_h) (Conclusion arrow_t) =
+  Conclusion $ arrow_notat4biop_hojo op arrow_h arrow_t
+arrow_notat4biop (DT.Sigma _ _) arrow_h arrow_t =
+  Arrow_Sigma arrow_h arrow_t
+arrow_notat4biop (DT.App _ _) arrow_h arrow_t =
+  Arrow_App arrow_h arrow_t
+arrow_notat4biop (DT.Pair _ _) arrow_h arrow_t =
+  Arrow_Pair arrow_h arrow_t
+arrow_notat4biop op h t = undefined
+
+arrow_notat_selector :: DT.Selector -> ArrowSelector
+arrow_notat_selector DT.Fst = Arrow_Fst
+arrow_notat_selector DT.Snd = Arrow_Snd
 
 --ex)
 --print $ arrow_notat $ DT.Pi (DT.Pi (DT.Sigma (DT.Con (T.pack "p")) (DT.Con (T.pack "q"))) (DT.Con (T.pack "r"))) (DT.Pi (DT.Con (T.pack "p")) (DT.Pi (DT.Con (T.pack "q")) (DT.Con (T.pack "r"))))
@@ -169,33 +200,19 @@ arrow_notat (DT.Not i) =
 arrow_notat (DT.Pi h t) =
   Arrow [arrow_notat h] (arrow_notat t)
 arrow_notat (DT.Sigma h t) =
-  case arrow_notat h of
-    Conclusion arrow_h -> case arrow_notat t of
-      Conclusion arrow_t -> Conclusion $ DT.Sigma arrow_h arrow_t
-      Arrow _ _ -> undefined
-    Arrow _ _ -> undefined
+  arrow_notat4biop (DT.Sigma h t) (arrow_notat h) (arrow_notat t)
 arrow_notat (DT.App a b) =
-  case arrow_notat a of
-    Conclusion arrow_a -> case arrow_notat b of
-      Conclusion arrow_b -> Conclusion $ DT.App arrow_a arrow_b
-      Arrow _ _ -> undefined
-    Arrow _ _ -> undefined
---  Conclusion (DT.App (arrow_notat a) (arrow_notat b))
+  arrow_notat4biop (DT.App a b) (arrow_notat a) (arrow_notat b)
 arrow_notat (DT.Pair a b) =
-  case arrow_notat a of
-    Conclusion arrow_a -> case arrow_notat b of
-      Conclusion arrow_b -> Conclusion $ DT.Pair arrow_a arrow_b
-      Arrow _ _ -> undefined
-    Arrow _ _ -> undefined
---  Conclusion (DT.Pair (arrow_notat a) (arrow_notat b))
+  arrow_notat4biop (DT.Pair a b) (arrow_notat a) (arrow_notat b)
 arrow_notat (DT.Proj selector p) =
   case arrow_notat p of
     Conclusion arrow_p ->  Conclusion $ DT.Proj selector arrow_p
-    Arrow _ _ -> undefined
+    arrow_p -> Arrow_Proj (arrow_notat_selector selector) arrow_p
 arrow_notat (DT.Lam p) =
   case arrow_notat p of
     Conclusion arrow_p ->  Conclusion $ DT.Lam arrow_p
-    Arrow _ _ -> undefined
+    arrow_p-> Arrow_Lam arrow_p
 arrow_notat _= undefined
 
 --forwardができてからやる
@@ -237,5 +254,15 @@ forward origin base (Arrow a (Arrow b c)) =
   forward origin base (Arrow (a ++ b) c)
 forward origin base arrowterm = []
 
-deduce :: AEnv->Arrowterm->Int->DT.Preterm
-deduce = undefined
+maxdepth = 100
+
+deduce :: [AJudgement]->Arrowterm->Int->[Maybe Arrowterm]
+--context,target,depth
+deduce _  (Conclusion DT.Kind) depth = if depth < maxdepth then [Just $ Conclusion DT.Type] else [Nothing]
+deduce context term depth =
+  if (or $ map ((== term) . fromAJudgement2term) context)
+    then
+       map (fst) $ filter (snd) $ map (\x -> (Just (fromAJudgement2type x),((==term) . fromAJudgement2term) x)) context
+    else undefined
+  -- case term `elem` (map fromAjudgement2Type context) then else undefined
+-- deduce context term depth= undefined
