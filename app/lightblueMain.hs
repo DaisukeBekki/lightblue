@@ -1,10 +1,13 @@
 {-# OPTIONS -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-import Options.Applicative                --optparse-applicative
+import Options.Applicative hiding (style) --optparse-applicative
 import Data.Semigroup ((<>))              --semigroup
+import Control.Monad (forM_)              --base
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
+--import qualified Data.Text as StrictT     --text
+import qualified Data.Text.IO as StrictT  --text
 import Data.Ratio ((%))                   --base
 import qualified Data.Char as C           --base
 import qualified Data.List as L           --base
@@ -17,7 +20,8 @@ import qualified Parser.ChartParser as CP
 import qualified Parser.Japanese.MyLexicon as LEX
 import qualified Interface as I
 import qualified Interface.Text as T
-import qualified Interface.JSeM as J
+import qualified JSeM as J
+import qualified JSeM.XML as J
 import qualified DTS.UDTT as DTS
 --import qualified DTS.Prover.TypeChecker as TC
 import qualified DTS.Prover as Prover
@@ -200,9 +204,11 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
     -- |
     lightblueMainLocal (Parse output style iftypecheck) contents = do
       let handle = S.stdout;
-          sentences = case input of 
-            SENTENCES -> T.lines contents
-            JSEM -> concat $ map (\j -> (J.premise j) ++ [J.hypothesis j]) $ J.parseJSeM contents
+      sentences <- case input of 
+                     SENTENCES -> return $ T.lines contents
+                     JSEM -> do
+                             parsedJSeM <- J.xml2jsemData $ T.toStrict contents
+                             return $ concat $ map (\j -> (map T.fromStrict $ J.premises j) ++ [T.fromStrict $ J.hypothesis j]) parsedJSeM
       S.hPutStrLn handle $ I.headerOf style
       mapM_
         (\(sid,sentence) -> do
@@ -236,10 +242,11 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
           proverf premises hypothesis
         JSEM -> do
                 --S.hPutStrLn S.stdout $ I.headerOf I.HTML
+                parsedJSeM <- J.xml2jsemData $ T.toStrict contents
                 mapM_ (\j -> do
-                          mapM_ T.putStr ["JSeM [", J.jsem_id j, "] "]
-                          proverf (J.premise j) (J.hypothesis j)
-                          ) $ J.parseJSeM contents
+                          mapM_ T.putStr ["JSeM [", T.fromStrict $ J.jsem_id j, "] "]
+                          proverf (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
+                          ) parsedJSeM
                 --S.hPutStrLn S.stdout $ I.footerOf I.HTML
       case prover of
         DTS -> S.hPutStrLn handle $ I.footerOf I.HTML
@@ -247,12 +254,15 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
     -- |
     -- | Debug
     -- |
-    lightblueMainLocal (Debug i j) contents = do
+    --lightblueMainLocal (Debug i j) contents = do
+    lightblueMainLocal (Debug _ _) contents = do
+      parsedJSeM <- J.xml2jsemData $ T.toStrict contents
       let sentences = case input of 
             SENTENCES -> T.lines contents
-            JSEM -> concat $ map (\jsem -> (J.premise jsem) ++ [J.hypothesis jsem]) $ J.parseJSeM contents
+            JSEM -> concat $ map (\jsem -> (map T.fromStrict $ J.premises jsem) ++ [T.fromStrict $ J.hypothesis jsem]) parsedJSeM
       mapM_
-        (\(sid,sentence) -> do
+        --(\(sid,sentence) -> do
+        (\(_,sentence) -> do
           chart <- CP.parse beamw sentence
           --let filterednodes = concat $ map snd $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
           --I.printNodes S.stdout I.HTML sid sentence False filterednodes
@@ -264,7 +274,7 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
                                   ) $ M.toList chart
           ) $ zip ([0..]::[Int]) sentences
     -- |
-    -- | Corpus (Parsing demo)
+    -- | Demo (sequential parsing of a given corpus)
     -- |
     lightblueMainLocal Demo contents = do
       processCorpus beamw $ T.lines contents
@@ -276,14 +286,14 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
     --
     -- | JSeM Parser
     -- 
-    lightblueMainLocal JSeMParser contents = 
-      mapM_ (\jsem -> do
-                      T.putStr $ J.answer jsem
-                      S.putChar '\t'
-                      mapM_ T.putStr $ J.premise jsem
-                      S.putChar '\t' 
-                      T.putStrLn $ J.hypothesis jsem
-                      ) $ J.parseJSeM contents
+    lightblueMainLocal JSeMParser contents = do
+      parsedJSeM <- J.xml2jsemData $ T.toStrict contents
+      forM_ parsedJSeM $ \jsem -> do
+        putStr $ show $ J.answer jsem
+        S.putChar '\t'
+        mapM_ StrictT.putStr $ J.premises jsem
+        S.putChar '\t' 
+        StrictT.putStrLn $ J.hypothesis jsem
 
 -- | lightblue --version
 -- |

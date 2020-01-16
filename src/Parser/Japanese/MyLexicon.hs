@@ -514,7 +514,8 @@ myLexicon = concat $ [
   mylex ["すら"] "new" (((T True 1 modifiableS) `SL` ((T True 1 modifiableS) `BS` (NP [F[Ga,O]]))) `BS` (NP [F[Nc]])) argumentCM,
   mylex ["にすら"] "(387)" (((T True 1 modifiableS) `SL` ((T True 1 modifiableS) `BS` (NP [F[Ni]]))) `BS` (NP [F[Nc]])) argumentCM,
   --
-  mylex ["だけ"] "new" (((T True 1 modifiableS) `SL` ((T True 1 modifiableS) `BS` (NP [F[Ga,O]]))) `BS` (NP [F[Nc]])) argumentCM,
+  mylex ["だけ"] "new" (((T True 1 modifiableS) `SL` ((T True 1 modifiableS) `BS` (NP [F[Ga,O,Nc]]))) `BS` (NP [F[Nc]])) 
+    ((Lam (Lam (Lamvec (Sigma (Appvec 0 (App (Var 1) (Var 2))) (Pi entity (Pi (Appvec 2 (App (Var 3) (Var 0))) (Eq entity (Var 5) (Var 1)))))))), []),
   mylex ["にだけ","だけに"] "new" (((T True 1 modifiableS) `SL` ((T True 1 modifiableS) `BS` (NP [F[Ni]]))) `BS` (NP [F[Nc]])) argumentCM,
   mylex ["とだけ","だけと"] "new" (((T True 1 modifiableS) `SL` ((T True 1 modifiableS) `BS` (NP [F[To]]))) `BS` (NP [F[Nc]])) argumentCM,
   --
