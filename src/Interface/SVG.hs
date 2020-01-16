@@ -71,10 +71,7 @@ node2svgloop parent node =
 printSameRank :: [SVGnode] -> [T.Text]
 printSameRank nodes =
   ["{rank = same; "]
-  ++ map (\n -> case n of
-                  (SVGleaf i _) -> T.concat ["e", T.pack $ show i, ";"]
-                  _ -> "error"
-         ) nodes
+  ++ map (\(SVGleaf i _) -> T.concat ["e", T.pack $ show i, ";"]) nodes
   ++ ["}\n"]
 
 data SVGlink = SVGlink Int Int deriving (Eq)
@@ -131,7 +128,7 @@ svgHeader = "digraph G {\n\
   \subgraph {\n\
   \    edge [\n\
   \        dir = none;\n\
-  \        sametail=h1\n\
+  \        sametail = h1\n\
   \    ]"
 
 svgFooter :: String

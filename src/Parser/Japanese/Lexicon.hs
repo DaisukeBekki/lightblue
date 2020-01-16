@@ -162,12 +162,12 @@ constructConjunction daihyo =
   [
   (((T False 1 (S [F anyPos, F[Term,NTerm,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]]))
     `SL` (T False 1 (S [F anyPos, F[Term,NTerm,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]]))), 
-    ((Lam (Lam (Sigma (App (Var 1) (Lam Top)) (DRel 0 daihyo (Proj Snd $ Asp 1 (Sigma Type (Var 0))) (Var 0))))), []))
+    ((Lam (Lam (Sigma (App (Var 1) (Lam Top)) ((App (App (Con daihyo) (Proj Snd $ Asp 1 (Sigma Type (Var 0)))) (Var 0)))))), [(daihyo, Pi entity (Pi entity Type))]))
     ]
 
 constructSubordinateConjunction :: T.Text -> [(Cat, (Preterm, Signature))]
 constructSubordinateConjunction daihyo = 
   [((modifiableS `SL` modifiableS) `BS` (S [F anyPos, F[Attr], SF 7 [P,M], SF 8 [P,M], SF 9 [P,M], F[M],F[M] ]), 
-    (Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (Sigma (App (Var 2) (Var 1)) (DRel 0 daihyo (Var 1) (Var 0)))))),
-     []))
+    ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (Sigma (App (Var 2) (Var 1)) (App (App (Con daihyo) (Var 1)) (Var 0))))))),
+     [(daihyo, Pi entity (Pi entity Type))]))
   ]

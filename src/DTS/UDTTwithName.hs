@@ -83,8 +83,8 @@ data Preterm =
   Natrec Preterm Preterm Preterm | -- ^ natrec
   Eq Preterm Preterm Preterm |     -- ^ Intensional equality type
   Refl Preterm Preterm |           -- ^ refl
-  Idpeel Preterm Preterm |         -- ^ idpeel
-  DRel Int T.Text Preterm Preterm  -- ^ Discourse relations
+  Idpeel Preterm Preterm           -- ^ idpeel
+  --DRel Int T.Text Preterm Preterm  -- ^ Discourse relations
   deriving (Eq)
 
 {- Printing of Preterms -}
@@ -126,7 +126,7 @@ instance SimpleText Preterm where
     Eq a m n -> T.concat [toText m, "=[", toText a, "]", toText n]
     Refl a m -> T.concat ["refl", toText a, "(", toText m, ")"]
     Idpeel m n -> T.concat ["idpeel(", toText m, ",", toText n, ")"]
-    DRel i t u v -> T.concat ["DRel", T.pack (show i), "[", t, "](", toText u, ",", toText v, ")"]
+    --DRel i t u v -> T.concat ["DRel", T.pack (show i), "[", t, "](", toText u, ",", toText v, ")"]
 
 -- | Each `Preterm` is translated by the `toTeX` method into a representation \"with variable names\" in a TeX source code.
 instance Typeset Preterm where
@@ -165,7 +165,7 @@ instance Typeset Preterm where
     Eq a m n  -> T.concat [toTeX m, "=_{", toTeX a,"}", toTeX n]
     Refl a m  -> T.concat ["\\type{refl}_{", toTeX a, "}\\left(", toTeX m,"\\right)"]
     Idpeel m n -> T.concat ["\\type{idpeel}\\left(", toTeX m, ",", toTeX n, "\\right)"]
-    DRel j t m n -> T.concat ["\\pred{DRel}_{", T.pack (show j), "}[", t, "]\\left(", toTeX m, ",", toTeX n, "\\right)"]
+    --DRel j t m n -> T.concat ["\\pred{DRel}_{", T.pack (show j), "}[", t, "]\\left(", toTeX m, ",", toTeX n, "\\right)"]
 
 toTeXEmbedded :: Preterm -> T.Text
 toTeXEmbedded preterm = case preterm of
@@ -207,7 +207,7 @@ instance MathML Preterm where
     Eq a m n -> T.concat ["<mrow>", toMathML m, "<msub><mo>=</mo>", toMathML a, "</msub>", toMathML n, "</mrow>"]
     Refl a m -> T.concat ["<mrow><mi>refl</mi>", toMathML a, "<mfenced>", toMathML m, "</mfenced></mrow>"]
     Idpeel m n -> T.concat ["<mrow><mi>idpeel</mi><mfenced>", toMathML m, toMathML n, "</mfenced></mrow>"]
-    DRel i t u v -> T.concat ["<mrow><msub><mi>DRel</mi><mn>", T.pack (show i), "</mn></msub><mtext>", t, "</mtext><mfenced>", toMathML u, toMathML v, "</mfenced></mrow>"]
+    --DRel i t u v -> T.concat ["<mrow><msub><mi>DRel</mi><mn>", T.pack (show i), "</mn></msub><mtext>", t, "</mtext><mfenced>", toMathML u, toMathML v, "</mfenced></mrow>"]
 
 {- Judgment -}
 
