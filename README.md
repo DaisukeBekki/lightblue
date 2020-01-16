@@ -8,7 +8,7 @@
 
 ## Installing lightblue
 ### Prerequisite 1: Haskell Stack
-In Unix:
+In Linux:
 ```
 $ wget -qO- https://get.haskellstack.org/ | sh
 ```
@@ -109,7 +109,7 @@ Installing Haskell-mode for Emacs will help.
 $ sudo apt-get install haskell-mode
 ```
 
-The following command creates an HTML document at: `<lightblue>/.stack-work/dist/.../.../doc/html/lightblue/index.html`
+The following command creates an HTML document at: `<lightblue>/haddock/doc/html/lightblue/index.html`
 
 ```
 $ stack build --haddock
