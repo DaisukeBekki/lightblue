@@ -1,0 +1,20 @@
+Configuring ansi-wl-pprint-0.6.7.3...
+Building ansi-wl-pprint-0.6.7.3...
+Preprocessing library ansi-wl-pprint-0.6.7.3...
+[1 of 1] Compiling Text.PrettyPrint.ANSI.Leijen ( Text/PrettyPrint/ANSI/Leijen.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Text/PrettyPrint/ANSI/Leijen.o )
+Running Haddock for ansi-wl-pprint-0.6.7.3...
+Preprocessing library ansi-wl-pprint-0.6.7.3...
+Haddock coverage:
+  96% (129 /134) in 'Text.PrettyPrint.ANSI.Leijen'
+  Missing documentation for:
+    bool (Text/PrettyPrint/ANSI/Leijen.hs:506)
+    column (Text/PrettyPrint/ANSI/Leijen.hs:843)
+    columns (Text/PrettyPrint/ANSI/Leijen.hs:847)
+    nesting (Text/PrettyPrint/ANSI/Leijen.hs:843)
+    width (Text/PrettyPrint/ANSI/Leijen.hs:646)
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/doc/html/ansi-wl-pprint/index.html,
+.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/doc/html/ansi-wl-pprint/ansi-wl-pprint.txt
+Installing library in
+/Users/daidohinari/.stack/snapshots/x86_64-osx/lts-8.5/8.0.2/lib/x86_64-osx-ghc-8.0.2/ansi-wl-pprint-0.6.7.3-3GSHFrIr1fs45bsgKkZbLF
+Registering ansi-wl-pprint-0.6.7.3...

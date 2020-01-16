@@ -1,0 +1,23 @@
+Configuring random-1.1...
+Building random-1.1...
+Preprocessing library random-1.1...
+[1 of 1] Compiling System.Random    ( System/Random.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/System/Random.o )
+
+System/Random.hs:43:1: warning: [-Wtabs]
+    Tab character found here, and in 74 further locations.
+    Please use spaces instead.
+Running Haddock for random-1.1...
+Preprocessing library random-1.1...
+
+System/Random.hs:43:1: warning: [-Wtabs]
+    Tab character found here, and in 74 further locations.
+    Please use spaces instead.
+Haddock coverage:
+Cannot find documentation for: $intro
+ 100% ( 16 / 16) in 'System.Random'
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/doc/html/random/index.html,
+.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/doc/html/random/random.txt
+Installing library in
+/Users/daidohinari/.stack/snapshots/x86_64-osx/lts-8.5/8.0.2/lib/x86_64-osx-ghc-8.0.2/random-1.1-9tceXaeYIMZ4JrKq20Egog
+Registering random-1.1...

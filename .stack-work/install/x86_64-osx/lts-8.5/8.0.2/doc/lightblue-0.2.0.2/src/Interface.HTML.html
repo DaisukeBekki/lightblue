@@ -1,0 +1,74 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# OPTIONS -Wall #-}</span><span>
+</span><a name="line-2"></a><span class="hs-pragma">{-# LANGUAGE OverloadedStrings #-}</span><span>
+</span><a name="line-3"></a><span>
+</span><a name="line-4"></a><span class="hs-comment">{-|
+Module      : Interface.HTML
+Copyright   : (c) Daisuke Bekki, 2016
+Licence     : All right reserved
+Maintainer  : Daisuke Bekki &lt;bekki@is.ocha.ac.jp&gt;
+Stability   : beta
+
+MathML interface
+-}</span><span>
+</span><a name="line-13"></a><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Interface</span><span class="hs-operator">.</span><span class="hs-identifier">HTML</span><span> </span><span class="hs-special">(</span><span>
+</span><a name="line-14"></a><span>  </span><a href="Interface.HTML.html#MathML"><span class="hs-identifier hs-type">MathML</span></a><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><a name="line-15"></a><span>  </span><a href="Interface.HTML.html#htmlHeader4MathML"><span class="hs-identifier hs-var">htmlHeader4MathML</span></a><span class="hs-special">,</span><span>
+</span><a name="line-16"></a><span>  </span><a href="Interface.HTML.html#htmlFooter4MathML"><span class="hs-identifier hs-var">htmlFooter4MathML</span></a><span class="hs-special">,</span><span>
+</span><a name="line-17"></a><span>  </span><a href="Interface.HTML.html#startMathML"><span class="hs-identifier hs-var">startMathML</span></a><span class="hs-special">,</span><span>
+</span><a name="line-18"></a><span>  </span><a href="Interface.HTML.html#endMathML"><span class="hs-identifier hs-var">endMathML</span></a><span>
+</span><a name="line-19"></a><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-20"></a><span>
+</span><a name="line-21"></a><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Text</span><span class="hs-operator">.</span><span class="hs-identifier">Lazy</span><span> </span><span class="hs-keyword">as</span><span> </span><span class="hs-identifier">T</span><span>
+</span><a name="line-22"></a><span>
+</span><a name="line-23"></a><span class="hs-comment">-- | `Math` is a class of types whose terms can be translated into a MathML source (in Data.Text.Lazy). </span><span>
+</span><a name="line-24"></a><span class="hs-comment">-- `toMathML` method translates a Typeset term into a TeX source (in Data.Text.Lazy).</span><span>
+</span><a name="line-25"></a><span class="hs-keyword">class</span><span> </span><a name="MathML"><a href="Interface.HTML.html#MathML"><span class="hs-identifier">MathML</span></a></a><span> </span><a name="local-6989586621679062707"><a href="#local-6989586621679062707"><span class="hs-identifier">a</span></a></a><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-26"></a><span>  </span><span class="hs-identifier">toMathML</span><span> </span><span class="hs-glyph">::</span><span> </span><a href="#local-6989586621679062707"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">T</span><span class="hs-operator hs-type">.</span><span class="hs-identifier hs-type">Text</span><span>
+</span><a name="line-27"></a><span>
+</span><a name="line-28"></a><span class="hs-comment">-- | &lt;?xml version='1.0'?&gt;...&lt;body&gt;</span><span>
+</span><a name="line-29"></a><span class="hs-comment">-- original source of MathML stylesheet: http://www.w3.org/Math/XSL/mathml.xsl</span><span>
+</span><a name="line-30"></a><span class="hs-comment">-- original soruce of MathJax script: http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML</span><span>
+</span><a name="line-31"></a><span class="hs-identifier">htmlHeader4MathML</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">String</span><span>
+</span><a name="line-32"></a><a name="htmlHeader4MathML"><a href="Interface.HTML.html#htmlHeader4MathML"><span class="hs-identifier">htmlHeader4MathML</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-string">&quot;\
+    \&lt;?xml version='1.0'?&gt;\
+    \&lt;?xml-stylesheet type='text/xsl' href='Interface/mathml.xsl'?&gt;\
+    \&lt;html xmlns='http://www.w3.org/1999/xhtml'&gt;\
+    \&lt;head&gt;\
+    \  &lt;meta charset='UTF-8'&gt;\
+    \  &lt;title&gt;lightblue demo&lt;/title&gt;\
+    \  &lt;style&gt;body {\
+    \    font-size: 1em;\
+    \    }\
+    \  &lt;/style&gt;\
+    \  &lt;script type='text/javascript'\
+    \    src='Interface/MathJax/MathJax.js?config=TeX-AMS-MML_HTMLorMML'&gt;\
+    \  &lt;/script&gt;\
+    \  &lt;script type='text/x-mathjax-config'&gt;\
+    \    MathJax.Hub.Config({\
+    \      tex2jax: {\
+    \        inlineMath: [['$','$'], ['\\(','\\)']],\
+    \        processEscapes: true\
+    \        },\
+    \      CommonHTML: { matchFontHeight: false },\
+    \      displayAlign: left,\
+    \      displayIndent: 2em\
+    \      });\
+    \    MathJax.Hub.Config({\
+    \      'HTML-CSS': {\
+    \      availableFonts: [],\
+    \      preferredFont: null,webFont: 'Neo-Euler'}});\
+    \  &lt;/script&gt;\
+    \  &lt;/head&gt;&lt;body&gt;&quot;</span><span>
+</span><a name="line-62"></a><span>
+</span><a name="line-63"></a><span class="hs-comment">-- | &lt;/body&gt;&lt;/html&gt;</span><span>
+</span><a name="line-64"></a><span class="hs-identifier">htmlFooter4MathML</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">String</span><span>
+</span><a name="line-65"></a><a name="htmlFooter4MathML"><a href="Interface.HTML.html#htmlFooter4MathML"><span class="hs-identifier">htmlFooter4MathML</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-string">&quot;&lt;/body&gt;&lt;/html&gt;&quot;</span><span>
+</span><a name="line-66"></a><span>
+</span><a name="line-67"></a><span class="hs-comment">-- | &lt;math xmlns='http://www.w3.org/1998/Math/MathML'&gt;</span><span>
+</span><a name="line-68"></a><span class="hs-identifier">startMathML</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">T</span><span class="hs-operator hs-type">.</span><span class="hs-identifier hs-type">Text</span><span>
+</span><a name="line-69"></a><a name="startMathML"><a href="Interface.HTML.html#startMathML"><span class="hs-identifier">startMathML</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-string">&quot;&lt;math xmlns='http://www.w3.org/1998/Math/MathML'&gt;&quot;</span><span>
+</span><a name="line-70"></a><span>
+</span><a name="line-71"></a><span class="hs-comment">-- | &lt;/math&gt;</span><span>
+</span><a name="line-72"></a><span class="hs-identifier">endMathML</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">T</span><span class="hs-operator hs-type">.</span><span class="hs-identifier hs-type">Text</span><span>
+</span><a name="line-73"></a><a name="endMathML"><a href="Interface.HTML.html#endMathML"><span class="hs-identifier">endMathML</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-string">&quot;&lt;/math&gt;&quot;</span><span>
+</span><a name="line-74"></a></pre></body></html>

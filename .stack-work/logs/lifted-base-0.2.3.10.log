@@ -1,0 +1,30 @@
+Configuring lifted-base-0.2.3.10...
+Building lifted-base-0.2.3.10...
+Preprocessing library lifted-base-0.2.3.10...
+[1 of 9] Compiling System.Timeout.Lifted ( System/Timeout/Lifted.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/System/Timeout/Lifted.o )
+[2 of 9] Compiling Foreign.Marshal.Utils.Lifted ( Foreign/Marshal/Utils/Lifted.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Foreign/Marshal/Utils/Lifted.o )
+[3 of 9] Compiling Data.IORef.Lifted ( Data/IORef/Lifted.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/IORef/Lifted.o )
+[4 of 9] Compiling Control.Exception.Lifted ( Control/Exception/Lifted.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Control/Exception/Lifted.o )
+[5 of 9] Compiling Control.Concurrent.QSemN.Lifted ( Control/Concurrent/QSemN/Lifted.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Control/Concurrent/QSemN/Lifted.o )
+[6 of 9] Compiling Control.Concurrent.QSem.Lifted ( Control/Concurrent/QSem/Lifted.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Control/Concurrent/QSem/Lifted.o )
+[7 of 9] Compiling Control.Concurrent.MVar.Lifted ( Control/Concurrent/MVar/Lifted.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Control/Concurrent/MVar/Lifted.o )
+[8 of 9] Compiling Control.Concurrent.Chan.Lifted ( Control/Concurrent/Chan/Lifted.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Control/Concurrent/Chan/Lifted.o )
+[9 of 9] Compiling Control.Concurrent.Lifted ( Control/Concurrent/Lifted.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Control/Concurrent/Lifted.o )
+Running Haddock for lifted-base-0.2.3.10...
+Preprocessing library lifted-base-0.2.3.10...
+Haddock coverage:
+ 100% (  2 /  2) in 'System.Timeout.Lifted'
+ 100% (  2 /  2) in 'Foreign.Marshal.Utils.Lifted'
+ 100% ( 11 / 11) in 'Data.IORef.Lifted'
+ 100% ( 36 / 36) in 'Control.Exception.Lifted'
+ 100% (  5 /  5) in 'Control.Concurrent.QSemN.Lifted'
+ 100% (  5 /  5) in 'Control.Concurrent.QSem.Lifted'
+ 100% ( 19 / 19) in 'Control.Concurrent.MVar.Lifted'
+ 100% (  8 /  8) in 'Control.Concurrent.Chan.Lifted'
+ 100% ( 36 / 36) in 'Control.Concurrent.Lifted'
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/doc/html/lifted-base/index.html,
+.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/doc/html/lifted-base/lifted-base.txt
+Installing library in
+/Users/daidohinari/.stack/snapshots/x86_64-osx/lts-8.5/8.0.2/lib/x86_64-osx-ghc-8.0.2/lifted-base-0.2.3.10-BoEavBFIcriDza63doCjS2
+Registering lifted-base-0.2.3.10...

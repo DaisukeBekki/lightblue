@@ -1,0 +1,27 @@
+Configuring transformers-base-0.4.4...
+Building transformers-base-0.4.4...
+Preprocessing library transformers-base-0.4.4...
+[1 of 1] Compiling Control.Monad.Base ( src/Control/Monad/Base.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Control/Monad/Base.o )
+
+src/Control/Monad/Base.hs:22:1: warning: [-Wunused-imports]
+    The import of ‘Data.Monoid’ is redundant
+      except perhaps to import instances from ‘Data.Monoid’
+    To import instances alone, use: import Data.Monoid()
+Running Haddock for transformers-base-0.4.4...
+Preprocessing library transformers-base-0.4.4...
+
+src/Control/Monad/Base.hs:22:1: warning: [-Wunused-imports]
+    The import of ‘Data.Monoid’ is redundant
+      except perhaps to import instances from ‘Data.Monoid’
+    To import instances alone, use: import Data.Monoid()
+Haddock coverage:
+  33% (  1 /  3) in 'Control.Monad.Base'
+  Missing documentation for:
+    Module header
+    MonadBase (src/Control/Monad/Base.hs:50)
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/doc/html/transformers-base/index.html,
+.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/doc/html/transformers-base/transformers-base.txt
+Installing library in
+/Users/daidohinari/.stack/snapshots/x86_64-osx/lts-8.5/8.0.2/lib/x86_64-osx-ghc-8.0.2/transformers-base-0.4.4-GKSs0LKukAL8ymq2naFmrH
+Registering transformers-base-0.4.4...

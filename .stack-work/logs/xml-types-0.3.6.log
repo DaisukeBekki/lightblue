@@ -1,0 +1,46 @@
+Configuring xml-types-0.3.6...
+Building xml-types-0.3.6...
+Preprocessing library xml-types-0.3.6...
+[1 of 1] Compiling Data.XML.Types   ( lib/Data/XML/Types.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/XML/Types.o )
+
+lib/Data/XML/Types.hs:27:1: warning: [-Wtabs]
+    Tab character found here, and in 131 further locations.
+    Please use spaces instead.
+Running Haddock for xml-types-0.3.6...
+Preprocessing library xml-types-0.3.6...
+
+lib/Data/XML/Types.hs:27:1: warning: [-Wtabs]
+    Tab character found here, and in 131 further locations.
+    Please use spaces instead.
+Haddock coverage:
+  38% ( 14 / 37) in 'Data.XML.Types'
+  Missing documentation for:
+    Document (lib/Data/XML/Types.hs:88)
+    Prologue (lib/Data/XML/Types.hs:102)
+    Instruction (lib/Data/XML/Types.hs:116)
+    Miscellaneous (lib/Data/XML/Types.hs:129)
+    Node (lib/Data/XML/Types.hs:142)
+    Element (lib/Data/XML/Types.hs:159)
+    Content (lib/Data/XML/Types.hs:173)
+    ExternalID (lib/Data/XML/Types.hs:247)
+    isElement (lib/Data/XML/Types.hs:299)
+    isInstruction (lib/Data/XML/Types.hs:303)
+    isContent (lib/Data/XML/Types.hs:307)
+    isComment (lib/Data/XML/Types.hs:311)
+    isNamed (lib/Data/XML/Types.hs:315)
+    elementChildren (lib/Data/XML/Types.hs:318)
+    elementContent (lib/Data/XML/Types.hs:321)
+    elementText (lib/Data/XML/Types.hs:324)
+    nodeChildren (lib/Data/XML/Types.hs:327)
+    nodeContent (lib/Data/XML/Types.hs:330)
+    nodeText (lib/Data/XML/Types.hs:333)
+    hasAttribute (lib/Data/XML/Types.hs:336)
+    hasAttributeText (lib/Data/XML/Types.hs:339)
+    attributeContent (lib/Data/XML/Types.hs:342)
+    attributeText (lib/Data/XML/Types.hs:345)
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/doc/html/xml-types/index.html,
+.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/doc/html/xml-types/xml-types.txt
+Installing library in
+/Users/daidohinari/.stack/snapshots/x86_64-osx/lts-8.5/8.0.2/lib/x86_64-osx-ghc-8.0.2/xml-types-0.3.6-GxMzoyS0Lqp1tmM8Y95IbS
+Registering xml-types-0.3.6...

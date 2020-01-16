@@ -1,0 +1,35 @@
+Configuring blaze-markup-0.7.1.1...
+Building blaze-markup-0.7.1.1...
+Preprocessing library blaze-markup-0.7.1.1...
+[1 of 6] Compiling Text.Blaze.Internal ( src/Text/Blaze/Internal.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Text/Blaze/Internal.o )
+[2 of 6] Compiling Text.Blaze.Renderer.String ( src/Text/Blaze/Renderer/String.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Text/Blaze/Renderer/String.o )
+[3 of 6] Compiling Text.Blaze.Renderer.Pretty ( src/Text/Blaze/Renderer/Pretty.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Text/Blaze/Renderer/Pretty.o )
+[4 of 6] Compiling Text.Blaze.Renderer.Text ( src/Text/Blaze/Renderer/Text.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Text/Blaze/Renderer/Text.o )
+[5 of 6] Compiling Text.Blaze.Renderer.Utf8 ( src/Text/Blaze/Renderer/Utf8.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Text/Blaze/Renderer/Utf8.o )
+[6 of 6] Compiling Text.Blaze       ( src/Text/Blaze.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Text/Blaze.o )
+Running Haddock for blaze-markup-0.7.1.1...
+Preprocessing library blaze-markup-0.7.1.1...
+Haddock coverage:
+ 100% ( 55 / 55) in 'Text.Blaze.Internal'
+  75% (  3 /  4) in 'Text.Blaze.Renderer.String'
+  Missing documentation for:
+    renderHtml (src/Text/Blaze/Renderer/String.hs:93)
+  67% (  2 /  3) in 'Text.Blaze.Renderer.Pretty'
+  Missing documentation for:
+    renderHtml (src/Text/Blaze/Renderer/Pretty.hs:56)
+  56% (  5 /  9) in 'Text.Blaze.Renderer.Text'
+  Missing documentation for:
+    renderHtmlBuilder (src/Text/Blaze/Renderer/Text.hs:73)
+    renderHtmlBuilderWith (src/Text/Blaze/Renderer/Text.hs:133)
+    renderHtml (src/Text/Blaze/Renderer/Text.hs:149)
+    renderHtmlWith (src/Text/Blaze/Renderer/Text.hs:164)
+  86% (  6 /  7) in 'Text.Blaze.Renderer.Utf8'
+  Missing documentation for:
+    Module header
+ 100% ( 43 / 43) in 'Text.Blaze'
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/doc/html/blaze-markup/index.html,
+.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/doc/html/blaze-markup/blaze-markup.txt
+Installing library in
+/Users/daidohinari/.stack/snapshots/x86_64-osx/lts-8.5/8.0.2/lib/x86_64-osx-ghc-8.0.2/blaze-markup-0.7.1.1-7tIWNv8iALFJhJ4kVxNmNT
+Registering blaze-markup-0.7.1.1...

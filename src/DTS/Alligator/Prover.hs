@@ -27,34 +27,92 @@ data Arrowterm =
   deriving (Eq)
 
 instance Show Arrowterm where
-  show (Conclusion p)=   ( show p)
-  show (Arrow env r) =  "[ " ++ (tail (foldr (\a -> \b -> "," ++ a  ++ b) "" $ map show env)) ++ " ] =>" ++  (show r)
+  show = show . arrow2DT
+  -- show (Conclusion p)=   (show p)
+  -- show (Arrow env r) ="[ " ++ (tail (foldr (\a -> \b -> "," ++ a  ++ b) "" $ map show env)) ++ " ] =>" ++  (show r)
 
+arrow_notat_selector :: DT.Selector -> ArrowSelector
+arrow_notat_selector DT.Fst = Arrow_Fst
+arrow_notat_selector DT.Snd = Arrow_Snd
+
+dt_notat_selector :: ArrowSelector -> DT.Selector
+dt_notat_selector Arrow_Fst = DT.Fst
+dt_notat_selector Arrow_Snd = DT.Snd
 
 arrow2DT :: Arrowterm -> DT.Preterm
 arrow2DT (Conclusion a) = a
-arrow2DT (Arrow_Sigma h t)= DT.Sigma (arrow2DT h) $ DT.toDTT $ UD.shiftIndices (DT.toUDTT (arrow2DT t)) 1 0
-arrow2DT (Arrow_Pair h t)= undefined
+arrow2DT (Arrow_Sigma h t)= DT.Sigma (arrow2DT h) (arrow2DT t)
+arrow2DT (Arrow_Pair h t)= DT.Pair (arrow2DT h) (arrow2DT t)
+arrow2DT (Arrow_App a b) = DT.App (arrow2DT a) (arrow2DT b)
+arrow2DT (Arrow_Proj s p) = DT.Proj (dt_notat_selector s) (arrow2DT p)
+arrow2DT (Arrow_Lam p) = DT.Lam (arrow2DT p)
 arrow2DT (Arrow [] t) = arrow2DT t
-arrow2DT (Arrow (f:r) t) = arrow2DT (Arrow r (Conclusion (DT.Pi (arrow2DT f) (arrow2DT t)))) --shiftindice
+arrow2DT (Arrow (f:r) t) = arrow2DT (Arrow r (Conclusion (DT.Pi (arrow2DT f)  (arrow2DT t))))
+
+-- arrow_notat4biop_hojo :: DT.Preterm -> DT.Preterm -> DT.Preterm -> DT.Preterm
+-- arrow_notat4biop_hojo (DT.Sigma _ _) h t= DT.Sigma h t
+-- arrow_notat4biop_hojo (DT.App _ _) h t= DT.App h t
+-- arrow_notat4biop_hojo (DT.Pair _ _) h t= DT.Pair h t
+--
+-- arrow_notat4biop :: DT.Preterm -> Arrowterm -> Arrowterm -> Arrowterm
+-- arrow_notat4biop op (Conclusion arrow_h) (Conclusion arrow_t) =
+--   Conclusion $ arrow_notat4biop_hojo op arrow_h arrow_t
+-- arrow_notat4biop (DT.Sigma _ _) arrow_h arrow_t =
+--   Arrow_Sigma arrow_h arrow_t
+-- arrow_notat4biop (DT.App _ _) arrow_h arrow_t =
+--   Arrow_App arrow_h arrow_t
+-- arrow_notat4biop (DT.Pair _ _) arrow_h arrow_t =
+--   Arrow_Pair arrow_h arrow_t
+-- arrow_notat4biop op h t = undefined
+
+--ex)
+--print $ arrow_notat $ DT.Pi (DT.Pi (DT.Sigma (DT.Con (T.pack "p")) (DT.Con (T.pack "q"))) (DT.Con (T.pack "r"))) (DT.Pi (DT.Con (T.pack "p")) (DT.Pi (DT.Con (T.pack "q")) (DT.Con (T.pack "r"))))
+arrow_notat :: DT.Preterm -> Arrowterm
+-- --入力にArrowtermがあることはないとする
+arrow_notat (DT.Type) = Conclusion $DT.Type
+arrow_notat (DT.Var i) = Conclusion $ DT.Var i
+arrow_notat (DT.Con i) = Conclusion $ DT.Con i
+arrow_notat (DT.Not i) =
+  Arrow [arrow_notat i] $Conclusion DT.Bot
+arrow_notat (DT.Pi h t) =
+  Arrow [arrow_notat h] (arrow_notat t)
+arrow_notat (DT.Sigma h t) =
+  Arrow_Sigma (arrow_notat h) (arrow_notat t)
+  -- arrow_notat4biop (DT.Sigma h t) (arrow_notat h) (arrow_notat t)
+arrow_notat (DT.App a b) =
+  Arrow_App (arrow_notat a) (arrow_notat b)
+  -- arrow_notat4biop (DT.App a b) (arrow_notat a) (arrow_notat b)
+arrow_notat (DT.Pair a b) =
+  Arrow_Pair (arrow_notat a) (arrow_notat b)
+  -- arrow_notat4biop (DT.Pair a b) (arrow_notat a) (arrow_notat b)
+arrow_notat (DT.Proj selector p) =
+  Arrow_Proj (arrow_notat_selector selector) (arrow_notat p)
+  -- case arrow_notat p of
+  --   Conclusion arrow_p ->  Conclusion $ DT.Proj selector arrow_p
+  --   arrow_p -> Arrow_Proj (arrow_notat_selector selector) arrow_p
+arrow_notat (DT.Lam p) =
+  Arrow_Lam (arrow_notat p)
+  -- case arrow_notat p of
+  --   Conclusion arrow_p ->  Conclusion $ DT.Lam arrow_p
+  --   arrow_p-> Arrow_Lam arrow_p
+arrow_notat dt= Conclusion dt
 
 type TEnv = [DT.Preterm]
 type SUEnv = [(T.Text,DT.Preterm)]
-
 type AEnv = [Arrowterm]
 
 data AJudgement =
   AJudgement AEnv Arrowterm Arrowterm
     deriving (Eq, Show)
 
-fromAJudgement2type :: AJudgement -> Arrowterm
-fromAJudgement2type ( AJudgement env aterm atype) = Arrow env atype
+typefromAJudgement :: AJudgement -> Arrowterm
+typefromAJudgement ( AJudgement env aterm atype) = Arrow env atype
 
-fromAJudgement2term :: AJudgement -> Arrowterm
-fromAJudgement2term ( AJudgement env aterm atype) = Arrow env aterm
+termfromAJudgement :: AJudgement -> Arrowterm
+termfromAJudgement ( AJudgement env aterm atype) = Arrow env aterm
 
 fromAJudgement2dtpreterm  :: AJudgement -> DT.Preterm
-fromAJudgement2dtpreterm   = arrow2DT . fromAJudgement2type
+fromAJudgement2dtpreterm   = arrow2DT . typefromAJudgement
 
 dne =   DT.Lam ((DT.Pi (DT.Con (T.pack "Prop")) (DT.Pi (DT.Pi (DT.Pi (DT.Var 1)  DT.Bot) (DT.Bot)) (DT.Var 2))))
 efq = DT.Lam (DT.Pi DT.Bot (DT.Var 1))
@@ -108,118 +166,15 @@ prove var_env sig_env preterm =
 pi_rules = [(DT.Type, DT.Type),  (DT.Type, DT.Kind),  (DT.Kind, DT.Kind),   (DT.Kind, DT.Type)]
 sigma_rules = [(DT.Type,DT.Type)]
 
--- find_sig :: SUEnv -> T.Text -> Maybe DT.Preterm
--- find_sig [] target = Nothing
--- find_sig ((ft,fp):r) target =
---   if ft == target then (Just fp) else find_sig r target
-
--- check_context :: TEnv -> SUEnv ->Bool
--- check_context [] sig_env = True
--- check_context (f:r) sig_env  =
---   case check_type r sig_env f of
---     Just _ -> check_context r sig_env
---     Nothing -> False
-
---typecheckU でok
--- check_type :: TEnv -> SUEnv -> DT.Preterm -> Maybe DT.Preterm
--- check_type var_env _sig_env (DT.Var i) = Just $ var_env !! i
--- check_type _var_env sig_env (DT.Con t) = find_sig sig_env t
--- check_type _var_env _sig_env DT.Type = Just DT.Kind
--- check_type var_env sig_env (DT.Pi h t) =
---   --pi_rulesからlet type_lst = pi_rulesみたいな感じでだす
---   case check_type var_env sig_env h of
---     Just s1 ->  case (check_type (h:var_env) sig_env t) of
---       --Just s2 -> if ( (fromDTT s1,fromDTT s2) `elem` pi_rules) then Just s2 else Nothing
---       Just s2 -> if ( (s1,s2) `elem` pi_rules) then Just s2 else Nothing
---       Nothing -> Nothing
---     Nothing -> Nothing
--- check_type var_env sig_env (DT.Sigma h t)=
---   case check_type var_env sig_env h of
---     Just s1 ->  case (check_type (h:var_env) sig_env t) of
---       -- Just s2 -> if ( (fromDTT s1,fromDTT s2) `elem` sigma_rules) then Just s2 else Nothing
---       Just s2 -> if ( (s1,s2) `elem` sigma_rules) then Just s2 else Nothing
---       Nothing -> Nothing
---     Nothing -> Nothing
--- check_type var_env sig_env (DT.App f s)=
---   case check_type var_env sig_env s of
---     Just t1 -> case check_type var_env sig_env f of
---       Just (DT.Pi h t) -> undefined
---       Just _ -> Nothing
---       Nothing ->Nothing
---     Nothing -> Nothing
--- check_type var_env sig_env (DT.Lam p) =
---   undefined
--- --subst (UD.Pair (UD.Pair (UD.Con (T.pack "a")) (UD.Con (T.pack "b"))) (UD.Con (T.pack "c"))) (UD.Con (T.pack "d")) (UD.Pair (UD.Con (T.pack "a")) (UD.Con (T.pack "b")))
--- check_type var_env sig_env (DT.Pair f s) =
---   case check_type  var_env sig_env f of
---     Just a -> case check_type  var_env sig_env s of
---       Just b ->
---         Just $ DT.Sigma a (subst b (DT.Var 0) f)
---       Nothing -> Nothing
---     Nothing -> Nothing
--- --betareduce後なのでDT.Proj _ (DT.Sigma a b)の形は原則的に残っていない？
--- check_type var_env sig_env (DT.Proj s p) =
---   case s of
---     DT.Fst ->
---       case check_type var_env sig_env p of
---         Just (DT.Sigma a b) -> Just a
---         _ -> Nothing
---     DT.Snd ->
---       case check_type var_env sig_env p of
---         Just (DT.Sigma a b) -> Just (subst b (DT.Var 0) a)
---         _ -> Nothing
---
--- check_type _var_env _sig_env _preterm = undefined
-
-arrow_notat4biop_hojo :: DT.Preterm -> DT.Preterm -> DT.Preterm -> DT.Preterm
-arrow_notat4biop_hojo (DT.Sigma _ _) h t= DT.Sigma h t
-
-arrow_notat4biop :: DT.Preterm -> Arrowterm -> Arrowterm -> Arrowterm
-arrow_notat4biop op (Conclusion arrow_h) (Conclusion arrow_t) =
-  Conclusion $ arrow_notat4biop_hojo op arrow_h arrow_t
-arrow_notat4biop (DT.Sigma _ _) arrow_h arrow_t =
-  Arrow_Sigma arrow_h arrow_t
-arrow_notat4biop (DT.App _ _) arrow_h arrow_t =
-  Arrow_App arrow_h arrow_t
-arrow_notat4biop (DT.Pair _ _) arrow_h arrow_t =
-  Arrow_Pair arrow_h arrow_t
-arrow_notat4biop op h t = undefined
-
-arrow_notat_selector :: DT.Selector -> ArrowSelector
-arrow_notat_selector DT.Fst = Arrow_Fst
-arrow_notat_selector DT.Snd = Arrow_Snd
-
---ex)
---print $ arrow_notat $ DT.Pi (DT.Pi (DT.Sigma (DT.Con (T.pack "p")) (DT.Con (T.pack "q"))) (DT.Con (T.pack "r"))) (DT.Pi (DT.Con (T.pack "p")) (DT.Pi (DT.Con (T.pack "q")) (DT.Con (T.pack "r"))))
-arrow_notat :: DT.Preterm -> Arrowterm
--- --入力にArrowtermがあることはないとする
-arrow_notat (DT.Var i) = Conclusion $ DT.Var i
-arrow_notat (DT.Con i) = Conclusion $ DT.Con i
-arrow_notat (DT.Not i) =
-  Arrow [arrow_notat i] $Conclusion DT.Bot
-arrow_notat (DT.Pi h t) =
-  Arrow [arrow_notat h] (arrow_notat t)
-arrow_notat (DT.Sigma h t) =
-  arrow_notat4biop (DT.Sigma h t) (arrow_notat h) (arrow_notat t)
-arrow_notat (DT.App a b) =
-  arrow_notat4biop (DT.App a b) (arrow_notat a) (arrow_notat b)
-arrow_notat (DT.Pair a b) =
-  arrow_notat4biop (DT.Pair a b) (arrow_notat a) (arrow_notat b)
-arrow_notat (DT.Proj selector p) =
-  case arrow_notat p of
-    Conclusion arrow_p ->  Conclusion $ DT.Proj selector arrow_p
-    arrow_p -> Arrow_Proj (arrow_notat_selector selector) arrow_p
-arrow_notat (DT.Lam p) =
-  case arrow_notat p of
-    Conclusion arrow_p ->  Conclusion $ DT.Lam arrow_p
-    arrow_p-> Arrow_Lam arrow_p
-arrow_notat _= undefined
-
 --forwardができてからやる
 forward_context :: AEnv -> [AJudgement]
 forward_context [] = []
 forward_context (f:r) =
   (to_forward (length (f:r)) f) ++ forward_context r
+
+to_forward :: Int -> Arrowterm -> [AJudgement]
+to_forward num aterm =
+  forward aterm (DT.Con (T.pack $ show num)) aterm
 
 sigma_forward :: Arrowterm -> DT.Preterm -> DT.Selector -> DT.Preterm -> [AJudgement]
 sigma_forward origin base  selector (DT.Sigma a b) = forward origin (DT.Proj selector base) $Conclusion (DT.Sigma a b)
@@ -234,10 +189,6 @@ lam_sigma_forward  [] origin base (Arrow a (Conclusion ( DT.Sigma preterm_a pret
   map (lam_sigma_forward_hojo a) (sigma_forward origin base DT.Snd (subst preterm_b (DT.Proj DT.Fst (base)) (DT.Var 0))) ++ (sigma_forward origin base DT.Fst preterm_a)
 lam_sigma_forward (f:r) origin base (Arrow a b) =
   lam_sigma_forward  r origin (DT.App base (DT.Con (((T.pack . (\x -> (show base )++"_"++x) . show) (length (f:r)))) )) (Arrow a b)
-
-to_forward :: Int -> Arrowterm -> [AJudgement]
-to_forward num aterm =
-  forward aterm (DT.Con (T.pack $ show num)) aterm
 
 show_forward :: Arrowterm -> TEnv
 show_forward aterm =
@@ -254,15 +205,49 @@ forward origin base (Arrow a (Arrow b c)) =
   forward origin base (Arrow (a ++ b) c)
 forward origin base arrowterm = []
 
+
+forward' :: Arrowterm -> [Arrowterm]
+-- forward' (Arrow_Sigma arrow_h arrow_t) =
+--   let h = arrow2DT arrow_h
+--       t = arrow2
+forward' (Arrow a (Arrow b c)) =
+  forward' (Arrow (b ++ a) c)
+forward' _ = []
+
 maxdepth = 100
 
-deduce :: [AJudgement]->Arrowterm->Int->[Maybe Arrowterm]
+membership :: [AJudgement] ->  Arrowterm -> Int -> [Arrowterm]
+membership context arrow_type depth =
+    if (or $ map ((== arrow_type) . termfromAJudgement) context) --var(shift_indiceについて考える必要がある)
+      then
+        map (fst) $ filter (snd) $ map (\x -> ((typefromAJudgement x),((==arrow_type) . termfromAJudgement) x)) context
+      else
+        []
+
+pi_form :: [AJudgement]-> [Arrowterm] -> [Arrowterm] -> Arrowterm->Int->[Arrowterm]
+
+pi_form context type_terms _ (Conclusion DT.Type) depth =
+  --type型を持つ項a1,...,anについて一つ一つextendした[(a1,[AJudgement]),(a2,[AJudgement])...]
+  --type型を持つ項a1,...,anについてありえる(as,b1),...,(as,bm)を並べた[[(Arrowterm,Arrowterm)]]
+  let extendedContexts = map (\aterm -> (aterm, (forward_context [aterm] ++ context))) type_terms
+      a_bss = map (\(aterm,aenv) -> (map (\b -> Arrow [aterm] b ) (deduce aenv (Conclusion DT.Type) (depth + 1)))) extendedContexts
+  in foldr (++) [] a_bss
+pi_form context _ kind_terms (Conclusion DT.Kind) depth =
+  let extendedContexts = map (\aterm -> (aterm, (forward_context [aterm] ++ context))) kind_terms 
+      a_bss = map (\(aterm,aenv) -> (map (\b -> Arrow [aterm] b ) (deduce aenv (Conclusion DT.Kind) (depth + 1)))) extendedContexts
+  in foldr (++) [] a_bss
+pi_form _ _ _ _ _= []
+
+pi_intro :: [AJudgement] -> Arrowterm -> Int -> [Arrowterm]
+pi_intro context arrow_type depth = undefined
+
+
+deduce :: [AJudgement]->Arrowterm->Int->[Arrowterm]
 --context,target,depth
-deduce _  (Conclusion DT.Kind) depth = if depth < maxdepth then [Just $ Conclusion DT.Type] else [Nothing]
-deduce context term depth =
-  if (or $ map ((== term) . fromAJudgement2term) context)
-    then
-       map (fst) $ filter (snd) $ map (\x -> (Just (fromAJudgement2type x),((==term) . fromAJudgement2term) x)) context
-    else undefined
-  -- case term `elem` (map fromAjudgement2Type context) then else undefined
--- deduce context term depth= undefined
+--type-ax
+deduce _  (Conclusion DT.Kind) depth = if depth < maxdepth then [Conclusion DT.Type] else []
+
+deduce context arrow_type depth =
+  let type_terms = [undefined]
+      kind_terms = [undefined]
+    in (membership context arrow_type depth) ++ (pi_form context type_terms kind_terms arrow_type depth) ++ []
