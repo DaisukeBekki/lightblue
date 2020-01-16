@@ -3,7 +3,7 @@ packages:
 - .
 extra-deps:
   - git: https://github.com/DaisukeBekki/JSeM.git
-    commit: 3a880f3db35f7b44f18067e64520ccd74856193c
+    commit: be59964541248fd9327f1f5af30d62d15987c21b
 flags: {}
 extra-package-dbs: []
 build:
@@ -14,8 +14,6 @@ build:
   open-haddocks: false
   haddock-internal: false
   haddock-hyperlink-source: true
-
-<<<<<<< HEAD
 # Control whether we use the GHC we find on the path
 # system-ghc: true
 #
@@ -33,14 +31,3 @@ build:
 #
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
-
-build:
-  haddock: false
-  haddock-arguments:
-    haddock-args:
-    - --odir=haddock
-  open-haddocks: false
-  haddock-internal: false
-  haddock-hyperlink-source: true
-=======
->>>>>>> origin/daido
