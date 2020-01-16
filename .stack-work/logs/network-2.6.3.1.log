@@ -1,0 +1,349 @@
+[1 of 2] Compiling Main             ( /private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack73461/network-2.6.3.1/Setup.hs, /private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack73461/network-2.6.3.1/.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/setup/Main.o )
+[2 of 2] Compiling StackSetupShim   ( /Users/daidohinari/.stack/setup-exe-src/setup-shim-mPHDZzAJ.hs, /private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack73461/network-2.6.3.1/.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/setup/StackSetupShim.o )
+Linking /private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack73461/network-2.6.3.1/.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/setup/setup ...
+
+In file included from /var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/ghc73782_0/ghc_7.c:1:0: error:
+    
+
+In file included from /Users/daidohinari/.stack/programs/x86_64-osx/ghc-8.0.2/lib/ghc-8.0.2/include/Rts.h:217:0: error:
+    
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-8.0.2/lib/ghc-8.0.2/include/rts/storage/ClosureMacros.h:505:5: error:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+#if ZERO_SLOP_FOR_LDV_PROF || ZERO_SLOP_FOR_SANITY_CHECK
+    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-8.0.2/lib/ghc-8.0.2/include/rts/storage/ClosureMacros.h:502:37: error:
+     note: expanded from macro 'ZERO_SLOP_FOR_LDV_PROF'
+#define ZERO_SLOP_FOR_LDV_PROF     (defined(PROFILING))
+                                    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-8.0.2/lib/ghc-8.0.2/include/rts/storage/ClosureMacros.h:505:31: error:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+#if ZERO_SLOP_FOR_LDV_PROF || ZERO_SLOP_FOR_SANITY_CHECK
+                              ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-8.0.2/lib/ghc-8.0.2/include/rts/storage/ClosureMacros.h:503:37: error:
+     note: expanded from macro 'ZERO_SLOP_FOR_SANITY_CHECK'
+#define ZERO_SLOP_FOR_SANITY_CHECK (defined(DEBUG) && !defined(THREADED_RTS))
+                                    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-8.0.2/lib/ghc-8.0.2/include/rts/storage/ClosureMacros.h:505:31: error:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-8.0.2/lib/ghc-8.0.2/include/rts/storage/ClosureMacros.h:503:56: error:
+     note: expanded from macro 'ZERO_SLOP_FOR_SANITY_CHECK'
+#define ZERO_SLOP_FOR_SANITY_CHECK (defined(DEBUG) && !defined(THREADED_RTS))
+                                                       ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-8.0.2/lib/ghc-8.0.2/include/rts/storage/ClosureMacros.h:523:5: error:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+#if ZERO_SLOP_FOR_LDV_PROF && !ZERO_SLOP_FOR_SANITY_CHECK
+    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-8.0.2/lib/ghc-8.0.2/include/rts/storage/ClosureMacros.h:502:37: error:
+     note: expanded from macro 'ZERO_SLOP_FOR_LDV_PROF'
+#define ZERO_SLOP_FOR_LDV_PROF     (defined(PROFILING))
+                                    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-8.0.2/lib/ghc-8.0.2/include/rts/storage/ClosureMacros.h:523:32: error:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+#if ZERO_SLOP_FOR_LDV_PROF && !ZERO_SLOP_FOR_SANITY_CHECK
+                               ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-8.0.2/lib/ghc-8.0.2/include/rts/storage/ClosureMacros.h:503:37: error:
+     note: expanded from macro 'ZERO_SLOP_FOR_SANITY_CHECK'
+#define ZERO_SLOP_FOR_SANITY_CHECK (defined(DEBUG) && !defined(THREADED_RTS))
+                                    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-8.0.2/lib/ghc-8.0.2/include/rts/storage/ClosureMacros.h:523:32: error:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-8.0.2/lib/ghc-8.0.2/include/rts/storage/ClosureMacros.h:503:56: error:
+     note: expanded from macro 'ZERO_SLOP_FOR_SANITY_CHECK'
+#define ZERO_SLOP_FOR_SANITY_CHECK (defined(DEBUG) && !defined(THREADED_RTS))
+                                                       ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-8.0.2/lib/ghc-8.0.2/include/rts/storage/ClosureMacros.h:552:5: error:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+#if ZERO_SLOP_FOR_LDV_PROF && !ZERO_SLOP_FOR_SANITY_CHECK
+    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-8.0.2/lib/ghc-8.0.2/include/rts/storage/ClosureMacros.h:502:37: error:
+     note: expanded from macro 'ZERO_SLOP_FOR_LDV_PROF'
+#define ZERO_SLOP_FOR_LDV_PROF     (defined(PROFILING))
+                                    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-8.0.2/lib/ghc-8.0.2/include/rts/storage/ClosureMacros.h:552:32: error:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+#if ZERO_SLOP_FOR_LDV_PROF && !ZERO_SLOP_FOR_SANITY_CHECK
+                               ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-8.0.2/lib/ghc-8.0.2/include/rts/storage/ClosureMacros.h:503:37: error:
+     note: expanded from macro 'ZERO_SLOP_FOR_SANITY_CHECK'
+#define ZERO_SLOP_FOR_SANITY_CHECK (defined(DEBUG) && !defined(THREADED_RTS))
+                                    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-8.0.2/lib/ghc-8.0.2/include/rts/storage/ClosureMacros.h:552:32: error:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-8.0.2/lib/ghc-8.0.2/include/rts/storage/ClosureMacros.h:503:56: error:
+     note: expanded from macro 'ZERO_SLOP_FOR_SANITY_CHECK'
+#define ZERO_SLOP_FOR_SANITY_CHECK (defined(DEBUG) && !defined(THREADED_RTS))
+                                                       ^
+9 warnings generated.
+clang: warning: argument unused during compilation: '-nopie' [-Wunused-command-line-argument]
+Configuring network-2.6.3.1...
+configure: WARNING: unrecognized options: --with-compiler
+checking build system type... x86_64-apple-darwin18.7.0
+checking host system type... x86_64-apple-darwin18.7.0
+checking for gcc... /usr/bin/gcc
+checking whether the C compiler works... yes
+checking for C compiler default output file name... a.out
+checking for suffix of executables... 
+checking whether we are cross compiling... no
+checking for suffix of object files... o
+checking whether we are using the GNU C compiler... yes
+checking whether /usr/bin/gcc accepts -g... yes
+checking for /usr/bin/gcc option to accept ISO C89... none needed
+checking for an ANSI C-conforming const... yes
+checking how to run the C preprocessor... /usr/bin/gcc -E
+checking for grep that handles long lines and -e... /usr/bin/grep
+checking for egrep... /usr/bin/grep -E
+checking for ANSI C header files... yes
+checking for sys/types.h... yes
+checking for sys/stat.h... yes
+checking for stdlib.h... yes
+checking for string.h... yes
+checking for memory.h... yes
+checking for strings.h... yes
+checking for inttypes.h... yes
+checking for stdint.h... yes
+checking for unistd.h... yes
+checking fcntl.h usability... yes
+checking fcntl.h presence... yes
+checking for fcntl.h... yes
+checking limits.h usability... yes
+checking limits.h presence... yes
+checking for limits.h... yes
+checking for stdlib.h... (cached) yes
+checking for sys/types.h... (cached) yes
+checking for unistd.h... (cached) yes
+checking winsock2.h usability... no
+checking winsock2.h presence... no
+checking for winsock2.h... no
+checking ws2tcpip.h usability... no
+checking ws2tcpip.h presence... no
+checking for ws2tcpip.h... no
+checking arpa/inet.h usability... yes
+checking arpa/inet.h presence... yes
+checking for arpa/inet.h... yes
+checking netdb.h usability... yes
+checking netdb.h presence... yes
+checking for netdb.h... yes
+checking netinet/in.h usability... yes
+checking netinet/in.h presence... yes
+checking for netinet/in.h... yes
+checking netinet/tcp.h usability... yes
+checking netinet/tcp.h presence... yes
+checking for netinet/tcp.h... yes
+checking sys/socket.h usability... yes
+checking sys/socket.h presence... yes
+checking for sys/socket.h... yes
+checking sys/uio.h usability... yes
+checking sys/uio.h presence... yes
+checking for sys/uio.h... yes
+checking sys/un.h usability... yes
+checking sys/un.h presence... yes
+checking for sys/un.h... yes
+checking linux/can.h usability... no
+checking linux/can.h presence... no
+checking for linux/can.h... no
+checking linux/tcp.h usability... no
+checking linux/tcp.h presence... no
+checking for linux/tcp.h... no
+checking net/if.h usability... yes
+checking net/if.h presence... yes
+checking for net/if.h... yes
+checking for readlink... yes
+checking for symlink... yes
+checking for if_nametoindex... yes
+checking for struct msghdr.msg_control... yes
+checking for struct msghdr.msg_accrights... no
+checking for struct sockaddr.sa_len... yes
+checking for in_addr_t in netinet/in.h... yes
+checking for SO_PEERCRED and struct ucred in sys/socket.h... no
+checking for getpeereid in unistd.h... checking for getpeereid... yes
+checking for _head_libws2_32_a in -lws2_32... no
+checking for getaddrinfo... yes
+checking for gai_strerror... yes
+checking whether AI_ADDRCONFIG is declared... yes
+checking whether AI_ALL is declared... yes
+checking whether AI_NUMERICSERV is declared... yes
+checking whether AI_V4MAPPED is declared... yes
+checking whether IPV6_V6ONLY is declared... yes
+checking whether IPPROTO_IP is declared... yes
+checking whether IPPROTO_TCP is declared... yes
+checking whether IPPROTO_IPV6 is declared... yes
+checking for sendfile in sys/sendfile.h... no
+checking for sendfile in sys/socket.h... yes
+checking for gethostent... yes
+checking for accept4... no
+configure: creating ./config.status
+config.status: creating network.buildinfo
+config.status: creating include/HsNetworkConfig.h
+configure: WARNING: unrecognized options: --with-compiler
+Building network-2.6.3.1...
+Preprocessing library network-2.6.3.1...
+[ 1 of 11] Compiling Network.Socket.Types ( .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Network/Socket/Types.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Network/Socket/Types.o )
+
+Network/Socket/Types.hsc:869:1: warning: [-Wincomplete-patterns]
+    Pattern match(es) are non-exhaustive
+    In an equation for ‘sizeOfSockAddr’:
+        Patterns not matched: (SockAddrCan _)
+
+Network/Socket/Types.hsc:922:1: warning: [-Wincomplete-patterns]
+    Pattern match(es) are non-exhaustive
+    In an equation for ‘pokeSockAddr’:
+        Patterns not matched: _ (SockAddrCan _)
+[ 2 of 11] Compiling Network.Socket.Internal ( .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Network/Socket/Internal.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Network/Socket/Internal.o )
+[ 3 of 11] Compiling Network.Socket.ByteString.IOVec ( .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Network/Socket/ByteString/IOVec.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Network/Socket/ByteString/IOVec.o )
+[ 4 of 11] Compiling Network.Socket   ( .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Network/Socket.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Network/Socket.o )
+
+Network/Socket.hsc:206:1: warning: [-Wunused-imports]
+    The import of ‘threadWaitRead’ from module ‘GHC.Conc’ is redundant
+
+Network/Socket.hsc:289:3: warning: [-Wincomplete-patterns]
+    Pattern match(es) are non-exhaustive
+    In an equation for ‘showsPrec’:
+        Patterns not matched: _ (SockAddrCan _)
+[ 5 of 11] Compiling Network.Socket.ByteString.MsgHdr ( .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Network/Socket/ByteString/MsgHdr.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Network/Socket/ByteString/MsgHdr.o )
+[ 6 of 11] Compiling Network.Socket.ByteString.Internal ( Network/Socket/ByteString/Internal.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Network/Socket/ByteString/Internal.o )
+[ 7 of 11] Compiling Network.Socket.ByteString ( .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Network/Socket/ByteString.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Network/Socket/ByteString.o )
+[ 8 of 11] Compiling Network.Socket.ByteString.Lazy.Posix ( Network/Socket/ByteString/Lazy/Posix.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Network/Socket/ByteString/Lazy/Posix.o )
+[ 9 of 11] Compiling Network.Socket.ByteString.Lazy ( Network/Socket/ByteString/Lazy.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Network/Socket/ByteString/Lazy.o )
+[10 of 11] Compiling Network.BSD      ( .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Network/BSD.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Network/BSD.o )
+[11 of 11] Compiling Network          ( Network.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Network.o )
+Running Haddock for network-2.6.3.1...
+Preprocessing library network-2.6.3.1...
+
+Network/Socket.hsc:206:1: warning: [-Wunused-imports]
+    The import of ‘threadWaitRead’ from module ‘GHC.Conc’ is redundant
+Haddock coverage:
+  66% ( 29 / 44) in 'Network.Socket.Types'
+  Missing documentation for:
+    Module header
+    sockFd (Network/Socket/Types.hsc:95)
+    sockFamily (Network/Socket/Types.hsc:98)
+    sockType (Network/Socket/Types.hsc:101)
+    sockProtocol (Network/Socket/Types.hsc:104)
+    sockStatus (Network/Socket/Types.hsc:107)
+    packSocketType (Network/Socket/Types.hsc:192)
+    unpackSocketType (Network/Socket/Types.hsc:207)
+    packFamily (Network/Socket/Types.hsc:311)
+    unpackFamily (Network/Socket/Types.hsc:527)
+    hostAddress6ToTuple (Network/Socket/Types.hsc:1028)
+    tupleToHostAddress6 (Network/Socket/Types.hsc:1036)
+    FlowInfo (Network/Socket/Types.hsc:815)
+    ScopeID (Network/Socket/Types.hsc:816)
+    ProtocolNumber (Network/Socket/Types.hsc:117)
+  94% ( 30 / 32) in 'Network.Socket.Internal'
+  Missing documentation for:
+    FlowInfo (Network/Socket/Types.hsc:815)
+    ScopeID (Network/Socket/Types.hsc:816)
+  50% (  1 /  2) in 'Network.Socket.ByteString.IOVec'
+  Missing documentation for:
+    IOVec (Network/Socket/ByteString/IOVec.hsc:15)
+  73% ( 77 /106) in 'Network.Socket'
+  Missing documentation for:
+    hostAddress6ToTuple (Network/Socket/Types.hsc:1028)
+    tupleToHostAddress6 (Network/Socket/Types.hsc:1036)
+    FlowInfo (Network/Socket/Types.hsc:815)
+    ScopeID (Network/Socket/Types.hsc:816)
+    ShutdownCmd (Network/Socket.hsc:1069)
+    ProtocolNumber (Network/Socket/Types.hsc:117)
+    ServiceName (Network/Socket.hsc:234)
+    AddrInfo (Network/Socket.hsc:1280)
+    getPeerName (Network/Socket.hsc:774)
+    getSocketName (Network/Socket.hsc:782)
+    socketPort (Network/Socket.hsc:751)
+    recvLen (Network/Socket.hsc:704)
+    inet_addr (Network/Socket.hsc:1151)
+    inet_ntoa (Network/Socket.hsc:1159)
+    isBound (Network/Socket.hsc:1118)
+    isListening (Network/Socket.hsc:1123)
+    isReadable (Network/Socket.hsc:1128)
+    isWritable (Network/Socket.hsc:1133)
+    sendFd (Network/Socket.hsc:1008)
+    recvFd (Network/Socket.hsc:1016)
+    aNY_PORT (Network/Socket.hsc:1030)
+    sOMAXCONN (Network/Socket.hsc:1050)
+    sOL_SOCKET (Network/Socket.hsc:1053)
+    sCM_RIGHTS (Network/Socket.hsc:1057)
+    fdSocket (Network/Socket.hsc:277)
+    mkSocket (Network/Socket.hsc:265)
+    packFamily (Network/Socket/Types.hsc:311)
+    unpackFamily (Network/Socket/Types.hsc:527)
+    packSocketType (Network/Socket/Types.hsc:192)
+  50% (  1 /  2) in 'Network.Socket.ByteString.MsgHdr'
+  Missing documentation for:
+    MsgHdr (Network/Socket/ByteString/MsgHdr.hsc:22)
+  25% (  1 /  4) in 'Network.Socket.ByteString.Internal'
+  Missing documentation for:
+    mkInvalidRecvArgError (Network/Socket/ByteString/Internal.hs:34)
+    c_writev (Network/Socket/ByteString/Internal.hs:40)
+    c_sendmsg (Network/Socket/ByteString/Internal.hs:43)
+ 100% ( 15 / 15) in 'Network.Socket.ByteString'
+  25% (  1 /  4) in 'Network.Socket.ByteString.Lazy.Posix'
+  Missing documentation for:
+    Module header
+    send (Network/Socket/ByteString/Lazy/Posix.hs:27)
+    sendAll (Network/Socket/ByteString/Lazy/Posix.hs:50)
+  71% (  5 /  7) in 'Network.Socket.ByteString.Lazy'
+  Missing documentation for:
+    send (Network/Socket/ByteString/Lazy/Posix.hs:27)
+    sendAll (Network/Socket/ByteString/Lazy/Posix.hs:50)
+  44% ( 23 / 52) in 'Network.BSD'
+  Missing documentation for:
+    HostEntry (Network/BSD.hsc:329)
+    hostAddress (Network/BSD.hsc:366)
+    getHostEntries (Network/BSD.hsc:419)
+    setHostEntry (Network/BSD.hsc:409)
+    getHostEntry (Network/BSD.hsc:401)
+    endHostEntry (Network/BSD.hsc:414)
+    ServiceEntry (Network/BSD.hsc:139)
+    ServiceName (Network/Socket.hsc:234)
+    getServiceEntries (Network/BSD.hsc:224)
+    getServiceEntry (Network/BSD.hsc:206)
+    setServiceEntry (Network/BSD.hsc:214)
+    endServiceEntry (Network/BSD.hsc:219)
+    ProtocolName (Network/BSD.hsc:123)
+    ProtocolNumber (Network/Socket/Types.hsc:117)
+    ProtocolEntry (Network/BSD.hsc:242)
+    getProtocolByName (Network/BSD.hsc:275)
+    getProtocolByNumber (Network/BSD.hsc:286)
+    getProtocolNumber (Network/BSD.hsc:296)
+    getProtocolEntries (Network/BSD.hsc:320)
+    setProtocolEntry (Network/BSD.hsc:310)
+    getProtocolEntry (Network/BSD.hsc:302)
+    endProtocolEntry (Network/BSD.hsc:315)
+    NetworkName (Network/BSD.hsc:434)
+    NetworkAddr (Network/BSD.hsc:432)
+    NetworkEntry (Network/BSD.hsc:436)
+    getNetworkByName (Network/BSD.hsc:467)
+    getNetworkByAddr (Network/BSD.hsc:477)
+    getNetworkEntry (Network/BSD.hsc:486)
+    ifNameToIndex (Network/BSD.hsc:521)
+  88% ( 22 / 25) in 'Network'
+  Missing documentation for:
+    PortID (Network.hs:81)
+    sendTo (Network.hs:338)
+    recvFrom (Network.hs:347)
+Warning: Network.Socket.ByteString: could not find link destinations for:
+    IOVec
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/doc/html/network/index.html,
+.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/doc/html/network/network.txt
+Installing library in
+/Users/daidohinari/.stack/snapshots/x86_64-osx/lts-8.5/8.0.2/lib/x86_64-osx-ghc-8.0.2/network-2.6.3.1-ABFtZSq90Z9BfMXNiqgBoe
+Registering network-2.6.3.1...

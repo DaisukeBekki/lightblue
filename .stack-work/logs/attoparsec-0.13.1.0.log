@@ -1,0 +1,107 @@
+Configuring attoparsec-0.13.1.0...
+Building attoparsec-0.13.1.0...
+Preprocessing library attoparsec-0.13.1.0...
+[ 1 of 21] Compiling Data.Attoparsec.Zepto ( Data/Attoparsec/Zepto.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/Attoparsec/Zepto.o )
+[ 2 of 21] Compiling Data.Attoparsec.Text.FastSet ( Data/Attoparsec/Text/FastSet.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/Attoparsec/Text/FastSet.o )
+[ 3 of 21] Compiling Data.Attoparsec.Text.Buffer ( Data/Attoparsec/Text/Buffer.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/Attoparsec/Text/Buffer.o )
+[ 4 of 21] Compiling Data.Attoparsec.Number ( Data/Attoparsec/Number.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/Attoparsec/Number.o )
+[ 5 of 21] Compiling Data.Attoparsec.Internal.Fhthagn ( Data/Attoparsec/Internal/Fhthagn.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/Attoparsec/Internal/Fhthagn.o )
+[ 6 of 21] Compiling Data.Attoparsec.ByteString.FastSet ( Data/Attoparsec/ByteString/FastSet.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/Attoparsec/ByteString/FastSet.o )
+[ 7 of 21] Compiling Data.Attoparsec.ByteString.Buffer ( Data/Attoparsec/ByteString/Buffer.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/Attoparsec/ByteString/Buffer.o )
+[ 8 of 21] Compiling Data.Attoparsec.Internal.Types ( Data/Attoparsec/Internal/Types.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/Attoparsec/Internal/Types.o )
+[ 9 of 21] Compiling Data.Attoparsec.Internal ( Data/Attoparsec/Internal.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/Attoparsec/Internal.o )
+[10 of 21] Compiling Data.Attoparsec.Combinator ( Data/Attoparsec/Combinator.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/Attoparsec/Combinator.o )
+[11 of 21] Compiling Data.Attoparsec.ByteString.Internal ( Data/Attoparsec/ByteString/Internal.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/Attoparsec/ByteString/Internal.o )
+[12 of 21] Compiling Data.Attoparsec.Text.Internal ( Data/Attoparsec/Text/Internal.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/Attoparsec/Text/Internal.o )
+[13 of 21] Compiling Data.Attoparsec.Text ( Data/Attoparsec/Text.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/Attoparsec/Text.o )
+[14 of 21] Compiling Data.Attoparsec.Text.Lazy ( Data/Attoparsec/Text/Lazy.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/Attoparsec/Text/Lazy.o )
+[15 of 21] Compiling Data.Attoparsec.Types ( Data/Attoparsec/Types.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/Attoparsec/Types.o )
+[16 of 21] Compiling Data.Attoparsec.ByteString ( Data/Attoparsec/ByteString.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/Attoparsec/ByteString.o )
+[17 of 21] Compiling Data.Attoparsec.ByteString.Char8 ( Data/Attoparsec/ByteString/Char8.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/Attoparsec/ByteString/Char8.o )
+[18 of 21] Compiling Data.Attoparsec.Char8 ( Data/Attoparsec/Char8.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/Attoparsec/Char8.o )
+[19 of 21] Compiling Data.Attoparsec.ByteString.Lazy ( Data/Attoparsec/ByteString/Lazy.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/Attoparsec/ByteString/Lazy.o )
+[20 of 21] Compiling Data.Attoparsec.Lazy ( Data/Attoparsec/Lazy.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/Attoparsec/Lazy.o )
+[21 of 21] Compiling Data.Attoparsec  ( Data/Attoparsec.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/Attoparsec.o )
+Running Haddock for attoparsec-0.13.1.0...
+Preprocessing library attoparsec-0.13.1.0...
+Haddock coverage:
+  89% (  8 /  9) in 'Data.Attoparsec.Zepto'
+  Missing documentation for:
+    Parser (Data/Attoparsec/Zepto.hs:68)
+  60% (  6 / 10) in 'Data.Attoparsec.Text.FastSet'
+  Missing documentation for:
+    FastSet (Data/Attoparsec/Text/FastSet.hs:40)
+    fromList (Data/Attoparsec/Text/FastSet.hs:82)
+    set (Data/Attoparsec/Text/FastSet.hs:104)
+    charClass (Data/Attoparsec/Text/FastSet.hs:117)
+  36% (  4 / 11) in 'Data.Attoparsec.Text.Buffer'
+  Missing documentation for:
+    Buffer (Data/Attoparsec/Text/Buffer.hs:57)
+    unbuffer (Data/Attoparsec/Text/Buffer.hs:74)
+    unbufferAt (Data/Attoparsec/Text/Buffer.hs:77)
+    length (Data/Attoparsec/Text/Buffer.hs:124)
+    pappend (Data/Attoparsec/Text/Buffer.hs:97)
+    substring (Data/Attoparsec/Text/Buffer.hs:128)
+    dropWord16 (Data/Attoparsec/Text/Buffer.hs:135)
+ 100% (  2 /  2) in 'Data.Attoparsec.Number'
+  50% (  1 /  2) in 'Data.Attoparsec.Internal.Fhthagn'
+  Missing documentation for:
+    Module header
+  69% (  9 / 13) in 'Data.Attoparsec.ByteString.FastSet'
+  Missing documentation for:
+    FastSet (Data/Attoparsec/ByteString/FastSet.hs:44)
+    fromList (Data/Attoparsec/ByteString/FastSet.hs:62)
+    fromSet (Data/Attoparsec/ByteString/FastSet.hs:44)
+    charClass (Data/Attoparsec/ByteString/FastSet.hs:111)
+  22% (  2 /  9) in 'Data.Attoparsec.ByteString.Buffer'
+  Missing documentation for:
+    Buffer (Data/Attoparsec/ByteString/Buffer.hs:70)
+    unbuffer (Data/Attoparsec/ByteString/Buffer.hs:87)
+    pappend (Data/Attoparsec/ByteString/Buffer.hs:103)
+    length (Data/Attoparsec/ByteString/Buffer.hs:136)
+    unsafeIndex (Data/Attoparsec/ByteString/Buffer.hs:140)
+    substring (Data/Attoparsec/ByteString/Buffer.hs:145)
+    unsafeDrop (Data/Attoparsec/ByteString/Buffer.hs:152)
+  60% (  6 / 10) in 'Data.Attoparsec.Internal.Types'
+  Missing documentation for:
+    State (Data/Attoparsec/Internal/Types.hs:118)
+    Failure (Data/Attoparsec/Internal/Types.hs:122)
+    Success (Data/Attoparsec/Internal/Types.hs:124)
+    Pos (Data/Attoparsec/Internal/Types.hs:46)
+ 100% ( 10 / 10) in 'Data.Attoparsec.Internal'
+ 100% ( 24 / 24) in 'Data.Attoparsec.Combinator'
+  93% ( 39 / 42) in 'Data.Attoparsec.ByteString.Internal'
+  Missing documentation for:
+    Parser (Data/Attoparsec/ByteString/Internal.hs:95)
+    Result (Data/Attoparsec/ByteString/Internal.hs:96)
+    storable (Data/Attoparsec/ByteString/Internal.hs:138)
+  95% ( 39 / 41) in 'Data.Attoparsec.Text.Internal'
+  Missing documentation for:
+    Parser (Data/Attoparsec/Text/Internal.hs:89)
+    Result (Data/Attoparsec/Text/Internal.hs:90)
+  98% ( 90 / 92) in 'Data.Attoparsec.Text'
+  Missing documentation for:
+    Parser (Data/Attoparsec/Text/Internal.hs:89)
+    Result (Data/Attoparsec/Text/Internal.hs:90)
+ 100% (  9 /  9) in 'Data.Attoparsec.Text.Lazy'
+ 100% (  4 /  4) in 'Data.Attoparsec.Types'
+  97% ( 66 / 68) in 'Data.Attoparsec.ByteString'
+  Missing documentation for:
+    Parser (Data/Attoparsec/ByteString/Internal.hs:95)
+    Result (Data/Attoparsec/ByteString/Internal.hs:96)
+  98% ( 91 / 93) in 'Data.Attoparsec.ByteString.Char8'
+  Missing documentation for:
+    Parser (Data/Attoparsec/ByteString/Internal.hs:95)
+    Result (Data/Attoparsec/ByteString/Internal.hs:96)
+ 100% (  2 /  2) in 'Data.Attoparsec.Char8'
+ 100% (  9 /  9) in 'Data.Attoparsec.ByteString.Lazy'
+ 100% (  2 /  2) in 'Data.Attoparsec.Lazy'
+ 100% (  2 /  2) in 'Data.Attoparsec'
+Warning: Data.Attoparsec.ByteString.Char8: could not find link destinations for:
+    ~
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/doc/html/attoparsec/index.html,
+.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/doc/html/attoparsec/attoparsec.txt
+Installing library in
+/Users/daidohinari/.stack/snapshots/x86_64-osx/lts-8.5/8.0.2/lib/x86_64-osx-ghc-8.0.2/attoparsec-0.13.1.0-HCAgpBrKCLJ5li8FbfXxE1
+Registering attoparsec-0.13.1.0...

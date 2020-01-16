@@ -1,0 +1,40 @@
+Configuring blaze-builder-0.4.0.2...
+Building blaze-builder-0.4.0.2...
+Preprocessing library blaze-builder-0.4.0.2...
+[ 1 of 10] Compiling Blaze.ByteString.Builder.Internal.Write ( Blaze/ByteString/Builder/Internal/Write.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Blaze/ByteString/Builder/Internal/Write.o )
+[ 2 of 10] Compiling Blaze.ByteString.Builder.Compat.Write ( Blaze/ByteString/Builder/Compat/Write.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Blaze/ByteString/Builder/Compat/Write.o )
+[ 3 of 10] Compiling Blaze.ByteString.Builder.Int ( Blaze/ByteString/Builder/Int.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Blaze/ByteString/Builder/Int.o )
+[ 4 of 10] Compiling Blaze.ByteString.Builder.Word ( Blaze/ByteString/Builder/Word.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Blaze/ByteString/Builder/Word.o )
+[ 5 of 10] Compiling Blaze.ByteString.Builder.Char8 ( Blaze/ByteString/Builder/Char8.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Blaze/ByteString/Builder/Char8.o )
+[ 6 of 10] Compiling Blaze.ByteString.Builder.Char.Utf8 ( Blaze/ByteString/Builder/Char/Utf8.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Blaze/ByteString/Builder/Char/Utf8.o )
+[ 7 of 10] Compiling Blaze.ByteString.Builder.Html.Utf8 ( Blaze/ByteString/Builder/Html/Utf8.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Blaze/ByteString/Builder/Html/Utf8.o )
+[ 8 of 10] Compiling Blaze.ByteString.Builder.ByteString ( Blaze/ByteString/Builder/ByteString.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Blaze/ByteString/Builder/ByteString.o )
+[ 9 of 10] Compiling Blaze.ByteString.Builder.HTTP ( Blaze/ByteString/Builder/HTTP.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Blaze/ByteString/Builder/HTTP.o )
+[10 of 10] Compiling Blaze.ByteString.Builder ( Blaze/ByteString/Builder.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Blaze/ByteString/Builder.o )
+Running Haddock for blaze-builder-0.4.0.2...
+Preprocessing library blaze-builder-0.4.0.2...
+Haddock coverage:
+  96% ( 24 / 25) in 'Blaze.ByteString.Builder.Internal.Write'
+  Missing documentation for:
+    fromWriteSingleton (Blaze/ByteString/Builder/Internal/Write.hs:229)
+  50% (  2 /  4) in 'Blaze.ByteString.Builder.Compat.Write'
+  Missing documentation for:
+    writePrimFixed (Blaze/ByteString/Builder/Compat/Write.hs:24)
+    writePrimBounded (Blaze/ByteString/Builder/Compat/Write.hs:28)
+ 100% ( 43 / 43) in 'Blaze.ByteString.Builder.Int'
+ 100% ( 43 / 43) in 'Blaze.ByteString.Builder.Word'
+ 100% (  9 /  9) in 'Blaze.ByteString.Builder.Char8'
+ 100% (  9 /  9) in 'Blaze.ByteString.Builder.Char.Utf8'
+ 100% ( 10 / 10) in 'Blaze.ByteString.Builder.Html.Utf8'
+ 100% ( 12 / 12) in 'Blaze.ByteString.Builder.ByteString'
+ 100% (  4 /  4) in 'Blaze.ByteString.Builder.HTTP'
+  92% ( 22 / 24) in 'Blaze.ByteString.Builder'
+  Missing documentation for:
+    toByteStringIOWith (Blaze/ByteString/Builder.hs:175)
+    fromWriteSingleton (Blaze/ByteString/Builder/Internal/Write.hs:229)
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/doc/html/blaze-builder/index.html,
+.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/doc/html/blaze-builder/blaze-builder.txt
+Installing library in
+/Users/daidohinari/.stack/snapshots/x86_64-osx/lts-8.5/8.0.2/lib/x86_64-osx-ghc-8.0.2/blaze-builder-0.4.0.2-CGB8BvrFgghHy5bLy0SFOg
+Registering blaze-builder-0.4.0.2...

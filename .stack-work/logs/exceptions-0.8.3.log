@@ -1,0 +1,21 @@
+Configuring exceptions-0.8.3...
+Building exceptions-0.8.3...
+Preprocessing library exceptions-0.8.3...
+[1 of 2] Compiling Control.Monad.Catch ( src/Control/Monad/Catch.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Control/Monad/Catch.o )
+[2 of 2] Compiling Control.Monad.Catch.Pure ( src/Control/Monad/Catch/Pure.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Control/Monad/Catch/Pure.o )
+Running Haddock for exceptions-0.8.3...
+Preprocessing library exceptions-0.8.3...
+Haddock coverage:
+ 100% ( 31 / 31) in 'Control.Monad.Catch'
+  80% (  8 / 10) in 'Control.Monad.Catch.Pure'
+  Missing documentation for:
+    Catch (src/Control/Monad/Catch/Pure.hs:95)
+    runCatch (src/Control/Monad/Catch/Pure.hs:97)
+Warning: Control.Monad.Catch: could not find link destinations for:
+    ~
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/doc/html/exceptions/index.html,
+.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/doc/html/exceptions/exceptions.txt
+Installing library in
+/Users/daidohinari/.stack/snapshots/x86_64-osx/lts-8.5/8.0.2/lib/x86_64-osx-ghc-8.0.2/exceptions-0.8.3-ADEDRATtUrMK1JW4zMQ9U
+Registering exceptions-0.8.3...
