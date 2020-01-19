@@ -1,6 +1,10 @@
 module DTS.Alligator.Prover
 (
-  prove
+  prove,
+  Arrowterm(..),
+  arrow_notat,
+  forward,
+  deduce
 ) where
 
 import qualified DTS.DTT as DT            -- DTT
@@ -16,20 +20,77 @@ import System.Timeout
 
 data ArrowSelector = Arrow_Fst | Arrow_Snd deriving (Eq, Show)
 
+-- | Arrowterm
 data Arrowterm =
-  Conclusion DT.Preterm |
-  Arrow_Sigma Arrowterm Arrowterm |
-  Arrow_App Arrowterm Arrowterm |
-  Arrow_Pair Arrowterm Arrowterm |
-  Arrow_Proj ArrowSelector Arrowterm |
-  Arrow_Lam Arrowterm |
-  Arrow [Arrowterm]  Arrowterm
+  Conclusion DT.Preterm -- ^ 末尾の部分
+  | Arrow_Sigma Arrowterm Arrowterm -- ^ Sigma型
+  | Arrow_App Arrowterm Arrowterm -- ^ App型
+  | Arrow_Pair Arrowterm Arrowterm -- ^ Pair型
+  | Arrow_Proj ArrowSelector Arrowterm -- ^ Proj型
+  | Arrow_Lam Arrowterm -- ^ Lam型
+  | Arrow [Arrowterm]  Arrowterm -- ^ Pi型
   deriving (Eq)
 
+-- | DTT.Preterm型に変換して得たテキストを加工している
 instance Show Arrowterm where
-  show = show . arrow2DT
-  -- show (Conclusion p)=   (show p)
-  -- show (Arrow env r) ="[ " ++ (tail (foldr (\a -> \b -> "," ++ a  ++ b) "" $ map show env)) ++ " ] =>" ++  (show r)
+  show term  = prestr2arrowstr ((filter (/= ' ') . show . arrow2DT) term) term
+
+prestr2arrowstr :: String -> Arrowterm -> String
+prestr2arrowstr prestr (Conclusion p) = (dropWhile (not . (`elem` (['0'..'z']++['(',')']))) prestr) --if (head prestr `elem` (['0'..'z']++['(',')'])) then prestr else tail prestr
+prestr2arrowstr prestr (Arrow env r) =
+  let parentheses =  take (length env) (treatParentheses prestr) --[(2,"q0")]
+  in "[ " ++ (tail (foldr (\a -> \b -> ", "  ++ a  ++ b) "" (map (\z -> let str = (init $ tail $ snd $ snd z) in (take 3 str) ++  (prestr2arrowstr (drop 3 str) (fst z))) (zip (reverse env) parentheses)))) ++ " ] =>" ++ (prestr2arrowstr  (tail $ drop ((fst . last) parentheses) prestr) r)
+prestr2arrowstr prestr (Arrow_Sigma h t) =
+  let parentheses = head (treatParentheses prestr)
+  in "(" ++ let str  = (tail $ init $ snd  parentheses) in ((take 3 str) ++ (prestr2arrowstr (drop 3 str)  h)) ++ [' ',')','\215',' '] ++ (prestr2arrowstr  (drop (fst  parentheses) prestr) t)
+prestr2arrowstr prestr (Arrow_App h t) =
+  let f_len = (length prestr) - (fst $ head $ treatParentheses (reverse prestr))
+  in let f  = take f_len prestr in  (prestr2arrowstr f  h) ++ " " ++ (prestr2arrowstr  (drop (f_len) prestr) t)
+prestr2arrowstr prestr (Arrow_Proj s t) =
+  let parentheses = head (treatParentheses prestr)
+  in (snd parentheses) ++"(" ++ (prestr2arrowstr (init $ tail (drop (fst parentheses) prestr)) t) ++ ")"
+prestr2arrowstr prestr (Arrow_Lam t) =
+  takeWhile (/= '.') prestr ++ ".(" ++ (prestr2arrowstr  (tail $ dropWhile (/= '.') prestr) t) ++")"
+prestr2arrowstr prestr (Arrow_Pair h t) =
+  let contents = init $ tail prestr
+      index = fst $ head $ filter ((==",") . snd) $ treatParentheses contents
+  in
+     "("++(prestr2arrowstr (take (index - 1) contents) h)++","++(prestr2arrowstr (drop index contents) t)++")"
+
+{-
+Arrow [Arrow_Proj Arrow_Fst (Conclusion DT.Type)] (Arrow_Proj Arrow_Snd (Conclusion (DT.Var 0)))
+Arrow_Sigma (Arrow [(Arrow [(Conclusion (DT.Con (T.pack "p")))] (Conclusion (DT.Var 0))),Conclusion DT.Type](Conclusion (DT.Con (T.pack "p")))) (Conclusion (DT.Con (T.pack "q")))
+(Arrow_App (Arrow [(Conclusion DT.Type)] (Conclusion (DT.Sigma DT.Type DT.Type))) (Conclusion $  DT.Pi DT.Type DT.Type))
+Arrow [Arrow_Sigma (Conclusion $ DT.Pi (DT.Bot) (DT.Var 0)) (Conclusion $DT.Type), Arrow [Conclusion $ DT.Con $T.pack "q" ] (Conclusion (DT.Var 0))] (Arrow [Conclusion (DT.Con (T.pack "p"))] (Conclusion $ DT.Var 0))
+Arrow_Pair (Arrow_Pair (Conclusion DT.Type) (Arrow_Sigma (Conclusion (DT.Type)) (Conclusion (DT.Con $ T.pack "p")))) (Arrow_Pair (Conclusion $ DT.Con $ T.pack "a") (Conclusion $ DT.Con $ T.pack "q"))
+Arrow_Pair (Conclusion DT.Type) (Arrow_Pair (Conclusion DT.Type) (Conclusion (DT.Con $T.pack "p")))
+Arrow_Pair (Arrow_Pair (Conclusion DT.Type) (Conclusion $ DT.Con $T.pack "y")) (Conclusion DT.Type)
+ Arrow_Pair (Arrow_Pair (Conclusion DT.Type) (Conclusion $ DT.Con $T.pack "y")) (Arrow_Pair (Conclusion DT.Type) (Conclusion (DT.Con $T.pack "q")))
+-}
+
+treatParentheses :: String -> [(Int,String)]
+treatParentheses str =
+  let str'= (takeWhile (\x -> (x /='(') && (x /=')' && (x/=',')) ) str)
+      lst =  (indexParentheses (drop (length str') str))
+  in
+    filter ((/=0) . fst) $ (length str' , str') : (map (\x -> ( ((snd $ fst x) + length str'),snd x)) $ filter (\x ->((fst $ fst x) /= 1) || ((snd x) == ",") ) $ zip (zip lst $ map sum  $ tail  $ L.inits lst) $  devideParentheses $ filter (`elem` (['0'..'z']++['(',')','\8594','\215','\8869','\960','\955','.',',',' '])) (drop (length str')  str))
+
+indexParentheses :: String -> [Int]
+indexParentheses str =
+  if length str > 0
+  then
+    let  str' = zip [1..] str
+         f = fst ( last (fst (head (filter (\x -> snd x == 0) (tail (map (\z -> (z,(foldr (\x -> \y -> if (snd x)=='(' then (y + 1) else (if (snd x)==')' then (y-1) else y) ) 0 z)))(L.inits str')  ))))))
+    in (f : (indexParentheses (drop f str)))
+  else []
+
+devideParentheses :: String -> [String]
+devideParentheses str =
+  if length str > 0
+  then
+    let f = fst (head (filter (\x -> snd x == 0) (tail (map (\z -> (z,(foldr (\x -> \y -> if x=='(' then (y + 1) else (if x==')' then (y-1) else y) ) 0 z)))(L.inits str)  ))))
+    in (f : (devideParentheses (drop (length f)str)))
+  else []
 
 arrow_notat_selector :: DT.Selector -> ArrowSelector
 arrow_notat_selector DT.Fst = Arrow_Fst
@@ -49,26 +110,8 @@ arrow2DT (Arrow_Lam p) = DT.Lam (arrow2DT p)
 arrow2DT (Arrow [] t) = arrow2DT t
 arrow2DT (Arrow (f:r) t) = arrow2DT (Arrow r (Conclusion (DT.Pi (arrow2DT f)  (arrow2DT t))))
 
--- arrow_notat4biop_hojo :: DT.Preterm -> DT.Preterm -> DT.Preterm -> DT.Preterm
--- arrow_notat4biop_hojo (DT.Sigma _ _) h t= DT.Sigma h t
--- arrow_notat4biop_hojo (DT.App _ _) h t= DT.App h t
--- arrow_notat4biop_hojo (DT.Pair _ _) h t= DT.Pair h t
---
--- arrow_notat4biop :: DT.Preterm -> Arrowterm -> Arrowterm -> Arrowterm
--- arrow_notat4biop op (Conclusion arrow_h) (Conclusion arrow_t) =
---   Conclusion $ arrow_notat4biop_hojo op arrow_h arrow_t
--- arrow_notat4biop (DT.Sigma _ _) arrow_h arrow_t =
---   Arrow_Sigma arrow_h arrow_t
--- arrow_notat4biop (DT.App _ _) arrow_h arrow_t =
---   Arrow_App arrow_h arrow_t
--- arrow_notat4biop (DT.Pair _ _) arrow_h arrow_t =
---   Arrow_Pair arrow_h arrow_t
--- arrow_notat4biop op h t = undefined
-
---ex)
---print $ arrow_notat $ DT.Pi (DT.Pi (DT.Sigma (DT.Con (T.pack "p")) (DT.Con (T.pack "q"))) (DT.Con (T.pack "r"))) (DT.Pi (DT.Con (T.pack "p")) (DT.Pi (DT.Con (T.pack "q")) (DT.Con (T.pack "r"))))
+-- | 入力されたDT.PretermをArrowTermに変換する
 arrow_notat :: DT.Preterm -> Arrowterm
--- --入力にArrowtermがあることはないとする
 arrow_notat (DT.Type) = Conclusion $DT.Type
 arrow_notat (DT.Var i) = Conclusion $ DT.Var i
 arrow_notat (DT.Con i) = Conclusion $ DT.Con i
@@ -78,23 +121,14 @@ arrow_notat (DT.Pi h t) =
   Arrow [arrow_notat h] (arrow_notat t)
 arrow_notat (DT.Sigma h t) =
   Arrow_Sigma (arrow_notat h) (arrow_notat t)
-  -- arrow_notat4biop (DT.Sigma h t) (arrow_notat h) (arrow_notat t)
 arrow_notat (DT.App a b) =
   Arrow_App (arrow_notat a) (arrow_notat b)
-  -- arrow_notat4biop (DT.App a b) (arrow_notat a) (arrow_notat b)
 arrow_notat (DT.Pair a b) =
   Arrow_Pair (arrow_notat a) (arrow_notat b)
-  -- arrow_notat4biop (DT.Pair a b) (arrow_notat a) (arrow_notat b)
 arrow_notat (DT.Proj selector p) =
   Arrow_Proj (arrow_notat_selector selector) (arrow_notat p)
-  -- case arrow_notat p of
-  --   Conclusion arrow_p ->  Conclusion $ DT.Proj selector arrow_p
-  --   arrow_p -> Arrow_Proj (arrow_notat_selector selector) arrow_p
 arrow_notat (DT.Lam p) =
   Arrow_Lam (arrow_notat p)
-  -- case arrow_notat p of
-  --   Conclusion arrow_p ->  Conclusion $ DT.Lam arrow_p
-  --   arrow_p-> Arrow_Lam arrow_p
 arrow_notat dt= Conclusion dt
 
 type TEnv = [DT.Preterm]
@@ -194,9 +228,11 @@ show_forward :: Arrowterm -> TEnv
 show_forward aterm =
   map  fromAJudgement2dtpreterm $forward aterm (DT.Con (T.pack "p")) aterm
 
-forward :: Arrowterm -> DT.Preterm -> Arrowterm  ->  [AJudgement]
 -- sigma = DT.Sigma (DT.Sigma (DT.Con (T.pack "b")) (DT.Con (T.pack "c"))) (DT.Sigma (DT.Var 0) (DT.App (DT.Var 0) (DT.Var 1)))
 -- lamsig = Arrow [Conclusion DT.Type,Conclusion DT.Type] (Conclusion sigma)
+
+-- | comment
+forward :: Arrowterm -> DT.Preterm -> Arrowterm  ->  [AJudgement]
 forward origin base (Conclusion (DT.Sigma preterm_a preterm_b)) =
   (sigma_forward origin base DT.Fst preterm_a) ++ (sigma_forward origin base DT.Snd  (subst preterm_b (DT.Proj DT.Fst (base)) (DT.Var 0)) )
 forward origin base (Arrow a (Conclusion (DT.Sigma preterm_a preterm_b))) =
@@ -233,14 +269,25 @@ pi_form context type_terms _ (Conclusion DT.Type) depth =
       a_bss = map (\(aterm,aenv) -> (map (\b -> Arrow [aterm] b ) (deduce aenv (Conclusion DT.Type) (depth + 1)))) extendedContexts
   in foldr (++) [] a_bss
 pi_form context _ kind_terms (Conclusion DT.Kind) depth =
-  let extendedContexts = map (\aterm -> (aterm, (forward_context [aterm] ++ context))) kind_terms 
+  let extendedContexts = map (\aterm -> (aterm, (forward_context [aterm] ++ context))) kind_terms
       a_bss = map (\(aterm,aenv) -> (map (\b -> Arrow [aterm] b ) (deduce aenv (Conclusion DT.Kind) (depth + 1)))) extendedContexts
   in foldr (++) [] a_bss
 pi_form _ _ _ _ _= []
 
-pi_intro :: [AJudgement] -> Arrowterm -> Int -> [Arrowterm]
-pi_intro context arrow_type depth = undefined
+norm_lab :: [Arrowterm] -> Arrowterm -> Arrowterm
+norm_lab [] term = term
+normlab (f:r) term = norm_lab r (Arrow_Lam term)
 
+pi_intro :: [AJudgement] -> Arrowterm -> Int -> [Arrowterm]
+pi_intro context (Arrow a b) depth =
+  let extendedContext = (forward_context a) ++ context
+      cs = deduce extendedContext b (depth + 1)
+  in map (norm_lab a) cs
+  --undefined
+
+pi_elim :: [AJudgement]->Arrowterm->Int->[Arrowterm]
+-- pi_elim context b1 depth =
+pi_elim context arrow_type depth = undefined
 
 deduce :: [AJudgement]->Arrowterm->Int->[Arrowterm]
 --context,target,depth
