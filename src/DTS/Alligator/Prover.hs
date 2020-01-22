@@ -40,10 +40,20 @@ prestr2arrowstr :: String -> Arrowterm -> String
 prestr2arrowstr prestr (Conclusion p) = (dropWhile (not . (`elem` (['0'..'z']++['(',')','\8869']))) prestr) --if (head prestr `elem` (['0'..'z']++['(',')'])) then prestr else tail prestr
 prestr2arrowstr prestr (Arrow env r) =
   let parentheses =  take (length env) (treatParentheses prestr) --[(2,"q0")]
-  in "[ " ++ (tail (foldr (\a -> \b -> ", "  ++ a  ++ b) "" (map (\z -> let str = (init $ tail $ snd $ snd z) in (take 3 str) ++  (prestr2arrowstr (drop 3 str) (fst z))) (zip (reverse env) parentheses)))) ++ " ] =>" ++ (prestr2arrowstr  (tail $ drop ((fst . last) parentheses) prestr) r)
+  in "[ " ++
+      (tail
+        (foldr
+          (\a -> \b -> ", "  ++ a  ++ b)
+          ""
+          (map
+            (\z ->
+              let str = (init $ tail $ snd $ snd z)
+              in (takeWhile (/= ':')  str) ++":" ++  (prestr2arrowstr (tail $ dropWhile (/= ':') str) $ fst z))
+              $ zip (reverse env) parentheses))) ++
+      " ] =>" ++ (prestr2arrowstr  (tail $ drop ((fst . last) parentheses) prestr) r)
 prestr2arrowstr prestr (Arrow_Sigma h t) =
   let parentheses = head (treatParentheses prestr)
-  in "(" ++ let str  = (tail $ init $ snd  parentheses) in ((take 3 str) ++ (prestr2arrowstr (drop 3 str)  h)) ++ [' ',')','\215',' '] ++ (prestr2arrowstr  (drop ((fst  parentheses) + 1) prestr) t)
+  in "(" ++ let str  = (tail $ init $ snd  parentheses) in ((takeWhile (/= ':')  str) ++":"++ (prestr2arrowstr (tail $ dropWhile (/= ':') str)  h)) ++ [' ',')','\215',' '] ++ (prestr2arrowstr  (drop ((fst  parentheses) + 1) prestr) t)
 prestr2arrowstr prestr (Arrow_App h t) =
   let f_len = (length prestr) - (fst $ head $ treatParentheses (reverse prestr))
   in let f  = take f_len prestr in  (prestr2arrowstr f  h) ++ " " ++ (prestr2arrowstr  (drop (f_len) prestr) t)
@@ -60,6 +70,7 @@ prestr2arrowstr prestr (Arrow_Pair h t) =
 
 {-test
 Arrow [Arrow_Proj Arrow_Fst (Conclusion DT.Type)] (Arrow_Proj Arrow_Snd (Conclusion (DT.Var 0)))
+Arrow_Sigma (Conclusion $ DT.Con $ T.pack "p") (Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 1))
 Arrow_Sigma (Arrow [(Arrow [(Conclusion (DT.Con (T.pack "p")))] (Conclusion (DT.Var 0))),Conclusion DT.Type](Conclusion (DT.Con (T.pack "p")))) (Conclusion (DT.Con (T.pack "q")))
 (Arrow_App (Arrow [(Conclusion DT.Type)] (Conclusion (DT.Sigma DT.Type DT.Type))) (Conclusion $  DT.Pi DT.Type DT.Type))
 Arrow [Arrow_Sigma (Conclusion $ DT.Pi (DT.Bot) (DT.Var 0)) (Conclusion $DT.Type), Arrow [Conclusion $ DT.Con $T.pack "q" ] (Conclusion (DT.Var 0))] (Arrow [Conclusion (DT.Con (T.pack "p"))] (Conclusion $ DT.Var 0))
@@ -138,6 +149,13 @@ type TEnv = [DT.Preterm]
 type SUEnv = [(T.Text,DT.Preterm)]
 type AEnv = [Arrowterm]
 
+-- instance Show AEnv where
+--   show [] = ""
+--   show (f:r) =
+--     let str = show $ Arrow r f
+--         f' = fst $ last $ fst $ head $ filter (\x -> snd x == 0) $ tail $ map (\z -> (z,(foldr (\x -> \y -> if (snd x)=='[' then y + 1 else (if (snd x)==']' then y-1 else y) ) 0 z))) $ L.inits (zip [1..] str)
+--     in (init  $take f str) ++ "," ++(drop (f + (length " =>")) str)++ "]"
+
 {-test
 AJudgement [Conclusion DT.Type,Conclusion $ DT.Con $ T.pack "p",Arrow_Sigma (Conclusion $ DT.Con $T.pack "q") (Conclusion $ DT.Var 0)] (Conclusion $ DT.Var 2) (Conclusion $ DT.Var 2)
 -}
@@ -152,7 +170,7 @@ instance Show AJudgement where
   show (AJudgement env a_term a_type ) =
     let str = show $ Arrow env a_term
         f = fst $ last $ fst $ head $ filter (\x -> snd x == 0) $ tail $ map (\z -> (z,(foldr (\x -> \y -> if (snd x)=='[' then y + 1 else (if (snd x)==']' then y-1 else y) ) 0 z))) $ L.inits (zip [1..] str)
-    in  (init $ tail $take f str) ++" ト " ++ (drop (f + (length " =>"))) str ++ " : " ++ (drop (f + (length " =>")) $ show $ Arrow env a_type)
+    in  (init $ tail $take f str) ++" ト " ++ (drop (f + (length " =>")) str) ++ " : " ++ (drop (f + (length " =>")) $ show $ Arrow env a_type)
 
 typefromAJudgement :: AJudgement -> Arrowterm
 typefromAJudgement ( AJudgement env aterm atype) = Arrow env atype
@@ -218,51 +236,47 @@ pi_rules = [(DT.Type, DT.Type),  (DT.Type, DT.Kind),  (DT.Kind, DT.Kind),   (DT.
 sigma_rules = [(DT.Type,DT.Type)]
 
 --forwardができてからやる
+-- forward_context :: AEnv -> [AJudgement]
+-- forward_context [] = []
+-- forward_context (f:r) =
+--   (to_forward (length (f:r)) f) ++ forward_context r
+{-
+test1 = Arrow [Arrow_Proj Arrow_Fst (Conclusion DT.Type)] (Arrow_Proj Arrow_Snd (Conclusion (DT.Var 0)))
+test2 = Arrow_Sigma (Conclusion $ DT.Con $ T.pack "p") (Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 1))
+test3 = Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 1)
+test4 = Arrow_Sigma (Arrow [(Arrow [(Conclusion (DT.Con (T.pack "p")))] (Conclusion (DT.Var 0))),Conclusion DT.Type](Conclusion (DT.Con (T.pack "p")))) (Conclusion (DT.Con (T.pack "q")))
+context = [test1,test2,test3,test4]
+-}
 forward_context :: AEnv -> [AJudgement]
 forward_context [] = []
-forward_context (f:r) =
-  (to_forward (length (f:r)) f) ++ forward_context r
+forward_context (f:r) = --(forward' (f:r) (gen_free_con f "base") f) ++ (forward_context r )
+  -- let base_con = gen_free_con f "base"
+  -- in (map (\(AJudgement con a_term a_type) -> AJudgement con (arrow_subst (shiftIndices a_term 1 0) (Conclusion $DT.Var 0) base_con ) (arrow_subst (shiftIndices a_type 1 0) (Conclusion $  DT.Var 0) base_con)) $ forward' (f:r) base_con f) ++ (forward_context r )
+  (forward $ Arrow (f:r) f) ++ forward_context r  
+-- | generate free constraint from given word
+gen_free_con :: Arrowterm -- ^ term
+  -> String -- ^ "hoge"
+  -> Arrowterm
+gen_free_con term hoge =
+  if is_free_con term (Conclusion $ DT.Con $ T.pack hoge)
+    then
+      (Conclusion $ DT.Con $ T.pack hoge)
+    else
+      (gen_free_con term $hoge++"1")
 
-to_forward :: Int -> Arrowterm -> [AJudgement]
-to_forward num aterm =
-  forward aterm (DT.Con (T.pack $ show num)) aterm
+-- | whether DT.Con "hoge" is free or not
+is_free_con :: Arrowterm -> -- ^ term
+  Arrowterm -> -- ^ DT.Con "hoge"
+  Bool
+is_free_con term con=
+  let term' = arrow_subst term con con
+      term'' = arrow_subst term (Conclusion $ DT.Var 0) con
+  in term' == term''
 
-sigma_forward :: Arrowterm -> DT.Preterm -> DT.Selector -> DT.Preterm -> [AJudgement]
-sigma_forward origin base  selector (DT.Sigma a b) = forward origin (DT.Proj selector base) $Conclusion (DT.Sigma a b)
-sigma_forward origin base selector preterm_a =  (AJudgement [origin] (Conclusion $ DT.Proj selector base) (Conclusion $ preterm_a)) : (forward origin (DT.Proj selector base) $Conclusion preterm_a)
-
-lam_sigma_forward_hojo :: [Arrowterm] -> AJudgement -> AJudgement
-lam_sigma_forward_hojo hs (AJudgement env (Conclusion term) (a_type)) =
-  AJudgement env  (Conclusion (foldr (\x -> \y -> DT.Lam y) term hs)) (Arrow hs a_type)
-
-lam_sigma_forward ::  [Arrowterm] -> Arrowterm -> DT.Preterm ->  Arrowterm -> [AJudgement]
-lam_sigma_forward  [] origin base (Arrow a (Conclusion ( DT.Sigma preterm_a preterm_b))) =
-  map (lam_sigma_forward_hojo a) (sigma_forward origin base DT.Snd (subst preterm_b (DT.Proj DT.Fst (base)) (DT.Var 0))) ++ (sigma_forward origin base DT.Fst preterm_a)
-lam_sigma_forward (f:r) origin base (Arrow a b) =
-  lam_sigma_forward  r origin (DT.App base (DT.Con (((T.pack . (\x -> (show base )++"_"++x) . show) (length (f:r)))) )) (Arrow a b)
-
-show_forward :: Arrowterm -> TEnv
-show_forward aterm =
-  map  fromAJudgement2dtpreterm $forward aterm (DT.Con (T.pack "p")) aterm
-
--- sigma = DT.Sigma (DT.Sigma (DT.Con (T.pack "b")) (DT.Con (T.pack "c"))) (DT.Sigma (DT.Var 0) (DT.App (DT.Var 0) (DT.Var 1)))
--- lamsig = Arrow [Conclusion DT.Type,Conclusion DT.Type] (Conclusion sigma)
-
--- | comment
-forward :: Arrowterm -> DT.Preterm -> Arrowterm  ->  [AJudgement]
-forward origin base (Conclusion (DT.Sigma preterm_a preterm_b)) =
-  (sigma_forward origin base DT.Fst preterm_a) ++ (sigma_forward origin base DT.Snd  (subst preterm_b (DT.Proj DT.Fst (base)) (DT.Var 0)) )
-forward origin base (Arrow a (Conclusion (DT.Sigma preterm_a preterm_b))) =
-  lam_sigma_forward a origin base (Arrow a (Conclusion (DT.Sigma preterm_a preterm_b)))
-forward origin base (Arrow a (Arrow b c)) =
-  forward origin base (Arrow (b ++ a) c)
-forward origin base arrowterm = []
-
-sigma_forward' :: Arrowterm -> DT.Preterm -> DT.Selector -> DT.Preterm -> [AJudgement]
-sigma_forward' origin base  selector (DT.Sigma a b)
-  = forward origin (DT.Proj selector base) $Conclusion (DT.Sigma a b)
-sigma_forward' origin base selector preterm_a
-  =  (AJudgement [origin] (Conclusion $ DT.Proj selector base) (Conclusion $ preterm_a)) : (forward origin (DT.Proj selector base) $Conclusion preterm_a)
+forward :: Arrowterm -> [AJudgement]
+forward term =
+  let base_con = gen_free_con term "base"
+  in map (\(AJudgement con a_term a_type) -> AJudgement con (arrow_subst (shiftIndices a_term 1 0) (Conclusion $DT.Var 0) base_con ) (arrow_subst (shiftIndices a_type 1 0) (Conclusion $  DT.Var 0) base_con)) $ forward' [term] base_con term
 
 
 forward' :: [Arrowterm] -- ^ origin
@@ -270,19 +284,16 @@ forward' :: [Arrowterm] -- ^ origin
   ->   Arrowterm -- ^ target
   ->  [AJudgement]
 forward' context base (Arrow_Sigma h t) =
-  let t' = arrow_subst t (Arrow_Proj Arrow_Fst (Conclusion $ DT.Var 0)) (Conclusion $ DT.Var 0)
+  let t' = arrow_subst t (Arrow_Proj Arrow_Fst base) (Conclusion $ DT.Var 0)
       h_forward = forward' context (Arrow_Proj Arrow_Fst base) h
       t_forward = forward' context (Arrow_Proj Arrow_Snd base) t'
   in (if t_forward == [] then [AJudgement context (Arrow_Proj Arrow_Snd  base) t'] else t_forward) ++ (if h_forward == [] then [AJudgement context (Arrow_Proj Arrow_Fst base) h] else h_forward)
---test = Arrow [Conclusion $ DT.Con $T.pack "d"] $ Arrow_Sigma (Conclusion $ DT.Con $ T.pack "k") (Arrow [Conclusion $ DT.Con $ T.pack "g"] $ Arrow_Sigma (Conclusion $ DT.Con $ T.pack "i") (Conclusion $ DT.Con $ T.pack "j"))
 forward' context base (Arrow env (Arrow_Sigma h t)) =
   let term1 = add_Lam (length env) $ Arrow_Proj Arrow_Fst $ add_App (length env) base
       term2 = add_Lam (length env) $ Arrow_Proj Arrow_Snd $ add_App (length env) base
       t' = arrow_subst t (shiftIndices term1 (length env) 0) (Conclusion $ DT.Var 0)
       type1 = Arrow env h
       type2 = Arrow env t'
-      -- h_forward = forward' context (Arrow_App base (Conclusion $ DT.Var 0)) h
-      -- t_forward = forward' context (Arrow_App base (Conclusion $ DT.Var 0)) t'
       h_forward = forward' context term1 type1
       t_forward = forward' context term2 type2
   in (if t_forward == [] then [AJudgement context term2 type2] else t_forward) ++ (if h_forward == [] then [AJudgement context term1 type1] else h_forward)
@@ -300,49 +311,50 @@ add_Lam num term = Arrow_Lam $ add_Lam (num - 1) term
 
 maxdepth = 100
 
-membership :: [AJudgement] ->  Arrowterm -> Int -> [Arrowterm]
-membership context arrow_type depth =
-    if (or $ map ((== arrow_type) . termfromAJudgement) context) --var(shift_indiceについて考える必要がある)
-      then
-        map (fst) $ filter (snd) $ map (\x -> ((typefromAJudgement x),((==arrow_type) . termfromAJudgement) x)) context
-      else
-        []
-
-pi_form :: [AJudgement]-> [Arrowterm] -> [Arrowterm] -> Arrowterm->Int->[Arrowterm]
-
-pi_form context type_terms _ (Conclusion DT.Type) depth =
-  --type型を持つ項a1,...,anについて一つ一つextendした[(a1,[AJudgement]),(a2,[AJudgement])...]
-  --type型を持つ項a1,...,anについてありえる(as,b1),...,(as,bm)を並べた[[(Arrowterm,Arrowterm)]]
-  let extendedContexts = map (\aterm -> (aterm, (forward_context [aterm] ++ context))) type_terms
-      a_bss = map (\(aterm,aenv) -> (map (\b -> Arrow [aterm] b ) (deduce aenv (Conclusion DT.Type) (depth + 1)))) extendedContexts
-  in foldr (++) [] a_bss
-pi_form context _ kind_terms (Conclusion DT.Kind) depth =
-  let extendedContexts = map (\aterm -> (aterm, (forward_context [aterm] ++ context))) kind_terms
-      a_bss = map (\(aterm,aenv) -> (map (\b -> Arrow [aterm] b ) (deduce aenv (Conclusion DT.Kind) (depth + 1)))) extendedContexts
-  in foldr (++) [] a_bss
-pi_form _ _ _ _ _= []
-
-norm_lab :: [Arrowterm] -> Arrowterm -> Arrowterm
-norm_lab [] term = term
-normlab (f:r) term = norm_lab r (Arrow_Lam term)
-
-pi_intro :: [AJudgement] -> Arrowterm -> Int -> [Arrowterm]
-pi_intro context (Arrow a b) depth =
-  let extendedContext = (forward_context a) ++ context
-      cs = deduce extendedContext b (depth + 1)
-  in map (norm_lab a) cs
-  --undefined
-
-pi_elim :: [AJudgement]->Arrowterm->Int->[Arrowterm]
--- pi_elim context b1 depth =
-pi_elim context arrow_type depth = undefined
-
+-- membership :: [AJudgement] ->  Arrowterm -> Int -> [Arrowterm]
+-- membership context arrow_type depth =
+--     if (or $ map ((== arrow_type) . termfromAJudgement) context) --var(shift_indiceについて考える必要がある)
+--       then
+--         map (fst) $ filter (snd) $ map (\x -> ((typefromAJudgement x),((==arrow_type) . termfromAJudgement) x)) context
+--       else
+--         []
+--
+-- pi_form :: [AJudgement]-> [Arrowterm] -> [Arrowterm] -> Arrowterm->Int->[Arrowterm]
+--
+-- pi_form context type_terms _ (Conclusion DT.Type) depth =
+--   --type型を持つ項a1,...,anについて一つ一つextendした[(a1,[AJudgement]),(a2,[AJudgement])...]
+--   --type型を持つ項a1,...,anについてありえる(as,b1),...,(as,bm)を並べた[[(Arrowterm,Arrowterm)]]
+--   let extendedContexts = map (\aterm -> (aterm, (forward_context [aterm] ++ context))) type_terms
+--       a_bss = map (\(aterm,aenv) -> (map (\b -> Arrow [aterm] b ) (deduce aenv (Conclusion DT.Type) (depth + 1)))) extendedContexts
+--   in foldr (++) [] a_bss
+-- pi_form context _ kind_terms (Conclusion DT.Kind) depth =
+--   let extendedContexts = map (\aterm -> (aterm, (forward_context [aterm] ++ context))) kind_terms
+--       a_bss = map (\(aterm,aenv) -> (map (\b -> Arrow [aterm] b ) (deduce aenv (Conclusion DT.Kind) (depth + 1)))) extendedContexts
+--   in foldr (++) [] a_bss
+-- pi_form _ _ _ _ _= []
+--
+-- norm_lab :: [Arrowterm] -> Arrowterm -> Arrowterm
+-- norm_lab [] term = term
+-- normlab (f:r) term = norm_lab r (Arrow_Lam term)
+--
+-- pi_intro :: [AJudgement] -> Arrowterm -> Int -> [Arrowterm]
+-- pi_intro context (Arrow a b) depth =
+--   let extendedContext = (forward_context a) ++ context
+--       cs = deduce extendedContext b (depth + 1)
+--   in map (norm_lab a) cs
+--   --undefined
+--
+-- pi_elim :: [AJudgement]->Arrowterm->Int->[Arrowterm]
+-- -- pi_elim context b1 depth =
+-- pi_elim context arrow_type depth = undefined
+--
 deduce :: [AJudgement]->Arrowterm->Int->[Arrowterm]
 --context,target,depth
 --type-ax
-deduce _  (Conclusion DT.Kind) depth = if depth < maxdepth then [Conclusion DT.Type] else []
-
-deduce context arrow_type depth =
-  let type_terms = [undefined]
-      kind_terms = [undefined]
-    in (membership context arrow_type depth) ++ (pi_form context type_terms kind_terms arrow_type depth) ++ []
+deduce = undefined
+-- deduce _  (Conclusion DT.Kind) depth = if depth < maxdepth then [Conclusion DT.Type] else []
+--
+-- deduce context arrow_type depth =
+--   let type_terms = [undefined]
+--       kind_terms = [undefined]
+--     in (membership context arrow_type depth) ++ (pi_form context type_terms kind_terms arrow_type depth) ++ []
