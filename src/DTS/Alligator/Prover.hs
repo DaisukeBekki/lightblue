@@ -149,13 +149,6 @@ type TEnv = [DT.Preterm]
 type SUEnv = [(T.Text,DT.Preterm)]
 type AEnv = [Arrowterm]
 
--- instance Show AEnv where
---   show [] = ""
---   show (f:r) =
---     let str = show $ Arrow r f
---         f' = fst $ last $ fst $ head $ filter (\x -> snd x == 0) $ tail $ map (\z -> (z,(foldr (\x -> \y -> if (snd x)=='[' then y + 1 else (if (snd x)==']' then y-1 else y) ) 0 z))) $ L.inits (zip [1..] str)
---     in (init  $take f str) ++ "," ++(drop (f + (length " =>")) str)++ "]"
-
 {-test
 AJudgement [Conclusion DT.Type,Conclusion $ DT.Con $ T.pack "p",Arrow_Sigma (Conclusion $ DT.Con $T.pack "q") (Conclusion $ DT.Var 0)] (Conclusion $ DT.Var 2) (Conclusion $ DT.Var 2)
 -}
@@ -235,11 +228,6 @@ prove var_env sig_env preterm =
 pi_rules = [(DT.Type, DT.Type),  (DT.Type, DT.Kind),  (DT.Kind, DT.Kind),   (DT.Kind, DT.Type)]
 sigma_rules = [(DT.Type,DT.Type)]
 
---forwardができてからやる
--- forward_context :: AEnv -> [AJudgement]
--- forward_context [] = []
--- forward_context (f:r) =
---   (to_forward (length (f:r)) f) ++ forward_context r
 {-
 test1 = Arrow [Arrow_Proj Arrow_Fst (Conclusion DT.Type)] (Arrow_Proj Arrow_Snd (Conclusion (DT.Var 0)))
 test2 = Arrow_Sigma (Conclusion $ DT.Con $ T.pack "p") (Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 1))
@@ -247,12 +235,27 @@ test3 = Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 1)
 test4 = Arrow_Sigma (Arrow [(Arrow [(Conclusion (DT.Con (T.pack "p")))] (Conclusion (DT.Var 0))),Conclusion DT.Type](Conclusion (DT.Con (T.pack "p")))) (Conclusion (DT.Con (T.pack "q")))
 context = [test1,test2,test3,test4]
 -}
+
+{-}
+[
+  u0:[  u1:(u2:[  u3:type, u4:[  u5:p ] =>u5 ] =>p )× q, u6:(u7:u1 )× u1, u8:(u9:p )× (u10:u9 )× u9 ]=>(u11:p )× (u12:u11 )× u11
+  ト λx0.(λx1.(λx2.(π2(λx3.(λx4.(λx5.(π2(u0 (x5))))) (x2))))) : [  u13:(u14:[  u15:type ] =>[  u16:[  u17:p ] =>u17 ] =>p )× q ] =>[  u18:(u19:u13 )× u13 ] =>[  u20:(u21:p )× (u22:u21 )× u21 ] =>λx0.(λx1.(λx2.(π1(u0 (x2))))),
+  u0:[  u1:(u2:[  u3:type, u4:[  u5:p ] =>u5 ] =>p )× q, u6:(u7:u1 )× u1, u8:(u9:p )× (u10:u9 )× u9 ] =>(u11:p )× (u12:u11 )× u11
+  ト λx0.(λx1.(λx2.(π1(λx3.(λx4.(λx5.(π2(u0 (x5))))) (x2))))) : [  u13:(u14:[  u15:type ] =>[  u16:[  u17:p ] =>u17 ] =>p )× q ] =>[  u18:(u19:u13 )× u13 ] =>[  u20:(u21:p )× (u22:u21 )× u21 ] =>λx0.(λx1.(λx2.(π1(u0 (x2))))),
+  u0:[  u1:(u2:[  u3:type, u4:[  u5:p ] =>u5 ] =>p )× q, u6:(u7:u1 )× u1, u8:(u9:p )× (u10:u9 )× u9 ] =>(u11:p )× (u12:u11 )× u11
+  ト λx0.(λx1.(λx2.(π1(u0 (x2))))) : [  u13:(u14:[  u15:type ] =>[  u16:[  u17:p ] =>u17 ] =>p )× q ] =>[  u18:(u19:u13 )× u13 ] =>[  u20:(u21:p )× (u22:u21 )× u21 ] =>p,
+  u0:[  u1:(u2:[  u3:type, u4:[  u5:p ] =>u5 ] =>p )× q, u6:(u7:u1 )× u1 ] =>(u8:u6 )× u6  ト λx0.(λx1.(π2(u0 (x1)))) : [  u9:(u10:[  u11:type ] =>[  u12:[  u13:p ] =>u13 ] =>p )× q ] =>[  u14:(u15:u9 )× u9 ] =>u9,  u0:[  u1:(u2:[  u3:type, u4:[  u5:p ] =>u5 ] =>p )× q, u6:(u7:u1 )× u1 ] =>(u8:u6 )× u6
+  ト λx0.(λx1.(π1(u0 (x1)))) : [  u9:(u10:[  u11:type ] =>[  u12:[  u13:p ] =>u13 ] =>p )× q ] =>[  u14:(u15:u9 )× u9 ] =>u14,
+  u0:[  u1:(u2:[  u3:type, u4:[  u5:p ] =>u5 ] =>p )× q ] =>(u6:[  u7:type, u8:[  u9:p ] =>u9 ] =>p )× q
+  ト λx0.(π2(u0 (x0))) : [  u10:(u11:[  u12:type ] =>[  u13:[  u14:p ] =>u14 ] =>p )× q ] =>q,
+  u0:[  u1:(u2:[  u3:type, u4:[  u5:p ] =>u5 ] =>p )× q ] =>(u6:[  u7:type, u8:[  u9:p ] =>u9 ] =>p )× q
+  ト λx0.(π1(u0 (x0))) : [  u10:(u11:[  u12:type ] =>[  u13:[  u14:p ] =>u14 ] =>p )× q ] =>[  u15:type ] =>[  u16:[  u17:p ] =>u17 ] =>p]
+-}
 forward_context :: AEnv -> [AJudgement]
 forward_context [] = []
-forward_context (f:r) = --(forward' (f:r) (gen_free_con f "base") f) ++ (forward_context r )
-  -- let base_con = gen_free_con f "base"
-  -- in (map (\(AJudgement con a_term a_type) -> AJudgement con (arrow_subst (shiftIndices a_term 1 0) (Conclusion $DT.Var 0) base_con ) (arrow_subst (shiftIndices a_type 1 0) (Conclusion $  DT.Var 0) base_con)) $ forward' (f:r) base_con f) ++ (forward_context r )
-  (forward $ Arrow (f:r) f) ++ forward_context r  
+forward_context (f:r) =
+  (forward $ Arrow (f:r) f) ++ forward_context r
+
 -- | generate free constraint from given word
 gen_free_con :: Arrowterm -- ^ term
   -> String -- ^ "hoge"
