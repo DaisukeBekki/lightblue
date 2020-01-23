@@ -39,18 +39,22 @@ instance Show Arrowterm where
 prestr2arrowstr :: String -> Arrowterm -> String
 prestr2arrowstr prestr (Conclusion p) = (dropWhile (not . (`elem` (['0'..'z']++['(',')','\8869']))) prestr) --if (head prestr `elem` (['0'..'z']++['(',')'])) then prestr else tail prestr
 prestr2arrowstr prestr (Arrow env r) =
-  let parentheses =  take (length env) (treatParentheses prestr) --[(2,"q0")]
-  in "[ " ++
-      (tail
-        (foldr
-          (\a -> \b -> ", "  ++ a  ++ b)
-          ""
-          (map
-            (\z ->
-              let str = (init $ tail $ snd $ snd z)
-              in (takeWhile (/= ':')  str) ++":" ++  (prestr2arrowstr (tail $ dropWhile (/= ':') str) $ fst z))
-              $ zip (reverse env) parentheses))) ++
-      " ] =>" ++ (prestr2arrowstr  (tail $ drop ((fst . last) parentheses) prestr) r)
+  if length env == 0
+  then
+    (prestr2arrowstr  prestr r)
+  else
+    let parentheses =  take (length env) (treatParentheses prestr) --[(2,"q0")]
+    in "[ " ++
+        (tail
+          (foldr
+            (\a -> \b -> ", "  ++ a  ++ b)
+            ""
+            (map
+              (\z ->
+                let str = (init $ tail $ snd $ snd z)
+                in (takeWhile (/= ':')  str) ++":" ++  (prestr2arrowstr (tail $ dropWhile (/= ':') str) $ fst z))
+                $ zip (reverse env) parentheses))) ++
+        " ] =>" ++ (prestr2arrowstr  (tail $ drop ((fst . last) parentheses) prestr) r)
 prestr2arrowstr prestr (Arrow_Sigma h t) =
   let parentheses = head (treatParentheses prestr)
   in "(" ++ let str  = (tail $ init $ snd  parentheses) in ((takeWhile (/= ':')  str) ++":"++ (prestr2arrowstr (tail $ dropWhile (/= ':') str)  h)) ++ [' ',')','\215',' '] ++ (prestr2arrowstr  (drop ((fst  parentheses) + 1) prestr) t)
@@ -163,16 +167,22 @@ instance Show AJudgement where
   show (AJudgement env a_term a_type ) =
     let str = show $ Arrow env a_term
         f = fst $ last $ fst $ head $ filter (\x -> snd x == 0) $ tail $ map (\z -> (z,(foldr (\x -> \y -> if (snd x)=='[' then y + 1 else (if (snd x)==']' then y-1 else y) ) 0 z))) $ L.inits (zip [1..] str)
-    in  (init $ tail $take f str) ++" ト " ++ (drop (f + (length " =>")) str) ++ " : " ++ (drop (f + (length " =>")) $ show $ Arrow env a_type)
+    in
+      if  length env == 0
+      then
+        " ト " ++ str ++ " : " ++  (show $ Arrow env a_type)
+      else
+        (init $ tail $take f str)++" ト " ++ (drop (f + (length " =>")) str) ++ " : " ++ (drop (f + (length " =>")) $ show $ Arrow env a_type)
+
 
 typefromAJudgement :: AJudgement -> Arrowterm
-typefromAJudgement ( AJudgement env aterm atype) = Arrow env atype
+typefromAJudgement ( AJudgement env aterm atype) = atype
 
 termfromAJudgement :: AJudgement -> Arrowterm
-termfromAJudgement ( AJudgement env aterm atype) = Arrow env aterm
+termfromAJudgement ( AJudgement env aterm atype) = aterm
 
-fromAJudgement2dtpreterm  :: AJudgement -> DT.Preterm
-fromAJudgement2dtpreterm   = arrow2DT . typefromAJudgement
+envfromAJudgement :: AJudgement -> [Arrowterm]
+envfromAJudgement ( AJudgement env aterm atype) = env
 
 dne =   DT.Lam ((DT.Pi (DT.Con (T.pack "Prop")) (DT.Pi (DT.Pi (DT.Pi (DT.Var 1)  DT.Bot) (DT.Bot)) (DT.Var 2))))
 efq = DT.Lam (DT.Pi DT.Bot (DT.Var 1))
@@ -215,12 +225,11 @@ prove ::  TEnv -- ^ var_context ex)[(DT.Con (T.pack "prop")),(DT.Con (T.pack "se
 prove var_env sig_env preterm =
   --TEnvをPTEnvに変える
   let var_env' = (reverse var_env) ++ (getAxiom "classic")
-      reduce_env = map (DT.toDTT . UD.betaReduce . DT.toUDTT) var_env' in
-      -- if(check_context reduce_env sig_env) then
-        let arrow_env = map arrow_notat reduce_env
-            arrow_term = (arrow_notat . DT.toDTT . UD.betaReduce . DT.toUDTT) preterm
-        in undefined
-      -- else undefined--check_contextでtypeが分からないものが出てきた
+      arrow_env = map (arrow_notat . DT.toDTT . UD.betaReduce . DT.toUDTT) var_env'
+      arrow_type = (arrow_notat . DT.toDTT . UD.betaReduce . DT.toUDTT) preterm
+      forward_env = forward_context arrow_env
+      arrow_term = search_proof forward_env arrow_type 1
+  in undefined
 --initialize_fresh_vars
 
 -- pi_rules = [(Type Set, Type Set),  (Type Set, Kind Type_prop),  (Kind Type_prop, Kind Type_prop),  (Type Prop, Type Prop),  (Type Set, Type Prop),  (Kind Type_prop, Type Prop)]
@@ -233,28 +242,30 @@ test1 = Arrow [Arrow_Proj Arrow_Fst (Conclusion DT.Type)] (Arrow_Proj Arrow_Snd 
 test2 = Arrow_Sigma (Conclusion $ DT.Con $ T.pack "p") (Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 1))
 test3 = Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 1)
 test4 = Arrow_Sigma (Arrow [(Arrow [(Conclusion (DT.Con (T.pack "p")))] (Conclusion (DT.Var 0))),Conclusion DT.Type](Conclusion (DT.Con (T.pack "p")))) (Conclusion (DT.Con (T.pack "q")))
-context = [test1,test2,test3,test4]
+test5=(Arrow_Sigma (Conclusion $ DT.Con $ T.pack "p") (Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow_Sigma (Conclusion $ DT.Var 1) (Conclusion $ DT.Var 3))))
+context = [test1,test2,test3,test4,test5]
 -}
+test1 = Arrow [Arrow_Proj Arrow_Fst (Conclusion DT.Type)] (Arrow_Proj Arrow_Snd (Conclusion (DT.Var 0)))
+test2 = Arrow_Sigma (Conclusion $ DT.Con $ T.pack "p") (Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 1))
+test3 = Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 1)
+test4=(Arrow_Sigma (Conclusion $ DT.Con $ T.pack "p") (Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow_Sigma (Conclusion $ DT.Var 1) (Conclusion $ DT.Var 3))))
+test5 = Arrow_Sigma (Arrow [(Arrow [(Conclusion (DT.Con (T.pack "p")))] (Conclusion (DT.Var 0))),Conclusion DT.Type](Conclusion (DT.Con (T.pack "p")))) (Conclusion (DT.Con (T.pack "q")))
+context = [test1,test2,test3,test4,test5]
 
-{-}
-[
-  u0:[  u1:(u2:[  u3:type, u4:[  u5:p ] =>u5 ] =>p )× q, u6:(u7:u1 )× u1, u8:(u9:p )× (u10:u9 )× u9 ]=>(u11:p )× (u12:u11 )× u11
-  ト λx0.(λx1.(λx2.(π2(λx3.(λx4.(λx5.(π2(u0 (x5))))) (x2))))) : [  u13:(u14:[  u15:type ] =>[  u16:[  u17:p ] =>u17 ] =>p )× q ] =>[  u18:(u19:u13 )× u13 ] =>[  u20:(u21:p )× (u22:u21 )× u21 ] =>λx0.(λx1.(λx2.(π1(u0 (x2))))),
-  u0:[  u1:(u2:[  u3:type, u4:[  u5:p ] =>u5 ] =>p )× q, u6:(u7:u1 )× u1, u8:(u9:p )× (u10:u9 )× u9 ] =>(u11:p )× (u12:u11 )× u11
-  ト λx0.(λx1.(λx2.(π1(λx3.(λx4.(λx5.(π2(u0 (x5))))) (x2))))) : [  u13:(u14:[  u15:type ] =>[  u16:[  u17:p ] =>u17 ] =>p )× q ] =>[  u18:(u19:u13 )× u13 ] =>[  u20:(u21:p )× (u22:u21 )× u21 ] =>λx0.(λx1.(λx2.(π1(u0 (x2))))),
-  u0:[  u1:(u2:[  u3:type, u4:[  u5:p ] =>u5 ] =>p )× q, u6:(u7:u1 )× u1, u8:(u9:p )× (u10:u9 )× u9 ] =>(u11:p )× (u12:u11 )× u11
-  ト λx0.(λx1.(λx2.(π1(u0 (x2))))) : [  u13:(u14:[  u15:type ] =>[  u16:[  u17:p ] =>u17 ] =>p )× q ] =>[  u18:(u19:u13 )× u13 ] =>[  u20:(u21:p )× (u22:u21 )× u21 ] =>p,
-  u0:[  u1:(u2:[  u3:type, u4:[  u5:p ] =>u5 ] =>p )× q, u6:(u7:u1 )× u1 ] =>(u8:u6 )× u6  ト λx0.(λx1.(π2(u0 (x1)))) : [  u9:(u10:[  u11:type ] =>[  u12:[  u13:p ] =>u13 ] =>p )× q ] =>[  u14:(u15:u9 )× u9 ] =>u9,  u0:[  u1:(u2:[  u3:type, u4:[  u5:p ] =>u5 ] =>p )× q, u6:(u7:u1 )× u1 ] =>(u8:u6 )× u6
-  ト λx0.(λx1.(π1(u0 (x1)))) : [  u9:(u10:[  u11:type ] =>[  u12:[  u13:p ] =>u13 ] =>p )× q ] =>[  u14:(u15:u9 )× u9 ] =>u14,
-  u0:[  u1:(u2:[  u3:type, u4:[  u5:p ] =>u5 ] =>p )× q ] =>(u6:[  u7:type, u8:[  u9:p ] =>u9 ] =>p )× q
-  ト λx0.(π2(u0 (x0))) : [  u10:(u11:[  u12:type ] =>[  u13:[  u14:p ] =>u14 ] =>p )× q ] =>q,
-  u0:[  u1:(u2:[  u3:type, u4:[  u5:p ] =>u5 ] =>p )× q ] =>(u6:[  u7:type, u8:[  u9:p ] =>u9 ] =>p )× q
-  ト λx0.(π1(u0 (x0))) : [  u10:(u11:[  u12:type ] =>[  u13:[  u14:p ] =>u14 ] =>p )× q ] =>[  u15:type ] =>[  u16:[  u17:p ] =>u17 ] =>p]
--}
+
 forward_context :: AEnv -> [AJudgement]
-forward_context [] = []
-forward_context (f:r) =
-  (forward $ Arrow (f:r) f) ++ forward_context r
+-- forward_context [] = []
+-- forward_context (f:r) =
+--   map (\(AJudgement env aterm atype) -> AJudgement (f:r) aterm atype) (forward f)  ++ forward_context r
+
+forward_context context =
+  foldr
+    (++)
+    (foldr
+      (++)
+      []
+      (map (\((varid',con_type),fr) -> [AJudgement (tail fr) con_type (Conclusion $ DT.Type)] ++ [AJudgement fr (gen_free_con con_type ("context" ++ (show (length context -varid'))) ) con_type]) $ zip (zip [1..] context) $ map reverse $ reverse $ tail $ L.inits $ reverse $ context))
+    $ map ( \(f,fr) -> map (\(AJudgement env aterm atype) -> AJudgement (fr) aterm atype) (forward f) ) $ zip context $ map reverse $ reverse $ tail $ L.inits $ reverse $ context
 
 -- | generate free constraint from given word
 gen_free_con :: Arrowterm -- ^ term
@@ -265,7 +276,7 @@ gen_free_con term hoge =
     then
       (Conclusion $ DT.Con $ T.pack hoge)
     else
-      (gen_free_con term $hoge++"1")
+      (gen_free_con term $hoge++hoge)
 
 -- | whether DT.Con "hoge" is free or not
 is_free_con :: Arrowterm -> -- ^ term
@@ -287,14 +298,15 @@ forward' :: [Arrowterm] -- ^ origin
   ->   Arrowterm -- ^ target
   ->  [AJudgement]
 forward' context base (Arrow_Sigma h t) =
-  let t' = arrow_subst t (Arrow_Proj Arrow_Fst base) (Conclusion $ DT.Var 0)
+  let --t' = arrow_subst t (Arrow_Proj Arrow_Fst base) (Conclusion $ DT.Var 0)
+      t' = shiftIndices (arrow_subst t  (Arrow_Proj Arrow_Fst base) (Conclusion $ DT.Var 0)) (-1) 0
       h_forward = forward' context (Arrow_Proj Arrow_Fst base) h
       t_forward = forward' context (Arrow_Proj Arrow_Snd base) t'
   in (if t_forward == [] then [AJudgement context (Arrow_Proj Arrow_Snd  base) t'] else t_forward) ++ (if h_forward == [] then [AJudgement context (Arrow_Proj Arrow_Fst base) h] else h_forward)
 forward' context base (Arrow env (Arrow_Sigma h t)) =
   let term1 = add_Lam (length env) $ Arrow_Proj Arrow_Fst $ add_App (length env) base
       term2 = add_Lam (length env) $ Arrow_Proj Arrow_Snd $ add_App (length env) base
-      t' = arrow_subst t (shiftIndices term1 (length env) 0) (Conclusion $ DT.Var 0)
+      t' = shiftIndices (arrow_subst t (shiftIndices term1 (length env) 0) (Conclusion $ DT.Var 0)) (-1) 0
       type1 = Arrow env h
       type2 = Arrow env t'
       h_forward = forward' context term1 type1
@@ -312,15 +324,73 @@ add_Lam :: Int -> Arrowterm -> Arrowterm
 add_Lam 0 term = term
 add_Lam num term = Arrow_Lam $ add_Lam (num - 1) term
 
-maxdepth = 100
+maxdepth = 5
+search_proof :: [AJudgement] -> Arrowterm -> Int -> [Arrowterm]
+-- search_proof(forward_env,arrow_term,depth) =
+--   --time check
+--   if depth < maxdepth
+--     then
+--       let typelst = deduce(forward_env,arrowterm,depth)
+--       in typelist ++ search_proof(forward_env,arrow_term,depth + 1)
+--     else
+--       []
+search_proof forward_env arrow_type depth =
+  foldr (++) [] (map (search_proof forward_env arrow_type) [1..depth])
 
--- membership :: [AJudgement] ->  Arrowterm -> Int -> [Arrowterm]
--- membership context arrow_type depth =
---     if (or $ map ((== arrow_type) . termfromAJudgement) context) --var(shift_indiceについて考える必要がある)
---       then
---         map (fst) $ filter (snd) $ map (\x -> ((typefromAJudgement x),((==arrow_type) . termfromAJudgement) x)) context
---       else
---         []
+{-
+sigma_con = [Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Con $ T.pack "p"),(Conclusion $ DT.Con $ T.pack "q")]
+context = forward_context sigma_con
+arrow_type = (Conclusion DT.Type)
+depth = 1
+deduce sigma_con context arrow_type depth
+
+sigma_con = [Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Con $ T.pack "p"),(Conclusion $ DT.Con $ T.pack "q")]
+context = forward_context sigma_con
+arrow_type = (Conclusion DT.Kind)
+depth = 1
+deduce sigma_con context arrow_type depth
+
+sigma_con = [Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Con $ T.pack "p"),(Conclusion $ DT.Con $ T.pack "q")]
+context = forward_context sigma_con
+arrow_type = (Conclusion $ DT.Con $ T.pack  "p")
+depth = 1
+deduce sigma_con context arrow_type depth
+
+sigma_con = [Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Con $ T.pack "p"),(Conclusion $ DT.Con $ T.pack "q")]
+context = forward_context sigma_con
+arrow_type = (Conclusion $ DT.Var 2)
+depth = 1
+deduce sigma_con context arrow_type depth
+
+sigma_con = [Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Con $ T.pack "p"),(Conclusion $ DT.Con $ T.pack "q")]
+context = forward_context sigma_con
+arrow_type = (Conclusion $ DT.Var 1)
+depth = 1
+deduce sigma_con context arrow_type depth
+
+sigma_con = [Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Con $ T.pack "p"),(Conclusion $ DT.Con $ T.pack "q")]
+context = forward_context sigma_con
+arrow_type = (Conclusion $ DT.Var 0)
+depth = 1
+deduce sigma_con context arrow_type depth
+
+sigma_con = [Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Con $ T.pack "p"),(Conclusion $ DT.Con $ T.pack "q")]
+context = forward_context sigma_con
+arrow_type = Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2)
+depth = 1
+deduce sigma_con context arrow_type depth
+-}
+
+
+membership :: [Arrowterm] -> [AJudgement] ->  Arrowterm -> Int -> [AJudgement]
+membership con context arrow_type depth =
+  let boollst = map (\x -> shiftIndices (typefromAJudgement x) ((length con) - (length $ envfromAJudgement x)) 0 == arrow_type) context
+  in
+    if (or boollst)
+      then
+        map (fst) $ filter (snd) $ zip context boollst
+      else
+        []
 --
 -- pi_form :: [AJudgement]-> [Arrowterm] -> [Arrowterm] -> Arrowterm->Int->[Arrowterm]
 --
@@ -350,14 +420,19 @@ maxdepth = 100
 -- pi_elim :: [AJudgement]->Arrowterm->Int->[Arrowterm]
 -- -- pi_elim context b1 depth =
 -- pi_elim context arrow_type depth = undefined
+
 --
-deduce :: [AJudgement]->Arrowterm->Int->[Arrowterm]
---context,target,depth
+deduce :: [Arrowterm] -- ^ context
+  ->[AJudgement] -- ^ forward_context
+  ->Arrowterm -- ^ term
+  ->Int -- ^ depth
+  ->[AJudgement]
+
+
 --type-ax
-deduce = undefined
--- deduce _  (Conclusion DT.Kind) depth = if depth < maxdepth then [Conclusion DT.Type] else []
+deduce _  con (Conclusion DT.Kind) depth = if depth < maxdepth then [AJudgement [] (Conclusion DT.Type) (Conclusion DT.Kind)] else []
 --
--- deduce context arrow_type depth =
---   let type_terms = [undefined]
---       kind_terms = [undefined]
---     in (membership context arrow_type depth) ++ (pi_form context type_terms kind_terms arrow_type depth) ++ []
+deduce con f_context arrow_type depth =
+  let type_terms = [undefined]
+      kind_terms = [undefined]
+    in (membership con f_context arrow_type depth) -- ++ (pi_form context type_terms kind_terms arrow_type depth) ++ []
