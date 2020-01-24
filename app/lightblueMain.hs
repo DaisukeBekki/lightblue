@@ -6,6 +6,7 @@ import Data.Semigroup ((<>))              --semigroup
 import Control.Monad (forM_)              --base
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
+--import qualified Data.Text as StrictT     --text
 import qualified Data.Text.IO as StrictT  --text
 import Data.Ratio ((%))                   --base
 import qualified Data.Char as C           --base
@@ -15,12 +16,12 @@ import qualified System.IO as S           --base
 import qualified System.Environment as E -- base
 import qualified Data.Map as M            --container
 import qualified Data.Time as Time        --time
-import qualified JSeM as J                --jsem
-import qualified JSeM.XML as J            --jsem
 import qualified Parser.ChartParser as CP
 import qualified Parser.Japanese.MyLexicon as LEX
 import qualified Interface as I
 import qualified Interface.Text as T
+import qualified JSeM as J
+import qualified JSeM.XML as J
 import qualified DTS.UDTT as DTS
 --import qualified DTS.Prover.TypeChecker as TC
 import qualified DTS.Prover as Prover
@@ -206,7 +207,7 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
       sentences <- case input of 
                      SENTENCES -> return $ T.lines contents
                      JSEM -> do
-                             parsedJSeM <- J.xmlFile2JSeMData $ T.unpack contents
+                             parsedJSeM <- J.xml2jsemData $ T.toStrict contents
                              return $ concat $ map (\j -> (map T.fromStrict $ J.premises j) ++ [T.fromStrict $ J.hypothesis j]) parsedJSeM
       S.hPutStrLn handle $ I.headerOf style
       mapM_
@@ -241,7 +242,7 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
           proverf premises hypothesis
         JSEM -> do
                 --S.hPutStrLn S.stdout $ I.headerOf I.HTML
-                parsedJSeM <- J.xmlFile2JSeMData $ T.unpack contents
+                parsedJSeM <- J.xml2jsemData $ T.toStrict contents
                 mapM_ (\j -> do
                           mapM_ T.putStr ["JSeM [", T.fromStrict $ J.jsem_id j, "] "]
                           proverf (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
@@ -255,7 +256,7 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
     -- |
     --lightblueMainLocal (Debug i j) contents = do
     lightblueMainLocal (Debug _ _) contents = do
-      parsedJSeM <- J.xmlFile2JSeMData $ T.unpack contents
+      parsedJSeM <- J.xml2jsemData $ T.toStrict contents
       let sentences = case input of 
             SENTENCES -> T.lines contents
             JSEM -> concat $ map (\jsem -> (map T.fromStrict $ J.premises jsem) ++ [T.fromStrict $ J.hypothesis jsem]) parsedJSeM
@@ -286,7 +287,7 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
     -- | JSeM Parser
     -- 
     lightblueMainLocal JSeMParser contents = do
-      parsedJSeM <- J.xmlFile2JSeMData $ T.unpack contents
+      parsedJSeM <- J.xml2jsemData $ T.toStrict contents
       forM_ parsedJSeM $ \jsem -> do
         putStr $ show $ J.answer jsem
         S.putChar '\t'
