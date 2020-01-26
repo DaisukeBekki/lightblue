@@ -430,18 +430,22 @@ pi_form con arrow_type depth
 
 -}
 
-pi_form :: [Arrowterm] ->  Arrowterm -> Int -> [AJudgement]
-pi_form con arrow_type depth =
-  if (arrow_type `elem`[Conclusion DT.Type,Conclusion DT.Kind]) && (depth < maxdepth)
-  then
-    let a_terms =
-          (deduceWithLog con (Conclusion $ DT.Type) (depth + 1)) ++ (deduceWithLog con (Conclusion $ DT.Kind) (depth + 1))
-        a_terms_power_set = powerset a_terms
-        b_terms = map (\a_set -> (deduceWithLog ((map termfromAJudgement a_set)++ con) (Conclusion $ DT.Type) (depth + 1)) ++  (deduceWithLog ((map termfromAJudgement a_set)++ con) (Conclusion $ DT.Kind) (depth + 1))) a_terms_power_set
-        pi_terms = L.nub $ map (\(as,b) -> AJudgement con (Arrow (map (termfromAJudgement) as) (termfromAJudgement b)) (typefromAJudgement b)) $ foldr (++) [] $ map (\(a,bs) -> map (\b -> (a,b)) bs) $ zip a_terms_power_set b_terms
-    in pi_terms
-  else
-    []
+-- pi_form :: [Arrowterm] ->  Arrowterm -> Int -> Either (String) ([AJudgement])
+-- pi_form con arrow_type depth =
+--   if (arrow_type `elem`[Conclusion DT.Type,Conclusion DT.Kind]) && (depth < maxdepth)
+--   then
+--     let a_terms =
+--           (deduceWithLog con (Conclusion $ DT.Type) (depth + 1)) ++ (deduceWithLog con (Conclusion $ DT.Kind) (depth + 1))
+--         a_terms_power_set = powerset a_terms
+--         b_terms = map (\a_set -> (deduceWithLog ((map termfromAJudgement a_set)++ con) (Conclusion $ DT.Type) (depth + 1)) ++  (deduceWithLog ((map termfromAJudgement a_set)++ con) (Conclusion $ DT.Kind) (depth + 1))) a_terms_power_set
+--         pi_terms = L.nub $ map (\(as,b) -> AJudgement con (Arrow (map (termfromAJudgement) as) (termfromAJudgement b)) (typefromAJudgement b)) $ foldr (++) [] $ map (\(a,bs) -> map (\b -> (a,b)) bs) $ zip a_terms_power_set b_terms
+--     in Right pi_terms
+--   else
+--     if depth < maxdepth
+--     then
+--       Left ("too deep @ pi_form " ++ show con ++" | "++ show arrow_type)
+--     else
+--       Right []
 
 --   --type型を持つ項a1,...,anについて一つ一つextendした[(a1,[AJudgement]),(a2,[AJudgement])...]
 --   --type型を持つ項a1,...,anについてありえる(as,b1),...,(as,bm)を並べた[[(Arrowterm,Arrowterm)]]
@@ -460,20 +464,16 @@ pi_form con arrow_type depth =
 --
 
 {-
-con = [Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Var 0),(Conclusion $ DT.Con $ T.pack "q")]
-context = forward_context con
+con = [Arrow [Conclusion $ DT.Var 2] (Conclusion $ DT.Var 3),Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Var 0),(Conclusion $ DT.Con $ T.pack "q")]
 depth =  1
-arrow_type = Arrow [Conclusion $ DT.Var 1] (Conclusion $ DT.Var 3)
-deduce con context arrow_type depth
-pi_intro con context arrow_type depth
+arrow_type = Arrow [Conclusion $ DT.Var 3] (Conclusion $ DT.Var 4)
+pi_intro con arrow_type depth
 
 arrow_type = Arrow [Conclusion $ DT.Var 1] (Conclusion $ DT.Con $ T.pack "q")
-deduce con context arrow_type depth
-pi_intro con context arrow_type depth
+pi_intro con arrow_type depth
 
 arrow_type = Arrow [Conclusion $ DT.Var 1] (Conclusion $ DT.Var 2)
-deduce con context arrow_type depth
-pi_intro con context arrow_type depth
+pi_intro con arrow_type depth
 
 -}
 
@@ -483,10 +483,19 @@ pi_intro con (Arrow a b) depth =
   then
     Left ("too deep @ pi-intro " ++ show con ++" ト "++ show (Arrow a b))
   else
-    let --a_terms = deduce con context a (depth + 1)
-        b_terms' = deduceWithLog (a ++ con) b (depth + 1)
-    in --map (\(AJudgement env a_term a_type) -> AJudgement con (add_Lam (length a) $ shiftIndices a_term (length a) 0) (Arrow a b)) b_terms'
-      Right $ map (\(AJudgement env a_term a_type) -> AJudgement con (add_Lam (length a) a_term ) (Arrow a b)) b_terms'
+    let
+        b_judgements = deduceWithLog (a ++ con) b (depth + 1)
+    in
+      Right
+        $ map
+        (\b_j ->
+          let
+            env = envfromAJudgement b_j
+            a_term = add_Lam (length a) (shiftIndices (termfromAJudgement b_j) (length env - length con) 0)
+            a_type = shiftIndices (Arrow a b) (length env - length con) 0
+          in
+            AJudgement env a_term a_type)
+        b_judgements
 pi_intro  con arrow_type depth= Right []
 
 --
@@ -504,13 +513,109 @@ arrow_conclusion_b judgements b=
   filter
     (\j ->
       case typefromAJudgement j of
-        Arrow _ b' -> b==b'
+        Arrow env b' -> (shiftIndices b (length env) 0)==b'
         otherwise -> False)
     judgements
+{-
+test = Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r")))
+con =  [to1Arrow test,Conclusion $ DT.Con $ T.pack "q"]
+b1 = (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r"))
+a_judgements = arrow_conclusion_b (forward_context con) b1
+as = map (\(AJudgement _ _ (Arrow env _)) -> env) a_judgements
+(f:r)=head as
+depth = 1
+ deduce_env con ((reverse . head) as ) 1
 
+depth = 1
+test = Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r")))
+con =  [(Arrow [Conclusion $ DT.Con $ T.pack "p"] (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r"))),(Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r"))),to1Arrow test,Conclusion $ DT.Con $ T.pack "q"]
+b1 = (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r"))
+a_judgements = arrow_conclusion_b (forward_context con) b1
+envs = map (\(AJudgement _ _ (Arrow env _)) -> env) a_judgements
+
+-}
+
+-- ? var型の扱い ex) [u0:q] | u1:[u2:q,u3:u2]=>q
+deduce_env :: [Arrowterm] -> [Arrowterm] ->Int -> [[AJudgement]]
+
+deduce_env _ [] _= [[]]
+deduce_env con (f:r) depth =
+  let a_js = deduceWithLog con f depth in
+    if a_j == []
+    then
+      []
+    else
+      foldr
+        (++)
+        []
+        $ map  -- ^ [[[c1,b1,a1],[c1,b1,a2]],[[c2,b1,a1],[c2,b1,a2]]]
+        (\r_js ->
+          (map  -- ^ [[c1,b1,a1],[c1,b1,a2]]
+          (\a_j -> r_js ++ [a_j])
+          a_js) -- ^ [a1,a2]
+        )
+        (deduce_env (f:con) r depth)  -- ^ [[c1,b1],[c2,b1]]
+-- deduce_env _ [] _= [[]]
+-- deduce_env con (f:r) depth =
+--   let a_js = deduceWithLog con f depth in
+--     if a_j == []
+--     then
+--       []
+--     else
+--       foldr
+--         (++)
+--         []
+--         $ map  -- ^ [[[c1,b1,a1],[c1,b1,a2]],[[c2,b1,a1],[c2,b1,a2]]]
+--         (\r_js ->
+--           (map  -- ^ [[c1,b1,a1],[c1,b1,a2]]
+--           (\a_j -> r_js ++ [a_j])
+--           a_js) -- ^ [a1,a2]
+--         )
+--         (deduce_env (f:con) r depth)  -- ^ [[c1,b1],[c2,b1]]
+
+
+deduce_envs :: [Arrowterm] -> [AJudgement] -> Int-> [(AJudgement,[[AJudgement]])]
+deduce_envs con a_judgements depth =
+  let ajudges = map ((\a -> deduce_env con a depth) . reverse) $ map (\(AJudgement _ _ (Arrow env _)) -> env) a_judgements
+  in filter ((/= []) . snd) $zip a_judgements ajudges
+
+app_as :: Arrowterm -> [Arrowterm] -> Arrowterm
+app_as term [] = term
+app_as term (f:r) =
+  app_as (Arrow_App term f) r
+
+{-
+depth = 1
+test = Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r")))
+con =  [(Arrow [Conclusion $ DT.Con $ T.pack "p"] (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r"))),(Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r"))),to1Arrow test,Conclusion $ DT.Con $ T.pack "q"]
+b1 = (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r"))
+-}
+--context の長さが変わる
 pi_elim :: [Arrowterm] -> Arrowterm->Int->Either (String) ([AJudgement])
-pi_elim con b1 depth = undefined
-
+pi_elim con b1 depth =
+  if depth > maxdepth
+  then
+    Left ("too deep @ pi_elim " ++ show con ++" ト "++ show b1)
+  else
+    let a_judgements = arrow_conclusion_b (forward_context con) b1
+        a_type_terms = deduce_envs con a_judgements depth
+    in
+      Right
+        $foldr
+        (++)
+        []
+        $ map
+          (\(base,as) ->
+            let arrow_env = ((\(Arrow env _) -> env) . typefromAJudgement) base
+                env' = arrow_env ++ con
+                a_terms' = map
+                          (\as' -> app_as (shiftIndices (termfromAJudgement base) (length arrow_env) 0) as')
+                          $ map (\as' -> reverse $ map (\(num,a) -> shiftIndices (termfromAJudgement a) num 0) $ zip [1..] as') as
+                a_type' = b1
+            in
+              map (\a_term ->AJudgement env' a_term a_type') a_terms'
+          )
+          a_type_terms
 
 {-
 con = [Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Var 0),(Conclusion $ DT.Con $ T.pack "q")]
@@ -525,11 +630,43 @@ sigma_intro con  (Arrow_Sigma a b1) depth =
   then
     Left ("too deep @ sigma_intro " ++ show con ++" ト "++ show (Arrow_Sigma a b1))
   else
-    let a_terms =deduceWithLog con a (depth + 1)
-        b1_terms =
-          deduceWithLog con (shiftIndices b1 (-1) 0) (depth + 1)  --Arrow_Sigma (..) (Conclusion $ DT.Var 0)はどうする？
-    in Right $ foldr (++) [] $ map (\(AJudgement _ b1' _) -> map (\(AJudgement _ a' _ )-> AJudgement con (Arrow_Pair a' b1') (Arrow_Sigma a b1) ) a_terms) b1_terms
+    let a_term_judgements =deduceWithLog con a (depth + 1)
+        a_b1_terms_judgements =
+          map
+          (\a_j ->
+            let con2b = a: (envfromAJudgement a_j)
+            in
+              (a_j,deduceWithLog con2b (shiftIndices b1 ((length con2b) -1 - (length con) ) 0) depth ))
+          a_term_judgements
+    in
+      Right
+        $ foldr
+          (++)
+          []
+          $map
+            (\(a_j,b1_js) ->
+              map
+                (\b1_j ->
+                  let
+                    env = envfromAJudgement a_j
+                    a_term = Arrow_Pair (shiftIndices (termfromAJudgement a_j) (length env -length (envfromAJudgement a_j)) 0) (termfromAJudgement b1_j)
+                    a_type = shiftIndices (Arrow_Sigma a b1) (length env - (length con)) 0
+                  in AJudgement env a_term a_type)
+                b1_js)
+            a_b1_terms_judgements
+
 sigma_intro  con  arrow_type depth=Right []
+
+-- sigma_intro con  (Arrow_Sigma a b1) depth =
+--   if depth > maxdepth
+--   then
+--     Left ("too deep @ sigma_intro " ++ show con ++" ト "++ show (Arrow_Sigma a b1))
+--   else
+--     let a_terms =deduceWithLog con a (depth + 1)
+--         b1_terms =
+--           deduceWithLog (a:con) (shiftIndices b1 (-1) 0) (depth + 1)
+--     in Right $ foldr (++) [] $ map (\(AJudgement _ b1' _) -> map (\(AJudgement _ a' _ )-> AJudgement con (Arrow_Pair a' b1') (Arrow_Sigma a b1) ) a_terms) b1_terms
+-- sigma_intro  con  arrow_type depth=Right []
 
 deduceWithLog :: [Arrowterm] -> Arrowterm ->Int ->[AJudgement]
 deduceWithLog = withLog deduce
@@ -554,7 +691,7 @@ deduce _ (Conclusion DT.Kind) depth =
 deduce con arrow_type depth =
   if (depth < maxdepth)
   then
-    let judgements = map (\f -> withLog f con arrow_type depth) [membership,pi_intro,sigma_intro]
+    let judgements = map (\f -> withLog f con arrow_type depth) [membership,pi_intro,sigma_intro,pi_elim]
     in Right $ foldr (++) [] judgements
   else
     Left ("too deep @ deduce " ++ show con ++" | "++ show arrow_type)
