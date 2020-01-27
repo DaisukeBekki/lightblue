@@ -61,7 +61,7 @@ prestr2arrowstr prestr (Arrow_Sigma h t) =
   in "(" ++ let str  = (tail $ init $ snd  parentheses) in ((takeWhile (/= ':')  str) ++":"++ (prestr2arrowstr (tail $ dropWhile (/= ':') str)  h)) ++ [' ',')','\215',' '] ++ (prestr2arrowstr  (drop ((fst  parentheses) + 1) prestr) t)
 prestr2arrowstr prestr (Arrow_App h t) =
   let f_len = (length prestr) - (fst $ head $ treatParentheses (reverse prestr))
-  in let f  = take f_len prestr in  (prestr2arrowstr f  h) ++ " " ++ (prestr2arrowstr  (drop (f_len) prestr) t)
+  in let f  = take f_len prestr in  (prestr2arrowstr f  h) ++ " " ++ (prestr2arrowstr  (init$ tail$drop (f_len) prestr) t)
 prestr2arrowstr prestr (Arrow_Proj s t) =
   let parentheses = head (treatParentheses prestr)
   in (snd parentheses) ++"(" ++ (prestr2arrowstr (init $ tail (drop (fst parentheses) prestr)) t) ++ ")"
@@ -265,12 +265,6 @@ test4 = Arrow_Sigma (Arrow [(Arrow [(Conclusion (DT.Con (T.pack "p")))] (Conclus
 test5=(Arrow_Sigma (Conclusion $ DT.Con $ T.pack "p") (Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow_Sigma (Conclusion $ DT.Var 1) (Conclusion $ DT.Var 3))))
 context = [test1,test2,test3,test4,test5]
 -}
-test1 = Arrow [Arrow_Proj Arrow_Fst (Conclusion DT.Type)] (Arrow_Proj Arrow_Snd (Conclusion (DT.Var 0)))
-test2 = Arrow_Sigma (Conclusion $ DT.Con $ T.pack "p") (Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 1))
-test3 = Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 1)
-test4=(Arrow_Sigma (Conclusion $ DT.Con $ T.pack "p") (Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow_Sigma (Conclusion $ DT.Var 1) (Conclusion $ DT.Var 3))))
-test5 = Arrow_Sigma (Arrow [(Arrow [(Conclusion (DT.Con (T.pack "p")))] (Conclusion (DT.Var 0))),Conclusion DT.Type](Conclusion (DT.Con (T.pack "p")))) (Conclusion (DT.Con (T.pack "q")))
-context = [test1,test2,test3,test4,test5]
 
 {-
 sigma_con = [Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Con $ T.pack "p"),(Conclusion $ DT.Con $ T.pack "q")]
@@ -362,10 +356,9 @@ maxdepth = 5
 
 {-
 con = [Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Con $ T.pack "p"),(Conclusion $ DT.Con $ T.pack "q")]
-f_context = forward_context con
 arrow_type = (Conclusion DT.Type)
 depth = 1
-deduce con f_context arrow_type depth
+deduce con  arrow_type depth
 search_proof  con f_context arrow_type depth
 map (\a -> Arrow con a) $search_proof  con f_context arrow_type depth
 -}
@@ -464,9 +457,9 @@ pi_form con arrow_type depth
 --
 
 {-
-con = [Arrow [Conclusion $ DT.Var 2] (Conclusion $ DT.Var 3),Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Var 0),(Conclusion $ DT.Con $ T.pack "q")]
+con = [Arrow [Conclusion $ DT.Var 2] (Conclusion $ DT.Var 2),Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Var 0),(Conclusion $ DT.Con $ T.pack "q")]
 depth =  1
-arrow_type = Arrow [Conclusion $ DT.Var 3] (Conclusion $ DT.Var 4)
+arrow_type = Arrow [Conclusion $ DT.Var 2] (Conclusion $ DT.Var 4)
 pi_intro con arrow_type depth
 
 arrow_type = Arrow [Conclusion $ DT.Var 1] (Conclusion $ DT.Con $ T.pack "q")
@@ -521,12 +514,10 @@ test = Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow [Conclusion $ DT.Con $ T.
 con =  [to1Arrow test,Conclusion $ DT.Con $ T.pack "q"]
 b1 = (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r"))
 a_judgements = arrow_conclusion_b (forward_context con) b1
-as = map (\(AJudgement _ _ (Arrow env _)) -> env) a_judgements
-(f:r)=head as
+envs = map (\(AJudgement _ _ (Arrow env _)) -> env) a_judgements
 depth = 1
- deduce_env con ((reverse . head) as ) 1
+ deduce_env con ((reverse . head) envs ) 1
 
-depth = 1
 test = Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r")))
 con =  [(Arrow [Conclusion $ DT.Con $ T.pack "p"] (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r"))),(Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r"))),to1Arrow test,Conclusion $ DT.Con $ T.pack "q"]
 b1 = (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r"))
@@ -538,10 +529,35 @@ envs = map (\(AJudgement _ _ (Arrow env _)) -> env) a_judgements
 -- ? var型の扱い ex) [u0:q] | u1:[u2:q,u3:u2]=>q
 deduce_env :: [Arrowterm] -> [Arrowterm] ->Int -> [[AJudgement]]
 
+-- deduce_env _ [] _= [[]]
+-- deduce_env con (f:r) depth =
+--   let a_js = deduceWithLog con f depth in
+--     if a_js == []
+--     then
+--       []
+--     else
+--       $map
+--         (\a_j ->
+--           let d_con = f:(envfromAJudgement a_j)
+--               d_r = map (\f' -> shiftIndices f' (length d_con - 1 - (length con)) 0) r
+--           in
+--             (a_j,deduce_env d_con d_r depth))
+--         a_js
+--
+--       foldr
+--         (++)
+--         []
+--         $ map  -- ^ [[[c1,b1,a1],[c1,b1,a2]],[[c2,b1,a1],[c2,b1,a2]]]
+--         (\r_js ->
+--           (map  -- ^ [[c1,b1,a1],[c1,b1,a2]]
+--           (\a_j -> r_js ++ [a_j])
+--           a_js) -- ^ [a1,a2]
+--         )
+--         (deduce_env (f:con) r depth)  -- ^ [[c1,b1],[c2,b1]]
 deduce_env _ [] _= [[]]
 deduce_env con (f:r) depth =
   let a_js = deduceWithLog con f depth in
-    if a_j == []
+    if a_js == []
     then
       []
     else
@@ -555,23 +571,6 @@ deduce_env con (f:r) depth =
           a_js) -- ^ [a1,a2]
         )
         (deduce_env (f:con) r depth)  -- ^ [[c1,b1],[c2,b1]]
--- deduce_env _ [] _= [[]]
--- deduce_env con (f:r) depth =
---   let a_js = deduceWithLog con f depth in
---     if a_j == []
---     then
---       []
---     else
---       foldr
---         (++)
---         []
---         $ map  -- ^ [[[c1,b1,a1],[c1,b1,a2]],[[c2,b1,a1],[c2,b1,a2]]]
---         (\r_js ->
---           (map  -- ^ [[c1,b1,a1],[c1,b1,a2]]
---           (\a_j -> r_js ++ [a_j])
---           a_js) -- ^ [a1,a2]
---         )
---         (deduce_env (f:con) r depth)  -- ^ [[c1,b1],[c2,b1]]
 
 
 deduce_envs :: [Arrowterm] -> [AJudgement] -> Int-> [(AJudgement,[[AJudgement]])]
@@ -589,6 +588,7 @@ depth = 1
 test = Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r")))
 con =  [(Arrow [Conclusion $ DT.Con $ T.pack "p"] (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r"))),(Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r"))),to1Arrow test,Conclusion $ DT.Con $ T.pack "q"]
 b1 = (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r"))
+deduce con b1 depth
 -}
 --context の長さが変わる
 pi_elim :: [Arrowterm] -> Arrowterm->Int->Either (String) ([AJudgement])
@@ -605,24 +605,50 @@ pi_elim con b1 depth =
         (++)
         []
         $ map
-          (\(base,as) ->
-            let arrow_env = ((\(Arrow env _) -> env) . typefromAJudgement) base
-                env' = arrow_env ++ con
-                a_terms' = map
-                          (\as' -> app_as (shiftIndices (termfromAJudgement base) (length arrow_env) 0) as')
-                          $ map (\as' -> reverse $ map (\(num,a) -> shiftIndices (termfromAJudgement a) num 0) $ zip [1..] as') as
-                a_type' = b1
-            in
-              map (\a_term ->AJudgement env' a_term a_type') a_terms'
+          (\(base,ass) ->
+              map
+                (\as ->
+                  let env' = envfromAJudgement $ head as
+                      a_terms' =
+                        app_as
+                          (shiftIndices (termfromAJudgement base) (length env' - length (envfromAJudgement base)) 0)
+                          $reverse $map (\a -> shiftIndices (termfromAJudgement a) (length env' - length (envfromAJudgement a)) 0)  as
+                      a_type' = shiftIndices b1 (length env' - length con) 0
+                  in
+                    AJudgement env' a_terms' a_type')
+                ass
           )
           a_type_terms
+-- pi_elim con b1 depth =
+--   if depth > maxdepth
+--   then
+--     Left ("too deep @ pi_elim " ++ show con ++" ト "++ show b1)
+--   else
+--     let a_judgements = arrow_conclusion_b (forward_context con) b1
+--         a_type_terms = deduce_envs con a_judgements depth
+--     in
+--       Right
+--         $foldr
+--         (++)
+--         []
+--         $ map
+--           (\(base,as) ->
+--             let arrow_env = ((\(Arrow env _) -> env) . typefromAJudgement) base
+--                 env' = arrow_env ++ con
+--                 a_terms' = map
+--                           (\as' -> app_as (shiftIndices (termfromAJudgement base) (length arrow_env) 0) as')
+--                           $ map (\as' -> reverse $ map (\(num,a) -> shiftIndices (termfromAJudgement a) num 0) $ zip [1..] as') as
+--                 a_type' = b1
+--             in
+--               map (\a_term ->AJudgement env' a_term a_type') a_terms'
+--           )
+--           a_type_terms
 
 {-
-con = [Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Var 0),(Conclusion $ DT.Con $ T.pack "q")]
+con = [Arrow [Conclusion $ DT.Con $ T.pack "q"] (Conclusion $ DT.Var 3),Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Var 0),(Conclusion $ DT.Con $ T.pack "q")]
 depth = 1
-arrow_type = Arrow_Sigma (Conclusion $ DT.Var 1) (Conclusion $ DT.Var 3)
+arrow_type = Arrow_Sigma (Conclusion $ DT.Var 2) (Conclusion $ DT.Var 3)
 deduce con arrow_type depth
-sigma_intro con arrow_type depth
 -}
 sigma_intro :: [Arrowterm] ->  Arrowterm -> Int -> Either (String) ([AJudgement])
 sigma_intro con  (Arrow_Sigma a b1) depth =
@@ -634,9 +660,9 @@ sigma_intro con  (Arrow_Sigma a b1) depth =
         a_b1_terms_judgements =
           map
           (\a_j ->
-            let con2b = a: (envfromAJudgement a_j)
+            let con2b =  (envfromAJudgement a_j)
             in
-              (a_j,deduceWithLog con2b (shiftIndices b1 ((length con2b) -1 - (length con) ) 0) depth ))
+              (a_j,deduceWithLog con2b (shiftIndices b1 ((length con2b) -1- (length con) ) 0) depth ))
           a_term_judgements
     in
       Right
@@ -648,25 +674,14 @@ sigma_intro con  (Arrow_Sigma a b1) depth =
               map
                 (\b1_j ->
                   let
-                    env = envfromAJudgement a_j
-                    a_term = Arrow_Pair (shiftIndices (termfromAJudgement a_j) (length env -length (envfromAJudgement a_j)) 0) (termfromAJudgement b1_j)
+                    env = envfromAJudgement b1_j
+                    a_term = Arrow_Pair (shiftIndices (termfromAJudgement a_j) (length env -length (envfromAJudgement a_j)) 0)  (shiftIndices (termfromAJudgement b1_j) (length env -length (envfromAJudgement b1_j)) 0)
                     a_type = shiftIndices (Arrow_Sigma a b1) (length env - (length con)) 0
                   in AJudgement env a_term a_type)
                 b1_js)
             a_b1_terms_judgements
 
 sigma_intro  con  arrow_type depth=Right []
-
--- sigma_intro con  (Arrow_Sigma a b1) depth =
---   if depth > maxdepth
---   then
---     Left ("too deep @ sigma_intro " ++ show con ++" ト "++ show (Arrow_Sigma a b1))
---   else
---     let a_terms =deduceWithLog con a (depth + 1)
---         b1_terms =
---           deduceWithLog (a:con) (shiftIndices b1 (-1) 0) (depth + 1)
---     in Right $ foldr (++) [] $ map (\(AJudgement _ b1' _) -> map (\(AJudgement _ a' _ )-> AJudgement con (Arrow_Pair a' b1') (Arrow_Sigma a b1) ) a_terms) b1_terms
--- sigma_intro  con  arrow_type depth=Right []
 
 deduceWithLog :: [Arrowterm] -> Arrowterm ->Int ->[AJudgement]
 deduceWithLog = withLog deduce
@@ -691,7 +706,7 @@ deduce _ (Conclusion DT.Kind) depth =
 deduce con arrow_type depth =
   if (depth < maxdepth)
   then
-    let judgements = map (\f -> withLog f con arrow_type depth) [membership,pi_intro,sigma_intro,pi_elim]
+    let judgements = map (\f -> withLog f con arrow_type depth) [membership,pi_intro,pi_elim,sigma_intro]
     in Right $ foldr (++) [] judgements
   else
     Left ("too deep @ deduce " ++ show con ++" | "++ show arrow_type)
