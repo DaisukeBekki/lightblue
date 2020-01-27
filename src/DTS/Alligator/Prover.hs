@@ -273,14 +273,24 @@ var_env = [r,q,p]
 pre_type = DT.Pi (DT.Pi p DT.Bot) DT.Bot
 prove' var_env sig_env pre_type
 
-
-sig_env = classic
-p = DT.Con $ T.pack "p"
-q = DT.Con $ T.pack "q"
-r = DT.Con $ T.pack "r"
-var_env = [r,q,p]
-pre_type = DT.Pi (DT.Sigma p ()) DT.Bot
+pre_type =  (DT.Pi p DT.Bot)
 prove' var_env sig_env pre_type
+
+pre_type =  DT.Bot
+prove' var_env sig_env pre_type
+
+var_env = [DT.Pi (DT.Pi (DT.Pi p DT.Bot) DT.Bot) (DT.Pi r DT.Bot),r,q,p]
+pre_type = DT.Bot
+prove' var_env sig_env pre_type
+
+var_env = [DT.Pi p q,DT.Pi q r]
+pre_type = DT.Pi p r
+prove' var_env sig_env pre_type
+
+var_env = [DT.Pi p q,DT.Pi q r,p]
+pre_type = DT.Pi p r
+prove' var_env sig_env pre_type
+
 
 preterm = DT.Type
 prove var_env sig_env preterm
@@ -409,7 +419,7 @@ maxdepth = 5
 
 
 search_proof :: [Arrowterm] ->Arrowterm -> Int -> [AJudgement]
-search_proof con arrow_type depth = deduceWithLog con arrow_type depth
+search_proof arrow_env arrow_type depth = deduceWithLog arrow_env arrow_type depth
 --  L.nub $ foldr (++) [] (map (\d -> deduceWithLog con arrow_type d) [1..(maxdepth -1)])
 
 membership :: [Arrowterm] ->  Arrowterm -> Int -> Either (String) ([AJudgement])
@@ -446,7 +456,7 @@ typecheck_env con (f:r) arrow_types depth =
       (\a_j ->
         let
           r_env' = f:(envfromAJudgement a_j)
-          r_term' = map (\f' -> shiftIndices f ((length r_env') - 1 - (length con)) 0) r
+          r_term' = map (\f' -> shiftIndices f' ((length r_env') - 1 - (length con)) 0) r
         in
           map -- ^[[c1,b1,a1],[c2,b1,a1]]
           (\r_js -> r_js ++ [a_j])
@@ -478,8 +488,33 @@ pi_form con (Arrow as b) arrow_type depth =
       Left ("too deep @ pi_form " ++ show con ++" | "++ show arrow_type)
     else
       Right []
-
-pi_form con arrow_term arrow_type depth = Right []
+{-
+con = [Arrow [Conclusion $ DT.Con $ T.pack "p",Conclusion $ DT.Con $ T.pack "r"] (Conclusion $ DT.Con $ T.pack "q"),Arrow [Conclusion $ DT.Con $ T.pack "p",Conclusion $ DT.Con $ T.pack "p"] (Conclusion $ DT.Con $ T.pack "q"),Arrow [Conclusion $ DT.Con $ T.pack "p"] (Conclusion $ DT.Con $ T.pack "q"),Conclusion $ DT.Con $ T.pack "p"]
+arrow_term = Conclusion $ DT.Con $ T.pack "q"
+arrow_type = Conclusion DT.Type
+depth = 1
+pi_form con arrow_term arrow_type depth
+-}
+pi_form con arrow_term arrow_type depth =
+  if (arrow_type `elem`[Conclusion DT.Type,Conclusion DT.Kind]) && (depth < maxdepth)
+  then
+    let a_judgements = arrow_conclusion_b (forward_context con) arrow_term
+        a_type_judgements =   foldr (++) [] $ map (\a_judgement ->withLog' typecheck con (typefromAJudgement a_judgement) arrow_type (depth+1)) a_judgements
+    in
+      if a_type_judgements == []
+      then
+        Right []
+      else
+        let arrow_envs = map (\(AJudgement _ (Arrow env _) _) -> reverse env) a_type_judgements
+            arrow_judgements' = map (\arrow_env -> typecheck_env con arrow_env [Conclusion DT.Type,Conclusion DT.Kind] (depth + 1)) arrow_envs
+            arrow_envs' = map (reverse . snd) $filter ((/=[]) . fst) $ zip arrow_judgements' arrow_envs
+        in Right $ map (\env -> AJudgement (env ++ con) (shiftIndices arrow_term (length env)0 )arrow_type ) arrow_envs'
+  else
+    if depth < maxdepth
+    then
+      Left ("too deep @ pi_form " ++ show con ++" | "++ show arrow_type)
+    else
+      Right []
 
 sigma_form:: [Arrowterm] -> Arrowterm ->  Arrowterm -> Int -> Either (String) ([AJudgement])
 sigma_form con (Arrow_Sigma a b) arrow_type depth =
