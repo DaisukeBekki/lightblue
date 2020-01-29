@@ -10,7 +10,7 @@ Stability   : beta
 
 A Typechecker and a theorem prover for DTS.
 -}
-module DTS.Prover.TypeChecker 
+module DTS.Prover.TypeChecker
 ( aspElim,
   typeCheckU,
   typeInferU,
@@ -80,7 +80,7 @@ transP (UD.Asp _ _) = []
 transP _ = []
 
 
--- repositP : DTTの項をUDTTの項に変換する関数
+-- | repositP : DTTの項をUDTTの項に変換する関数
 repositP :: DT.Preterm -> UD.Preterm
 repositP = DT.toUDTT
 
@@ -89,7 +89,7 @@ repositP = DT.toUDTT
 -- 内部でtransPを使う
 transE :: TUEnv -> TEnv
 transE [] = []
-transE (udtt:rest) = 
+transE (udtt:rest) =
   case transP udtt of
     [] -> (DT.Con (T.pack "miss")):(transE rest)
     term -> term ++ (transE rest)
@@ -98,7 +98,7 @@ transE (udtt:rest) =
 -- | @-Elimination
 aspElim :: (UTree UJudgement) -> [Tree Judgement]
 -- (@)規則
-aspElim (ASP (UJudgement _ (UD.Asp _ _) _) _ right) = 
+aspElim (ASP (UJudgement _ (UD.Asp _ _) _) _ right) =
   aspElim right
 -- (Type)規則
 aspElim (UTypeF (UJudgement uenv UD.Type UD.Kind)) = do
@@ -234,7 +234,7 @@ aspElim (UError (UJudgement uenv pretermA pretermB) over text) = do
   preA' <- transP pretermA
   preB' <- transP pretermB
   return (Error (Judgement (transE uenv) preA' preB') resultO text)
--}  
+-}
 --aspElim tree = [tree]
 
 
@@ -276,7 +276,7 @@ typeCheckU typeEnv sig preE value = do
     then do return (UCHK (UJudgement typeEnv preE value) overTree)
     else if value == UD.Kind
       then []
-      else do return (UError (UJudgement typeEnv value resultType) (T.pack "does not match type")) 
+      else do return (UError (UJudgement typeEnv value resultType) (T.pack "does not match type"))
 --    else do return (UError (UJudgement typeEnv value resultType) (T.pack "does not match type"))
 {-
 typeCheckU typeEnv sig preE value = do
@@ -297,7 +297,7 @@ typeInferU typeEnv _ (UD.Var k) = do
   let varType = typeEnv !! k
   return (UVAR (UJudgement typeEnv (UD.Var k) varType))
 -- (CON) rule
-typeInferU typeEnv sig (UD.Con text) = 
+typeInferU typeEnv sig (UD.Con text) =
   let conTypes = getList sig text in
   if conTypes == []
   then do return (UCON (UJudgement typeEnv (UD.Con text) (UD.Con $ T.pack "is not exist.")))
@@ -323,7 +323,7 @@ typeInferU typeEnv sig (UD.Pi preA preB) = do
                  ++ (typeCheckU (preA':typeEnv) sig preB UD.Kind)
   ansType <- getTypeU rightTree
   return (UPiF (UJudgement typeEnv (UD.Pi preA preB) ansType) leftTree rightTree)
--- (Not F) rule 
+-- (Not F) rule
 typeInferU typeEnv sig (UD.Not preM) = do
   overTree <- typeInferU typeEnv sig preM
   typ <- getTypeU overTree
@@ -420,7 +420,7 @@ proofSearch typeEnv sig preterm = do
 -- 与えた型をもつ項をリストのなかから探し、それを全て返す
 searchType :: (Eq v) => [(k, v)] -> v -> [k]
 searchType [] _ = []
-searchType ((tr, ty1):xs) ty2 
+searchType ((tr, ty1):xs) ty2
   | ty1 == ty2 = tr:(searchType xs ty2)
   | otherwise  = searchType xs ty2
 
@@ -460,9 +460,9 @@ piIntro _ _ _ = []
 -- | dismantle : 型環境の中からSigma型を見つけて投射をかける
 dismantle :: TUEnv -> TUEnv -> [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)]
 dismantle _ [] result = result
-dismantle env (preterm:xs) result = 
+dismantle env (preterm:xs) result =
   case preterm of
-    (UD.Sigma preA preB) -> 
+    (UD.Sigma preA preB) ->
       let index = L.elemIndex preterm env in
       case index of
         Just k -> let preB' = UD.shiftIndices (UD.subst preB (UD.shiftIndices (UD.Proj UD.Fst (UD.Var k)) 1 0) 0) (-1) 0 in
@@ -480,9 +480,9 @@ dismantle env (preterm:xs) result =
 -- | シグネチャはあらかじめchangeSigで型を変換しておく
 execute :: [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)]
 execute [] _ result = result
-execute ((v, preterm):xs) env result = 
+execute ((v, preterm):xs) env result =
   case preterm of
-    (UD.Pi preA preB) -> 
+    (UD.Pi preA preB) ->
       let termAs = searchType env preA in
       let anslist = do {p <- termAs;
                         return (make v preB p)} in
@@ -494,7 +494,7 @@ execute ((v, preterm):xs) env result =
 -- resultの中からSigma型の項を探す
 search :: [(UD.Preterm, UD.Preterm)] -> UD.Preterm -> Maybe UD.Preterm
 search [] _ = Nothing
-search ((tm, ty):xs) sigma = 
+search ((tm, ty):xs) sigma =
   if ty == sigma
   then Just tm
   else search xs sigma
@@ -503,9 +503,9 @@ search ((tm, ty):xs) sigma =
 -- | dismantleSig : シグネチャの中からSigma型を見つけて投射をかける
 dismantleSig :: [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)]
 dismantleSig [] result = result
-dismantleSig ((term, preterm):xs) result = 
+dismantleSig ((term, preterm):xs) result =
   case preterm of
-    (UD.Sigma preA preB) -> 
+    (UD.Sigma preA preB) ->
       let preB' = UD.shiftIndices (UD.subst preB (UD.shiftIndices (UD.Proj UD.Fst term) 1 0) 0) (-1) 0 in
       dismantleSig ((UD.Proj UD.Fst term, preA):(UD.Proj UD.Snd term, preB'):xs) ((term, preterm):result)
     _ -> dismantleSig xs ((term, preterm):result)
@@ -522,7 +522,7 @@ changeSig ((text, preterm):xs) result = (UD.Con text, preterm):(changeSig xs res
 -- | 型環境の型を変更
 changeTenv :: TUEnv -> TUEnv -> [(UD.Preterm, UD.Preterm)] -> [(UD.Preterm, UD.Preterm)]
 changeTenv _ [] result = result
-changeTenv env (preterm:xs) result = 
+changeTenv env (preterm:xs) result =
   let index = L.elemIndex preterm env in
   case index of
     Just k -> let term = (UD.Var k) in
@@ -534,7 +534,7 @@ changeTenv env (preterm:xs) result =
 -- | 型環境の中から型Aを持つ項(変数)のIndexを全て返す
 searchIndex :: UD.Preterm -> TUEnv -> TUEnv -> [Int] -> [Int]
 searchIndex _ [] _ result = result
-searchIndex preA (_:xs) env result = 
+searchIndex preA (_:xs) env result =
   let index = L.elemIndex preA env in
   case index of
     Just k -> searchIndex preA xs env (k:result)
