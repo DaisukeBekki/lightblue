@@ -1,0 +1,38 @@
+Configuring unix-compat-0.5.2...
+Preprocessing library for unix-compat-0.5.2..
+Building library for unix-compat-0.5.2..
+[1 of 8] Compiling System.PosixCompat.Files ( .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/System/PosixCompat/Files.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/System/PosixCompat/Files.o )
+[2 of 8] Compiling System.PosixCompat.Temp ( src/System/PosixCompat/Temp.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/System/PosixCompat/Temp.o )
+[3 of 8] Compiling System.PosixCompat.Time ( src/System/PosixCompat/Time.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/System/PosixCompat/Time.o )
+[4 of 8] Compiling System.PosixCompat.Types ( src/System/PosixCompat/Types.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/System/PosixCompat/Types.o )
+[5 of 8] Compiling System.PosixCompat.Extensions ( .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/System/PosixCompat/Extensions.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/System/PosixCompat/Extensions.o )
+[6 of 8] Compiling System.PosixCompat.Unistd ( src/System/PosixCompat/Unistd.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/System/PosixCompat/Unistd.o )
+[7 of 8] Compiling System.PosixCompat.User ( .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/System/PosixCompat/User.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/System/PosixCompat/User.o )
+[8 of 8] Compiling System.PosixCompat ( src/System/PosixCompat.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/System/PosixCompat.o )
+Preprocessing library for unix-compat-0.5.2..
+Running Haddock on library for unix-compat-0.5.2..
+Haddock coverage:
+  99% ( 77 / 78) in 'System.PosixCompat.Files'
+  Missing documentation for:
+    PathVar
+ 100% (  2 /  2) in 'System.PosixCompat.Temp'
+ 100% (  2 /  2) in 'System.PosixCompat.Time'
+ 100% (  2 /  2) in 'System.PosixCompat.Types'
+  71% (  5 /  7) in 'System.PosixCompat.Extensions'
+  Missing documentation for:
+    CMajor (src/System/PosixCompat/Extensions.hsc:23)
+    CMinor (src/System/PosixCompat/Extensions.hsc:24)
+  75% (  6 /  8) in 'System.PosixCompat.Unistd'
+  Missing documentation for:
+    SystemID
+    getSystemID
+  91% ( 21 / 23) in 'System.PosixCompat.User'
+  Missing documentation for:
+    GroupEntry
+    UserEntry
+ 100% (  8 /  8) in 'System.PosixCompat'
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/unix-compat/index.html,
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/unix-compat/unix-compat.txt
+Installing library in /Users/daidohinari/.stack/snapshots/x86_64-osx/lts-14.1/8.6.5/lib/x86_64-osx-ghc-8.6.5/unix-compat-0.5.2-GYmNPGqdGR3DF85i5Y9m4X
+Registering library for unix-compat-0.5.2..

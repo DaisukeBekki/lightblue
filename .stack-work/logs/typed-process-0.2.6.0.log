@@ -1,0 +1,20 @@
+Configuring typed-process-0.2.6.0...
+Preprocessing library for typed-process-0.2.6.0..
+Building library for typed-process-0.2.6.0..
+[1 of 3] Compiling Paths_typed_process ( .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/autogen/Paths_typed_process.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Paths_typed_process.o )
+[2 of 3] Compiling System.Process.Typed.Internal ( src/System/Process/Typed/Internal.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/System/Process/Typed/Internal.o )
+[3 of 3] Compiling System.Process.Typed ( src/System/Process/Typed.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/System/Process/Typed.o )
+Preprocessing library for typed-process-0.2.6.0..
+Running Haddock on library for typed-process-0.2.6.0..
+Haddock coverage:
+  50% (  1 /  2) in 'System.Process.Typed.Internal'
+  Missing documentation for:
+    Module header
+ 100% ( 74 / 74) in 'System.Process.Typed'
+Warning: System.Process.Typed: could not find link destinations for:
+    withProcessInterleave
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/typed-process/index.html,
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/typed-process/typed-process.txt
+Installing library in /Users/daidohinari/.stack/snapshots/x86_64-osx/lts-14.1/8.6.5/lib/x86_64-osx-ghc-8.6.5/typed-process-0.2.6.0-Jto7UWlp5p4EV1WSICQq9c
+Registering library for typed-process-0.2.6.0..

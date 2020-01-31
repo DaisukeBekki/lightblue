@@ -1,0 +1,69 @@
+Configuring jsem-0.1.3...
+Preprocessing library for jsem-0.1.3..
+Building library for jsem-0.1.3..
+[1 of 4] Compiling JSeM             ( src/JSeM.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/JSeM.o )
+[2 of 4] Compiling JSeM.Cmd         ( src/JSeM/Cmd.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/JSeM/Cmd.o )
+[3 of 4] Compiling JSeM.TSV         ( src/JSeM/TSV.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/JSeM/TSV.o )
+[4 of 4] Compiling JSeM.XML         ( src/JSeM/XML.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/JSeM/XML.o )
+Preprocessing executable 'xml2tsv' for jsem-0.1.3..
+Building executable 'xml2tsv' for jsem-0.1.3..
+[1 of 2] Compiling Main             ( app/xml2tsv.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/xml2tsv/xml2tsv-tmp/Main.o )
+[2 of 2] Compiling Paths_jsem       ( .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/xml2tsv/autogen/Paths_jsem.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/xml2tsv/xml2tsv-tmp/Paths_jsem.o )
+Linking .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/xml2tsv/xml2tsv ...
+Preprocessing executable 'validate-xml' for jsem-0.1.3..
+Building executable 'validate-xml' for jsem-0.1.3..
+[1 of 2] Compiling Main             ( app/validate-xml.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/validate-xml/validate-xml-tmp/Main.o )
+[2 of 2] Compiling Paths_jsem       ( .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/validate-xml/autogen/Paths_jsem.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/validate-xml/validate-xml-tmp/Paths_jsem.o )
+Linking .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/validate-xml/validate-xml ...
+Preprocessing executable 'update' for jsem-0.1.3..
+Building executable 'update' for jsem-0.1.3..
+[1 of 2] Compiling Main             ( app/update.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/update/update-tmp/Main.o )
+[2 of 2] Compiling Paths_jsem       ( .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/update/autogen/Paths_jsem.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/update/update-tmp/Paths_jsem.o )
+Linking .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/update/update ...
+Preprocessing executable 'tsv2xml' for jsem-0.1.3..
+Building executable 'tsv2xml' for jsem-0.1.3..
+[1 of 2] Compiling Main             ( app/tsv2xml.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/tsv2xml/tsv2xml-tmp/Main.o )
+[2 of 2] Compiling Paths_jsem       ( .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/tsv2xml/autogen/Paths_jsem.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/tsv2xml/tsv2xml-tmp/Paths_jsem.o )
+Linking .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/tsv2xml/tsv2xml ...
+Preprocessing executable 'restore' for jsem-0.1.3..
+Building executable 'restore' for jsem-0.1.3..
+[1 of 2] Compiling Main             ( app/restore.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/restore/restore-tmp/Main.o )
+[2 of 2] Compiling Paths_jsem       ( .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/restore/autogen/Paths_jsem.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/restore/restore-tmp/Paths_jsem.o )
+Linking .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/restore/restore ...
+Preprocessing executable 'show-stat' for jsem-0.1.3..
+Building executable 'show-stat' for jsem-0.1.3..
+[1 of 2] Compiling Main             ( app/show-stat.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/show-stat/show-stat-tmp/Main.o )
+[2 of 2] Compiling Paths_jsem       ( .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/show-stat/autogen/Paths_jsem.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/show-stat/show-stat-tmp/Paths_jsem.o )
+Linking .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/show-stat/show-stat ...
+Preprocessing library for jsem-0.1.3..
+Running Haddock on library for jsem-0.1.3..
+Haddock coverage:
+  75% (  6 /  8) in 'JSeM'
+  Missing documentation for:
+    readYesNo (src/JSeM.hs:54)
+    readJSeMLabel (src/JSeM.hs:77)
+  75% (  3 /  4) in 'JSeM.Cmd'
+  Missing documentation for:
+    readFileUtf8 (src/JSeM/Cmd.hs:18)
+ 100% (  4 /  4) in 'JSeM.TSV'
+Warning: 'problem2JSeMData' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+ 100% (  5 /  5) in 'JSeM.XML'
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/jsem/index.html,
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/jsem/jsem.txt
+Preprocessing executable 'xml2tsv' for jsem-0.1.3..
+Preprocessing executable 'validate-xml' for jsem-0.1.3..
+Preprocessing executable 'update' for jsem-0.1.3..
+Preprocessing executable 'tsv2xml' for jsem-0.1.3..
+Preprocessing executable 'restore' for jsem-0.1.3..
+Preprocessing executable 'show-stat' for jsem-0.1.3..
+Installing library in /Users/daidohinari/blab/lightblue/.stack-work/install/x86_64-osx/lts-14.1/8.6.5/lib/x86_64-osx-ghc-8.6.5/jsem-0.1.3-Kux2WUsVF5sF6iR9x5sL6v
+Installing executable xml2tsv in /Users/daidohinari/blab/lightblue/.stack-work/install/x86_64-osx/lts-14.1/8.6.5/bin
+Installing executable validate-xml in /Users/daidohinari/blab/lightblue/.stack-work/install/x86_64-osx/lts-14.1/8.6.5/bin
+Installing executable update in /Users/daidohinari/blab/lightblue/.stack-work/install/x86_64-osx/lts-14.1/8.6.5/bin
+Installing executable tsv2xml in /Users/daidohinari/blab/lightblue/.stack-work/install/x86_64-osx/lts-14.1/8.6.5/bin
+Installing executable restore in /Users/daidohinari/blab/lightblue/.stack-work/install/x86_64-osx/lts-14.1/8.6.5/bin
+Installing executable show-stat in /Users/daidohinari/blab/lightblue/.stack-work/install/x86_64-osx/lts-14.1/8.6.5/bin
+Registering library for jsem-0.1.3..

@@ -1,0 +1,205 @@
+[1 of 2] Compiling Main             ( /private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack16796/network-2.8.0.1/Setup.hs, /private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack16796/network-2.8.0.1/.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/setup/Main.o )
+[2 of 2] Compiling StackSetupShim   ( /Users/daidohinari/.stack/setup-exe-src/setup-shim-mPHDZzAJ.hs, /private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack16796/network-2.8.0.1/.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/setup/StackSetupShim.o )
+Linking /private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack16796/network-2.8.0.1/.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/setup/setup ...
+Configuring network-2.8.0.1...
+configure: WARNING: unrecognized options: --with-compiler
+checking build system type... x86_64-apple-darwin18.7.0
+checking host system type... x86_64-apple-darwin18.7.0
+checking for gcc... /usr/bin/gcc
+checking whether the C compiler works... yes
+checking for C compiler default output file name... a.out
+checking for suffix of executables... 
+checking whether we are cross compiling... no
+checking for suffix of object files... o
+checking whether we are using the GNU C compiler... yes
+checking whether /usr/bin/gcc accepts -g... yes
+checking for /usr/bin/gcc option to accept ISO C89... none needed
+checking for an ANSI C-conforming const... yes
+checking how to run the C preprocessor... /usr/bin/gcc -E
+checking for grep that handles long lines and -e... /usr/bin/grep
+checking for egrep... /usr/bin/grep -E
+checking for ANSI C header files... yes
+checking for sys/types.h... yes
+checking for sys/stat.h... yes
+checking for stdlib.h... yes
+checking for string.h... yes
+checking for memory.h... yes
+checking for strings.h... yes
+checking for inttypes.h... yes
+checking for stdint.h... yes
+checking for unistd.h... yes
+checking fcntl.h usability... yes
+checking fcntl.h presence... yes
+checking for fcntl.h... yes
+checking limits.h usability... yes
+checking limits.h presence... yes
+checking for limits.h... yes
+checking for stdlib.h... (cached) yes
+checking for sys/types.h... (cached) yes
+checking for unistd.h... (cached) yes
+checking winsock2.h usability... no
+checking winsock2.h presence... no
+checking for winsock2.h... no
+checking ws2tcpip.h usability... no
+checking ws2tcpip.h presence... no
+checking for ws2tcpip.h... no
+checking arpa/inet.h usability... yes
+checking arpa/inet.h presence... yes
+checking for arpa/inet.h... yes
+checking netdb.h usability... yes
+checking netdb.h presence... yes
+checking for netdb.h... yes
+checking netinet/in.h usability... yes
+checking netinet/in.h presence... yes
+checking for netinet/in.h... yes
+checking netinet/tcp.h usability... yes
+checking netinet/tcp.h presence... yes
+checking for netinet/tcp.h... yes
+checking sys/socket.h usability... yes
+checking sys/socket.h presence... yes
+checking for sys/socket.h... yes
+checking sys/uio.h usability... yes
+checking sys/uio.h presence... yes
+checking for sys/uio.h... yes
+checking sys/un.h usability... yes
+checking sys/un.h presence... yes
+checking for sys/un.h... yes
+checking linux/can.h usability... no
+checking linux/can.h presence... no
+checking for linux/can.h... no
+checking linux/tcp.h usability... no
+checking linux/tcp.h presence... no
+checking for linux/tcp.h... no
+checking net/if.h usability... yes
+checking net/if.h presence... yes
+checking for net/if.h... yes
+checking for readlink... yes
+checking for symlink... yes
+checking for if_nametoindex... yes
+checking for struct msghdr.msg_control... yes
+checking for struct msghdr.msg_accrights... no
+checking for struct sockaddr.sa_len... yes
+checking for in_addr_t in netinet/in.h... yes
+checking for SO_PEERCRED and struct ucred in sys/socket.h... no
+checking for getpeereid in unistd.h... checking for getpeereid... yes
+checking for _head_libws2_32_a in -lws2_32... no
+checking for getaddrinfo... yes
+checking for gai_strerror... yes
+checking whether AI_ADDRCONFIG is declared... yes
+checking whether AI_ALL is declared... yes
+checking whether AI_NUMERICSERV is declared... yes
+checking whether AI_V4MAPPED is declared... yes
+checking whether IPV6_V6ONLY is declared... yes
+checking whether IPPROTO_IP is declared... yes
+checking whether IPPROTO_TCP is declared... yes
+checking whether IPPROTO_IPV6 is declared... yes
+checking for sendfile in sys/sendfile.h... no
+checking for sendfile in sys/socket.h... yes
+checking for gethostent... yes
+checking for accept4... no
+configure: creating ./config.status
+config.status: creating network.buildinfo
+config.status: creating include/HsNetworkConfig.h
+configure: WARNING: unrecognized options: --with-compiler
+Preprocessing library for network-2.8.0.1..
+Building library for network-2.8.0.1..
+[ 1 of 11] Compiling Network.Socket.ByteString.IOVec ( .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Network/Socket/ByteString/IOVec.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Network/Socket/ByteString/IOVec.o )
+[ 2 of 11] Compiling Network.Socket.Types ( .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Network/Socket/Types.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Network/Socket/Types.o )
+[ 3 of 11] Compiling Network.Socket.Internal ( .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Network/Socket/Internal.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Network/Socket/Internal.o )
+[ 4 of 11] Compiling Network.Socket   ( .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Network/Socket.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Network/Socket.o )
+[ 5 of 11] Compiling Network.Socket.ByteString.MsgHdr ( .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Network/Socket/ByteString/MsgHdr.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Network/Socket/ByteString/MsgHdr.o )
+[ 6 of 11] Compiling Network.Socket.ByteString.Internal ( Network/Socket/ByteString/Internal.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Network/Socket/ByteString/Internal.o )
+[ 7 of 11] Compiling Network.Socket.ByteString.Lazy.Posix ( Network/Socket/ByteString/Lazy/Posix.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Network/Socket/ByteString/Lazy/Posix.o )
+[ 8 of 11] Compiling Network.Socket.ByteString ( .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Network/Socket/ByteString.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Network/Socket/ByteString.o )
+[ 9 of 11] Compiling Network.Socket.ByteString.Lazy ( Network/Socket/ByteString/Lazy.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Network/Socket/ByteString/Lazy.o )
+[10 of 11] Compiling Network.BSD      ( .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Network/BSD.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Network/BSD.o )
+[11 of 11] Compiling Network          ( Network.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Network.o )
+Preprocessing library for network-2.8.0.1..
+Running Haddock on library for network-2.8.0.1..
+Haddock coverage:
+Warning: 'close' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'Fd' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'bind' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'listen' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'connect' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'accept' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'Handle' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'socketToHandle' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+  94% ( 30 / 32) in 'Network.Socket.Internal'
+  Missing documentation for:
+    FlowInfo (Network/Socket/Types.hsc:804)
+    ScopeID (Network/Socket/Types.hsc:805)
+Warning: 'IOError' is ambiguous. It is defined
+    * in ‘GHC.IO.Exception’
+    * in ‘GHC.IO.Exception’
+    You may be able to disambiguate the identifier by qualifying it or
+    by hiding some imports.
+    Defaulting to 'IOError' defined in ‘GHC.IO.Exception’
+  76% ( 98 /129) in 'Network.Socket'
+  Missing documentation for:
+    ServiceName (Network/Socket.hsc:302)
+    AddrInfo (Network/Socket.hsc:1524)
+    ShutdownCmd (Network/Socket.hsc:1283)
+    ProtocolNumber (Network/Socket/Types.hsc:127)
+    getPeerName (Network/Socket.hsc:930)
+    getSocketName (Network/Socket.hsc:939)
+    hostAddress6ToTuple (Network/Socket/Types.hsc:1036)
+    tupleToHostAddress6 (Network/Socket/Types.hsc:1044)
+    FlowInfo (Network/Socket/Types.hsc:804)
+    ScopeID (Network/Socket/Types.hsc:805)
+    defaultPort (Network/Socket.hsc:1236)
+    sendFd (Network/Socket.hsc:1205)
+    recvLen (Network/Socket.hsc:842)
+    inet_addr (Network/Socket.hsc:1393)
+    inet_ntoa (Network/Socket.hsc:1403)
+    isBound (Network/Socket.hsc:1357)
+    isListening (Network/Socket.hsc:1363)
+    isReadable (Network/Socket.hsc:1369)
+    isWritable (Network/Socket.hsc:1375)
+    sIsConnected (Network/Socket.hsc:1917)
+    sIsBound (Network/Socket.hsc:1922)
+    sIsListening (Network/Socket.hsc:1927)
+    sIsReadable (Network/Socket.hsc:1932)
+    sIsWritable (Network/Socket.hsc:1937)
+    aNY_PORT (Network/Socket.hsc:1233)
+    sOMAXCONN (Network/Socket.hsc:1262)
+    sOL_SOCKET (Network/Socket.hsc:1266)
+    sCM_RIGHTS (Network/Socket.hsc:1271)
+    packFamily (Network/Socket/Types.hsc:325)
+    unpackFamily (Network/Socket/Types.hsc:541)
+    packSocketType (Network/Socket/Types.hsc:206)
+Warning: 'sendmsg' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+ 100% ( 13 / 13) in 'Network.Socket.ByteString'
+  71% (  5 /  7) in 'Network.Socket.ByteString.Lazy'
+  Missing documentation for:
+    send (Network/Socket/ByteString/Lazy/Posix.hs:29)
+    sendAll (Network/Socket/ByteString/Lazy/Posix.hs:52)
+Warning: 'PortNumber' is ambiguous. It is defined
+    * at Network.hs:84:11
+    * at Network/Socket/Types.hsc:763:1
+    You may be able to disambiguate the identifier by qualifying it or
+    by hiding some imports.
+    Defaulting to 'PortNumber' defined at Network.hs:82:1
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/network/index.html,
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/network/network.txt
+Installing library in /Users/daidohinari/.stack/snapshots/x86_64-osx/lts-14.1/8.6.5/lib/x86_64-osx-ghc-8.6.5/network-2.8.0.1-Hmt657UE3v349uYmvUXEvW
+Registering library for network-2.8.0.1..

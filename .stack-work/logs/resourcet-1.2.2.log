@@ -1,0 +1,77 @@
+Configuring resourcet-1.2.2...
+Preprocessing library for resourcet-1.2.2..
+Building library for resourcet-1.2.2..
+[1 of 5] Compiling Data.Acquire.Internal ( Data/Acquire/Internal.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Acquire/Internal.o )
+[2 of 5] Compiling Control.Monad.Trans.Resource.Internal ( Control/Monad/Trans/Resource/Internal.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Control/Monad/Trans/Resource/Internal.o )
+
+[;1mControl/Monad/Trans/Resource/Internal.hs:43:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wdeprecations[0m[0m[;1m][0m[0m[;1m
+    Module ‘Control.Monad.Trans.List’ is deprecated:
+      This transformer is invalid on most monads[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m43 |[0m[0m [;1m[35mimport Control.Monad.Trans.List     ( ListT    )[0m[0m
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m
+[0m[0m[0m
+[;1mControl/Monad/Trans/Resource/Internal.hs:264:46: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wdeprecations[0m[0m[;1m][0m[0m[;1m
+    In the use of type constructor or class ‘ListT’
+    (imported from Control.Monad.Trans.List):
+    Deprecated: "This transformer is invalid on most monads"[0m[0m
+[;1m[34m    |[0m[0m
+[;1m[34m264 |[0m[0m GO(ListT)[;1m[35m[0m[0m
+[;1m[34m    |[0m[0m[;1m[35m                                              ^^^^^[0m[0m
+[0m[0m[0m[3 of 5] Compiling Data.Acquire     ( Data/Acquire.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Acquire.o )
+[4 of 5] Compiling Control.Monad.Trans.Resource ( Control/Monad/Trans/Resource.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Control/Monad/Trans/Resource.o )
+[5 of 5] Compiling UnliftIO.Resource ( UnliftIO/Resource.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/UnliftIO/Resource.o )
+Preprocessing library for resourcet-1.2.2..
+Running Haddock on library for resourcet-1.2.2..
+
+Control/Monad/Trans/Resource/Internal.hs:43:1: warning: [-Wdeprecations]
+    Module ‘Control.Monad.Trans.List’ is deprecated:
+      This transformer is invalid on most monads
+   |
+43 | import Control.Monad.Trans.List     ( ListT    )
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Control/Monad/Trans/Resource/Internal.hs:264:46: warning: [-Wdeprecations]
+    In the use of type constructor or class ‘ListT’
+    (imported from Control.Monad.Trans.List):
+    Deprecated: "This transformer is invalid on most monads"
+    |
+264 | GO(ListT)
+    |                                              ^^^^^
+Haddock coverage:
+  71% (  5 /  7) in 'Data.Acquire.Internal'
+  Missing documentation for:
+    Module header
+    Allocated (Data/Acquire/Internal.hs:31)
+Warning: 'register' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'allocate' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'release' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'hoist' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'runResourceT' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+  64% (  9 / 14) in 'Control.Monad.Trans.Resource.Internal'
+  Missing documentation for:
+    Module header
+    ReleaseMap (Control/Monad/Trans/Resource/Internal.hs:96)
+    stateAlloc (Control/Monad/Trans/Resource/Internal.hs:278)
+    stateCleanup (Control/Monad/Trans/Resource/Internal.hs:286)
+    register' (Control/Monad/Trans/Resource/Internal.hs:304)
+ 100% ( 10 / 10) in 'Data.Acquire'
+ 100% ( 39 / 39) in 'Control.Monad.Trans.Resource'
+ 100% ( 12 / 12) in 'UnliftIO.Resource'
+Warning: Control.Monad.Trans.Resource.Internal: could not find link destinations for:
+    NextKey RefCount
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/resourcet/index.html,
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/resourcet/resourcet.txt
+Installing library in /Users/daidohinari/.stack/snapshots/x86_64-osx/lts-14.1/8.6.5/lib/x86_64-osx-ghc-8.6.5/resourcet-1.2.2-LKMPEFonyNJ6yIfzxfHXqg
+Registering library for resourcet-1.2.2..

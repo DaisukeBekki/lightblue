@@ -1,0 +1,37 @@
+Configuring lifted-base-0.2.3.12...
+Preprocessing library for lifted-base-0.2.3.12..
+Building library for lifted-base-0.2.3.12..
+[1 of 9] Compiling Control.Concurrent.Chan.Lifted ( Control/Concurrent/Chan/Lifted.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Control/Concurrent/Chan/Lifted.o )
+[2 of 9] Compiling Control.Concurrent.MVar.Lifted ( Control/Concurrent/MVar/Lifted.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Control/Concurrent/MVar/Lifted.o )
+[3 of 9] Compiling Control.Concurrent.QSem.Lifted ( Control/Concurrent/QSem/Lifted.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Control/Concurrent/QSem/Lifted.o )
+[4 of 9] Compiling Control.Concurrent.QSemN.Lifted ( Control/Concurrent/QSemN/Lifted.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Control/Concurrent/QSemN/Lifted.o )
+[5 of 9] Compiling Control.Exception.Lifted ( Control/Exception/Lifted.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Control/Exception/Lifted.o )
+[6 of 9] Compiling Control.Concurrent.Lifted ( Control/Concurrent/Lifted.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Control/Concurrent/Lifted.o )
+[7 of 9] Compiling Data.IORef.Lifted ( Data/IORef/Lifted.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/IORef/Lifted.o )
+[8 of 9] Compiling Foreign.Marshal.Utils.Lifted ( Foreign/Marshal/Utils/Lifted.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Foreign/Marshal/Utils/Lifted.o )
+[9 of 9] Compiling System.Timeout.Lifted ( System/Timeout/Lifted.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/System/Timeout/Lifted.o )
+Preprocessing library for lifted-base-0.2.3.12..
+Running Haddock on library for lifted-base-0.2.3.12..
+Haddock coverage:
+ 100% (  8 /  8) in 'Control.Concurrent.Chan.Lifted'
+ 100% ( 19 / 19) in 'Control.Concurrent.MVar.Lifted'
+ 100% (  5 /  5) in 'Control.Concurrent.QSem.Lifted'
+ 100% (  5 /  5) in 'Control.Concurrent.QSemN.Lifted'
+Warning: 'liftBaseOp' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+ 100% ( 64 / 64) in 'Control.Exception.Lifted'
+ 100% ( 36 / 36) in 'Control.Concurrent.Lifted'
+ 100% ( 11 / 11) in 'Data.IORef.Lifted'
+Warning: 'MonadBase' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+ 100% (  2 /  2) in 'Foreign.Marshal.Utils.Lifted'
+ 100% (  2 /  2) in 'System.Timeout.Lifted'
+Warning: Control.Exception.Lifted: could not find link destinations for:
+    Timeout
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/lifted-base/index.html,
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/lifted-base/lifted-base.txt
+Installing library in /Users/daidohinari/.stack/snapshots/x86_64-osx/lts-14.1/8.6.5/lib/x86_64-osx-ghc-8.6.5/lifted-base-0.2.3.12-4JEfEQVPDHRAHNw0CQNSHv
+Registering library for lifted-base-0.2.3.12..

@@ -1,0 +1,37 @@
+Configuring unordered-containers-0.2.10.0...
+Preprocessing library for unordered-containers-0.2.10.0..
+Building library for unordered-containers-0.2.10.0..
+[ 1 of 10] Compiling Data.HashMap.List ( Data/HashMap/List.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/HashMap/List.o )
+[ 2 of 10] Compiling Data.HashMap.Unsafe ( Data/HashMap/Unsafe.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/HashMap/Unsafe.o )
+[ 3 of 10] Compiling Data.HashMap.Array ( Data/HashMap/Array.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/HashMap/Array.o )
+[ 4 of 10] Compiling Data.HashMap.UnsafeShift ( Data/HashMap/UnsafeShift.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/HashMap/UnsafeShift.o )
+[ 5 of 10] Compiling Data.HashMap.Base ( Data/HashMap/Base.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/HashMap/Base.o )
+[ 6 of 10] Compiling Data.HashMap.Strict.Base ( Data/HashMap/Strict/Base.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/HashMap/Strict/Base.o )
+[ 7 of 10] Compiling Data.HashSet.Base ( Data/HashSet/Base.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/HashSet/Base.o )
+[ 8 of 10] Compiling Data.HashSet     ( Data/HashSet.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/HashSet.o )
+[ 9 of 10] Compiling Data.HashMap.Strict ( Data/HashMap/Strict.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/HashMap/Strict.o )
+[10 of 10] Compiling Data.HashMap.Lazy ( Data/HashMap/Lazy.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/HashMap/Lazy.o )
+Preprocessing library for unordered-containers-0.2.10.0..
+Running Haddock on library for unordered-containers-0.2.10.0..
+Haddock coverage:
+Warning: 'Leaf' is ambiguous. It is defined
+    * at Data/HashMap/Base.hs:182:7
+    * at Data/HashMap/Base.hs:168:1
+    You may be able to disambiguate the identifier by qualifying it or
+    by hiding some imports.
+    Defaulting to 'Leaf' defined at Data/HashMap/Base.hs:168:1
+Warning: 'at' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'at' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+ 100% ( 31 / 31) in 'Data.HashSet'
+Cannot find documentation for: $strictness
+ 100% ( 55 / 55) in 'Data.HashMap.Strict'
+ 100% ( 56 / 56) in 'Data.HashMap.Lazy'
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/unordered-containers/index.html,
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/unordered-containers/unordered-containers.txt
+Installing library in /Users/daidohinari/.stack/snapshots/x86_64-osx/lts-14.1/8.6.5/lib/x86_64-osx-ghc-8.6.5/unordered-containers-0.2.10.0-KQjsr7xKC1WHxfEOZ1c65w
+Registering library for unordered-containers-0.2.10.0..

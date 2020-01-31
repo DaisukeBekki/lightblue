@@ -1,0 +1,187 @@
+Configuring parsec-3.1.14.0...
+Preprocessing library for parsec-3.1.14.0..
+Building library for parsec-3.1.14.0..
+[ 1 of 25] Compiling Text.Parsec.Pos  ( src/Text/Parsec/Pos.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/Parsec/Pos.o )
+[ 2 of 25] Compiling Text.Parsec.Error ( src/Text/Parsec/Error.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/Parsec/Error.o )
+[ 3 of 25] Compiling Text.Parsec.Prim ( src/Text/Parsec/Prim.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/Parsec/Prim.o )
+[ 4 of 25] Compiling Text.Parsec.Combinator ( src/Text/Parsec/Combinator.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/Parsec/Combinator.o )
+[ 5 of 25] Compiling Text.Parsec.Expr ( src/Text/Parsec/Expr.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/Parsec/Expr.o )
+[ 6 of 25] Compiling Text.Parsec.Char ( src/Text/Parsec/Char.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/Parsec/Char.o )
+[ 7 of 25] Compiling Text.Parsec.ByteString.Lazy ( src/Text/Parsec/ByteString/Lazy.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/Parsec/ByteString/Lazy.o )
+[ 8 of 25] Compiling Text.Parsec.ByteString ( src/Text/Parsec/ByteString.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/Parsec/ByteString.o )
+[ 9 of 25] Compiling Text.Parsec      ( src/Text/Parsec.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/Parsec.o )
+[10 of 25] Compiling Text.Parsec.Perm ( src/Text/Parsec/Perm.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/Parsec/Perm.o )
+[11 of 25] Compiling Text.Parsec.String ( src/Text/Parsec/String.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/Parsec/String.o )
+[12 of 25] Compiling Text.Parsec.Text ( src/Text/Parsec/Text.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/Parsec/Text.o )
+[13 of 25] Compiling Text.Parsec.Text.Lazy ( src/Text/Parsec/Text/Lazy.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/Parsec/Text/Lazy.o )
+[14 of 25] Compiling Text.Parsec.Token ( src/Text/Parsec/Token.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/Parsec/Token.o )
+[15 of 25] Compiling Text.Parsec.Language ( src/Text/Parsec/Language.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/Parsec/Language.o )
+[16 of 25] Compiling Text.ParserCombinators.Parsec.Char ( src/Text/ParserCombinators/Parsec/Char.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/ParserCombinators/Parsec/Char.o )
+[17 of 25] Compiling Text.ParserCombinators.Parsec.Combinator ( src/Text/ParserCombinators/Parsec/Combinator.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/ParserCombinators/Parsec/Combinator.o )
+[18 of 25] Compiling Text.ParserCombinators.Parsec.Error ( src/Text/ParserCombinators/Parsec/Error.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/ParserCombinators/Parsec/Error.o )
+[19 of 25] Compiling Text.ParserCombinators.Parsec.Language ( src/Text/ParserCombinators/Parsec/Language.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/ParserCombinators/Parsec/Language.o )
+[20 of 25] Compiling Text.ParserCombinators.Parsec.Perm ( src/Text/ParserCombinators/Parsec/Perm.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/ParserCombinators/Parsec/Perm.o )
+[21 of 25] Compiling Text.ParserCombinators.Parsec.Pos ( src/Text/ParserCombinators/Parsec/Pos.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/ParserCombinators/Parsec/Pos.o )
+[22 of 25] Compiling Text.ParserCombinators.Parsec.Prim ( src/Text/ParserCombinators/Parsec/Prim.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/ParserCombinators/Parsec/Prim.o )
+[23 of 25] Compiling Text.ParserCombinators.Parsec ( src/Text/ParserCombinators/Parsec.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/ParserCombinators/Parsec.o )
+[24 of 25] Compiling Text.ParserCombinators.Parsec.Expr ( src/Text/ParserCombinators/Parsec/Expr.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/ParserCombinators/Parsec/Expr.o )
+[25 of 25] Compiling Text.ParserCombinators.Parsec.Token ( src/Text/ParserCombinators/Parsec/Token.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Text/ParserCombinators/Parsec/Token.o )
+Preprocessing library for parsec-3.1.14.0..
+Running Haddock on library for parsec-3.1.14.0..
+Haddock coverage:
+  82% ( 14 / 17) in 'Text.Parsec.Pos'
+  Missing documentation for:
+    SourceName (src/Text/Parsec/Pos.hs:34)
+    Line (src/Text/Parsec/Pos.hs:35)
+    Column (src/Text/Parsec/Pos.hs:36)
+  43% (  6 / 14) in 'Text.Parsec.Error'
+  Missing documentation for:
+    errorIsUnknown (src/Text/Parsec/Error.hs:116)
+    showErrorMessages (src/Text/Parsec/Error.hs:179)
+    newErrorMessage (src/Text/Parsec/Error.hs:126)
+    newErrorUnknown (src/Text/Parsec/Error.hs:122)
+    addErrorMessage (src/Text/Parsec/Error.hs:130)
+    setErrorPos (src/Text/Parsec/Error.hs:134)
+    setErrorMessage (src/Text/Parsec/Error.hs:138)
+    mergeError (src/Text/Parsec/Error.hs:142)
+Warning: 'a' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'b' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+  64% ( 32 / 50) in 'Text.Parsec.Prim'
+  Missing documentation for:
+    unknownError (src/Text/Parsec/Prim.hs:115)
+    sysUnExpectError (src/Text/Parsec/Prim.hs:118)
+    Parsec (src/Text/Parsec/Prim.hs:181)
+    Consumed (src/Text/Parsec/Prim.hs:183)
+    Reply (src/Text/Parsec/Prim.hs:187)
+    State (src/Text/Parsec/Prim.hs:191)
+    parsecMap (src/Text/Parsec/Prim.hs:255)
+    parserReturn (src/Text/Parsec/Prim.hs:308)
+    parserBind (src/Text/Parsec/Prim.hs:313)
+    mergeErrorReply (src/Text/Parsec/Prim.hs:353)
+    parserFail (src/Text/Parsec/Prim.hs:359)
+    parserPlus (src/Text/Parsec/Prim.hs:377)
+    labels (src/Text/Parsec/Prim.hs:432)
+    tokens (src/Text/Parsec/Prim.hs:483)
+    tokenPrimEx (src/Text/Parsec/Prim.hs:620)
+    manyAccum (src/Text/Parsec/Prim.hs:680)
+    runPT (src/Text/Parsec/Prim.hs:699)
+    runP (src/Text/Parsec/Prim.hs:713)
+ 100% ( 28 / 28) in 'Text.Parsec.Combinator'
+ 100% (  5 /  5) in 'Text.Parsec.Expr'
+ 100% ( 20 / 20) in 'Text.Parsec.Char'
+  50% (  2 /  4) in 'Text.Parsec.ByteString.Lazy'
+  Missing documentation for:
+    Parser (src/Text/Parsec/ByteString/Lazy.hs:26)
+    GenParser (src/Text/Parsec/ByteString/Lazy.hs:27)
+  50% (  2 /  4) in 'Text.Parsec.ByteString'
+  Missing documentation for:
+    Parser (src/Text/Parsec/ByteString.hs:26)
+    GenParser (src/Text/Parsec/ByteString.hs:27)
+  79% ( 77 / 98) in 'Text.Parsec'
+  Missing documentation for:
+    Parsec (src/Text/Parsec/Prim.hs:181)
+    tokens (src/Text/Parsec/Prim.hs:483)
+    labels (src/Text/Parsec/Prim.hs:432)
+    SourceName (src/Text/Parsec/Pos.hs:34)
+    Line (src/Text/Parsec/Pos.hs:35)
+    Column (src/Text/Parsec/Pos.hs:36)
+    manyAccum (src/Text/Parsec/Prim.hs:680)
+    tokenPrimEx (src/Text/Parsec/Prim.hs:620)
+    runPT (src/Text/Parsec/Prim.hs:699)
+    unknownError (src/Text/Parsec/Prim.hs:115)
+    sysUnExpectError (src/Text/Parsec/Prim.hs:118)
+    mergeErrorReply (src/Text/Parsec/Prim.hs:353)
+    runP (src/Text/Parsec/Prim.hs:713)
+    Consumed (src/Text/Parsec/Prim.hs:183)
+    Reply (src/Text/Parsec/Prim.hs:187)
+    State (src/Text/Parsec/Prim.hs:191)
+    parsecMap (src/Text/Parsec/Prim.hs:255)
+    parserReturn (src/Text/Parsec/Prim.hs:308)
+    parserBind (src/Text/Parsec/Prim.hs:313)
+    parserFail (src/Text/Parsec/Prim.hs:359)
+    parserPlus (src/Text/Parsec/Prim.hs:377)
+ 100% (  8 /  8) in 'Text.Parsec.Perm'
+  50% (  2 /  4) in 'Text.Parsec.String'
+  Missing documentation for:
+    Parser (src/Text/Parsec/String.hs:24)
+    GenParser (src/Text/Parsec/String.hs:25)
+  50% (  2 /  4) in 'Text.Parsec.Text'
+  Missing documentation for:
+    Parser (src/Text/Parsec/Text.hs:26)
+    GenParser (src/Text/Parsec/Text.hs:27)
+  50% (  2 /  4) in 'Text.Parsec.Text.Lazy'
+  Missing documentation for:
+    Parser (src/Text/Parsec/Text/Lazy.hs:26)
+    GenParser (src/Text/Parsec/Text/Lazy.hs:27)
+Warning: 'LanguageDef' is ambiguous. It is defined
+    * at src/Text/Parsec/Token.hs:53:7
+    * at src/Text/Parsec/Token.hs:46:1
+    You may be able to disambiguate the identifier by qualifying it or
+    by hiding some imports.
+    Defaulting to 'LanguageDef' defined at src/Text/Parsec/Token.hs:46:1
+  67% (  4 /  6) in 'Text.Parsec.Token'
+  Missing documentation for:
+    LanguageDef (src/Text/Parsec/Token.hs:46)
+    TokenParser (src/Text/Parsec/Token.hs:117)
+  90% (  9 / 10) in 'Text.Parsec.Language'
+  Missing documentation for:
+    LanguageDef (src/Text/Parsec/Token.hs:46)
+  95% ( 18 / 19) in 'Text.ParserCombinators.Parsec.Char'
+  Missing documentation for:
+    CharParser (src/Text/ParserCombinators/Parsec/Char.hs:42)
+ 100% ( 24 / 24) in 'Text.ParserCombinators.Parsec.Combinator'
+  38% (  6 / 16) in 'Text.ParserCombinators.Parsec.Error'
+  Missing documentation for:
+    messageCompare (src/Text/ParserCombinators/Parsec/Error.hs:38)
+    messageEq (src/Text/ParserCombinators/Parsec/Error.hs:41)
+    errorIsUnknown (src/Text/Parsec/Error.hs:116)
+    showErrorMessages (src/Text/Parsec/Error.hs:179)
+    newErrorMessage (src/Text/Parsec/Error.hs:126)
+    newErrorUnknown (src/Text/Parsec/Error.hs:122)
+    addErrorMessage (src/Text/Parsec/Error.hs:130)
+    setErrorPos (src/Text/Parsec/Error.hs:134)
+    setErrorMessage (src/Text/Parsec/Error.hs:138)
+    mergeError (src/Text/Parsec/Error.hs:142)
+  90% (  9 / 10) in 'Text.ParserCombinators.Parsec.Language'
+  Missing documentation for:
+    LanguageDef (src/Text/Parsec/Token.hs:46)
+ 100% (  7 /  7) in 'Text.ParserCombinators.Parsec.Perm'
+  82% ( 14 / 17) in 'Text.ParserCombinators.Parsec.Pos'
+  Missing documentation for:
+    SourceName (src/Text/Parsec/Pos.hs:34)
+    Line (src/Text/Parsec/Pos.hs:35)
+    Column (src/Text/Parsec/Pos.hs:36)
+  70% ( 21 / 30) in 'Text.ParserCombinators.Parsec.Prim'
+  Missing documentation for:
+    Parser (src/Text/Parsec/String.hs:24)
+    GenParser (src/Text/Parsec/String.hs:25)
+    runParser (src/Text/ParserCombinators/Parsec/Prim.hs:59)
+    tokens (src/Text/Parsec/Prim.hs:483)
+    tokenPrimEx (src/Text/Parsec/Prim.hs:620)
+    try (src/Text/ParserCombinators/Parsec/Prim.hs:66)
+    labels (src/Text/Parsec/Prim.hs:432)
+    pzero (src/Text/ParserCombinators/Parsec/Prim.hs:56)
+    State (src/Text/Parsec/Prim.hs:191)
+  83% ( 15 / 18) in 'Text.ParserCombinators.Parsec'
+  Missing documentation for:
+    SourceName (src/Text/Parsec/Pos.hs:34)
+    Line (src/Text/Parsec/Pos.hs:35)
+    Column (src/Text/Parsec/Pos.hs:36)
+  40% (  2 /  5) in 'Text.ParserCombinators.Parsec.Expr'
+  Missing documentation for:
+    Operator (src/Text/ParserCombinators/Parsec/Expr.hs:30)
+    OperatorTable (src/Text/ParserCombinators/Parsec/Expr.hs:34)
+    buildExpressionParser (src/Text/ParserCombinators/Parsec/Expr.hs:41)
+  67% (  4 /  6) in 'Text.ParserCombinators.Parsec.Token'
+  Missing documentation for:
+    LanguageDef (src/Text/Parsec/Token.hs:46)
+    TokenParser (src/Text/Parsec/Token.hs:117)
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/parsec/index.html,
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/parsec/parsec.txt
+Installing library in /Users/daidohinari/.stack/snapshots/x86_64-osx/lts-14.1/8.6.5/lib/x86_64-osx-ghc-8.6.5/parsec-3.1.14.0-8t8UKeFouAo5hdmomuIjPj
+Registering library for parsec-3.1.14.0..

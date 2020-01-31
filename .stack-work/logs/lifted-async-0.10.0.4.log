@@ -1,0 +1,30 @@
+Configuring lifted-async-0.10.0.4...
+Preprocessing library for lifted-async-0.10.0.4..
+Building library for lifted-async-0.10.0.4..
+[1 of 2] Compiling Control.Concurrent.Async.Lifted ( src/Control/Concurrent/Async/Lifted.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Control/Concurrent/Async/Lifted.o )
+[2 of 2] Compiling Control.Concurrent.Async.Lifted.Safe ( src/Control/Concurrent/Async/Lifted/Safe.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Control/Concurrent/Async/Lifted/Safe.o )
+Preprocessing library for lifted-async-0.10.0.4..
+Running Haddock on library for lifted-async-0.10.0.4..
+Haddock coverage:
+Warning: 'a' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+  98% ( 62 / 63) in 'Control.Concurrent.Async.Lifted'
+  Missing documentation for:
+    ExceptionInLinkedThread
+Warning: 'a' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'm' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+  98% ( 64 / 65) in 'Control.Concurrent.Async.Lifted.Safe'
+  Missing documentation for:
+    ExceptionInLinkedThread
+Warning: Control.Concurrent.Async.Lifted.Safe: could not find link destinations for:
+    Forall_
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/lifted-async/index.html,
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/lifted-async/lifted-async.txt
+Installing library in /Users/daidohinari/.stack/snapshots/x86_64-osx/lts-14.1/8.6.5/lib/x86_64-osx-ghc-8.6.5/lifted-async-0.10.0.4-E27oF6pW5a83Rpkk5xTtC0
+Registering library for lifted-async-0.10.0.4..

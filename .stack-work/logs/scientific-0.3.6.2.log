@@ -1,0 +1,25 @@
+Configuring scientific-0.3.6.2...
+Preprocessing library for scientific-0.3.6.2..
+Building library for scientific-0.3.6.2..
+[1 of 5] Compiling GHC.Integer.Compat ( src/GHC/Integer/Compat.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/GHC/Integer/Compat.o )
+[2 of 5] Compiling Utils            ( src/Utils.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Utils.o )
+[3 of 5] Compiling Data.Scientific  ( src/Data/Scientific.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Scientific.o )
+[4 of 5] Compiling Data.Text.Lazy.Builder.Scientific ( src/Data/Text/Lazy/Builder/Scientific.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Text/Lazy/Builder/Scientific.o )
+[5 of 5] Compiling Data.ByteString.Builder.Scientific ( src/Data/ByteString/Builder/Scientific.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/ByteString/Builder/Scientific.o )
+Preprocessing library for scientific-0.3.6.2..
+Running Haddock on library for scientific-0.3.6.2..
+Haddock coverage:
+ 100% ( 31 / 31) in 'Data.Scientific'
+  75% (  3 /  4) in 'Data.Text.Lazy.Builder.Scientific'
+  Missing documentation for:
+    Module header
+  75% (  3 /  4) in 'Data.ByteString.Builder.Scientific'
+  Missing documentation for:
+    Module header
+Warning: Data.Scientific: could not find link destinations for:
+    whenFloating
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/scientific/index.html,
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/scientific/scientific.txt
+Installing library in /Users/daidohinari/.stack/snapshots/x86_64-osx/lts-14.1/8.6.5/lib/x86_64-osx-ghc-8.6.5/scientific-0.3.6.2-Jh87LYpjAZH3EhMJkXeu1S
+Registering library for scientific-0.3.6.2..

@@ -1,0 +1,136 @@
+[1 of 2] Compiling Main             ( /private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack16796/system-filepath-0.4.14/Setup.hs, /private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack16796/system-filepath-0.4.14/.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/setup/Main.o )
+
+/private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack16796/system-filepath-0.4.14/Setup.hs:7:1: warning: [-Wtabs]
+    Tab character found here, and in 9 further locations.
+    Please use spaces instead.
+  |
+7 |         hooks = Simple.simpleUserHooks
+  | ^^^^^^^^
+[2 of 2] Compiling StackSetupShim   ( /Users/daidohinari/.stack/setup-exe-src/setup-shim-mPHDZzAJ.hs, /private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack16796/system-filepath-0.4.14/.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/setup/StackSetupShim.o )
+Linking /private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack16796/system-filepath-0.4.14/.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/setup/setup ...
+Configuring system-filepath-0.4.14...
+Preprocessing library for system-filepath-0.4.14..
+Building library for system-filepath-0.4.14..
+[1 of 4] Compiling Filesystem.Path.Internal ( lib/Filesystem/Path/Internal.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Filesystem/Path/Internal.o )
+
+[;1mlib/Filesystem/Path/Internal.hs:17:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wunused-imports[0m[0m[;1m][0m[0m[;1m
+    The qualified import of ‘Control.Exception’ is redundant
+      except perhaps to import instances from ‘Control.Exception’
+    To import instances alone, use: import Control.Exception()[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m17 |[0m[0m [;1m[35mimport qualified Control.Exception as Exc[0m[0m
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m
+[0m[0m[0m
+[;1mlib/Filesystem/Path/Internal.hs:26:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wunused-imports[0m[0m[;1m][0m[0m[;1m
+    The import of ‘Data.Text.Encoding.Error’ is redundant
+      except perhaps to import instances from ‘Data.Text.Encoding.Error’
+    To import instances alone, use: import Data.Text.Encoding.Error()[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m26 |[0m[0m [;1m[35mimport           Data.Text.Encoding.Error (UnicodeException)[0m[0m
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m
+[0m[0m[0m
+[;1mlib/Filesystem/Path/Internal.hs:39:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wtabs[0m[0m[;1m][0m[0m[;1m
+    Tab character found here, and in 170 further locations.
+    Please use spaces instead.[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m39 |[0m[0m [;1m[35m        [0m[0m= RootPosix
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^[0m[0m
+[0m[0m[0m[2 of 4] Compiling Filesystem.Path  ( lib/Filesystem/Path.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Filesystem/Path.o )
+
+[;1mlib/Filesystem/Path.hs:17:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wtabs[0m[0m[;1m][0m[0m[;1m
+    Tab character found here, and in 264 further locations.
+    Please use spaces instead.[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m17 |[0m[0m [;1m[35m        [0m[0m( FilePath
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^[0m[0m
+[0m[0m[0m[3 of 4] Compiling Filesystem.Path.Rules ( lib/Filesystem/Path/Rules.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Filesystem/Path/Rules.o )
+
+[;1mlib/Filesystem/Path/Rules.hs:10:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wtabs[0m[0m[;1m][0m[0m[;1m
+    Tab character found here, and in 291 further locations.
+    Please use spaces instead.[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m10 |[0m[0m [;1m[35m        [0m[0m( Rules
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^[0m[0m
+[0m[0m[0m[4 of 4] Compiling Filesystem.Path.CurrentOS ( lib/Filesystem/Path/CurrentOS.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Filesystem/Path/CurrentOS.o )
+
+[;1mlib/Filesystem/Path/CurrentOS.hs:18:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wtabs[0m[0m[;1m][0m[0m[;1m
+    Tab character found here, and in 23 further locations.
+    Please use spaces instead.[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m18 |[0m[0m [;1m[35m        [0m[0m( module Filesystem.Path
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^[0m[0m
+[0m[0m[0m
+[;1mlib/Filesystem/Path/CurrentOS.hs:37:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wunused-imports[0m[0m[;1m][0m[0m[;1m
+    The qualified import of ‘Data.ByteString’ is redundant
+      except perhaps to import instances from ‘Data.ByteString’
+    To import instances alone, use: import Data.ByteString()[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m37 |[0m[0m [;1m[35mimport qualified Data.ByteString as B[0m[0m
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m
+[0m[0m[0mPreprocessing library for system-filepath-0.4.14..
+Running Haddock on library for system-filepath-0.4.14..
+
+lib/Filesystem/Path/Internal.hs:39:1: warning: [-Wtabs]
+    Tab character found here, and in 114 further locations.
+    Please use spaces instead.
+   |
+39 |         = RootPosix
+   | ^^^^^^^^
+
+lib/Filesystem/Path/Internal.hs:17:1: warning: [-Wunused-imports]
+    The qualified import of ‘Control.Exception’ is redundant
+      except perhaps to import instances from ‘Control.Exception’
+    To import instances alone, use: import Control.Exception()
+   |
+17 | import qualified Control.Exception as Exc
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+lib/Filesystem/Path/Internal.hs:26:1: warning: [-Wunused-imports]
+    The import of ‘Data.Text.Encoding.Error’ is redundant
+      except perhaps to import instances from ‘Data.Text.Encoding.Error’
+    To import instances alone, use: import Data.Text.Encoding.Error()
+   |
+26 | import           Data.Text.Encoding.Error (UnicodeException)
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+lib/Filesystem/Path.hs:17:1: warning: [-Wtabs]
+    Tab character found here, and in 264 further locations.
+    Please use spaces instead.
+   |
+17 |         ( FilePath
+   | ^^^^^^^^
+
+lib/Filesystem/Path/Rules.hs:10:1: warning: [-Wtabs]
+    Tab character found here, and in 291 further locations.
+    Please use spaces instead.
+   |
+10 |         ( Rules
+   | ^^^^^^^^
+
+lib/Filesystem/Path/CurrentOS.hs:18:1: warning: [-Wtabs]
+    Tab character found here, and in 23 further locations.
+    Please use spaces instead.
+   |
+18 |         ( module Filesystem.Path
+   | ^^^^^^^^
+
+lib/Filesystem/Path/CurrentOS.hs:37:1: warning: [-Wunused-imports]
+    The qualified import of ‘Data.ByteString’ is redundant
+      except perhaps to import instances from ‘Data.ByteString’
+    To import instances alone, use: import Data.ByteString()
+   |
+37 | import qualified Data.ByteString as B
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Haddock coverage:
+  97% ( 33 / 34) in 'Filesystem.Path'
+  Missing documentation for:
+    FilePath (lib/Filesystem/Path/Internal.hs:46)
+ 100% ( 19 / 19) in 'Filesystem.Path.Rules'
+  93% ( 14 / 15) in 'Filesystem.Path.CurrentOS'
+  Missing documentation for:
+    currentOS (lib/Filesystem/Path/CurrentOS.hs:53)
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/system-filepath/index.html,
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/system-filepath/system-filepath.txt
+Installing library in /Users/daidohinari/.stack/snapshots/x86_64-osx/lts-14.1/8.6.5/lib/x86_64-osx-ghc-8.6.5/system-filepath-0.4.14-FRUtJu5zAWTG9MKrRBz8D6
+Registering library for system-filepath-0.4.14..
