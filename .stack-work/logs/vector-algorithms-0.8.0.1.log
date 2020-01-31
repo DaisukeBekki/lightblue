@@ -1,0 +1,46 @@
+Configuring vector-algorithms-0.8.0.1...
+Preprocessing library for vector-algorithms-0.8.0.1..
+Building library for vector-algorithms-0.8.0.1..
+[ 1 of 10] Compiling Data.Vector.Algorithms.Common ( src/Data/Vector/Algorithms/Common.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Vector/Algorithms/Common.o )
+[ 2 of 10] Compiling Data.Vector.Algorithms.Optimal ( src/Data/Vector/Algorithms/Optimal.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Vector/Algorithms/Optimal.o )
+[ 3 of 10] Compiling Data.Vector.Algorithms.Insertion ( src/Data/Vector/Algorithms/Insertion.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Vector/Algorithms/Insertion.o )
+[ 4 of 10] Compiling Data.Vector.Algorithms.Merge ( src/Data/Vector/Algorithms/Merge.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Vector/Algorithms/Merge.o )
+[ 5 of 10] Compiling Data.Vector.Algorithms.AmericanFlag ( src/Data/Vector/Algorithms/AmericanFlag.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Vector/Algorithms/AmericanFlag.o )
+[ 6 of 10] Compiling Data.Vector.Algorithms.Heap ( src/Data/Vector/Algorithms/Heap.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Vector/Algorithms/Heap.o )
+[ 7 of 10] Compiling Data.Vector.Algorithms.Intro ( src/Data/Vector/Algorithms/Intro.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Vector/Algorithms/Intro.o )
+[ 8 of 10] Compiling Data.Vector.Algorithms.Radix ( src/Data/Vector/Algorithms/Radix.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Vector/Algorithms/Radix.o )
+[ 9 of 10] Compiling Data.Vector.Algorithms.Search ( src/Data/Vector/Algorithms/Search.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Vector/Algorithms/Search.o )
+[10 of 10] Compiling Data.Vector.Algorithms.Tim ( src/Data/Vector/Algorithms/Tim.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Vector/Algorithms/Tim.o )
+Preprocessing library for vector-algorithms-0.8.0.1..
+Running Haddock on library for vector-algorithms-0.8.0.1..
+Haddock coverage:
+Warning: 'off' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'lower' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+ 100% (  8 /  8) in 'Data.Vector.Algorithms.Optimal'
+ 100% (  6 /  6) in 'Data.Vector.Algorithms.Insertion'
+ 100% (  4 /  4) in 'Data.Vector.Algorithms.Merge'
+Warning: 'n' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+ 100% (  4 /  4) in 'Data.Vector.Algorithms.AmericanFlag'
+Warning: 'lowest' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+ 100% ( 20 / 20) in 'Data.Vector.Algorithms.Heap'
+ 100% ( 14 / 14) in 'Data.Vector.Algorithms.Intro'
+  75% (  3 /  4) in 'Data.Vector.Algorithms.Radix'
+  Missing documentation for:
+    Radix (src/Data/Vector/Algorithms/Radix.hs:58)
+ 100% ( 17 / 17) in 'Data.Vector.Algorithms.Search'
+ 100% (  3 /  3) in 'Data.Vector.Algorithms.Tim'
+Warning: Data.Vector.Algorithms.Tim: could not find link destinations for:
+    mergeHi mergeLo
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/vector-algorithms/index.html,
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/vector-algorithms/vector-algorithms.txt
+Installing library in /Users/daidohinari/.stack/snapshots/x86_64-osx/lts-14.1/8.6.5/lib/x86_64-osx-ghc-8.6.5/vector-algorithms-0.8.0.1-7vdfxmytFg1aLO2PtO4J8
+Registering library for vector-algorithms-0.8.0.1..

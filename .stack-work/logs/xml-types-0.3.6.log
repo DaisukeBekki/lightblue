@@ -1,17 +1,23 @@
 Configuring xml-types-0.3.6...
-Building xml-types-0.3.6...
-Preprocessing library xml-types-0.3.6...
-[1 of 1] Compiling Data.XML.Types   ( lib/Data/XML/Types.hs, .stack-work/dist/x86_64-osx/Cabal-1.24.2.0/build/Data/XML/Types.o )
+Preprocessing library for xml-types-0.3.6..
+Building library for xml-types-0.3.6..
+[1 of 1] Compiling Data.XML.Types   ( lib/Data/XML/Types.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/XML/Types.o )
+
+[;1mlib/Data/XML/Types.hs:27:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wtabs[0m[0m[;1m][0m[0m[;1m
+    Tab character found here, and in 131 further locations.
+    Please use spaces instead.[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m27 |[0m[0m [;1m[35m        [0m[0m( -- * Types
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^[0m[0m
+[0m[0m[0mPreprocessing library for xml-types-0.3.6..
+Running Haddock on library for xml-types-0.3.6..
 
 lib/Data/XML/Types.hs:27:1: warning: [-Wtabs]
     Tab character found here, and in 131 further locations.
     Please use spaces instead.
-Running Haddock for xml-types-0.3.6...
-Preprocessing library xml-types-0.3.6...
-
-lib/Data/XML/Types.hs:27:1: warning: [-Wtabs]
-    Tab character found here, and in 131 further locations.
-    Please use spaces instead.
+   |
+27 |         ( -- * Types
+   | ^^^^^^^^
 Haddock coverage:
   38% ( 14 / 37) in 'Data.XML.Types'
   Missing documentation for:
@@ -39,8 +45,7 @@ Haddock coverage:
     attributeContent (lib/Data/XML/Types.hs:342)
     attributeText (lib/Data/XML/Types.hs:345)
 Documentation created:
-.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/doc/html/xml-types/index.html,
-.stack-work/dist/x86_64-osx/Cabal-1.24.2.0/doc/html/xml-types/xml-types.txt
-Installing library in
-/Users/daidohinari/.stack/snapshots/x86_64-osx/lts-8.5/8.0.2/lib/x86_64-osx-ghc-8.0.2/xml-types-0.3.6-GxMzoyS0Lqp1tmM8Y95IbS
-Registering xml-types-0.3.6...
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/xml-types/index.html,
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/xml-types/xml-types.txt
+Installing library in /Users/daidohinari/.stack/snapshots/x86_64-osx/lts-14.1/8.6.5/lib/x86_64-osx-ghc-8.6.5/xml-types-0.3.6-56MQ2lbfiw31ognZ51DOah
+Registering library for xml-types-0.3.6..

@@ -1,0 +1,19 @@
+Configuring enclosed-exceptions-1.0.3...
+Preprocessing library for enclosed-exceptions-1.0.3..
+Building library for enclosed-exceptions-1.0.3..
+[1 of 1] Compiling Control.Exception.Enclosed ( src/Control/Exception/Enclosed.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Control/Exception/Enclosed.o )
+Preprocessing library for enclosed-exceptions-1.0.3..
+Running Haddock on library for enclosed-exceptions-1.0.3..
+Haddock coverage:
+Warning: 'Timeout' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'ClassyPrelude' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+ 100% ( 17 / 17) in 'Control.Exception.Enclosed'
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/enclosed-exceptions/index.html,
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/enclosed-exceptions/enclosed-exceptions.txt
+Installing library in /Users/daidohinari/.stack/snapshots/x86_64-osx/lts-14.1/8.6.5/lib/x86_64-osx-ghc-8.6.5/enclosed-exceptions-1.0.3-H0Nkjgib2tOENa7DcRiP3M
+Registering library for enclosed-exceptions-1.0.3..

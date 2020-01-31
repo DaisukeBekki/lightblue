@@ -1,0 +1,127 @@
+Configuring conduit-extra-1.3.4...
+Preprocessing library for conduit-extra-1.3.4..
+Building library for conduit-extra-1.3.4..
+[ 1 of 13] Compiling Data.Conduit.Attoparsec ( Data/Conduit/Attoparsec.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Conduit/Attoparsec.o )
+[ 2 of 13] Compiling Data.Conduit.Binary ( Data/Conduit/Binary.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Conduit/Binary.o )
+[ 3 of 13] Compiling Data.Conduit.ByteString.Builder ( Data/Conduit/ByteString/Builder.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Conduit/ByteString/Builder.o )
+[ 4 of 13] Compiling Data.Conduit.Filesystem ( Data/Conduit/Filesystem.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Conduit/Filesystem.o )
+[ 5 of 13] Compiling Data.Conduit.Foldl ( Data/Conduit/Foldl.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Conduit/Foldl.o )
+[ 6 of 13] Compiling Data.Conduit.Lazy ( Data/Conduit/Lazy.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Conduit/Lazy.o )
+[ 7 of 13] Compiling Data.Conduit.Network ( Data/Conduit/Network.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Conduit/Network.o )
+[ 8 of 13] Compiling Data.Conduit.Network.UDP ( Data/Conduit/Network/UDP.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Conduit/Network/UDP.o )
+[ 9 of 13] Compiling Data.Conduit.Network.Unix ( Data/Conduit/Network/Unix.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Conduit/Network/Unix.o )
+[10 of 13] Compiling Data.Conduit.Process ( Data/Conduit/Process.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Conduit/Process.o )
+[11 of 13] Compiling Data.Conduit.Process.Typed ( Data/Conduit/Process/Typed.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Conduit/Process/Typed.o )
+
+[;1mData/Conduit/Process/Typed.hs:67:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wunused-top-binds[0m[0m[;1m][0m[0m[;1m
+    Defined but not used: ‘withProcess’[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m67 |[0m[0m [;1m[35mwithProcess[0m[0m pc f = withRunInIO $ \run -> P.withProcess pc (run . f)
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^^^^[0m[0m
+[0m[0m[0m
+[;1mData/Conduit/Process/Typed.hs:67:42: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wdeprecations[0m[0m[;1m][0m[0m[;1m
+    In the use of ‘withProcess’ (imported from System.Process.Typed):
+    Deprecated: "Please consider using withProcessWait, or instead use withProcessTerm"[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m67 |[0m[0m withProcess pc f = withRunInIO $ \run -> [;1m[35mP.withProcess[0m[0m pc (run . f)
+[;1m[34m   |[0m[0m[;1m[35m                                          ^^^^^^^^^^^^^[0m[0m
+[0m[0m[0m
+[;1mData/Conduit/Process/Typed.hs:77:1: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wunused-top-binds[0m[0m[;1m][0m[0m[;1m
+    Defined but not used: ‘withProcess_’[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m77 |[0m[0m [;1m[35mwithProcess_[0m[0m pc f = withRunInIO $ \run -> P.withProcess_ pc (run . f)
+[;1m[34m   |[0m[0m[;1m[35m ^^^^^^^^^^^^[0m[0m
+[0m[0m[0m
+[;1mData/Conduit/Process/Typed.hs:77:43: [;1m[35mwarning:[0m[0m[;1m [[;1m[35m-Wdeprecations[0m[0m[;1m][0m[0m[;1m
+    In the use of ‘withProcess_’ (imported from System.Process.Typed):
+    Deprecated: "Please consider using withProcessWait_, or instead use withProcessTerm_"[0m[0m
+[;1m[34m   |[0m[0m
+[;1m[34m77 |[0m[0m withProcess_ pc f = withRunInIO $ \run -> [;1m[35mP.withProcess_[0m[0m pc (run . f)
+[;1m[34m   |[0m[0m[;1m[35m                                           ^^^^^^^^^^^^^^[0m[0m
+[0m[0m[0m[12 of 13] Compiling Data.Conduit.Text ( Data/Conduit/Text.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Conduit/Text.o )
+[13 of 13] Compiling Data.Conduit.Zlib ( Data/Conduit/Zlib.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Conduit/Zlib.o )
+Preprocessing library for conduit-extra-1.3.4..
+Running Haddock on library for conduit-extra-1.3.4..
+
+Data/Conduit/Process/Typed.hs:67:1: warning: [-Wunused-top-binds]
+    Defined but not used: ‘withProcess’
+   |
+67 | withProcess pc f = withRunInIO $ \run -> P.withProcess pc (run . f)
+   | ^^^^^^^^^^^
+
+Data/Conduit/Process/Typed.hs:67:42: warning: [-Wdeprecations]
+    In the use of ‘withProcess’ (imported from System.Process.Typed):
+    Deprecated: "Please consider using withProcessWait, or instead use withProcessTerm"
+   |
+67 | withProcess pc f = withRunInIO $ \run -> P.withProcess pc (run . f)
+   |                                          ^^^^^^^^^^^^^
+
+Data/Conduit/Process/Typed.hs:77:1: warning: [-Wunused-top-binds]
+    Defined but not used: ‘withProcess_’
+   |
+77 | withProcess_ pc f = withRunInIO $ \run -> P.withProcess_ pc (run . f)
+   | ^^^^^^^^^^^^
+
+Data/Conduit/Process/Typed.hs:77:43: warning: [-Wdeprecations]
+    In the use of ‘withProcess_’ (imported from System.Process.Typed):
+    Deprecated: "Please consider using withProcessWait_, or instead use withProcessTerm_"
+   |
+77 | withProcess_ pc f = withRunInIO $ \run -> P.withProcess_ pc (run . f)
+   |                                           ^^^^^^^^^^^^^^
+Haddock coverage:
+  85% ( 11 / 13) in 'Data.Conduit.Attoparsec'
+  Missing documentation for:
+    Position (Data/Conduit/Attoparsec.hs:53)
+    PositionRange (Data/Conduit/Attoparsec.hs:64)
+ 100% ( 45 / 45) in 'Data.Conduit.Binary'
+ 100% ( 12 / 12) in 'Data.Conduit.ByteString.Builder'
+ 100% (  3 /  3) in 'Data.Conduit.Filesystem'
+ 100% (  3 /  3) in 'Data.Conduit.Foldl'
+ 100% (  3 /  3) in 'Data.Conduit.Lazy'
+  53% ( 18 / 34) in 'Data.Conduit.Network'
+  Missing documentation for:
+    Module header
+    appSource (Data/Conduit/Network.hs:87)
+    appSink (Data/Conduit/Network.hs:98)
+    appSockAddr
+    appLocalAddr
+    serverSettings (Data/Conduit/Network.hs:81)
+    runTCPServerWithHandle
+    clientSettings (Data/Conduit/Network.hs:84)
+    getPort
+    getHost
+    getAfterBind
+    getNeedLocalAddr
+    setPort
+    setHost
+    setAfterBind
+    setNeedLocalAddr
+  91% ( 10 / 11) in 'Data.Conduit.Network.UDP'
+  Missing documentation for:
+    Module header
+  59% ( 13 / 22) in 'Data.Conduit.Network.Unix'
+  Missing documentation for:
+    Module header
+    appSource (Data/Conduit/Network.hs:87)
+    appSink (Data/Conduit/Network.hs:98)
+    serverSettings (Data/Conduit/Network/Unix.hs:35)
+    clientSettings (Data/Conduit/Network/Unix.hs:32)
+    getPath
+    getAfterBind
+    setPath
+    setAfterBind
+ 100% ( 12 / 12) in 'Data.Conduit.Process'
+ 100% (  9 /  9) in 'Data.Conduit.Process.Typed'
+ 100% ( 25 / 25) in 'Data.Conduit.Text'
+ 100% ( 14 / 14) in 'Data.Conduit.Zlib'
+Warning: Data.Conduit.Attoparsec: could not find link destinations for:
+    parseA feedA empty isNull getLinesCols stripFromEnd
+Warning: Data.Conduit.Binary: could not find link destinations for:
+    SinkStorableInsufficientBytes
+Warning: Data.Conduit.ByteString.Builder: could not find link destinations for:
+    Buffer
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/conduit-extra/index.html,
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/conduit-extra/conduit-extra.txt
+Installing library in /Users/daidohinari/.stack/snapshots/x86_64-osx/lts-14.1/8.6.5/lib/x86_64-osx-ghc-8.6.5/conduit-extra-1.3.4-F6gqEc8fj172G7ww5zIX93
+Registering library for conduit-extra-1.3.4..

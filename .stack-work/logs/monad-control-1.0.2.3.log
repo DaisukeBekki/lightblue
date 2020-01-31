@@ -1,0 +1,34 @@
+Configuring monad-control-1.0.2.3...
+Preprocessing library for monad-control-1.0.2.3..
+Building library for monad-control-1.0.2.3..
+[1 of 1] Compiling Control.Monad.Trans.Control ( Control/Monad/Trans/Control.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Control/Monad/Trans/Control.o )
+Preprocessing library for monad-control-1.0.2.3..
+Running Haddock on library for monad-control-1.0.2.3..
+Haddock coverage:
+Warning: 'lift' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'withFile' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'Just' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'flip' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'liftIO' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'liftBase' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'MonadIO' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+ 100% ( 34 / 34) in 'Control.Monad.Trans.Control'
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/monad-control/index.html,
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/monad-control/monad-control.txt
+Installing library in /Users/daidohinari/.stack/snapshots/x86_64-osx/lts-14.1/8.6.5/lib/x86_64-osx-ghc-8.6.5/monad-control-1.0.2.3-DrYatrL1Bdx3rN91TFrOno
+Registering library for monad-control-1.0.2.3..

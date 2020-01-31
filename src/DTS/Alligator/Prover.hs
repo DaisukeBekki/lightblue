@@ -16,9 +16,9 @@ import qualified Control.Applicative as M -- base
 import qualified Control.Monad as M       -- base
 import qualified DTS.UDTTwithName as VN
 import qualified DTS.Prover.Judgement as J
-import Data.Time　as Ti
-import Debug.Trace
-import System.Timeout
+import qualified Data.Time　as Ti
+import qualified Debug.Trace as D
+import qualified System.Timeout
 
 data ArrowSelector = Arrow_Fst | Arrow_Snd deriving (Eq, Show)
 
@@ -73,18 +73,6 @@ prestr2arrowstr prestr (Arrow_Pair h t) =
   in
      "("++(prestr2arrowstr (take (index - 1) contents) h)++","++(prestr2arrowstr (drop index contents) t)++")"
 
-{-test
-Arrow [Arrow_Proj Arrow_Fst (Conclusion DT.Type)] (Arrow_Proj Arrow_Snd (Conclusion (DT.Var 0)))
-Arrow_Sigma (Conclusion $ DT.Con $ T.pack "p") (Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 1))
-Arrow_Sigma (Arrow [(Arrow [(Conclusion (DT.Con (T.pack "p")))] (Conclusion (DT.Var 0))),Conclusion DT.Type](Conclusion (DT.Con (T.pack "p")))) (Conclusion (DT.Con (T.pack "q")))
-(Arrow_App (Arrow [(Conclusion DT.Type)] (Conclusion (DT.Sigma DT.Type DT.Type))) (Conclusion $  DT.Pi DT.Type DT.Type))
-Arrow [Arrow_Sigma (Conclusion $ DT.Pi (DT.Bot) (DT.Var 0)) (Conclusion $DT.Type), Arrow [Conclusion $ DT.Con $T.pack "q" ] (Conclusion (DT.Var 0))] (Arrow [Conclusion (DT.Con (T.pack "p"))] (Conclusion $ DT.Var 0))
-Arrow_Pair (Arrow_Pair (Conclusion DT.Type) (Arrow_Sigma (Conclusion (DT.Type)) (Conclusion (DT.Con $ T.pack "p")))) (Arrow_Pair (Conclusion $ DT.Con $ T.pack "a") (Conclusion $ DT.Con $ T.pack "q"))
-Arrow_Pair (Conclusion DT.Type) (Arrow_Pair (Conclusion DT.Type) (Conclusion (DT.Con $T.pack "p")))
-Arrow_Pair (Arrow_Pair (Conclusion DT.Type) (Conclusion $ DT.Con $T.pack "y")) (Conclusion DT.Type)
- Arrow_Pair (Arrow_Pair (Conclusion DT.Type) (Conclusion $ DT.Con $T.pack "y")) (Arrow_Pair (Conclusion DT.Type) (Conclusion (DT.Con $T.pack "q")))
--}
-
 treatParentheses :: String -> [(Int,String)]
 treatParentheses str =
   let str'= (takeWhile (\x -> (x /='(') && (x /=')' && (x/=',')) ) str)
@@ -126,11 +114,6 @@ arrow2DT (Arrow_Lam p) = DT.Lam (arrow2DT p)
 arrow2DT (Arrow [] t) = arrow2DT t
 arrow2DT (Arrow (f:r) t) = arrow2DT (Arrow r (Conclusion (DT.Pi (arrow2DT f)  (arrow2DT t))))
 
-to1Arrow :: Arrowterm -> Arrowterm
-to1Arrow (Arrow env (Arrow env' conclusion)) = to1Arrow $ Arrow (env' ++ env) conclusion
-to1Arrow term = term
-
-
 -- | 入力されたDT.PretermをArrowTermに変換する
 arrow_notat :: DT.Preterm -> Arrowterm
 arrow_notat (DT.Type) = Conclusion $DT.Type
@@ -155,13 +138,13 @@ arrow_notat dt= Conclusion dt
 shiftIndices :: Arrowterm -> Int -> Int -> Arrowterm
 shiftIndices term d i= ((arrow_notat . DT.toDTT) $ UD.shiftIndices ((DT.toUDTT . arrow2DT) term) d i)
 
+reduce :: Arrowterm -> Arrowterm
+reduce = arrow_notat . DT.toDTT . UD.betaReduce . DT.toUDTT . arrow2DT
+
 type TEnv = [DT.Preterm]
 type SUEnv = [(T.Text,DT.Preterm)]
 type AEnv = [Arrowterm]
 
-{-test
-AJudgement [Conclusion DT.Type,Conclusion $ DT.Con $ T.pack "p",Arrow_Sigma (Conclusion $ DT.Con $T.pack "q") (Conclusion $ DT.Var 0)] (Conclusion $ DT.Var 2) (Conclusion $ DT.Var 2)
--}
 data AJudgement =
   AJudgement
   AEnv -- ^ context
@@ -199,9 +182,6 @@ dn_pr = DT.Pi (DT.Type) (DT.Pi (DT.Pi (DT.Pi (DT.Var 0) DT.Bot) DT.Bot) (DT.Var 
 classic  :: TEnv
 classic = [dn_pr]
 
--- getAxiom :: String -> TEnv
--- getAxiom "classic"= classic ++ []
-
 subst :: DT.Preterm -> DT.Preterm -> DT.Preterm -> DT.Preterm
 subst preterm l i =
   if preterm == i then
@@ -223,94 +203,6 @@ arrow_subst :: Arrowterm -- ^ origin
   -> Arrowterm -- ^ 代入先
   -> Arrowterm
 arrow_subst term i m= (arrow_notat) $ subst (arrow2DT term) (arrow2DT i) (arrow2DT m)
-
---deduce con f_context arrow_type depth =
-{-
-var_env = [DT.Sigma (DT.Var 0)  (DT.Var 2),DT.Con $ T.pack "p",DT.Con $ T.pack "q"]
-sig_env = []
-pre_type = DT.Con $ T.pack "p"
-prove' var_env sig_env pre_type
-
-sig_env = []
-var_env = [DT.Con $ T.pack "r",DT.Con $ T.pack "q",DT.Con $ T.pack "p"]
-pre_type = DT.Pi (DT.Con $ T.pack "p") (DT.Con $ T.pack "p")
-prove' var_env sig_env pre_type
-
-sig_env = classic ++ DT.Bot
-var_env = [DT.Con $ T.pack "r",DT.Con $ T.pack "q",DT.Con $ T.pack "p"]
-pre_type = DT.Pi (DT.Con $ T.pack "p") (DT.Sigma (DT.Con $ T.pack "p") (DT.Con $ T.pack "p"))
-prove' var_env sig_env pre_type
-
-sig_env = classic ++ [DT.Bot]
-p = DT.Con $ T.pack "p"
-q = DT.Con $ T.pack "q"
-r = DT.Con $ T.pack "r"
-var_env = [r,q,p]
-pre_type = DT.Pi (DT.Pi (DT.Sigma p q) r) (DT.Pi p (DT.Pi q r))
-prove' var_env sig_env pre_type
-
-sig_env = classic
-p = DT.Con $ T.pack "p"
-q = DT.Con $ T.pack "q"
-r = DT.Con $ T.pack "r"
-var_env = [r,q,p,DT.Pi p DT.Bot]
-pre_type = DT.Bot
-prove' var_env sig_env pre_type
-
-sig_env = classic
-p = DT.Con $ T.pack "p"
-q = DT.Con $ T.pack "q"
-r = DT.Con $ T.pack "r"
-var_env = [r,q,p]
-pre_type = DT.Pi p (DT.Pi (DT.Pi p DT.Bot) DT.Bot)
-prove' var_env sig_env pre_type
-
-sig_env = classic
-p = DT.Con $ T.pack "p"
-q = DT.Con $ T.pack "q"
-r = DT.Con $ T.pack "r"
-var_env = [r,q,p]
-pre_type = DT.Pi (DT.Pi p DT.Bot) DT.Bot
-prove' var_env sig_env pre_type
-
-pre_type =  (DT.Pi p DT.Bot)
-prove' var_env sig_env pre_type
-
-pre_type =  DT.Bot
-prove' var_env sig_env pre_type
-
-
-
-var_env = [DT.Pi p q,DT.Pi q r]
-pre_type = DT.Pi p r
-prove' var_env sig_env pre_type
-
-var_env = [DT.Pi p q,DT.Pi q r,p]
-pre_type = DT.Pi p r
-prove' var_env sig_env pre_type
-
-var_env = [DT.Pi p q,DT.Pi q r,p]
-pre_type =  r
-prove' var_env sig_env pre_type
-
-dn_pr = DT.Pi (DT.Type) (DT.Pi (DT.Pi (DT.Pi (DT.Var 0) DT.Bot) DT.Bot) (DT.Var 1))
-
-var_env = [(DT.Pi (DT.Var 2) (DT.Var 2)),(DT.Pi (DT.Var 2) (DT.Var 2)),DT.Type,DT.Type,DT.Type]
-pre_type =  DT.Pi (DT.Var 4) (DT.Var 3)
-prove' var_env sig_env pre_type
-
-p = DT.Con $ T.pack "p"
-var_env = [DT.Type]
-pre_type =  DT.Pi (DT.Pi (DT.Var 0) (DT.Pi (DT.Var 1) DT.Bot)) (DT.Pi (DT.Var 1) DT.Bot)
-prove' var_env sig_env pre_type
-
-p = DT.Con $ T.pack "p"
-
-pre_type =  DT.Pi (DT.Pi (p) (DT.Pi (DT.Var 0) DT.Bot)) (DT.Pi (DT.Var 0) DT.Bot)
-var_env = [DT.Pi (DT.Pi (DT.Pi p DT.Bot) DT.Bot) (DT.Pi r DT.Bot),r,q,p]
-pre_type = DT.Bot
-prove' var_env sig_env pre_type
--}
 
 prove ::  TEnv -- ^ var_context ex)[(DT.Con (T.pack "prop")),(DT.Con (T.pack "set")),(DT.Con (T.pack "prop"))]
   -> TEnv -- ^ sig_context ex)[((T.pack "prop"),DT.Type),((T.pack "set"),DT.Type)] , classic
@@ -351,6 +243,7 @@ context = forward_context sigma_con
 -}
 
 forward_context :: AEnv -> [AJudgement]
+
 -- forward_context [] = []
 -- forward_context (f:r) =
 --   map (\(AJudgement env aterm atype) -> AJudgement (f:r) aterm atype) (forward f)  ++ forward_context r
@@ -430,7 +323,7 @@ add_Lam :: Int -> Arrowterm -> Arrowterm
 add_Lam 0 term = term
 add_Lam num term = Arrow_Lam $ add_Lam (num - 1) term
 
-maxdepth = 5
+maxdepth = 8
 
 
 search_proof :: [Arrowterm] ->Arrowterm -> Int -> [AJudgement]
@@ -448,13 +341,7 @@ membership con arrow_type depth =
       else
         Right $ []
 
-{-
-con = [Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Var 0),(Conclusion $ DT.Con $ T.pack "q")]
-arrow_type = (Conclusion DT.Type)
-depth = 1
-arrow_term = Arrow [Conclusion $DT.Con $T.pack "q"] (Conclusion $ DT.Var 3)
-pi_form con arrow_term arrow_type depth
--}
+
 
 
 
@@ -494,33 +381,7 @@ pi_form con (Arrow as b) arrow_type depth =
       Left ("too deep @ pi_form " ++ show con ++" | "++ show arrow_type)
     else
       Right []
-{-
-con = [Arrow [Conclusion $ DT.Con $ T.pack "p",Conclusion $ DT.Con $ T.pack "r"] (Conclusion $ DT.Con $ T.pack "q"),Arrow [Conclusion $ DT.Con $ T.pack "p",Conclusion $ DT.Con $ T.pack "p"] (Conclusion $ DT.Con $ T.pack "q"),Arrow [Conclusion $ DT.Con $ T.pack "p"] (Conclusion $ DT.Con $ T.pack "q"),Conclusion $ DT.Con $ T.pack "p"]
-arrow_term = Conclusion $ DT.Con $ T.pack "q"
-arrow_type = Conclusion DT.Type
-depth = 1
-pi_form con arrow_term arrow_type depth
--}
 pi_form con arrow_term arrow_type depth = Right []
-  -- if (arrow_type `elem`[Conclusion DT.Type,Conclusion DT.Kind]) && (depth < maxdepth)
-  -- then
-  --   let a_judgements = arrow_conclusion_b (forward_context con) arrow_term
-  --       a_type_judgements =   foldr (++) [] $ map (\a_judgement ->withLog' typecheck con (typefromAJudgement a_judgement) arrow_type (depth+1)) a_judgements
-  --   in
-  --     if a_type_judgements == []
-  --     then
-  --       Right []
-  --     else
-  --       let arrow_envs = map (\(AJudgement _ (Arrow env _) _) -> reverse env) a_type_judgements
-  --           arrow_judgements' = map (\arrow_env -> typecheck_env con arrow_env [Conclusion DT.Type,Conclusion DT.Kind] (depth + 1)) arrow_envs
-  --           arrow_envs' = map (reverse . snd) $filter ((/=[]) . fst) $ zip arrow_judgements' arrow_envs
-  --       in Right $ map (\env -> AJudgement (env ++ con) (shiftIndices arrow_term (length env)0 )arrow_type ) arrow_envs'
-  -- else
-  --   if depth < maxdepth
-  --   then
-  --     Left ("too deep @ pi_form " ++ show con ++" | "++ show arrow_type)
-  --   else
-  --     Right []
 
 sigma_form:: [Arrowterm] -> Arrowterm ->  Arrowterm -> Int -> Either (String) ([AJudgement])
 sigma_form con (Arrow_Sigma a b) arrow_type depth =
@@ -643,9 +504,12 @@ sigma_intro con  (Arrow_Sigma a b1) depth =
           a_b1_terms_judgements =
             map
             (\a_j ->
-              let con2b =  (envfromAJudgement a_j)
+              let con2b =  con
+                  base = (gen_free_con b1 "base")
+                  b_type = reduce $ arrow_subst (shiftIndices (arrow_subst b1 base (Conclusion $ DT.Var 0)) (-1) 0) (termfromAJudgement a_j) base
+--shiftIndices (arrow_subst b1 (termfromAJudgement a_j) (Conclusion $ DT.Var 0)) (-1) 0
               in
-                (a_j,deduceWithLog con (shiftIndices (arrow_subst b1 (termfromAJudgement a_j) (Conclusion $ DT.Var 0)) (-1) 0) depth ))
+                (a_j,deduceWithLog con b_type depth ))
             a_term_judgements
       in
         Right
@@ -673,34 +537,22 @@ withLog' :: ([Arrowterm] -> Arrowterm -> Arrowterm ->Int ->Either (String) ([AJu
 withLog' f con arrow_term arrow_type depth =
   case f con arrow_term arrow_type depth of
     (Right j) -> j
-    (Left msg) -> trace msg []
+    (Left msg) -> D.trace msg []
 
 withLog :: ([Arrowterm] -> Arrowterm ->Int ->Either (String) ([AJudgement])) -> [Arrowterm] -> Arrowterm ->Int ->[AJudgement]
 withLog f con arrow_type depth =
   case f con arrow_type depth of
     (Right j) -> j
-    (Left msg) -> trace msg []
+    (Left msg) -> D.trace msg []
 
 
-{-
-con = [Arrow [Conclusion $ DT.Con $ T.pack "q"] (Conclusion $ DT.Var 3),Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Var 0),(Conclusion $ DT.Con $ T.pack "q")]
-depth = 1
-arrow_type = Conclusion $ DT.Type
-arrow_term = Conclusion $ DT.Var 3
-typecheck con arrow_term arrow_type depth
 
-arrow_term = Arrow [Arrow_Sigma (Conclusion $ DT.Var 2) (Conclusion $ DT.Var 4)] (Conclusion $ DT.Con $T.pack "q")
-typecheck con arrow_term arrow_type depth
+typecheck :: [Arrowterm] -- ^ context
+  -> Arrowterm -- ^ term
+  -> Arrowterm -- ^ type
+  -> Int -- ^ depth
+  -> Either (String) ([AJudgement])
 
-arrow_term = Arrow [Conclusion $ DT.Var 3] (Conclusion $ DT.Con $ T.pack "q")
-typecheck con arrow_term arrow_type depth
-
-arrow_term = Arrow_Sigma (Conclusion $ DT.Var 3) (Conclusion $ DT.Con $ T.pack "q")
-typecheck con arrow_term arrow_type depth
-
-
--}
-typecheck :: [Arrowterm] -> Arrowterm -> Arrowterm -> Int -> Either (String) ([AJudgement])
 typecheck con (Conclusion DT.Bot) (Conclusion DT.Type) depth =
   Right [AJudgement con (Conclusion DT.Bot) (Conclusion DT.Type)]
 typecheck con arrow_term arrow_type depth =
@@ -713,61 +565,10 @@ typecheck con arrow_term arrow_type depth =
   else
     Left ("too deep @ typecheck " ++ show con ++" | "++ show arrow_type)
 
-{-
-con = [Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Con $ T.pack "p"),(Conclusion $ DT.Con $ T.pack "q")]
-depth = 1
-arrow_type = (Conclusion $ DT.Con $ T.pack  "p")
-deduce con arrow_type depth
 
-arrow_type = (Conclusion $ DT.Var 2)
-deduce con arrow_type depth
-
-arrow_type = (Conclusion $ DT.Var 1)
-deduce con arrow_type depth
-
-arrow_type = (Conclusion $ DT.Var 0)
-deduce con arrow_type depth
-
-arrow_type = Arrow_Sigma (Conclusion $ DT.Var 1) (Conclusion $ DT.Var 3)
-deduce con arrow_type depth
-
-
-con = [Arrow [Conclusion $ DT.Var 2] (Conclusion $ DT.Var 2),Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Var 0),(Conclusion $ DT.Con $ T.pack "q")]
-depth =  1
-arrow_type = Arrow [Conclusion $ DT.Var 2] (Conclusion $ DT.Var 4)
-deduce con arrow_type depth
-
-con = [(Conclusion $ DT.Var 2),Arrow [Conclusion $ DT.Var 2] (Conclusion $ DT.Var 2),Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Var 0),(Conclusion $ DT.Con $ T.pack "q")]
-depth =  1
-arrow_type = Arrow [Conclusion $ DT.Var 3] (Conclusion $ DT.Var 5)
-deduce con arrow_type depth
-
-
-arrow_type = Arrow [Conclusion $ DT.Var 1] (Conclusion $ DT.Con $ T.pack "q")
-pi_intro con arrow_type depth
-
-arrow_type = Arrow [Conclusion $ DT.Var 1] (Conclusion $ DT.Var 2)
-pi_intro con arrow_type depth
-
-
-con = [Arrow [Conclusion $ DT.Var 0] (Conclusion $ DT.Var 2),(Conclusion $DT.Var 0),(Conclusion $ DT.Con $ T.pack "q")]
-arrow_type =Conclusion $ DT.Var 2
-deduce con arrow_type depth
-
-
-test = Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r")))
-con =  [(Arrow [Conclusion $ DT.Con $ T.pack "p"] (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r"))),(Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r"))),to1Arrow test,Conclusion $ DT.Con $ T.pack "q"]
-b1 = (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r"))
-deduce con b1 depth
-
-
-con = [Arrow [Conclusion $ DT.Con $ T.pack "q"] (Conclusion $ DT.Var 3),Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Var 0),(Conclusion $ DT.Con $ T.pack "q")]
-depth = 1
-arrow_type = Arrow_Sigma (Conclusion $ DT.Var 2) (Conclusion $ DT.Var 3)
-deduce con arrow_type depth
--}
 
 --deduce (pi-intro + sigma-intro + membership + type-ax)
+
 deduce :: [Arrowterm] -- ^ context
   -> Arrowterm -- ^  type
   -> Int -- ^ depth

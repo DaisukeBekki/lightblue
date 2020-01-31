@@ -1,0 +1,30 @@
+Configuring hashable-1.2.7.0...
+Preprocessing library for hashable-1.2.7.0..
+Building library for hashable-1.2.7.0..
+[1 of 4] Compiling Data.Hashable.Class ( Data/Hashable/Class.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Hashable/Class.o )
+[2 of 4] Compiling Data.Hashable.Generic ( Data/Hashable/Generic.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Hashable/Generic.o )
+[3 of 4] Compiling Data.Hashable    ( Data/Hashable.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Hashable.o )
+[4 of 4] Compiling Data.Hashable.Lifted ( Data/Hashable/Lifted.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Hashable/Lifted.o )
+Preprocessing library for hashable-1.2.7.0..
+Running Haddock on library for hashable-1.2.7.0..
+Haddock coverage:
+Warning: 'defaultHashWith' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'Generic' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+ 100% ( 28 / 28) in 'Data.Hashable'
+  80% (  8 / 10) in 'Data.Hashable.Lifted'
+  Missing documentation for:
+    Hashable1 (Data/Hashable/Class.hs:253)
+    Hashable2 (Data/Hashable/Class.hs:261)
+Warning: Data.Hashable: could not find link destinations for:
+    GHashable Zero
+Warning: Data.Hashable.Lifted: could not find link destinations for:
+    GHashable One
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/hashable/index.html,
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/hashable/hashable.txt
+Installing library in /Users/daidohinari/.stack/snapshots/x86_64-osx/lts-14.1/8.6.5/lib/x86_64-osx-ghc-8.6.5/hashable-1.2.7.0-CWI8VZuQTAYWIQTQQtqCV
+Registering library for hashable-1.2.7.0..

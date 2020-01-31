@@ -48,6 +48,8 @@ library:
   - DTS.Prover.Judgement
   - DTS.Prover.TypeChecker
   - DTS.DTStoProlog
+  - DTS.Alligator.Prover
+  
   other-modules: []
 
 executables:
@@ -59,4 +61,3 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies: lightblue >= 0.2.0.4
-

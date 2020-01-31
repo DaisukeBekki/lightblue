@@ -1,0 +1,18 @@
+Configuring semigroups-0.18.5...
+Preprocessing library for semigroups-0.18.5..
+Building library for semigroups-0.18.5..
+[1 of 1] Compiling Data.Semigroup.Generic ( src/Data/Semigroup/Generic.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Semigroup/Generic.o )
+Preprocessing library for semigroups-0.18.5..
+Running Haddock on library for semigroups-0.18.5..
+Haddock coverage:
+  60% (  3 /  5) in 'Data.Semigroup.Generic'
+  Missing documentation for:
+    GSemigroup (src/Data/Semigroup/Generic.hs:46)
+    GMonoid (src/Data/Semigroup/Generic.hs:76)
+Warning: Data.Semigroup.Generic: could not find link destinations for:
+    gmappend' gmempty'
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/semigroups/index.html,
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/semigroups/semigroups.txt
+Installing library in /Users/daidohinari/.stack/snapshots/x86_64-osx/lts-14.1/8.6.5/lib/x86_64-osx-ghc-8.6.5/semigroups-0.18.5-6T2lH5F6zyQIdwR3JYKMO3
+Registering library for semigroups-0.18.5..

@@ -1,0 +1,120 @@
+Configuring streaming-commons-0.2.1.1...
+Preprocessing library for streaming-commons-0.2.1.1..
+Building library for streaming-commons-0.2.1.1..
+[ 1 of 16] Compiling Data.Streaming.ByteString.Builder.Buffer ( Data/Streaming/ByteString/Builder/Buffer.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Streaming/ByteString/Builder/Buffer.o )
+[ 2 of 16] Compiling Data.Streaming.ByteString.Builder ( Data/Streaming/ByteString/Builder.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Streaming/ByteString/Builder.o )
+[ 3 of 16] Compiling Data.Streaming.FileRead ( Data/Streaming/FileRead.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Streaming/FileRead.o )
+[ 4 of 16] Compiling Data.Streaming.Filesystem ( Data/Streaming/Filesystem.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Streaming/Filesystem.o )
+[ 5 of 16] Compiling Data.Streaming.Network.Internal ( Data/Streaming/Network/Internal.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Streaming/Network/Internal.o )
+[ 6 of 16] Compiling Data.Streaming.Network ( Data/Streaming/Network.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Streaming/Network.o )
+[ 7 of 16] Compiling Data.Streaming.Process.Internal ( Data/Streaming/Process/Internal.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Streaming/Process/Internal.o )
+[ 8 of 16] Compiling Data.Streaming.Process ( Data/Streaming/Process.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Streaming/Process.o )
+[ 9 of 16] Compiling Data.Streaming.Zlib.Lowlevel ( Data/Streaming/Zlib/Lowlevel.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Streaming/Zlib/Lowlevel.o )
+[10 of 16] Compiling Data.Streaming.Zlib ( Data/Streaming/Zlib.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Streaming/Zlib.o )
+[11 of 16] Compiling Data.Text.Internal.Encoding.Utf16 ( Data/Text/Internal/Encoding/Utf16.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Text/Internal/Encoding/Utf16.o )
+[12 of 16] Compiling Data.Text.Internal.Encoding.Utf32 ( Data/Text/Internal/Encoding/Utf32.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Text/Internal/Encoding/Utf32.o )
+[13 of 16] Compiling Data.Text.Internal.Unsafe.Shift ( Data/Text/Internal/Unsafe/Shift.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Text/Internal/Unsafe/Shift.o )
+[14 of 16] Compiling Data.Text.Internal.Unsafe.Char ( Data/Text/Internal/Unsafe/Char.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Text/Internal/Unsafe/Char.o )
+[15 of 16] Compiling Data.Text.Internal.Encoding.Utf8 ( Data/Text/Internal/Encoding/Utf8.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Text/Internal/Encoding/Utf8.o )
+[16 of 16] Compiling Data.Streaming.Text ( Data/Streaming/Text.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Data/Streaming/Text.o )
+Preprocessing library for streaming-commons-0.2.1.1..
+Running Haddock on library for streaming-commons-0.2.1.1..
+Haddock coverage:
+Warning: 'Builder' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+  95% ( 19 / 20) in 'Data.Streaming.ByteString.Builder.Buffer'
+  Missing documentation for:
+    defaultStrategy (Data/Streaming/ByteString/Builder/Buffer.hs:198)
+Warning: 'toLazyByteStringWith' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+  82% ( 23 / 28) in 'Data.Streaming.ByteString.Builder'
+  Missing documentation for:
+    BuilderRecv (Data/Streaming/ByteString/Builder.hs:75)
+    BuilderFinish (Data/Streaming/ByteString/Builder.hs:77)
+    newBuilderRecv (Data/Streaming/ByteString/Builder.hs:79)
+    newByteStringBuilderRecv (Data/Streaming/ByteString/Builder.hs:83)
+    defaultStrategy (Data/Streaming/ByteString/Builder/Buffer.hs:198)
+  20% (  1 /  5) in 'Data.Streaming.FileRead'
+  Missing documentation for:
+    ReadHandle (Data/Streaming/FileRead.hs:26)
+    openFile (Data/Streaming/FileRead.hs:28)
+    closeFile (Data/Streaming/FileRead.hs:31)
+    readChunk (Data/Streaming/FileRead.hs:34)
+  43% (  3 /  7) in 'Data.Streaming.Filesystem'
+  Missing documentation for:
+    DirStream
+    readDirStream (Data/Streaming/Filesystem.hs:66)
+    FileType (Data/Streaming/Filesystem.hs:94)
+    getFileType (Data/Streaming/Filesystem.hs:75)
+  89% (  8 /  9) in 'Data.Streaming.Network.Internal'
+  Missing documentation for:
+    Module header
+Warning: 'maxListenQueue' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+  68% ( 52 / 76) in 'Data.Streaming.Network'
+  Missing documentation for:
+    Module header
+    message (Data/Streaming/Network.hs:465)
+    HasPort (Data/Streaming/Network.hs:468)
+    HasAfterBind (Data/Streaming/Network.hs:520)
+    HasReadWrite (Data/Streaming/Network.hs:638)
+    HasPath (Data/Streaming/Network.hs:500)
+    setPort (Data/Streaming/Network.hs:478)
+    setHost (Data/Streaming/Network.hs:481)
+    setAfterBind (Data/Streaming/Network.hs:532)
+    setNeedLocalAddr (Data/Streaming/Network.hs:514)
+    setPath (Data/Streaming/Network.hs:510)
+    getPort (Data/Streaming/Network.hs:475)
+    getHost (Data/Streaming/Network.hs:484)
+    getAfterBind (Data/Streaming/Network.hs:529)
+    getNeedLocalAddr (Data/Streaming/Network.hs:517)
+    getPath (Data/Streaming/Network.hs:507)
+    appRead (Data/Streaming/Network.hs:650)
+    appWrite (Data/Streaming/Network.hs:653)
+    appSockAddr (Data/Streaming/Network.hs:622)
+    appLocalAddr (Data/Streaming/Network.hs:619)
+    unassignedPorts (Data/Streaming/Network.hs:225)
+    safeRecv (Data/Streaming/Network.hs:330)
+    ConnectionHandle (Data/Streaming/Network.hs:565)
+    runTCPServerWithHandle (Data/Streaming/Network.hs:567)
+  75% (  3 /  4) in 'Data.Streaming.Process.Internal'
+  Missing documentation for:
+    Module header
+ 100% ( 24 / 24) in 'Data.Streaming.Process'
+   0% (  0 / 21) in 'Data.Streaming.Zlib.Lowlevel'
+  Missing documentation for:
+    Module header
+    ZStreamStruct (Data/Streaming/Zlib/Lowlevel.hs:30)
+    ZStream' (Data/Streaming/Zlib/Lowlevel.hs:31)
+    zstreamNew (Data/Streaming/Zlib/Lowlevel.hs:41)
+    Strategy (Data/Streaming/Zlib/Lowlevel.hs:33)
+    deflateInit2 (Data/Streaming/Zlib/Lowlevel.hs:48)
+    inflateInit2 (Data/Streaming/Zlib/Lowlevel.hs:57)
+    c_free_z_stream_inflate (Data/Streaming/Zlib/Lowlevel.hs:60)
+    c_free_z_stream_deflate (Data/Streaming/Zlib/Lowlevel.hs:63)
+    c_set_avail_in (Data/Streaming/Zlib/Lowlevel.hs:66)
+    c_set_avail_out (Data/Streaming/Zlib/Lowlevel.hs:69)
+    c_get_avail_out (Data/Streaming/Zlib/Lowlevel.hs:72)
+    c_get_avail_in (Data/Streaming/Zlib/Lowlevel.hs:75)
+    c_get_next_in (Data/Streaming/Zlib/Lowlevel.hs:78)
+    c_call_inflate_noflush (Data/Streaming/Zlib/Lowlevel.hs:81)
+    c_call_deflate_noflush (Data/Streaming/Zlib/Lowlevel.hs:84)
+    c_call_deflate_finish (Data/Streaming/Zlib/Lowlevel.hs:87)
+    c_call_deflate_flush (Data/Streaming/Zlib/Lowlevel.hs:90)
+    c_call_deflate_full_flush (Data/Streaming/Zlib/Lowlevel.hs:93)
+    c_call_deflate_set_dictionary (Data/Streaming/Zlib/Lowlevel.hs:96)
+    c_call_inflate_set_dictionary (Data/Streaming/Zlib/Lowlevel.hs:99)
+  96% ( 23 / 24) in 'Data.Streaming.Zlib'
+  Missing documentation for:
+    PopperRes (Data/Streaming/Zlib.hs:218)
+  90% (  9 / 10) in 'Data.Streaming.Text'
+  Missing documentation for:
+    DecodeResult (Data/Streaming/Text.hs:81)
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/streaming-commons/index.html,
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/streaming-commons/streaming-commons.txt
+Installing library in /Users/daidohinari/.stack/snapshots/x86_64-osx/lts-14.1/8.6.5/lib/x86_64-osx-ghc-8.6.5/streaming-commons-0.2.1.1-CCPLqggmlE83UV72QH6KTQ
+Registering library for streaming-commons-0.2.1.1..

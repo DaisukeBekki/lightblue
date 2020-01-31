@@ -1,0 +1,19 @@
+Configuring integer-logarithms-1.0.3...
+Preprocessing library for integer-logarithms-1.0.3..
+Building library for integer-logarithms-1.0.3..
+[1 of 4] Compiling GHC.Integer.Logarithms.Compat ( src/GHC/Integer/Logarithms/Compat.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/GHC/Integer/Logarithms/Compat.o )
+[2 of 4] Compiling Math.NumberTheory.Logarithms ( src/Math/NumberTheory/Logarithms.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Math/NumberTheory/Logarithms.o )
+[3 of 4] Compiling Math.NumberTheory.Powers.Integer ( src/Math/NumberTheory/Powers/Integer.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Math/NumberTheory/Powers/Integer.o )
+[4 of 4] Compiling Math.NumberTheory.Powers.Natural ( src/Math/NumberTheory/Powers/Natural.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Math/NumberTheory/Powers/Natural.o )
+Preprocessing library for integer-logarithms-1.0.3..
+Running Haddock on library for integer-logarithms-1.0.3..
+Haddock coverage:
+ 100% (  5 /  5) in 'GHC.Integer.Logarithms.Compat'
+ 100% ( 17 / 17) in 'Math.NumberTheory.Logarithms'
+ 100% (  3 /  3) in 'Math.NumberTheory.Powers.Integer'
+ 100% (  3 /  3) in 'Math.NumberTheory.Powers.Natural'
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/integer-logarithms/index.html,
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/integer-logarithms/integer-logarithms.txt
+Installing library in /Users/daidohinari/.stack/snapshots/x86_64-osx/lts-14.1/8.6.5/lib/x86_64-osx-ghc-8.6.5/integer-logarithms-1.0.3-L1fXvdNnENnEcLpMml0rI7
+Registering library for integer-logarithms-1.0.3..

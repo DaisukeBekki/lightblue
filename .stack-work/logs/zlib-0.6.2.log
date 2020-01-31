@@ -1,0 +1,43 @@
+Configuring zlib-0.6.2...
+Preprocessing library for zlib-0.6.2..
+Building library for zlib-0.6.2..
+[1 of 5] Compiling Codec.Compression.Zlib.Stream ( .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Codec/Compression/Zlib/Stream.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Codec/Compression/Zlib/Stream.o )
+[2 of 5] Compiling Codec.Compression.Zlib.Internal ( Codec/Compression/Zlib/Internal.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Codec/Compression/Zlib/Internal.o )
+[3 of 5] Compiling Codec.Compression.Zlib.Raw ( Codec/Compression/Zlib/Raw.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Codec/Compression/Zlib/Raw.o )
+[4 of 5] Compiling Codec.Compression.Zlib ( Codec/Compression/Zlib.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Codec/Compression/Zlib.o )
+[5 of 5] Compiling Codec.Compression.GZip ( Codec/Compression/GZip.hs, .stack-work/dist/x86_64-osx/Cabal-2.4.0.1/build/Codec/Compression/GZip.o )
+Preprocessing library for zlib-0.6.2..
+Running Haddock on library for zlib-0.6.2..
+Haddock coverage:
+Warning: 'BuferError' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'defaultCompressionStrategy' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'huffmanOnlyCompressionStrategy' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'gzipFormat' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'DictionaryHash' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+Warning: 'StreamEnd' is out of scope.
+    If you qualify the identifier, haddock can try to link it
+    it anyway.
+ 100% ( 51 / 51) in 'Codec.Compression.Zlib.Internal'
+  88% ( 28 / 32) in 'Codec.Compression.Zlib.Raw'
+  Missing documentation for:
+    compress (Codec/Compression/Zlib/Raw.hs:64)
+    decompress (Codec/Compression/Zlib/Raw.hs:58)
+    compressWith (Codec/Compression/Zlib/Raw.hs:67)
+    decompressWith (Codec/Compression/Zlib/Raw.hs:61)
+ 100% ( 33 / 33) in 'Codec.Compression.Zlib'
+ 100% ( 33 / 33) in 'Codec.Compression.GZip'
+Documentation created:
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/zlib/index.html,
+.stack-work/dist/x86_64-osx/Cabal-2.4.0.1/doc/html/zlib/zlib.txt
+Installing library in /Users/daidohinari/.stack/snapshots/x86_64-osx/lts-14.1/8.6.5/lib/x86_64-osx-ghc-8.6.5/zlib-0.6.2-BdOecmQ0rL1HOiGypdSgxY
+Registering library for zlib-0.6.2..
