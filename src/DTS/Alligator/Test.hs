@@ -67,11 +67,11 @@ dni_3 =
       pre_type = DT.Pi (DT.Pi p DT.Bot) DT.Bot
   in prove var_env sig_env pre_type
 
-dne :: [J.Judgement]
-dne =
+efq :: [J.Judgement]
+efq =
   let sig_env = classic
-      var_env = [r,q,DT.Pi (DT.Pi p DT.Bot) DT.Bot]
-      pre_type = p
+      var_env = [DT.Type, DT.Bot]
+      pre_type = (DT.Var 0)
   in prove var_env sig_env pre_type
 
 dne_2 :: [J.Judgement]
@@ -301,7 +301,10 @@ a_girl_writes_a_thesis en gi th wr =
     (DT.Sigma
       (there_is_a_girl en gi)
       (DT.Sigma (shiftIndices en 1 0) (DT.App (shiftIndices th 2 0) (DT.Var 0)) ))
-    (DT.App (DT.App (shiftIndices wr 1 0) (DT.Proj DT.Fst $ DT.Proj DT.Fst $ DT.Var 0)) (DT.Proj DT.Fst $ DT.Proj DT.Snd $ DT.Var 0))
+    (DT.App
+      (DT.App (shiftIndices wr 1 0) (DT.Proj DT.Fst $ DT.Proj DT.Fst $ DT.Var 0))
+      (DT.Proj DT.Fst $ DT.Proj DT.Snd $ DT.Var 0)
+    )
 
 is_there_a_girl :: [J.Judgement]
 is_there_a_girl =
@@ -310,12 +313,19 @@ is_there_a_girl =
       pre_type = there_is_a_girl (DT.Var 4) (DT.Var 3)
   in prove var_env sig_env pre_type
 
+lnc :: [J.Judgement]
+lnc =
+  let sig_env = classic
+      var_env = [DT.Type]
+      pre_type = DT.Not (DT.Sigma (DT.Var 0) (DT.Not (DT.Var 1)))
+  in   prove var_env sig_env pre_type
 
 hasProof :: [J.Judgement]  -> Bool
 hasProof = ([] /=)
 
 sk_lst = map hasProof [i,b,c,w,b',c_star,transitive_7_18,dni,dni_2,dni_3,dne',cm,raa,con1,con2]
-not_sk_lst = map hasProof [dne,dne_2,cm',raa',con3,con4]
+hm_lst = sk_lst ++ map hasProof [lnc]
+not_sk_lst = map hasProof [efq,dne_2,cm',raa',con3,con4]
 tautology = map hasProof [transitive,transitive_2,importation]
 contradiction = map hasProof [p_not_p]
 truelst = map hasProof [membership_test,pi_intro_test,pi_elim_test,ex1]
@@ -323,9 +333,9 @@ falselst = map hasProof [false,formedness]
 
 test =
   (and sk_lst)
-  && not (or not_sk_lst)
+  && (and not_sk_lst)
   && (and tautology)
-  && not (or not_sk_lst)
+  && not (or contradiction)
   && (and truelst)
   && not (or falselst)
 
