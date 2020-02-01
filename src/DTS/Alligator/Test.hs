@@ -108,7 +108,7 @@ pars =
 gem :: [J.Judgement]
 gem =
   let
-    sig_env = []
+    sig_env = classic
     var_env = [DT.Type,DT.Type]
     pre_type = DT.Not (DT.Sigma (DT.Not (DT.Pi (DT.Var 1) (DT.Var 1))) (DT.Not (DT.Var 2)))
   in prove var_env sig_env pre_type
