@@ -213,7 +213,7 @@ prove ::  TEnv -- ^ var_context ex)[(DT.Con (T.pack "prop")),(DT.Con (T.pack "se
   -> [J.Judgement] -- term  /変更:DT.Judgemnetにする
 prove var_env sig_env pre_type =
   --TEnvをPTEnvに変える
-  let arrow_terms = proveWithEFQ_DNE' var_env sig_env pre_type
+  let arrow_terms = proveWithDNE' var_env sig_env pre_type
   in  map (\(AJudgement env a_term a_type) -> J.Judgement (map arrow2DT env) (arrow2DT a_term) (arrow2DT a_type)) arrow_terms
 
 prove' ::  TEnv -- ^ var_context ex)[(DT.Con (T.pack "prop")),(DT.Con (T.pack "set")),(DT.Con (T.pack "prop"))]
@@ -240,16 +240,16 @@ proveWithEFQ' var_env sig_env pre_type =
       arrow_terms = search_proof_with_EFQ arrow_env arrow_type 1
   in  arrow_terms
 
-proveWithEFQ_DNE' ::  TEnv -- ^ var_context ex)[(DT.Con (T.pack "prop")),(DT.Con (T.pack "set")),(DT.Con (T.pack "prop"))]
+proveWithDNE' ::  TEnv -- ^ var_context ex)[(DT.Con (T.pack "prop")),(DT.Con (T.pack "set")),(DT.Con (T.pack "prop"))]
   -> TEnv -- ^ sig_context ex)[((T.pack "prop"),DT.Type),((T.pack "set"),DT.Type)] , classic
   -> DT.Preterm -- type ex) (DT.Pi (DT.Var 0) (DT.Sigma (DT.Var 0,DT.Var 3)))
   -> [AJudgement] -- term  /変更:DT.Judgemnetにする
-proveWithEFQ_DNE' var_env sig_env pre_type =
+proveWithDNE' var_env sig_env pre_type =
   --TEnvをPTEnvに変える
   let var_env' = var_env ++ sig_env
       arrow_env = map (arrow_notat . DT.toDTT . UD.betaReduce . DT.toUDTT) var_env'
       arrow_type = (arrow_notat . DT.toDTT . UD.betaReduce . DT.toUDTT) pre_type
-      arrow_terms = search_proof_with_EFQ_DNE arrow_env arrow_type 1
+      arrow_terms = search_proof_with_DNE arrow_env arrow_type 1
   in  arrow_terms
 
 pi_rules = [(DT.Type, DT.Type),  (DT.Type, DT.Kind),  (DT.Kind, DT.Kind),   (DT.Kind, DT.Type)]
@@ -360,8 +360,8 @@ search_proof arrow_env arrow_type depth = deduceWithLog arrow_env arrow_type dep
 search_proof_with_EFQ :: [Arrowterm] ->Arrowterm -> Int -> [AJudgement]
 search_proof_with_EFQ arrow_env arrow_type depth = deduceWithEFQWithLog arrow_env arrow_type depth
 
-search_proof_with_EFQ_DNE :: [Arrowterm] ->Arrowterm -> Int -> [AJudgement]
-search_proof_with_EFQ_DNE arrow_env arrow_type depth = deduceWithEFQ_DNEWithLog arrow_env arrow_type depth
+search_proof_with_DNE :: [Arrowterm] ->Arrowterm -> Int -> [AJudgement]
+search_proof_with_DNE arrow_env arrow_type depth = deduceWithDNEWithLog arrow_env arrow_type depth
 
 
 
@@ -454,7 +454,7 @@ pi_intro con (Arrow a b) depth =
       Right []
     else
       let
-          b_judgements = deduceWithEFQ_DNEWithLog (a ++ con) b (depth + 1)
+          b_judgements = deduceWithDNEWithLog (a ++ con) b (depth + 1)
           pi_a_b_judgements =
             map
               (\b_j ->
@@ -598,8 +598,8 @@ deduceWithLog = withLog deduce
 deduceWithEFQWithLog :: [Arrowterm] -> Arrowterm ->Int ->[AJudgement]
 deduceWithEFQWithLog = withLog deduceWithEFQ
 
-deduceWithEFQ_DNEWithLog :: [Arrowterm] -> Arrowterm ->Int ->[AJudgement]
-deduceWithEFQ_DNEWithLog = withLog deduceWithEFQ_DNE
+deduceWithDNEWithLog :: [Arrowterm] -> Arrowterm ->Int ->[AJudgement]
+deduceWithDNEWithLog = withLog deduceWithDNE
 
 withLog' :: ([Arrowterm] -> Arrowterm -> Arrowterm ->Int ->Either (String) ([AJudgement])) -> [Arrowterm] -> Arrowterm -> Arrowterm ->Int ->[AJudgement]
 withLog' f con arrow_term arrow_type depth =
@@ -668,11 +668,11 @@ efq con b depth =
     else
       Right []
 
-deduceWithEFQ_DNE :: [Arrowterm] -- ^ context
+deduceWithDNE :: [Arrowterm] -- ^ context
   -> Arrowterm -- ^  type
   -> Int -- ^ depth
   ->Either (String) ([AJudgement])
-deduceWithEFQ_DNE con arrow_type depth=
+deduceWithDNE con arrow_type depth=
   if (depth < maxdepth)
   then
     if (arrow_type == Conclusion DT.Bot)
@@ -680,7 +680,7 @@ deduceWithEFQ_DNE con arrow_type depth=
       let judgements = map (\f -> withLog f con arrow_type depth) [membership,pi_intro,pi_elim,sigma_intro]
       in Right $ foldr (++) [] judgements
     else
-      let judgements = map (\f -> withLog f con arrow_type depth) [dne,efq,membership,pi_intro,pi_elim,sigma_intro]
+      let judgements = map (\f -> withLog f con arrow_type depth) [dne,membership,pi_intro,pi_elim,sigma_intro]
       in Right $ foldr (++) [] judgements
   else
     Left ("too deep @ deducewithEFQ " ++ show con ++" | "++ show arrow_type)
