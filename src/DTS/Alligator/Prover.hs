@@ -240,6 +240,18 @@ proveWithEFQ' var_env sig_env pre_type =
       arrow_terms = search_proof_with_EFQ arrow_env arrow_type 1
   in  arrow_terms
 
+proveWithDNE' ::  TEnv -- ^ var_context ex)[(DT.Con (T.pack "prop")),(DT.Con (T.pack "set")),(DT.Con (T.pack "prop"))]
+  -> TEnv -- ^ sig_context ex)[((T.pack "prop"),DT.Type),((T.pack "set"),DT.Type)] , classic
+  -> DT.Preterm -- type ex) (DT.Pi (DT.Var 0) (DT.Sigma (DT.Var 0,DT.Var 3)))
+  -> [AJudgement] -- term  /変更:DT.Judgemnetにする
+proveWithDNE' var_env sig_env pre_type =
+  --TEnvをPTEnvに変える
+  let var_env' = var_env ++ sig_env
+      arrow_env = map (arrow_notat . DT.toDTT . UD.betaReduce . DT.toUDTT) var_env'
+      arrow_type = (arrow_notat . DT.toDTT . UD.betaReduce . DT.toUDTT) pre_type
+      arrow_terms = search_proof_with_DNE arrow_env arrow_type 1
+  in  arrow_terms
+
 proveWithEFQ_DNE' ::  TEnv -- ^ var_context ex)[(DT.Con (T.pack "prop")),(DT.Con (T.pack "set")),(DT.Con (T.pack "prop"))]
   -> TEnv -- ^ sig_context ex)[((T.pack "prop"),DT.Type),((T.pack "set"),DT.Type)] , classic
   -> DT.Preterm -- type ex) (DT.Pi (DT.Var 0) (DT.Sigma (DT.Var 0,DT.Var 3)))
@@ -251,6 +263,7 @@ proveWithEFQ_DNE' var_env sig_env pre_type =
       arrow_type = (arrow_notat . DT.toDTT . UD.betaReduce . DT.toUDTT) pre_type
       arrow_terms = search_proof_with_EFQ_DNE arrow_env arrow_type 1
   in  arrow_terms
+
 
 pi_rules = [(DT.Type, DT.Type),  (DT.Type, DT.Kind),  (DT.Kind, DT.Kind),   (DT.Kind, DT.Type)]
 sigma_rules = [(DT.Type,DT.Type)]
@@ -302,9 +315,9 @@ gen_free_con term hoge =
       (gen_free_con term $hoge++hoge)
 
 -- | whether DT.Con "hoge" is free or not
-is_free_con :: Arrowterm -> -- ^ term
-  Arrowterm -> -- ^ DT.Con "hoge"
-  Bool
+is_free_con :: Arrowterm  -- ^ term
+  -> Arrowterm  -- ^ DT.Con "hoge"
+  -> Bool
 is_free_con term con=
   let term' = arrow_subst term con con
       term'' = arrow_subst term (Conclusion $ DT.Var 0) con
@@ -360,10 +373,11 @@ search_proof arrow_env arrow_type depth = deduceWithLog arrow_env arrow_type dep
 search_proof_with_EFQ :: [Arrowterm] ->Arrowterm -> Int -> [AJudgement]
 search_proof_with_EFQ arrow_env arrow_type depth = deduceWithEFQWithLog arrow_env arrow_type depth
 
+search_proof_with_DNE :: [Arrowterm] ->Arrowterm -> Int -> [AJudgement]
+search_proof_with_DNE arrow_env arrow_type depth = deduceWithDNEWithLog arrow_env arrow_type depth
+
 search_proof_with_EFQ_DNE :: [Arrowterm] ->Arrowterm -> Int -> [AJudgement]
 search_proof_with_EFQ_DNE arrow_env arrow_type depth = deduceWithEFQ_DNEWithLog arrow_env arrow_type depth
-
-
 
 membership :: [Arrowterm] ->  Arrowterm -> Int -> Either (String) ([AJudgement])
 membership con arrow_type depth =
@@ -454,7 +468,7 @@ pi_intro con (Arrow a b) depth =
       Right []
     else
       let
-          b_judgements = deduceWithEFQ_DNEWithLog (a ++ con) b (depth + 1)
+          b_judgements = deduceWithLog (a ++ con) b (depth + 1)
           pi_a_b_judgements =
             map
               (\b_j ->
@@ -468,6 +482,84 @@ pi_intro con (Arrow a b) depth =
       in
         Right pi_a_b_judgements
 pi_intro  con arrow_type depth= Right []
+
+pi_introwithDNE_EFQ :: [Arrowterm] ->  Arrowterm -> Int -> Either (String) ([AJudgement])
+pi_introwithDNE_EFQ con (Arrow a b) depth =
+  if depth > maxdepth
+  then
+    Left ("too deep @ pi-intro " ++ show con ++" ト "++ show (Arrow a b))
+  else
+    if ((foldr (++) [] $ map (\dtterm -> withLog' typecheck con (Arrow a b) (Conclusion dtterm) depth) [DT.Type,DT.Kind]) == [])
+    then
+      Right []
+    else
+      let
+          b_judgements = deduceWithEFQ_DNEWithLog (a ++ con) b (depth + 1)
+          pi_a_b_judgements =
+            map
+              (\b_j ->
+                let
+                  env = con
+                  a_term = add_Lam (length a) (termfromAJudgement b_j)
+                  a_type = Arrow a b
+                in
+                  AJudgement env a_term a_type)
+              b_judgements
+      in
+        Right pi_a_b_judgements
+pi_introwithDNE_EFQ  con arrow_type depth= Right []
+
+pi_introwithDNE :: [Arrowterm] ->  Arrowterm -> Int -> Either (String) ([AJudgement])
+pi_introwithDNE con (Arrow a b) depth =
+  if depth > maxdepth
+  then
+    Left ("too deep @ pi-intro " ++ show con ++" ト "++ show (Arrow a b))
+  else
+    if ((foldr (++) [] $ map (\dtterm -> withLog' typecheck con (Arrow a b) (Conclusion dtterm) depth) [DT.Type,DT.Kind]) == [])
+    then
+      Right []
+    else
+      let
+          b_judgements = deduceWithDNEWithLog (a ++ con) b (depth + 1)
+          pi_a_b_judgements =
+            map
+              (\b_j ->
+                let
+                  env = con
+                  a_term = add_Lam (length a) (termfromAJudgement b_j)
+                  a_type = Arrow a b
+                in
+                  AJudgement env a_term a_type)
+              b_judgements
+      in
+        Right pi_a_b_judgements
+pi_introwithDNE  con arrow_type depth= Right []
+
+pi_introwithEFQ :: [Arrowterm] ->  Arrowterm -> Int -> Either (String) ([AJudgement])
+pi_introwithEFQ con (Arrow a b) depth =
+  if depth > maxdepth
+  then
+    Left ("too deep @ pi-intro " ++ show con ++" ト "++ show (Arrow a b))
+  else
+    if ((foldr (++) [] $ map (\dtterm -> withLog' typecheck con (Arrow a b) (Conclusion dtterm) depth) [DT.Type,DT.Kind]) == [])
+    then
+      Right []
+    else
+      let
+          b_judgements = deduceWithEFQWithLog (a ++ con) b (depth + 1)
+          pi_a_b_judgements =
+            map
+              (\b_j ->
+                let
+                  env = con
+                  a_term = add_Lam (length a) (termfromAJudgement b_j)
+                  a_type = Arrow a b
+                in
+                  AJudgement env a_term a_type)
+              b_judgements
+      in
+        Right pi_a_b_judgements
+pi_introwithEFQ  con arrow_type depth= Right []
 
 tail_is_b :: Arrowterm -> Arrowterm -> Bool
 tail_is_b (Arrow env b') b=
@@ -598,6 +690,9 @@ deduceWithLog = withLog deduce
 deduceWithEFQWithLog :: [Arrowterm] -> Arrowterm ->Int ->[AJudgement]
 deduceWithEFQWithLog = withLog deduceWithEFQ
 
+deduceWithDNEWithLog :: [Arrowterm] -> Arrowterm ->Int ->[AJudgement]
+deduceWithDNEWithLog = withLog deduceWithDNE
+
 deduceWithEFQ_DNEWithLog :: [Arrowterm] -> Arrowterm ->Int ->[AJudgement]
 deduceWithEFQ_DNEWithLog = withLog deduceWithEFQ_DNE
 
@@ -641,7 +736,7 @@ deduceWithEFQ :: [Arrowterm] -- ^ context
 deduceWithEFQ con arrow_type depth=
   if (depth < maxdepth)
   then
-    let judgements = map (\f -> withLog f con arrow_type depth) [efq,membership,pi_intro,pi_elim,sigma_intro]
+    let judgements = map (\f -> withLog f con arrow_type depth) [efq,membership,pi_introwithEFQ,pi_elim,sigma_intro]
     in Right $ foldr (++) [] judgements
   else
     Left ("too deep @ deducewithEFQ " ++ show con ++" | "++ show arrow_type)
@@ -668,11 +763,40 @@ efq con b depth =
     else
       Right []
 
-deduceWithEFQ_DNE :: [Arrowterm] -- ^ context
+-- deduceWithDNE :: [Arrowterm] -- ^ context
+--   -> Arrowterm -- ^  type
+--   -> Int -- ^ depth
+--   ->Either (String) ([AJudgement])
+-- deduceWithDNE con arrow_type depth=
+--   if (depth < maxdepth)
+--   then
+--     let judgements = map (\f -> withLog f con arrow_type depth) [dne,membership,pi_introwithDNE,pi_elim,sigma_intro]
+--     in Right $ foldr (++) [] judgements
+--   else
+--     Left ("too deep @ deducewithDNE" ++ show con ++" | "++ show arrow_type)
+
+-- deduceWithDNE :: [Arrowterm] -- ^ context
+--   -> Arrowterm -- ^  type
+--   -> Int -- ^ depth
+--   ->Either (String) ([AJudgement])
+-- deduceWithDNE con arrow_type depth=
+--   if (depth < maxdepth)
+--   then
+--     if (arrow_type == Conclusion DT.Bot)
+--     then
+--       let judgements = map (\f -> withLog f con arrow_type depth) [membership,pi_intro,pi_elim,sigma_intro]
+--       in Right $ foldr (++) [] judgements
+--     else
+--       let judgements = map (\f -> withLog f con arrow_type depth) [dne,membership,pi_intro,pi_elim,sigma_intro]
+--       in Right $ foldr (++) [] judgements
+--   else
+--     Left ("too deep @ deducewithEFQ " ++ show con ++" | "++ show arrow_type)
+
+deduceWithDNE :: [Arrowterm] -- ^ context
   -> Arrowterm -- ^  type
   -> Int -- ^ depth
   ->Either (String) ([AJudgement])
-deduceWithEFQ_DNE con arrow_type depth=
+deduceWithDNE con arrow_type depth=
   if (depth < maxdepth)
   then
     if (arrow_type == Conclusion DT.Bot)
@@ -680,11 +804,10 @@ deduceWithEFQ_DNE con arrow_type depth=
       let judgements = map (\f -> withLog f con arrow_type depth) [membership,pi_intro,pi_elim,sigma_intro]
       in Right $ foldr (++) [] judgements
     else
-      let judgements = map (\f -> withLog f con arrow_type depth) [dne,efq,membership,pi_intro,pi_elim,sigma_intro]
+      let judgements = map (\f -> withLog f con arrow_type depth) [efq,dne,membership,pi_introwithDNE,pi_elim,sigma_intro]
       in Right $ foldr (++) [] judgements
   else
     Left ("too deep @ deducewithEFQ " ++ show con ++" | "++ show arrow_type)
-
 
 dne :: [Arrowterm] -> Arrowterm->Int->Either (String) ([AJudgement])
 dne con b depth =
@@ -706,7 +829,24 @@ dne con b depth =
               dne_js
       else
         Right []
---deduce (pi-intro + sigma-intro + membership + type-ax)
+
+deduceWithEFQ_DNE :: [Arrowterm] -- ^ context
+  -> Arrowterm -- ^  type
+  -> Int -- ^ depth
+  ->Either (String) ([AJudgement])
+deduceWithEFQ_DNE con arrow_type depth=
+  if (depth < maxdepth)
+  then
+    if (arrow_type == Conclusion DT.Bot)
+    then
+      let judgements = map (\f -> withLog f con arrow_type depth) [membership,pi_introwithDNE_EFQ,pi_elim,sigma_intro]
+      in Right $ foldr (++) [] judgements
+    else
+      let judgements = map (\f -> withLog f con arrow_type depth) [dne,efq,membership,pi_introwithDNE_EFQ,pi_elim,sigma_intro]
+      in Right $ foldr (++) [] judgements
+  else
+    Left ("too deep @ deducewithEFQ " ++ show con ++" | "++ show arrow_type)
+
 
 deduce :: [Arrowterm] -- ^ context
   -> Arrowterm -- ^  type
@@ -737,4 +877,5 @@ typecheck :: [Arrowterm] -- ^ context
 deduce :: [Arrowterm] -- ^ context
   -> Arrowterm -- ^  type
   -> Int -- ^ depth
-  ->Either (String) ([AJudgement])-}
+  ->Either (String) ([AJudgement])
+-}
