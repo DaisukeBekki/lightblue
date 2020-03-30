@@ -1,5 +1,5 @@
 {-# OPTIONS -Wall #-}
-{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances #-}
+-- {-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances #-}
 
 module DTS.Alligator.TPTP.Parser (
   Tvar(..),
@@ -18,7 +18,7 @@ import qualified DTS.DTT as DT
 import Text.Parsec
 import Text.Parsec.Text
 
-data Tvar = Tvar Char deriving (Eq,Show)
+newtype Tvar = Tvar Char deriving (Eq,Show)
 data Tbop = Tand | Tor | Timp | Tequiv deriving (Eq,Show)
 
 data Tformula =
@@ -34,7 +34,7 @@ data Tformula =
 
 cleanse :: T.Text -> T.Text
 cleanse tptp_text =
-   T.filter (not . C.isSpace) $ T.concat $ filter (\ln -> case T.uncons ln of
+   T.filter (not . (C.isSpace)) $ T.concat $ filter (\ln -> case T.uncons ln of
                                               Just ('%',_) -> False
                                               Just _ -> True
                                               Nothing -> False
@@ -62,8 +62,8 @@ tptpParser = do
   return f
 
 bopParser :: Parser Tbop
-bopParser = do
-  (char '&' *> return Tand)
+bopParser =
+  char '&' *> return Tand
   <|>
   (char '|' *> return Tor)
   <|>
