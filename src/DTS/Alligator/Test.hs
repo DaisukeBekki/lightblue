@@ -2,11 +2,18 @@ module DTS.Alligator.Test
 (
   dni
 ) where
-import DTS.Alligator.Prover
+import DTS.Alligator.Prover0204
 import qualified DTS.DTT as DT
 import qualified DTS.UDTT as UD
 import qualified Data.Text.Lazy as T
 import qualified DTS.Prover.Judgement as J
+import qualified System.Timeout as ST
+
+-- tabletimeout :: [Char]
+-- tabletimeout =
+--   justtimeout >>= (\x -> x)
+
+
 
 p :: DT.Preterm
 p = DT.Con $ T.pack "p"
@@ -65,6 +72,20 @@ dni_3 =
   let sig_env = classic
       var_env = [r,q,p]
       pre_type = DT.Pi (DT.Pi p DT.Bot) DT.Bot
+  in prove var_env sig_env pre_type
+
+dni_4 :: [J.Judgement]
+dni_4 =
+  let sig_env = classic
+      var_env = []
+      pre_type = DT.Pi (DT.Type) (DT.Pi (DT.Not $ DT.Not $ DT.Var 0) (DT.Var 1))
+  in prove var_env sig_env pre_type
+
+dni_5 :: [J.Judgement]
+dni_5 =
+  let sig_env = classic
+      var_env = [DT.Not $ DT.Not $ DT.Var 0,DT.Type]
+      pre_type = DT.Type
   in prove var_env sig_env pre_type
 
 efq :: [J.Judgement]
@@ -270,6 +291,30 @@ importation =
     pre_type = DT.Pi (DT.Pi (DT.Sigma p q) r) (DT.Pi p (DT.Pi q r))
   in   prove var_env sig_env pre_type
 
+mp :: [J.Judgement]
+mp =
+  let
+    sig_env = classic
+    var_env = [DT.Pi (DT.Var 2) (DT.Var 2), (DT.Var 1),DT.Type,DT.Type]
+    pre_type = DT.Var 2
+  in   prove var_env sig_env pre_type
+
+s :: [J.Judgement]
+s =
+  let
+    sig_env = classic
+    var_env = [DT.Type,DT.Type,DT.Type]
+    pre_type = DT.Pi (DT.Pi (DT.Var 2) (DT.Pi (DT.Var 2) (DT.Var 2))) (DT.Pi (DT.Pi (DT.Var 3) (DT.Var 3)) (DT.Pi (DT.Var 4) (DT.Var 3)))
+  in   prove var_env sig_env pre_type
+
+k :: [J.Judgement]
+k =
+  let
+    sig_env = classic
+    var_env = [DT.Type,DT.Type]
+    pre_type =DT.Pi (DT.Var 1) (DT.Pi (DT.Var 1) (DT.Var 3))
+  in   prove var_env sig_env pre_type
+
 i :: [J.Judgement]
 i =
   let
@@ -371,12 +416,12 @@ not_false =
     pre_type =DT.Bot
   in   prove var_env sig_env pre_type
 
-is_there_a_girl :: [AJudgement]
-is_there_a_girl =
-  let sig_env = classic
-      var_env = [a_girl_writes_a_thesis (DT.Var 3) (DT.Var 2) (DT.Var 1) (DT.Var 0),write (DT.Var 2),thesis (DT.Var 1),girl (DT.Var 0),entity]
-      pre_type = there_is_a_girl (DT.Var 4) (DT.Var 3)
-  in prove' var_env sig_env pre_type
+-- is_there_a_girl :: [AJudgement]
+-- is_there_a_girl =
+--   let sig_env = []
+--       var_env = [a_girl_writes_a_thesis (DT.Var 3) (DT.Var 2) (DT.Var 1) (DT.Var 0),write (DT.Var 2),thesis (DT.Var 1),girl (DT.Var 0),entity]
+--       pre_type = there_is_a_girl (DT.Var 4) (DT.Var 3)
+--   in prove' var_env sig_env pre_type
 
 {-
 is_there_a_girl :: [AJudgement]
