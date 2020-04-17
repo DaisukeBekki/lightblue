@@ -30,7 +30,7 @@
 %            Number of variables   :    0 (   0 singleton;   0 !;   0 ?)
 %            Maximal term depth    :    0 (   0 average)
 
-% Comments : 
+% Comments :
 %--------------------------------------------------------------------------
 fof(pel2,conjecture,
     ( ~ ~ p

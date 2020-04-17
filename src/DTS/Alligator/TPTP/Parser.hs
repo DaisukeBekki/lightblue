@@ -18,7 +18,7 @@ import qualified DTS.DTT as DT
 import Text.Parsec
 import Text.Parsec.Text
 
-newtype Tvar = Tvar Char deriving (Eq,Show)
+newtype Tvar = Tvar String deriving (Eq,Show)
 data Tbop = Tand | Tor | Timp | Tequiv deriving (Eq,Show)
 
 data Tformula =
