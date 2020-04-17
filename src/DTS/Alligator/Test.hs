@@ -2,12 +2,13 @@ module DTS.Alligator.Test
 (
   dni
 ) where
-import DTS.Alligator.Prover0204
+import DTS.Alligator.Prover
 import qualified DTS.DTT as DT
 import qualified DTS.UDTT as UD
 import qualified Data.Text.Lazy as T
 import qualified DTS.Prover.Judgement as J
 import qualified System.Timeout as ST
+import qualified DTS.Alligator.Arrowterm as A
 
 -- tabletimeout :: [Char]
 -- tabletimeout =
@@ -438,6 +439,15 @@ lnc =
       pre_type = DT.Not (DT.Sigma (DT.Var 0) (DT.Not (DT.Var 1)))
   in   prove var_env sig_env pre_type
 
+pel10 :: [J.Judgement]
+pel10 =
+  let sig_env = classic
+      var_env = [DT.Pi (DT.Var 4) (DT.Not (DT.Sigma (DT.Not (DT.Var 4)) (DT.Not (DT.Var 4))) ),DT.Pi (DT.Var 1) (DT.Sigma (DT.Var 4) (DT.Var 4)),DT.Pi (DT.Var 1) (DT.Var 1),DT.Type,DT.Type,DT.Type]
+      -- pre_type = DT.Sigma (DT.Pi (DT.Var 5) (DT.Var 5)) (DT.Pi (DT.Var 5) (DT.Var 7))
+      pre_type = DT.Pi (DT.Var 5) (DT.Var 5)
+  in
+    -- A.AJudgement (map (A.Conclusion) var_env) (A.Conclusion DT.Bot) (A.Conclusion pre_type)
+    prove var_env sig_env pre_type
 
 hasProof :: [J.Judgement]  -> Bool
 hasProof = ([] /=)
@@ -457,6 +467,7 @@ test =
   && not (or contradiction)
   && (and truelst)
   && not (or falselst)
+
 
 
 {-

@@ -39,9 +39,9 @@
 %            one should say that the problems increase linearly in
 %            difficulty. Urquhart says that the proof size of any resolution
 %            system increases exponentially with increase in N.
-%          : This problem can also be done in terms of graphs, as described 
+%          : This problem can also be done in terms of graphs, as described
 %            in [Pel86] Problem 74.
-%          : tptp2X: -f tptp -s14 SYN007+1.g 
+%          : tptp2X: -f tptp -s14 SYN007+1.g
 %--------------------------------------------------------------------------
 fof(prove_this,conjecture,
     ( p_1

@@ -305,14 +305,14 @@ arrow_conclusion_b' con b depth=
         (\(A.AJudgement _ _ j_type) ->
           case  j_type of
             A.Arrow j_a j_b -> (tail_is_b j_b (A.Conclusion $ DT.Var 0)) && (head_is_type j_type)
-            otherwise -> False)
+            _ -> False)
         (forward_context con)
   else
     []
 
 deduce_envs :: [A.Arrowterm] -> [A.AJudgement] -> Int-> [(A.AJudgement,[[A.AJudgement]])]
 deduce_envs con a_judgements depth =
-  let ajudges = map (\env -> sequence (map (\a -> deduceWithLog con a depth) env)) $ map (\(A.AJudgement _ _ (A.Arrow env _)) -> env) a_judgements
+  let ajudges = map (\env -> mapM (\a -> deduceWithLog con a depth) env) $ map (\(A.AJudgement _ _ (A.Arrow env _)) -> env) a_judgements
   in filter ((/= []) . snd) $zip a_judgements ajudges
 
 app_as :: A.Arrowterm -> [A.Arrowterm] -> A.Arrowterm
