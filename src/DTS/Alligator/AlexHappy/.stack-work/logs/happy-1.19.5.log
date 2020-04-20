@@ -1,0 +1,287 @@
+[1 of 2] Compiling Main             ( /private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack13017/happy-1.19.5/Setup.lhs, /private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack13017/happy-1.19.5/.stack-work/dist/x86_64-osx/Cabal-1.22.4.0/setup/Main.o )
+
+/private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack13017/happy-1.19.5/Setup.lhs:20:1: Warning:
+    Tab character
+
+/private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack13017/happy-1.19.5/Setup.lhs:21:1: Warning:
+    Tab character
+
+/private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack13017/happy-1.19.5/Setup.lhs:22:1: Warning:
+    Tab character
+
+/private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack13017/happy-1.19.5/Setup.lhs:68:1: Warning:
+    Tab character
+
+/private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack13017/happy-1.19.5/Setup.lhs:74:1: Warning:
+    Tab character
+
+/private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack13017/happy-1.19.5/Setup.lhs:81:19: Warning:
+    Tab character
+
+/private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack13017/happy-1.19.5/Setup.lhs:82:23: Warning:
+    Tab character
+
+/private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack13017/happy-1.19.5/Setup.lhs:83:26: Warning:
+    Tab character
+
+/private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack13017/happy-1.19.5/Setup.lhs:84:26: Warning:
+    Tab character
+
+/private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack13017/happy-1.19.5/Setup.lhs:85:30: Warning:
+    Tab character
+
+/private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack13017/happy-1.19.5/Setup.lhs:86:33: Warning:
+    Tab character
+
+/private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack13017/happy-1.19.5/Setup.lhs:87:32: Warning:
+    Tab character
+
+/private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack13017/happy-1.19.5/Setup.lhs:88:36: Warning:
+    Tab character
+
+/private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack13017/happy-1.19.5/Setup.lhs:89:39: Warning:
+    Tab character
+
+/private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack13017/happy-1.19.5/Setup.lhs:94:14: Warning:
+    Tab character
+
+/private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack13017/happy-1.19.5/Setup.lhs:99:13: Warning:
+    Tab character
+
+/private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack13017/happy-1.19.5/Setup.lhs:100:17: Warning:
+    Tab character
+
+/private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack13017/happy-1.19.5/Setup.lhs:101:23: Warning:
+    Tab character
+[2 of 2] Compiling StackSetupShim   ( /Users/daidohinari/.stack/setup-exe-src/setup-shim-mPHDZzAJ.hs, /private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack13017/happy-1.19.5/.stack-work/dist/x86_64-osx/Cabal-1.22.4.0/setup/StackSetupShim.o )
+Linking /private/var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/stack13017/happy-1.19.5/.stack-work/dist/x86_64-osx/Cabal-1.22.4.0/setup/setup ...
+
+In file included from /var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/ghc13027_0/ghc_8.c:1:0:
+    
+
+In file included from /Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/Rts.h:217:0:
+    
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:505:5:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+#if ZERO_SLOP_FOR_LDV_PROF || ZERO_SLOP_FOR_SANITY_CHECK
+    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:502:37:
+     note: expanded from macro 'ZERO_SLOP_FOR_LDV_PROF'
+#define ZERO_SLOP_FOR_LDV_PROF     (defined(PROFILING))
+                                    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:505:31:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+#if ZERO_SLOP_FOR_LDV_PROF || ZERO_SLOP_FOR_SANITY_CHECK
+                              ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:503:37:
+     note: expanded from macro 'ZERO_SLOP_FOR_SANITY_CHECK'
+#define ZERO_SLOP_FOR_SANITY_CHECK (defined(DEBUG) && !defined(THREADED_RTS))
+                                    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:505:31:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:503:56:
+     note: expanded from macro 'ZERO_SLOP_FOR_SANITY_CHECK'
+#define ZERO_SLOP_FOR_SANITY_CHECK (defined(DEBUG) && !defined(THREADED_RTS))
+                                                       ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:523:5:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+#if ZERO_SLOP_FOR_LDV_PROF && !ZERO_SLOP_FOR_SANITY_CHECK
+    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:502:37:
+     note: expanded from macro 'ZERO_SLOP_FOR_LDV_PROF'
+#define ZERO_SLOP_FOR_LDV_PROF     (defined(PROFILING))
+                                    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:523:32:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+#if ZERO_SLOP_FOR_LDV_PROF && !ZERO_SLOP_FOR_SANITY_CHECK
+                               ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:503:37:
+     note: expanded from macro 'ZERO_SLOP_FOR_SANITY_CHECK'
+#define ZERO_SLOP_FOR_SANITY_CHECK (defined(DEBUG) && !defined(THREADED_RTS))
+                                    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:523:32:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:503:56:
+     note: expanded from macro 'ZERO_SLOP_FOR_SANITY_CHECK'
+#define ZERO_SLOP_FOR_SANITY_CHECK (defined(DEBUG) && !defined(THREADED_RTS))
+                                                       ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:552:5:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+#if ZERO_SLOP_FOR_LDV_PROF && !ZERO_SLOP_FOR_SANITY_CHECK
+    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:502:37:
+     note: expanded from macro 'ZERO_SLOP_FOR_LDV_PROF'
+#define ZERO_SLOP_FOR_LDV_PROF     (defined(PROFILING))
+                                    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:552:32:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+#if ZERO_SLOP_FOR_LDV_PROF && !ZERO_SLOP_FOR_SANITY_CHECK
+                               ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:503:37:
+     note: expanded from macro 'ZERO_SLOP_FOR_SANITY_CHECK'
+#define ZERO_SLOP_FOR_SANITY_CHECK (defined(DEBUG) && !defined(THREADED_RTS))
+                                    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:552:32:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:503:56:
+     note: expanded from macro 'ZERO_SLOP_FOR_SANITY_CHECK'
+#define ZERO_SLOP_FOR_SANITY_CHECK (defined(DEBUG) && !defined(THREADED_RTS))
+                                                       ^
+9 warnings generated.
+Warning: happy.cabal: Ignoring unknown section type: custom-setup
+Configuring happy-1.19.5...
+Building happy-1.19.5...
+Preprocessing executable 'happy' for happy-1.19.5...
+[ 1 of 18] Compiling GenUtils         ( src/GenUtils.lhs, .stack-work/dist/x86_64-osx/Cabal-1.22.4.0/build/happy/happy-tmp/GenUtils.o )
+[ 2 of 18] Compiling NameSet          ( src/NameSet.hs, .stack-work/dist/x86_64-osx/Cabal-1.22.4.0/build/happy/happy-tmp/NameSet.o )
+[ 3 of 18] Compiling Target           ( src/Target.lhs, .stack-work/dist/x86_64-osx/Cabal-1.22.4.0/build/happy/happy-tmp/Target.o )
+[ 4 of 18] Compiling AbsSyn           ( src/AbsSyn.lhs, .stack-work/dist/x86_64-osx/Cabal-1.22.4.0/build/happy/happy-tmp/AbsSyn.o )
+[ 5 of 18] Compiling ParamRules       ( src/ParamRules.hs, .stack-work/dist/x86_64-osx/Cabal-1.22.4.0/build/happy/happy-tmp/ParamRules.o )
+
+src/ParamRules.hs:5:1: Warning:
+    Module ‘Control.Monad.Error’ is deprecated:
+      Use Control.Monad.Except instead
+
+src/ParamRules.hs:6:1: Warning:
+    Module ‘Control.Monad.Instances’ is deprecated:
+      This module now contains no instances and will be removed in the future
+
+src/ParamRules.hs:31:17: Warning:
+    In the use of type constructor or class ‘ErrorT’
+    (imported from Control.Monad.Error, but defined in transformers-0.4.2.0:Control.Monad.Trans.Error):
+    Deprecated: "Use Control.Monad.Trans.Except instead"
+
+src/ParamRules.hs:71:10: Warning:
+    In the use of type constructor or class ‘ErrorT’
+    (imported from Control.Monad.Error, but defined in transformers-0.4.2.0:Control.Monad.Trans.Error):
+    Deprecated: "Use Control.Monad.Trans.Except instead"
+
+src/ParamRules.hs:72:27: Warning:
+    In the use of ‘runErrorT’
+    (imported from Control.Monad.Error, but defined in transformers-0.4.2.0:Control.Monad.Trans.Error):
+    Deprecated: "Use Control.Monad.Trans.Except instead"
+[ 6 of 18] Compiling ParseMonad       ( src/ParseMonad.hs, .stack-work/dist/x86_64-osx/Cabal-1.22.4.0/build/happy/happy-tmp/ParseMonad.o )
+[ 7 of 18] Compiling Lexer            ( src/Lexer.lhs, .stack-work/dist/x86_64-osx/Cabal-1.22.4.0/build/happy/happy-tmp/Lexer.o )
+[ 8 of 18] Compiling Parser           ( .stack-work/dist/x86_64-osx/Cabal-1.22.4.0/build/happy/happy-tmp/Parser.hs, .stack-work/dist/x86_64-osx/Cabal-1.22.4.0/build/happy/happy-tmp/Parser.o )
+[ 9 of 18] Compiling AttrGrammar      ( src/AttrGrammar.lhs, .stack-work/dist/x86_64-osx/Cabal-1.22.4.0/build/happy/happy-tmp/AttrGrammar.o )
+[10 of 18] Compiling AttrGrammarParser ( .stack-work/dist/x86_64-osx/Cabal-1.22.4.0/build/happy/happy-tmp/AttrGrammarParser.hs, .stack-work/dist/x86_64-osx/Cabal-1.22.4.0/build/happy/happy-tmp/AttrGrammarParser.o )
+[11 of 18] Compiling Grammar          ( src/Grammar.lhs, .stack-work/dist/x86_64-osx/Cabal-1.22.4.0/build/happy/happy-tmp/Grammar.o )
+[12 of 18] Compiling First            ( src/First.lhs, .stack-work/dist/x86_64-osx/Cabal-1.22.4.0/build/happy/happy-tmp/First.o )
+[13 of 18] Compiling LALR             ( src/LALR.lhs, .stack-work/dist/x86_64-osx/Cabal-1.22.4.0/build/happy/happy-tmp/LALR.o )
+[14 of 18] Compiling Paths_happy      ( .stack-work/dist/x86_64-osx/Cabal-1.22.4.0/build/autogen/Paths_happy.hs, .stack-work/dist/x86_64-osx/Cabal-1.22.4.0/build/happy/happy-tmp/Paths_happy.o )
+[15 of 18] Compiling ProduceCode      ( src/ProduceCode.lhs, .stack-work/dist/x86_64-osx/Cabal-1.22.4.0/build/happy/happy-tmp/ProduceCode.o )
+[16 of 18] Compiling ProduceGLRCode   ( src/ProduceGLRCode.lhs, .stack-work/dist/x86_64-osx/Cabal-1.22.4.0/build/happy/happy-tmp/ProduceGLRCode.o )
+[17 of 18] Compiling Info             ( src/Info.lhs, .stack-work/dist/x86_64-osx/Cabal-1.22.4.0/build/happy/happy-tmp/Info.o )
+[18 of 18] Compiling Main             ( src/Main.lhs, .stack-work/dist/x86_64-osx/Cabal-1.22.4.0/build/happy/happy-tmp/Main.o )
+Linking .stack-work/dist/x86_64-osx/Cabal-1.22.4.0/build/happy/happy ...
+
+In file included from /var/folders/2s/x156s9rn0dbb07ymqyg052g40000gn/T/ghc13449_0/ghc_49.c:1:0:
+    
+
+In file included from /Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/Rts.h:217:0:
+    
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:505:5:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+#if ZERO_SLOP_FOR_LDV_PROF || ZERO_SLOP_FOR_SANITY_CHECK
+    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:502:37:
+     note: expanded from macro 'ZERO_SLOP_FOR_LDV_PROF'
+#define ZERO_SLOP_FOR_LDV_PROF     (defined(PROFILING))
+                                    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:505:31:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+#if ZERO_SLOP_FOR_LDV_PROF || ZERO_SLOP_FOR_SANITY_CHECK
+                              ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:503:37:
+     note: expanded from macro 'ZERO_SLOP_FOR_SANITY_CHECK'
+#define ZERO_SLOP_FOR_SANITY_CHECK (defined(DEBUG) && !defined(THREADED_RTS))
+                                    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:505:31:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:503:56:
+     note: expanded from macro 'ZERO_SLOP_FOR_SANITY_CHECK'
+#define ZERO_SLOP_FOR_SANITY_CHECK (defined(DEBUG) && !defined(THREADED_RTS))
+                                                       ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:523:5:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+#if ZERO_SLOP_FOR_LDV_PROF && !ZERO_SLOP_FOR_SANITY_CHECK
+    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:502:37:
+     note: expanded from macro 'ZERO_SLOP_FOR_LDV_PROF'
+#define ZERO_SLOP_FOR_LDV_PROF     (defined(PROFILING))
+                                    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:523:32:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+#if ZERO_SLOP_FOR_LDV_PROF && !ZERO_SLOP_FOR_SANITY_CHECK
+                               ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:503:37:
+     note: expanded from macro 'ZERO_SLOP_FOR_SANITY_CHECK'
+#define ZERO_SLOP_FOR_SANITY_CHECK (defined(DEBUG) && !defined(THREADED_RTS))
+                                    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:523:32:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:503:56:
+     note: expanded from macro 'ZERO_SLOP_FOR_SANITY_CHECK'
+#define ZERO_SLOP_FOR_SANITY_CHECK (defined(DEBUG) && !defined(THREADED_RTS))
+                                                       ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:552:5:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+#if ZERO_SLOP_FOR_LDV_PROF && !ZERO_SLOP_FOR_SANITY_CHECK
+    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:502:37:
+     note: expanded from macro 'ZERO_SLOP_FOR_LDV_PROF'
+#define ZERO_SLOP_FOR_LDV_PROF     (defined(PROFILING))
+                                    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:552:32:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+#if ZERO_SLOP_FOR_LDV_PROF && !ZERO_SLOP_FOR_SANITY_CHECK
+                               ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:503:37:
+     note: expanded from macro 'ZERO_SLOP_FOR_SANITY_CHECK'
+#define ZERO_SLOP_FOR_SANITY_CHECK (defined(DEBUG) && !defined(THREADED_RTS))
+                                    ^
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:552:32:
+     warning: macro expansion producing 'defined' has undefined behavior [-Wexpansion-to-defined]
+
+/Users/daidohinari/.stack/programs/x86_64-osx/ghc-7.10.2/lib/ghc-7.10.2/include/rts/storage/ClosureMacros.h:503:56:
+     note: expanded from macro 'ZERO_SLOP_FOR_SANITY_CHECK'
+#define ZERO_SLOP_FOR_SANITY_CHECK (defined(DEBUG) && !defined(THREADED_RTS))
+                                                       ^
+9 warnings generated.
+Installing executable(s) in
+/Users/daidohinari/.stack/snapshots/x86_64-osx/lts-3.16/7.10.2/bin

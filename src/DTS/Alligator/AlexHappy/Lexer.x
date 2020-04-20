@@ -15,7 +15,7 @@ $alpha = [a-zA-Z]
 $eol   = [\n]
 $space = [\ ]
 $hyphen = [\-]
-$word = [A-Z a-z $digit \_ \' \- $hyphen \+ \[ \] \! \? \; \=]
+$word = [A-Z a-z $digit \_ \' \- $hyphen \+ \[ \] \! \? \; \= \$ \" \/ \{ \} \* \< \>]
 
 
 tokens :-
@@ -52,10 +52,10 @@ tokens :-
     { \s -> TokenPeriod }
   fof
     { \s -> TokenFOF }
-  \% [$space]* Number [$space]+ of [$space]+ predicates
-    { \s -> TokenPreNum}
   [$space]* $digit+
     { \s -> TokenNum (read s) }
+  \% [$space]* Number [$space]+ of [$space]+ predicates
+    { \s -> TokenPreNum}
   \% [$space]* File
     { \s -> TokenFile }
   [$space]* \%
@@ -68,7 +68,11 @@ tokens :-
     { \s -> TokenWord s }
   \< \- \>
     { \s -> TokenWord "<->"}
+  \- \>
+    { \s -> TokenWord "->"}
   \. \. \.
+    { \s -> TokenWord "..."}
+  \. \.
     { \s -> TokenWord "..."}
 
 {

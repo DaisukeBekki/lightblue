@@ -33,7 +33,6 @@ import Control.Monad.Except
     fof        { TokenFOF }
 
 %%
-
 terms
     : term                   { [$1] }
     | term terms             { $1 : $2 }
@@ -41,7 +40,7 @@ terms
 words
     : word                   { [$1] }
     | int                    { [(show $1)] }
-    | coron                  { [] }
+    | coron                  { [":"] }
     | comma                  { [] }
     | period                 { [] }
     | connective             { [$1] }
@@ -62,24 +61,25 @@ formula
     | and formula            {  "&" : $2 }
     | word formula           { $1 : $2 }
     | connective formula     { $1 : $2 }
+    | coron formula          { ":" : $2 }
     | int formula            { (show $1) : $2 }
     | lbracket               { ["("] }
     | rbracket               { [")"] }
     | lbracket formula       { "(" : $2 }
     | rbracket formula       { ")" : $2 }
 
+others
+    : formula                { [$1] }
+    | words                  { [$1] }
+    | formula others         { $1 : $2}
+    | words others         { $1 : $2}
+
 term
    : file coron word coron words
       { File $3 (L.concat $5) }
    | predicates coron int lbracket words rbracket
       { PreNum $3 }
-   | per words lbracket words rbracket words
-      { Sout "" }
-   | per words lbracket words rbracket
-      { Sout "" }
-   | per lbracket words rbracket
-      { Sout "" }
-   | per words
+   | per others
       { Sout "" }
    | fof lbracket word comma word comma formula period
       { Formula "fof"  $3 $5 (L.init $ L.concat $7) }

@@ -26,12 +26,24 @@ tokens :-
     { \s -> TokenRBracket }
   \(
     { \s -> TokenLBracket }
+  \]
+    { \s -> TokenRRBracket }
+  \[
+    { \s -> TokenRLBracket }
   \~
     { \s -> TokenNeg}
+  \,
+    { \s -> TokenComma }
   \|
     { \s -> TokenOr}
   \&
     { \s -> TokenAnd}
+  \:
+    { \s -> TokenCoron}
+  \!
+    { \s -> TokenAll }
+  \?
+    { \s -> TokenExists}
   \< \= \>
     { \s -> TokenEquiv}
   \< \=
@@ -44,6 +56,12 @@ tokens :-
     { \s -> TokenBiop s}
   \~ \&
     { \s -> TokenBiop s}
+  \$ [$space]* true
+    { \s -> TokenTop}
+  \$ [$space]* false
+    { \s -> TokenBot}
+  \~ \&
+    { \s -> TokenBiop s}
   [$word]+
     { \s -> TokenWord s }
 
@@ -54,11 +72,19 @@ data Token
   | TokenBiop String
   | TokenWord String
   | TokenAnd
+  | TokenCoron
+  | TokenComma
   | TokenOr
+  | TokenAll
+  | TokenExists
   | TokenImp
+  | TokenTop
+  | TokenBot
   | TokenEquiv
   | TokenRBracket
   | TokenLBracket
+  | TokenRRBracket
+  | TokenRLBracket
   deriving (Eq,Show)
 
 scanTokens = alexScanTokens
