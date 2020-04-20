@@ -1,4 +1,4 @@
-module DTS.Alligator.AlexHappy.Eval (eval) where
+module DTS.Alligator.AlexHappy.Eval (eval,processf) where
 
 import DTS.Alligator.AlexHappy.Syntax as S
 import DTS.Alligator.AlexHappy.Syntaxf as F
@@ -13,6 +13,8 @@ import qualified DTS.DTT as DT
 import qualified DTS.Prover.Judgement as J
 import qualified DTS.Alligator.Arrowterm as A
 import qualified DTS.Alligator.Prover as AP
+
+import Debug.Trace as D
 import System.Timeout
 
 
@@ -77,11 +79,11 @@ eval1 expr = case expr of
           liftIO $ print $ "about " ++ show a
           return VUnit
   File a b-> do
-    liftIO $ print $ "file :" ++ a ++ " and " ++ b
+    -- liftIO $ print $ "file :" ++ a ++ " and " ++ b
     return VUnit
   PreNum a -> do
-    modify $ \(prelst,pretermlst) -> (L.zip (L.replicate a "") [0..(a-1)] ++ prelst ,( L.replicate a DT.Type) ++ pretermlst) --Data.Bifunctor.bimap ((++) L.zip (L.replicate a "") [1..a] )((++) (L.replicate a DT.Type)
-    liftIO $ print $ "number of predicates :" ++ show a
+    modify $ \(prelst,pretermlst) -> (("",0) : (L.zip (L.replicate a "") [1..a] ++ prelst ),( L.replicate (a + 1) DT.Type) ++ pretermlst) --Data.Bifunctor.bimap ((++) L.zip (L.replicate a "") [1..a] )((++) (L.replicate a DT.Type)
+    -- liftIO $ print $ "number of predicates :" ++ show a
     return VUnit
   Formula level  name sort f -> do
     (prelst,pretermlst') <- get
@@ -101,9 +103,10 @@ eval1 expr = case expr of
             -- liftIO $ print term
             return VUnit
           else do
-            liftIO $ print level
-            liftIO $ print $ A.Arrow (map (\p -> A.Conclusion p) pretermlst') (A.Conclusion term')
-            test <- liftIO $ timeout 1000000000 $ return $ [] /= (AP.prove pretermlst' classic term')
+            -- liftIO $ print level
+            -- liftIO $ print $ A.Arrow (map (\p -> A.Conclusion p) pretermlst') (A.Conclusion term')
+            -- return VUnit
+            test <- liftIO $ timeout 1000000 $ return $[] /= (AP.prove pretermlst' classic term')
             -- liftIO $ print (AP.prove pretermlst' classic term')
             case test of
               Just True -> do
@@ -112,12 +115,12 @@ eval1 expr = case expr of
               _ -> do
                 liftIO $ print False
                 return $ VBool False
-              -- then do
-              --   liftIO $ print True
-              --   return $ VBool True
-              -- else do
-              --   liftIO $ print False
-              --   return $ VBool False
+--               -- then do
+--               --   liftIO $ print True
+--               --   return $ VBool True
+--               -- else do
+--               --   liftIO $ print False
+--               --   return $ VBool False
       Left _ -> do
         liftIO $ print $ "error in process " ++ f
         return VUnit
@@ -137,7 +140,7 @@ t2dt (Tletter con) s =
   let s' = if con `elem` s then s else con :s
   in (s' , DT.Con $ Te.pack con)
 t2dt Ttrue s = (s, DT.Top)
-t2dt Tfalse s= (s, DT.Top)
+t2dt Tfalse s= (s, DT.Bot)
 t2dt (Tneg formula) s=
   let (s' , arg1) = t2dt formula s in
     (s' , DT.Not arg1)
@@ -153,12 +156,12 @@ t2dt (Tall [] f ) s = t2dt f s
 t2dt (Tall vars f ) s =
   let Tvar var = head vars
       (s' , arg2) = t2dt (Tall (tail vars) f) (var : s )
-  in (filter (/= var) s' , DT.Pi DT.Type (A.subst arg2 (DT.Con $ Te.pack var) (DT.Var 0)))
-t2dt (Texist [] f ) s = t2dt f s
+  in (filter (/= var) s' , DT.Pi DT.Type (A.subst arg2 (DT.Var 0) (DT.Con $ Te.pack var)))
+t2dt (Texist [] f ) s =(t2dt f s)
 t2dt (Texist vars f ) s =
   let Tvar var = head vars
       (s' , arg2) = t2dt (Texist (tail vars) f) (var : s )
-  in (filter (/= var) s' , DT.Sigma DT.Type (A.subst arg2 (DT.Con $ Te.pack var) (DT.Var 0)))
+  in (filter (/= var) s' , DT.Sigma DT.Type (A.subst arg2 (DT.Var 0) (DT.Con $ Te.pack var)))
 --
 -- t2dtstr :: P.Tformula -> String
 -- t2dtstr (P.Tletter con) = "DT.Con $ T.pack \""++[con] ++"\""
