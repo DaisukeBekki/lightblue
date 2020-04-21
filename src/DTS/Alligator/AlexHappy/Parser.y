@@ -53,11 +53,9 @@ words
     | connective words       { $1 : $2 }
     | int words              { (show $1) : $2 }
 
+
 formula
     : word                   { [$1] }
-    | int                    { [(show $1)] }
-    | connective             { [$1] }
-    | and                    { ["&"] }
     | and formula            {  "&" : $2 }
     | word formula           { $1 : $2 }
     | connective formula     { $1 : $2 }
@@ -69,10 +67,13 @@ formula
     | rbracket formula       { ")" : $2 }
 
 others
-    : formula                { [$1] }
-    | words                  { [$1] }
-    | formula others         { $1 : $2}
-    | words others         { $1 : $2}
+    : words                  {}
+    | lbracket others        {}
+    | formula others         {}
+    | words others           {}
+    | rbracket others        {}
+    | rbracket               {}
+    | formula                {}
 
 term
    : file coron word coron words

@@ -82,7 +82,7 @@ eval1 expr = case expr of
     -- liftIO $ print $ "file :" ++ a ++ " and " ++ b
     return VUnit
   PreNum a -> do
-    modify $ \(prelst,pretermlst) -> (("",0) : (L.zip (L.replicate a "") [1..a] ++ prelst ),( L.replicate (a + 1) DT.Type) ++ pretermlst) --Data.Bifunctor.bimap ((++) L.zip (L.replicate a "") [1..a] )((++) (L.replicate a DT.Type)
+    modify $ \(prelst,pretermlst) -> ( (L.zip (L.replicate a "") [0..(a-1)] ++ prelst ),( L.replicate a DT.Type) ++ pretermlst) --Data.Bifunctor.bimap ((++) L.zip (L.replicate a "") [1..a] )((++) (L.replicate a DT.Type)
     -- liftIO $ print $ "number of predicates :" ++ show a
     return VUnit
   Formula level  name sort f -> do
@@ -125,7 +125,7 @@ eval1 expr = case expr of
         liftIO $ print $ "error in process " ++ f
         return VUnit
 eval :: [S.Expr] -> IO ()
-eval xs = evalStateT (mapM_ eval1 xs) ([],[])
+eval xs = evalStateT (mapM_ eval1 xs) ([],[DT.Top])
 
 
 processf :: String -> [String] -> Either String ([String] , DT.Preterm)

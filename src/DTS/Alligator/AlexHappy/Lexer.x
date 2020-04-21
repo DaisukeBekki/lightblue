@@ -28,6 +28,10 @@ tokens :-
     { \s -> TokenRBracket }
   \(
     { \s -> TokenLBracket }
+  \]
+    { \s -> TokenRRBracket }
+  \[
+    { \s -> TokenRLBracket }
   \~
     { \s -> TokenConne s}
   \|
@@ -91,6 +95,8 @@ data Token
   | TokenAnd
   | TokenRBracket
   | TokenLBracket
+  | TokenRRBracket
+  | TokenRLBracket
   | TokenPeriod
   deriving (Eq,Show)
 
