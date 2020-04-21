@@ -1,4 +1,4 @@
--- module DTS.Alligator.AlexHappy.Main () where
+module DTS.Alligator.AlexHappy.FileParser (main) where
 
 import DTS.Alligator.AlexHappy.Eval (eval)
 import DTS.Alligator.AlexHappy.Parser (parseExpr)
