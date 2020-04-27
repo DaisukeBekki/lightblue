@@ -1,26 +1,32 @@
-module DTS.Alligator.AlexHappy.FileParser (main) where
+module DTS.Alligator.AlexHappy.FileParser (fileparse) where
 
-import DTS.Alligator.AlexHappy.Eval (eval)
+import DTS.Alligator.AlexHappy.Eval (eval,eval1)
 import DTS.Alligator.AlexHappy.Parser (parseExpr)
 import System.Environment
 
-process :: String -> IO ()
+process :: String -> IO (Either String (Bool,String,String,String))
 process input = do
-  let ast = parseExpr input
-  case ast of
-    Right ast ->  eval ast
-      -- print ast
-    Left err -> do
-      putStrLn "Parser Error:"
-      print err
+  let ast' = parseExpr input
+  case ast' of
+    Right ast -> do
+      result <- eval ast
+      case result of
+        Just result' -> return $Right result'
+        Nothing ->  return $ Left ("Process Error")
+    Left err ->
+      return $ Left ("Parser Error" ++ show err)
+-- ^
+fileparse :: String -- ^ filename(relative path from "src" directory)
+  -> IO (Either String (Bool,String,String,String)) -- ^ Parser Error / Right (isProved,axioms,conjectures,processed)
+fileparse fname  = do
+  input <- readFile fname
+  process input
 
--- ^ srcで ¥>sh ./make.sh
--- ^ ¥>./DTS/Alligator/AlexHappy/Main "./DTS/Alligator/TPTP/test.test"
 main :: IO ()
 main = do
   args <- getArgs
   case args of
     []      -> putStrLn "Usage: assign <input file>"
     [fname] -> do
-      contents <- readFile fname
-      process contents
+      result <- fileparse fname
+      print result

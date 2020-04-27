@@ -25,12 +25,14 @@ import Control.Monad.Except
     word       { TokenWord $$ }
     connective { TokenConne $$ }
     predicates { TokenPreNum }
+    clausenum  { TokenClause }
     and        { TokenAnd }
     comma      { TokenComma }
     period     { TokenPeriod }
     rbracket   { TokenRBracket }
     lbracket   { TokenLBracket }
     fof        { TokenFOF }
+    cnf        { TokenCNF }
 
 %%
 terms
@@ -53,13 +55,21 @@ words
     | connective words       { $1 : $2 }
     | int words              { (show $1) : $2 }
 
+name
+    : word                   { $1 }
+    | word name              { $1 ++ $2 }
+    | int                    { (show $1) }
+    | int name               { (show $1) ++ $2 }
 
 formula
     : word                   { [$1] }
     | and formula            {  "&" : $2 }
     | word formula           { $1 : $2 }
+    | coron                  { [":"]}
+    | comma                  { [","] }
     | connective formula     { $1 : $2 }
     | coron formula          { ":" : $2 }
+    | comma formula          { "," : $2 }
     | int formula            { (show $1) : $2 }
     | lbracket               { ["("] }
     | rbracket               { [")"] }
@@ -80,10 +90,14 @@ term
       { File $3 (L.concat $5) }
    | predicates coron int lbracket words rbracket
       { PreNum $3 }
+   | clausenum coron int lbracket words rbracket
+      { ClaNum $3 }
    | per others
       { Sout "" }
-   | fof lbracket word comma word comma formula period
+   | fof lbracket name comma word comma formula period
       { Formula "fof"  $3 $5 (L.init $ L.concat $7) }
+   | cnf lbracket name comma word comma formula period
+      { Formula "cnf"  $3 $5 (L.init $ L.concat $7) }
    | per
       { Sout "" }
 

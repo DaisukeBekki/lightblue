@@ -15,7 +15,7 @@ $alpha = [a-zA-Z]
 $eol   = [\n]
 $space = [\ ]
 $hyphen = [\-]
-$word = [A-Z a-z $digit \_ \' \- $hyphen]
+$word = [A-Z a-z $digit \\ \_ \' \- $hyphen]
 
 
 tokens :-
@@ -56,6 +56,8 @@ tokens :-
     { \s -> TokenBiop s}
   \~ \&
     { \s -> TokenBiop s}
+  \=
+    { \s -> TokenEquiv}
   \$ [$space]* true
     { \s -> TokenTop}
   \$ [$space]* false

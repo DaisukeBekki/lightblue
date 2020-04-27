@@ -64,12 +64,19 @@ formula
       { Tall $3 $6 }
     | exists rlbracket vars rrbracket coron formula
       { Texist $3 $6 }
-
+    | formula lbracket formulae rbracket
+      { TApp $1 (L.reverse $3) }
 vars
     : word
       { [Tvar $1] }
     | word comma vars
       { (Tvar $1) : $3 }
+
+formulae
+    : formula
+      { [$1] }
+    | formula comma formulae
+      { $1 : $3 }
 
 {
 
