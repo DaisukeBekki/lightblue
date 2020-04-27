@@ -11,4 +11,5 @@ data Expr =
   | Tbinary Tbop Expr Expr
   | Tall [Tvar] Expr
   | Texist [Tvar] Expr
+  | TApp Expr [Expr]
   deriving (Eq, Show)

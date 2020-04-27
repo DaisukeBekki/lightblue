@@ -15,7 +15,7 @@ $alpha = [a-zA-Z]
 $eol   = [\n]
 $space = [\ ]
 $hyphen = [\-]
-$word = [A-Z a-z $digit \_ \' \- $hyphen \+ \[ \] \! \? \; \= \$ \" \/ \{ \} \* \< \>]
+$word = [A-Z a-z $digit \_ \' \- $hyphen \+ \[ \] \! \? \; \= \$ \" \/ \{ \} \* \< \> \^ \\]
 
 
 tokens :-
@@ -56,10 +56,17 @@ tokens :-
     { \s -> TokenPeriod }
   fof
     { \s -> TokenFOF }
+  cnf
+    { \s -> TokenCNF}
   [$space]* $digit+
     { \s -> TokenNum (read s) }
   \% [$space]* Number [$space]+ of [$space]+ predicates
     { \s -> TokenPreNum}
+  \% [$space]*Number [$space]+ of [$space]+ clauses
+    { \s -> TokenClause}
+  \% [$space]*Syntax [$space]* :[$space]*Number [$space]+ of [$space]+ clauses
+    { \s -> TokenClause}
+Syntax   :
   \% [$space]* File
     { \s -> TokenFile }
   [$space]* \%
@@ -84,8 +91,10 @@ tokens :-
 data Token
   = TokenNum Int
   | TokenPreNum
+  | TokenClause
   | TokenEOF
   | TokenFOF
+  | TokenCNF
   | TokenHead
   | TokenCoron
   | TokenComma
