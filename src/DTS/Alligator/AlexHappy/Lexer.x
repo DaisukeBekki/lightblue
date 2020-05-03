@@ -66,9 +66,12 @@ tokens :-
     { \s -> TokenClause}
   \% [$space]*Syntax [$space]* :[$space]*Number [$space]+ of [$space]+ clauses
     { \s -> TokenClause}
+
 Syntax   :
   \% [$space]* File
     { \s -> TokenFile }
+  \% [$space]* Status
+    { \s -> TokenStatus}
   [$space]* \%
     { \s -> TokenHead }
   [$space]* \:
@@ -101,6 +104,7 @@ data Token
   | TokenConne String
   | TokenWord String
   | TokenFile
+  | TokenStatus
   | TokenAnd
   | TokenRBracket
   | TokenLBracket

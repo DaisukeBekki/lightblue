@@ -59,6 +59,9 @@ eval1 expr = case expr of
     return VUnit
   File a b->
     return VUnit
+  Status a-> do
+    liftIO $ print a
+    return VUnit
   PreNum a -> do
     modify $ \(prelst,pretermlst,clanum,claid) -> ( (L.zip (L.replicate a "") [1..a] ++ prelst )++ [("",0)], L.replicate a DT.Type ++ [DT.Type] ++ pretermlst,clanum,claid)
     return VUnit
@@ -69,7 +72,7 @@ eval1 expr = case expr of
     (prelst,pretermlst,clanum,negcons) <- get
     let negcons' = negcons ++ "&" ++ f
         clanum' = clanum - 1
-    liftIO $ print ("cnf" ++ (show clanum'))
+    -- liftIO $ print ("cnf" ++ (show clanum'))
     if sort == "negated_conjecture"
       then
         if clanum' == 0
@@ -126,7 +129,7 @@ import DTS.Alligator.AlexHappy.Parserf as PF
 import qualified DTS.Alligator.Prover as AP
 import DTS.Alligator.AlexHappy.Lexer
 import DTS.Alligator.AlexHappy.Lexerf
-f = "((p0&~q0)=>(r0|~s0))"
+f = "(~q1(a,c,a))"
 prelst = []
 processf f (filter (/= "") $ map fst prelst)
 ast = PF.parseExpr f
@@ -139,7 +142,7 @@ import DTS.Alligator.AlexHappy.Lexer as Lx
 import Control.Monad.State
 import DTS.Alligator.AlexHappy.Syntax
 import DTS.DTT as DT
-fname = "DTS/Alligator/TPTP-v7.3.0/Problems/SYN/SYN051-1.p"
+fname = "DTS/Alligator/TPTP-v7.3.0/Problems/SYN/SYN284-1.p"
 input <- readFile fname
 let ast' = P.parseExpr input
 tokenStream = Lx.scanTokens input
