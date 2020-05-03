@@ -21,6 +21,7 @@ import Control.Monad.Except
     int        { TokenNum $$ }
     coron      { TokenCoron }
     file       { TokenFile }
+    status     { TokenStatus }
     per        { TokenHead }
     word       { TokenWord $$ }
     connective { TokenConne $$ }
@@ -88,6 +89,8 @@ others
 term
    : file coron word coron words
       { File $3 (L.concat $5) }
+   | status coron word
+      { Status $3 --statusはTheorem/ContradictoryAxioms/CounterSatisfiable/Satisfiable/Unsatisfiable/Unknown/Openのどれか(どれも一語)}
    | predicates coron int lbracket words rbracket
       { PreNum $3 }
    | clausenum coron int lbracket words rbracket
