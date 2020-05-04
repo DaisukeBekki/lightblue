@@ -7,4 +7,5 @@ data Expr
   | PreNum Int
   | ClaNum Int
   | Formula String String String String
+  | Include String
   deriving (Eq,Show)

@@ -65,7 +65,7 @@ formula
     | exists rlbracket vars rrbracket coron formula
       { Texist $3 $6 }
     | formula lbracket formulae rbracket
-      { TApp $1 (L.reverse $3) }
+      { TApp $1 $3 }
 vars
     : word
       { [Tvar $1] }

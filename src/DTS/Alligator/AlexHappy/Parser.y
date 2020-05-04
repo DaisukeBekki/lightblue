@@ -34,6 +34,7 @@ import Control.Monad.Except
     lbracket   { TokenLBracket }
     fof        { TokenFOF }
     cnf        { TokenCNF }
+    include    { TokenInclude}
 
 %%
 terms
@@ -89,6 +90,8 @@ others
 term
    : file coron word coron words
       { File $3 (L.concat $5) }
+   | include lbracket word rbracket period
+      { Include $3 }
    | status coron word
       { Status $3 --statusはTheorem/ContradictoryAxioms/CounterSatisfiable/Satisfiable/Unsatisfiable/Unknown/Openのどれか(どれも一語)}
    | predicates coron int lbracket words rbracket
