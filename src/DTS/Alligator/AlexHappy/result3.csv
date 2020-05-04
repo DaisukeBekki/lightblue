@@ -1,4 +1,4 @@
-file	result	axioms	conjencture	processed	note	limit:100000000s
+file	result	axioms	conjecture	processed	note	limit:100000000s
 DTS/Alligator/Test/dne.test	True	 (q=>((p=>($false))=>($false))),(p=>r),(q)	(r)	[  u0:T, u1:type, u2:type, u3:type, u4:type, u5:(u6:u3)→(u7:(u8:u2)→⊥)→⊥, u9:(u10:u2)→u1, u11:u3 ] =>u1		
 DTS/Alligator/Test/dni.test	True		(p=>~(~(p)))	[  u0:T, u1:type, u2:type ] =>(u3:u1)→¬¬u1		
 DTS/Alligator/Test/dni3.test	True	 (p)	((p=>($false))=>($false))	[  u0:T, u1:type, u2:type, u3:type, u4:type, u5:u3 ] =>(u6:(u7:u3)→⊥)→⊥		

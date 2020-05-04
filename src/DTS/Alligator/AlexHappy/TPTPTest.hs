@@ -1,5 +1,5 @@
 module DTS.Alligator.AlexHappy.TPTPTest (
-  writeResultCsv
+  writeInfoCsv
 ) where
 
 import System.Directory
@@ -7,6 +7,10 @@ import System.Timeout          --
 import Data.List
 import Control.Monad
 import DTS.Alligator.AlexHappy.FileParser
+import DTS.Alligator.AlexHappy.TPTPInfo
+import Data.Default (Default(..))
+
+import System.Timeout
 
 testFileExtentions :: [String]
 testFileExtentions = ["test","p"]
@@ -120,37 +124,49 @@ isTestFile :: String -> Bool
 isTestFile fname=
   any (\ex -> take (1 + length ex) (reverse fname) == reverse ('.':ex )) testFileExtentions
 
-timelimit :: Int
-timelimit =  1000000
 
-announce :: (String,Maybe (Either String (Bool,String,String,String))) -> String
-announce (f,Just (Right (b,s1,s2,s3))) = f ++ "\t" ++show b ++"\t" ++s1++"\t"++s2++"\t"++ s3 ++ "\t\t\n"
-announce (f,Just (Left s)) = f ++ "\t\t\t\t\t"++ s ++"\t\n"
-announce (f,Nothing) = f ++ "\t\t\t\t\ttimeout\t\n"
-
-test :: String ->IO [Maybe Bool]
-test dir= do
+testInfo :: String -> IO ()
+testInfo dir = do
   c <- getDirectoryContents dir
   let fnames = filter (`notElem` exceptList) $ map (dir ++ ) $filter isTestFile c
-  results <- forM (zip [1..] fnames)
+  forM_ (zip [1..] fnames)
     $ \ (num,fname) ->
-      print (show num ++"/"++ show (length fnames)) >>print fname
-       >>(do result <- timeout timelimit (fileparse fname);appendFile resultfname $announce (fname,result); return $ (\r -> case r of Just (Right (b,_,_,_)) -> Just b ; _ -> Nothing) result)
-  return results
+      print (show num ++"/"++ show (length fnames))
+      >>(
+        do
+          justbase <- timeout timelimit $ fileparseInfo fname
+          print fname
+          case justbase of
+            Just base -> do
+              let info = base {filename = fname}
+              _ <- timeout timelimit $ appendFile resultfname $ generateCsvRow info
+              appendFile resultfname ""
+            Nothing ->
+              appendFile resultfname $ generateCsvRow $def {filename = fname} {note = "timeout"})
 
-testexceptList :: IO [Maybe Bool]
-testexceptList= do
-  results <- forM (zip [1..] exceptList)
-    $ \ (num,fname) ->
-      print (show num ++"/"++ show (length exceptList)) >>print fname
-       >>(do result <- timeout timelimit (fileparse fname);appendFile resultfname $announce (fname,result); return $ (\r -> case r of Just (Right (b,_,_,_)) -> Just b ; _ -> Nothing) result)
-  return results
+compete :: String -> Bool -> String
+compete "Theorem" b= show b
+compete _ _ = ""
 
-numOf :: Bool -> [[Maybe Bool]] -> Int
-numOf bo result =  length $ filter (\r -> case r of Just b -> b== bo ; _ -> False) $  concat result
+generateCsvRow :: Info -> String
+generateCsvRow info =
+  filename info ++ "\t" ++
+  "" ++ "\t" ++
+  status info ++ "\t" ++
+  show (result info) ++ "\t"++
+  language info ++ "\t" ++
+  strcontext info ++ "\t" ++
+  strtarget info ++ "\t" ++
+  strprocessed info ++ "\t" ++
+  note info ++ "\t" ++ "\t" ++"\n"
 
-writeResultCsv = do
-  writeFile resultfname $"file\tresult\taxioms\tconjencture\tprocessed\tnote\tlimit:" ++ show timelimit++"s\n"
-  result <- forM dirs test
-  putStrLn "count True"
-  appendFile resultfname $"\n\t"++"True : "++ (show $ numOf True result) ++ " False : "++(show $ numOf False result)++"\t\t\t\t\t"
+csvHeader :: String
+csvHeader="file\tassesment\tstatus\tresult\tlanguage\tcontext\ttarget\tprocessed\tnote\t\n"
+
+writeInfoCsv = do
+  writeFile resultfname csvHeader
+  forM_ dirs testInfo
+  -- let result = concat result'
+  -- appendFile resultfname $"\n\t"++"True : "++ show (length $filter (==True) result) ++ "False : " ++ show  (length $filter (==False) result)
+  -- putStrLn "count True"
+  -- appendFile resultfname $"\n\t"++"True : "++ (show $ numOf True result) ++ " False : "++(show $ numOf False result)++"\t\t\t\t\t"

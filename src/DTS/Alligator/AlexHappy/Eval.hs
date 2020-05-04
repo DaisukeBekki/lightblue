@@ -1,4 +1,4 @@
-module DTS.Alligator.AlexHappy.Eval (eval,eval1) where
+module DTS.Alligator.AlexHappy.Eval (evalInfo) where
 
 import DTS.Alligator.AlexHappy.Syntax as S
 import DTS.Alligator.AlexHappy.Syntaxf as F
@@ -14,22 +14,16 @@ import qualified DTS.Prover.Judgement as J
 import qualified DTS.Alligator.Arrowterm as A
 import qualified DTS.Alligator.Prover as AP
 
+import Data.Maybe
+
+import DTS.Alligator.AlexHappy.TPTPInfo
+import Data.Default (Default(..))
+
 import Debug.Trace as D
 import System.Timeout
 
 
-data Value
-  = VBool Bool String String String
-  | VUnit
-  deriving (Eq)
-
-instance Show Value where
-  show (VBool b s1 s2 s3) = show b ++ " "++s1++" "++s2++" "++s3
-  show _ = ""
-
-type Eval = StateT Env' IO
-type Env = [(String, Value)]
-type Env' = ([(String,Int)],[DT.Preterm],Int,String)
+testexpr = [Status "Theorem",PreNum 3,Formula "fof" "" "axiom" "p",Formula "fof" "" "axiom" "p=>q",Formula "fof" "" "axiom" "q=>r",Formula "fof" "" "conjecture" "r"]
 
 updateConLst :: String -> [(String,Int)] -> Either String [(String,Int)]
 updateConLst con conlst =
@@ -51,120 +45,88 @@ dnPr = DT.Pi DT.Type (DT.Pi (DT.Pi (DT.Pi (DT.Var 0) DT.Bot) DT.Bot) (DT.Var 1))
 
 classic = [dnPr]
 
--- ^ modify :: (s -> s) -> State s (): 関数で状態を更新します。
--- ^ lookup 2 [(1,"a"),(2,"b")]  : b
-eval1 :: S.Expr -> Eval Value
-eval1 expr = case expr of
-  Sout a ->
-    return VUnit
-  File a b->
-    return VUnit
-  Status a-> do
-    liftIO $ print a
-    return VUnit
-  PreNum a -> do
-    modify $ \(prelst,pretermlst,clanum,claid) -> ( (L.zip (L.replicate a "") [1..a] ++ prelst )++ [("",0)], L.replicate a DT.Type ++ [DT.Type] ++ pretermlst,clanum,claid)
-    return VUnit
-  ClaNum a -> do
-    modify $ \(prelst,pretermlst,_,claid) -> ( prelst, pretermlst,a,claid)
-    return VUnit
-  Formula "cnf"  name sort f -> do
-    (prelst,pretermlst,clanum,negcons) <- get
-    let negcons' = negcons ++ "&" ++ f
-        clanum' = clanum - 1
-    -- liftIO $ print ("cnf" ++ (show clanum'))
-    if sort == "negated_conjecture"
-      then
-        if clanum' == 0
-          then do
-            let either_pre = processf (tail negcons') (filter (/= "") $ map fst prelst)
-            case either_pre of
-              Right (conlst,term) ->
-                let prelst' = foldr updateConLst' prelst conlst
-                    term' = foldr (\(con,varnum) preterm -> A.subst preterm (DT.Var varnum) (DT.Con $ Te.pack con)) term prelst'
-                in do
-                  test <- liftIO $ timeout 1000000 $ return $[] /= AP.prove pretermlst classic term'
-                  case test of
-                    Just True -> return $ VBool True "" f (show $ A.Arrow (map (\p -> A.Conclusion p) pretermlst) (A.Conclusion term'))
-                    _ -> return $ VBool False "" f (show $ A.Arrow (map (\p -> A.Conclusion p) pretermlst) (A.Conclusion term'))
-              Left err -> return $ VBool False "" "" (err)
-          else do
-            modify $ \(_,_,_,_) -> (prelst,pretermlst,clanum',negcons')
-            return VUnit
-      else
-        if sort == "axiom"
-        then do
-          let either_pre = processf f (filter (/= "") $ map fst prelst)
-          case either_pre of
-            Right (conlst,term) -> do
-              let prelst' = foldr updateConLst' prelst conlst
-                  term' = foldr (\(con,varnum) preterm -> A.subst preterm (DT.Var varnum) (DT.Con $ Te.pack con)) term prelst'
-              modify $ \(_,_,_,_) -> (map (\(str,int) -> (str,int + 1)) prelst',term' : pretermlst,clanum - 1,negcons)
-              return $VBool True f "" ""
-            Left err -> do
-              return $ VBool False "" "" ("error in process "++ err)
-        else return VUnit
-  Formula "fof"  name sort f -> do
-    (prelst,pretermlst',clanum,claid) <- get
-    let either_pre = processf f (filter (/= "") $ map fst prelst)
-    case either_pre of
-      Right (conlst,term) ->
-        let prelst' = foldr updateConLst' prelst conlst
-            term' = foldr (\(con,varnum) preterm -> A.subst preterm (DT.Var varnum) (DT.Con $ Te.pack con)) term prelst'
-        in
-        if sort == "axiom"
-          then do
-            modify $ \(_,_,_,_) -> (map (\(str,int) -> (str,int + 1)) prelst',term' : pretermlst',clanum ,claid)
-            return $VBool True f "" ""
-          else do
-            test <- liftIO $ timeout 1000000 $ return $[] /= AP.prove pretermlst' classic term'
-            case test of
-              Just True -> return $ VBool True "" f (show $ A.Arrow (map (\p -> A.Conclusion p) pretermlst') (A.Conclusion term'))
-              _ -> return $ VBool False "" f (show $ A.Arrow (map (\p -> A.Conclusion p) pretermlst') (A.Conclusion term'))
-      Left err -> do
-        return $ VBool False "" "" ("error in process "++ err)
-{-
-:l DTS.Alligator.AlexHappy.Eval
-import DTS.Alligator.AlexHappy.Parserf as PF
-import qualified DTS.Alligator.Prover as AP
-import DTS.Alligator.AlexHappy.Lexer
-import DTS.Alligator.AlexHappy.Lexerf
-f = "(~q1(a,c,a))"
-prelst = []
-processf f (filter (/= "") $ map fst prelst)
-ast = PF.parseExpr f
-ast
-tokenStream = DTS.Alligator.AlexHappy.Lexerf.scanTokens f
+importAxiom :: String -> Info -> Info
+importAxiom fname info = info
 
-:l DTS.Alligator.AlexHappy.FileParser
-import DTS.Alligator.AlexHappy.Parser as P
-import DTS.Alligator.AlexHappy.Lexer as Lx
-import Control.Monad.State
-import DTS.Alligator.AlexHappy.Syntax
-import DTS.DTT as DT
-fname = "DTS/Alligator/TPTP-v7.3.0/Problems/SYN/SYN284-1.p"
-input <- readFile fname
-let ast' = P.parseExpr input
-tokenStream = Lx.scanTokens input
-Right ast = ast'
-test <- evalStateT (mapM eval1 ast) ([],[DT.Top],0,[])
--}
+importAxiomio :: String -> IO Info -> IO Info
+importAxiomio fname infoio = do
+  input <- readFile $ tptpdir ++ (tail $ init fname)
+  info <- infoio
+  let ast' = P.parseExpr input
+  case ast' of
+    Right ast -> do
+      info' <- setInfo ast
+      return $ info  {context = (context info') ++ (context info)} {strcontext =  ", load " ++ tptpdir ++ (tail $ init fname) ++ strcontext info}
+    Left err ->
+      return $ info {note = "axioim Parser Error" ++ show err}
 
-and' :: [Value] -> Maybe (Bool,String,String,String)
-and' lst=  case filter (\v -> case v of VBool b "" "" _ -> False ;  VUnit -> False ; _ -> True) lst of
-            [] -> Nothing
-            lst' ->  Just $ (\l -> (all (\(VBool b _ _ _)-> b) l
-              ,init $ concat $ " " :
-                  map
-                    (\(VBool _ s _ _) ->  if s== "" then "" else s ++ ",")
-                    l
-              ,concatMap (\(VBool b _ s _) -> s) l
-              ,concatMap (\(VBool b _ _ s) -> s) l))
-                lst'
+updateInfo :: IO Info -> S.Expr -> IO Info
+updateInfo baseio expr = do
+  base <- baseio
+  case expr of
+    Sout a
+      -> return $ base
+    File a b
+      -> return $ base {filename = a}
+    Status a
+      -> return $ base {status = a}
+    PreNum a
+      -> return $ base {prelst = L.zip (L.replicate a "") [1..a] ++ prelst base} {context = L.replicate a DT.Type  ++ context base}
+    Include a
+      -> importAxiomio a (return base)
+    Formula lan name sort f
+      -> do
+        let either_pre = processf f (filter (/= "") $ map fst $prelst base)
+            base' = base {language = lan}
+        case either_pre of
+          Right (conlst,term) ->
+            let prelst' = foldr updateConLst' (prelst base) conlst
+                term' = foldr (\(con,varnum) preterm -> A.subst preterm (DT.Var varnum) (DT.Con $ Te.pack con)) term prelst'
+            in case sort of
+              "conjecture" -> return $ base' { target = Just term'} {strtarget = f}
+              "negated_conjecture" -> return $ base' { negated_conjecture = f : (negated_conjecture base')}
+              "plain" -> undefined
+              "type" -> undefined
+              "unknown" -> undefined
+              _ ->  --axiom-like formulae (axiom, hypothesis, definition, assumption, lemma, theorem, and corollary).
+                {- They are accepted, without proof, as a basis for proving conjectures in THF, TFF, and FOF problems. In CNF problems the axiom-like formulae are accepted as part of the set whose satisfiability has to be established. -}
+                return $ base' { prelst = map (\(str,int) -> (str,int + 1)) prelst'} {context = term' : context base} {strcontext = strcontext base ++ "," ++ f}
+          Left err ->
+            return $ base' {note = "error in process" ++ f}
+    _ -> return base
 
+settarget :: Info -> Info
+settarget base =
+  case target base of
+    Just y -> base
+    Nothing ->
+      case negated_conjecture base of
+        (fs:r) ->do
+          let f = case r of [] -> fs ; _ -> init $foldr (\a b -> a ++ "&"++ b) "" (fs:r)
+          case processf f (filter (/= "") $ map fst $prelst base) of
+            Right (conlst,term) ->
+              let prelst' = foldr updateConLst' (prelst base) conlst
+                  term' = foldr (\(con,varnum) preterm -> A.subst preterm (DT.Var varnum) (DT.Con $ Te.pack con)) term prelst' in
+              base {target = Just term'} {strtarget = f}
+            Left err -> base {note = "error in process" ++ f}
+        [] -> base {note = "found nothing to prove"}
 
-eval :: [S.Expr] -> IO (Maybe (Bool,String,String,String))
-eval ast = evalStateT (mapM eval1 ast) ([],[DT.Top],0,[]) >>= \result -> return $ and' result
+gettarget :: Info -> DT.Preterm
+gettarget info =  fromMaybe DT.Bot $ target info
+
+setInfo :: [S.Expr] -> IO Info
+setInfo expr= do
+    x <- foldl updateInfo (return $ def{prelst = [("",0)]}{context = [DT.Type,DT.Top]}) expr
+    let info = settarget x
+    return $ info {strcontext = if strcontext x == "" then "" else tail $ strcontext x} {strprocessed = if length (context x) <=  100 then show $ A.Arrow (map A.Conclusion (context x)) (A.Conclusion  $ gettarget info) else ""}
+
+evalInfo ::[S.Expr] -> IO Info
+evalInfo expr = do
+  base <- setInfo expr
+  case target base  of
+    Nothing -> return base --undefined --negated_conjectureでどうにもならなかったらfalse
+    Just conjecture ->
+      return $ base {result = [] /= AP.prove (context base) classic conjecture} {context = []} {target = Nothing} {prelst = []}
 
 processf :: String -> [String] -> Either String ([String] , DT.Preterm)
 processf input conlst = do
@@ -207,15 +169,3 @@ t2dt (Texist vars f ) s =
   let Tvar var = head vars
       (s' , arg2) = t2dt (Texist (tail vars) f) (var : s )
   in (filter (/= var) s' , DT.Sigma DT.Type (A.subst arg2 (DT.Var 0) (DT.Con $ Te.pack var)))
---
--- t2dtstr :: P.Tformula -> String
--- t2dtstr (P.Tletter con) = "DT.Con $ T.pack \""++[con] ++"\""
--- t2dtstr P.Ttrue = "DT.Top"
--- t2dtstr P.Tfalse = "DT.Bot"
--- t2dtstr (P.Tneg formula) = "DT.Not ("++t2dtstr formula++")"
--- t2dtstr (P.Tbinary (P.Tand) f1 f2) = "DT.Sigma ("++t2dtstr f1++") ("++t2dtstr f2++")"
--- t2dtstr (P.Tbinary (P.Tor) f1 f2 )= "DT.Not $ DT.Sigma (DT.Not $"++ t2dtstr f1++") (DT.Not $"++ t2dtstr f2++")"
--- t2dtstr (P.Tbinary (P.Timp) f1 f2) = "DT.Pi (" ++ t2dtstr f1 ++ ") (" ++ t2dtstr f2 ++ ")"
--- t2dtstr (P.Tbinary (P.Tequiv) f1 f2) = "DT.Sigma (DT.Pi ("++t2dtstr f1++") (" ++t2dtstr f2++")) (DT.Pi (" ++t2dtstr f2 ++") (" ++t2dtstr f1++"))"
--- t2dtstr (P.Tall [P.Tvar con] f )= "DT.Pi (DT.Con $ T.pack \"" ++ [con]++ "\") (" ++t2dtstr f++")"
--- t2dtstr (P.Texist [P.Tvar con] f) = "DT.Sigma (DT.Con $ T.pack \"" ++ [con] ++"\" ) (" ++t2dtstr f++")"

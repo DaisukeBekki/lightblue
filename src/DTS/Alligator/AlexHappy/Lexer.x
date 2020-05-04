@@ -60,14 +60,16 @@ tokens :-
     { \s -> TokenCNF}
   [$space]* $digit+
     { \s -> TokenNum (read s) }
+  include
+    { \s -> TokenInclude }
+
+Syntax   :
   \% [$space]* Number [$space]+ of [$space]+ predicates
     { \s -> TokenPreNum}
   \% [$space]*Number [$space]+ of [$space]+ clauses
     { \s -> TokenClause}
   \% [$space]*Syntax [$space]* :[$space]*Number [$space]+ of [$space]+ clauses
     { \s -> TokenClause}
-
-Syntax   :
   \% [$space]* File
     { \s -> TokenFile }
   \% [$space]* Status
@@ -101,6 +103,7 @@ data Token
   | TokenHead
   | TokenCoron
   | TokenComma
+  | TokenInclude
   | TokenConne String
   | TokenWord String
   | TokenFile
