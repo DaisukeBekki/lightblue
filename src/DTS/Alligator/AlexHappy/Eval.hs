@@ -71,7 +71,7 @@ updateInfo baseio expr = do
     Status a
       -> return $ base {status = a}
     PreNum a
-      -> return $ base {prelst = L.zip (L.replicate a "") [1..a] ++ prelst base} {context = L.replicate a DT.Type  ++ context base}
+      -> return $ base {note = "prenum"} {prelst = L.zip (L.replicate a "") [1..a] ++ prelst base} {context = L.replicate a DT.Type  ++ context base}
     Include a
       -> importAxiomio a (return base)
     Formula lan name sort f
@@ -102,7 +102,7 @@ settarget base =
     Nothing ->
       case negated_conjecture base of
         (fs:r) ->do
-          let f = case r of [] -> fs ; _ -> init $foldr (\a b -> a ++ "&"++ b) "" (fs:r)
+          let f = case r of [] -> "~"++fs ; _ -> init $foldr (\a b -> "~" ++ a ++ "&"++ b) "" (fs:r)
           case processf f (filter (/= "") $ map fst $prelst base) of
             Right (conlst,term) ->
               let prelst' = foldr updateConLst' (prelst base) conlst

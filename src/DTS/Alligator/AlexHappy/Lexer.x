@@ -62,12 +62,12 @@ tokens :-
     { \s -> TokenNum (read s) }
   include
     { \s -> TokenInclude }
-
-Syntax   :
   \% [$space]* Number [$space]+ of [$space]+ predicates
     { \s -> TokenPreNum}
   \% [$space]*Number [$space]+ of [$space]+ clauses
     { \s -> TokenClause}
+
+Syntax   :
   \% [$space]*Syntax [$space]* :[$space]*Number [$space]+ of [$space]+ clauses
     { \s -> TokenClause}
   \% [$space]* File
