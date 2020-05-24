@@ -2,17 +2,21 @@ module DTS.Alligator.Arrowterm
 (
   Arrowterm(..),
   AJudgement(..),
-  arrow_notat,
+  arrowNotat,
   arrow2DT,
   a2dtJudgement,
   dt2aJudgement,
+  aTreeTojTree,
   TEnv,
   envfromAJudgement,
   termfromAJudgement,
   typefromAJudgement,
   shiftIndices,
-  arrow_subst,
+  arrowSubst,
   ArrowSelector(..),
+  upSide,
+  downSide,
+  changeDownSide,
   reduce,
   subst
 ) where
@@ -100,9 +104,9 @@ devideParentheses str =
     in (f : (devideParentheses (drop (length f)str)))
   else []
 
-arrow_notat_selector :: DT.Selector -> ArrowSelector
-arrow_notat_selector DT.Fst = Arrow_Fst
-arrow_notat_selector DT.Snd = Arrow_Snd
+arrowNotat_selector :: DT.Selector -> ArrowSelector
+arrowNotat_selector DT.Fst = Arrow_Fst
+arrowNotat_selector DT.Snd = Arrow_Snd
 
 dt_notat_selector :: ArrowSelector -> DT.Selector
 dt_notat_selector Arrow_Fst = DT.Fst
@@ -119,31 +123,33 @@ arrow2DT (Arrow [] t) = arrow2DT t
 arrow2DT (Arrow (f:r) t) = arrow2DT (Arrow r (Conclusion (DT.Pi (arrow2DT f)  (arrow2DT t))))
 
 -- | 入力されたDT.PretermをArrowTermに変換する
-arrow_notat :: DT.Preterm -> Arrowterm
-arrow_notat (DT.Type) = Conclusion $DT.Type
-arrow_notat (DT.Var i) = Conclusion $ DT.Var i
-arrow_notat (DT.Con i) = Conclusion $ DT.Con i
-arrow_notat (DT.Not i) =
-  Arrow [arrow_notat i] $Conclusion DT.Bot
-arrow_notat (DT.Pi h t) =
-  Arrow [arrow_notat h] (arrow_notat t)
-arrow_notat (DT.Sigma h t) =
-  Arrow_Sigma (arrow_notat h) (arrow_notat t)
-arrow_notat (DT.App a b) =
-  Arrow_App (arrow_notat a) (arrow_notat b)
-arrow_notat (DT.Pair a b) =
-  Arrow_Pair (arrow_notat a) (arrow_notat b)
-arrow_notat (DT.Proj selector p) =
-  Arrow_Proj (arrow_notat_selector selector) (arrow_notat p)
-arrow_notat (DT.Lam p) =
-  Arrow_Lam (arrow_notat p)
-arrow_notat dt= Conclusion dt
+arrowNotat :: DT.Preterm -> Arrowterm
+arrowNotat (DT.Type) = Conclusion $DT.Type
+arrowNotat (DT.Var i) = Conclusion $ DT.Var i
+arrowNotat (DT.Con i) = Conclusion $ DT.Con i
+arrowNotat (DT.Not i) =
+  Arrow [arrowNotat i] $Conclusion DT.Bot
+arrowNotat (DT.Pi h t) =
+  case arrowNotat t of
+    Arrow env t' -> Arrow (env ++ [arrowNotat h]) t'
+    t' -> Arrow [arrowNotat h] t'
+arrowNotat (DT.Sigma h t) =
+  Arrow_Sigma (arrowNotat h) (arrowNotat t)
+arrowNotat (DT.App a b) =
+  Arrow_App (arrowNotat a) (arrowNotat b)
+arrowNotat (DT.Pair a b) =
+  Arrow_Pair (arrowNotat a) (arrowNotat b)
+arrowNotat (DT.Proj selector p) =
+  Arrow_Proj (arrowNotat_selector selector) (arrowNotat p)
+arrowNotat (DT.Lam p) =
+  Arrow_Lam (arrowNotat p)
+arrowNotat dt= Conclusion dt
 
 shiftIndices :: Arrowterm -> Int -> Int -> Arrowterm
-shiftIndices term d i= ((arrow_notat . DT.toDTT) $ UD.shiftIndices ((DT.toUDTT . arrow2DT) term) d i)
+shiftIndices term d i= ((arrowNotat . DT.toDTT) $ UD.shiftIndices ((DT.toUDTT . arrow2DT) term) d i)
 
 reduce :: Arrowterm -> Arrowterm
-reduce = arrow_notat . DT.toDTT . UD.betaReduce . DT.toUDTT . arrow2DT
+reduce = arrowNotat . DT.toDTT . UD.betaReduce . DT.toUDTT . arrow2DT
 
 type TEnv = [DT.Preterm]
 type SUEnv = [(T.Text,DT.Preterm)]
@@ -171,7 +177,7 @@ a2dtJudgement :: AJudgement -> J.Judgement
 a2dtJudgement (AJudgement env aterm atype) = J.Judgement (map arrow2DT env) (arrow2DT aterm) (arrow2DT atype)
 
 dt2aJudgement ::  J.Judgement -> AJudgement
-dt2aJudgement (J.Judgement env dtterm dttype) = AJudgement (map arrow_notat env) (arrow_notat dtterm) (arrow_notat dttype)
+dt2aJudgement (J.Judgement env dtterm dttype) = AJudgement (map arrowNotat env) (arrowNotat dtterm) (arrowNotat dttype)
 
 typefromAJudgement :: AJudgement -> Arrowterm
 typefromAJudgement ( AJudgement env aterm atype) = atype
@@ -181,6 +187,7 @@ termfromAJudgement ( AJudgement env aterm atype) = aterm
 
 envfromAJudgement :: AJudgement -> [Arrowterm]
 envfromAJudgement ( AJudgement env aterm atype) = env
+
 
 -- dne =   DT.Lam  (DT.Pi (DT.Pi (DT.Pi (DT.Var 1)  DT.Bot) (DT.Bot)) (DT.Var 2))
 --efq = DT.Lam (DT.Pi DT.Bot (DT.Var 1))
@@ -206,8 +213,100 @@ subst preterm l i =
       DT.Eq a m n   -> DT.Eq (subst a l i) (subst m l i) (subst n l i)
       others -> others
 
-arrow_subst :: Arrowterm -- ^ origin
+arrowSubst :: Arrowterm -- ^ origin
   -> Arrowterm -- ^ 代入内容
   -> Arrowterm -- ^ 代入先
   -> Arrowterm
-arrow_subst term i m= (arrow_notat) $ subst (arrow2DT term) (arrow2DT i) (arrow2DT m)
+arrowSubst term i m= arrowNotat $ subst (arrow2DT term) (arrow2DT i) (arrow2DT m)
+
+
+
+
+downSide ::  J.Tree AJudgement -> AJudgement
+downSide atree =
+  case atree of
+    J.CHK a b -> a
+    J.CON a -> a
+    J.VAR a -> a
+    J.TypeF a -> a
+    J.PiF a b c -> a
+    J.PiI a b c -> a
+    J.PiE a b c -> a
+    J.SigF a b c -> a
+    J.SigI a b c -> a
+    J.SigE a b -> a
+    J.NotF a b -> a
+    J.NotI a b c -> a
+    J.NotE a b c -> a
+    J.TopF a -> a
+    J.TopI a -> a
+    J.BotF a -> a
+    J.DREL a -> a
+    J.Error a t -> a
+
+changeDownSide ::  J.Tree AJudgement -> AJudgement -> J.Tree AJudgement
+changeDownSide atree d=
+  case atree of
+    J.CHK a b -> J.CHK d b
+    J.CON a -> J.CON d
+    J.VAR a -> J.VAR d
+    J.TypeF a -> J.TypeF d
+    J.PiF a b c -> J.PiF d b c
+    J.PiI a b c -> J.PiI d b c
+    J.PiE a b c -> J.PiE d b c
+    J.SigF a b c -> J.SigF d b c
+    J.SigI a b c -> J.SigI d b c
+    J.SigE a b -> J.SigE d b
+    J.NotF a b -> J.NotF d b
+    J.NotI a b c -> J.NotI d b c
+    J.NotE a b c -> J.NotE d b c
+    J.TopF a -> J.TopF d
+    J.TopI a -> J.TopI d
+    J.BotF a -> J.BotF d
+    J.DREL a -> J.DREL d
+    J.Error a t -> J.Error d t
+
+upSide :: J.Tree AJudgement -> [J.Tree AJudgement]
+upSide atree =
+  case atree of
+    J.CHK a b -> [b]
+    J.CON a -> []
+    J.VAR a -> []
+    J.TypeF a -> []
+    J.PiF a b c -> [b,c]
+    J.PiI a b c -> [b,c]
+    J.PiE a b c -> [b,c]
+    J.SigF a b c -> [b,c]
+    J.SigI a b c -> [b,c]
+    J.SigE a b -> [b]
+    J.NotF a b -> [b]
+    J.NotI a b c -> [b,c]
+    J.NotE a b c -> [b,c]
+    J.TopF a -> []
+    J.TopI a -> []
+    J.BotF a -> []
+    J.DREL a -> []
+    J.Error a t -> []
+
+
+aTreeTojTree :: J.Tree AJudgement -> J.Tree J.Judgement
+aTreeTojTree atree =
+  case atree of
+    J.Error a t -> J.Error (a2dtJudgement a) t
+    J.CON a -> J.CON $ a2dtJudgement a
+    J.VAR a -> J.VAR $ a2dtJudgement a
+    J.TypeF a -> J.TypeF $ a2dtJudgement a
+    J.TopF a -> J.TopF $ a2dtJudgement a
+    J.TopI a -> J.TopI $ a2dtJudgement a
+    J.BotF a -> J.BotF $ a2dtJudgement a
+    J.DREL a -> J.DREL $ a2dtJudgement a
+    J.PiF a b c -> J.PiF (a2dtJudgement a) (aTreeTojTree b) (aTreeTojTree c)
+    J.PiI a b c -> J.PiI (a2dtJudgement a) (aTreeTojTree b) (aTreeTojTree c)
+    J.PiE a b c -> J.PiE (a2dtJudgement a) (aTreeTojTree b) (aTreeTojTree c)
+    J.SigF a b c -> J.SigF (a2dtJudgement a) (aTreeTojTree b) (aTreeTojTree c)
+    J.SigI a b c -> J.SigI (a2dtJudgement a) (aTreeTojTree b) (aTreeTojTree c)
+    J.NotI a b c -> J.NotI (a2dtJudgement a) (aTreeTojTree b) (aTreeTojTree c)
+    J.NotE a b c -> J.NotE (a2dtJudgement a) (aTreeTojTree b) (aTreeTojTree c)
+    J.CHK a b -> J.CHK (a2dtJudgement a) (aTreeTojTree b)
+    J.SigE a b -> J.SigE (a2dtJudgement a) (aTreeTojTree b)
+    J.NotF a b -> J.NotF (a2dtJudgement a) (aTreeTojTree b)

@@ -1,16 +1,15 @@
 module DTS.Alligator.AlexHappy.TPTPTest (
-  writeInfoCsv
+  writeInfoCsv,
+  testInfoFile
 ) where
 
-import System.Directory
-import System.Timeout          --
-import Data.List
-import Control.Monad
-import DTS.Alligator.AlexHappy.FileParser
-import DTS.Alligator.AlexHappy.TPTPInfo
-import Data.Default (Default(..))
+import qualified DTS.Alligator.AlexHappy.FileParser as F
+import qualified DTS.Alligator.AlexHappy.TPTPInfo as TI
 
+import System.Directory
 import System.Timeout
+import Control.Monad
+import Data.Default (Default(..))
 
 testFileExtentions :: [String]
 testFileExtentions = ["test","p"]
@@ -125,8 +124,8 @@ isTestFile fname=
   any (\ex -> take (1 + length ex) (reverse fname) == reverse ('.':ex )) testFileExtentions
 
 
-testInfo :: String -> IO ()
-testInfo dir = do
+testInfoDir :: String -> IO ()
+testInfoDir dir = do
   c <- getDirectoryContents dir
   let fnames = filter (`notElem` exceptList) $ map (dir ++ ) $filter isTestFile c
   forM_ (zip [1..] fnames)
@@ -134,38 +133,49 @@ testInfo dir = do
       print (show num ++"/"++ show (length fnames))
       >>(
         do
-          justbase <- timeout timelimit $ fileparseInfo fname
           print fname
+          justbase <- timeout TI.timelimit $ F.fileparseInfo fname
           case justbase of
             Just base -> do
-              let info = base {filename = fname}
-              _ <- timeout timelimit $ appendFile resultfname $ generateCsvRow info
+              let info = base {TI.filename = fname}
+              _ <- timeout TI.timelimit $ appendFile resultfname $ generateCsvRow info
               appendFile resultfname ""
             Nothing ->
-              appendFile resultfname $ generateCsvRow $def {filename = fname} {note = "timeout"})
+              appendFile resultfname $ generateCsvRow $def {TI.filename = fname} {TI.note = "timeout"})
+
+testInfoFile :: String -> IO String
+testInfoFile fname = do
+  justbase <- timeout TI.timelimit $ F.fileparseInfo fname
+  print fname
+  case justbase of
+    Just base -> do
+      let info = base {TI.filename = fname}
+      return$ generateCsvRow info
+    Nothing ->
+      return $ generateCsvRow $def {TI.filename = fname} {TI.note = "timeout"}
 
 compete :: String -> Bool -> String
 compete "Theorem" b= show b
 compete _ _ = ""
 
-generateCsvRow :: Info -> String
+generateCsvRow :: TI.Info -> String
 generateCsvRow info =
-  filename info ++ "\t" ++
+  TI.filename info ++ "\t" ++
   "" ++ "\t" ++
-  status info ++ "\t" ++
-  show (result info) ++ "\t"++
-  language info ++ "\t" ++
-  strcontext info ++ "\t" ++
-  strtarget info ++ "\t" ++
-  strprocessed info ++ "\t" ++
-  note info ++ "\t" ++ "\t" ++"\n"
+  (case TI.status info of Just sta -> show sta ; _ -> "") ++ "\t" ++
+  show (TI.result info) ++ "\t"++
+  (case TI.language info of Just lan -> show lan ; _ -> "") ++ "\t" ++
+  TI.strcontext info ++ "\t" ++
+  TI.strtarget info ++ "\t" ++
+  TI.strprocessed info ++ "\t" ++
+  TI.note info ++ "\t" ++ "\t" ++"\n"
 
 csvHeader :: String
-csvHeader="file\tassesment\tstatus\tresult\tlanguage\tcontext\ttarget\tprocessed\tnote\t\n"
+csvHeader="file\tassestment\tstatus\tresult\tlanguage\tcontext\ttarget\tprocessed\tnote\t\n"
 
 writeInfoCsv = do
   writeFile resultfname csvHeader
-  forM_ dirs testInfo
+  forM_ dirs testInfoDir
   -- let result = concat result'
   -- appendFile resultfname $"\n\t"++"True : "++ show (length $filter (==True) result) ++ "False : " ++ show  (length $filter (==False) result)
   -- putStrLn "count True"

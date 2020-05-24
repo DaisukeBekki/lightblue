@@ -1,8 +1,8 @@
-module DTS.Alligator.Test
+module DTS.Alligator.TestTree
 (
   dni
 ) where
-import DTS.Alligator.Prover
+import DTS.Alligator.ProofTree
 import qualified DTS.DTT as DT
 import qualified DTS.UDTT as UD
 import qualified Data.Text.Lazy as T
@@ -18,8 +18,6 @@ import qualified Data.Text.Lazy.IO as T
 -- tabletimeout =
 --   justtimeout >>= (\x -> x)
 
-
-
 p :: DT.Preterm
 p = DT.Con $ T.pack "p"
 
@@ -34,395 +32,395 @@ dn_pr = DT.Pi (DT.Type) (DT.Pi (DT.Pi (DT.Pi (DT.Var 0) DT.Bot) DT.Bot) (DT.Var 
 
 classic = [dn_pr]
 
-transitive_7_18 :: [J.Judgement]
+transitive_7_18 :: [J.Tree J.Judgement]
 transitive_7_18 =
   let
     sig_env = classic
     var_env = [DT.Type,DT.Type,DT.Type]
     pre_type = DT.Pi (DT.Pi (DT.Var 2) (DT.Var 2)) (DT.Pi (DT.Pi (DT.Var 2) (DT.Var 2)) (DT.Pi (DT.Var 4) (DT.Var 3)))
-  in prove var_env sig_env pre_type
+  in prove var_env sig_env pre_type settingDef
 
-transitive :: [J.Judgement]
+transitive :: [J.Tree J.Judgement]
 transitive =
   let
     sig_env = classic
     var_env = [DT.Pi p q,DT.Pi q r,p]
     pre_type =  r
-  in prove var_env sig_env pre_type
+  in prove var_env sig_env pre_type settingDef
 
-transitive_2 ::[J.Judgement]
+transitive_2 ::[J.Tree J.Judgement]
 transitive_2 =
   let
     sig_env = classic
     var_env = [(DT.Pi (DT.Var 2) (DT.Var 2)),(DT.Pi (DT.Var 2) (DT.Var 2)),DT.Type,DT.Type,DT.Type]
     pre_type =  DT.Pi (DT.Var 4) (DT.Var 3)
-  in prove var_env sig_env pre_type
+  in prove var_env sig_env pre_type settingDef
 
-dni :: [J.Judgement]
+dni :: [J.Tree J.Judgement]
 dni =
   let sig_env = classic
       var_env = [DT.Type]
       pre_type =  DT.Pi (DT.Var 0) (DT.Not (DT.Not (DT.Var 1)))
-  in prove var_env sig_env pre_type
+  in prove var_env sig_env pre_type settingDef
 
-dni_2 :: [J.Judgement]
+dni_2 :: [J.Tree J.Judgement]
 dni_2 =
   let sig_env = classic
       var_env = [r,q,p]
       pre_type =  DT.Pi p (DT.Pi (DT.Pi p DT.Bot) DT.Bot)
-  in prove var_env sig_env pre_type
+  in prove var_env sig_env pre_type settingDef
 
-dni_3 :: [J.Judgement]
+dni_3 :: [J.Tree J.Judgement]
 dni_3 =
   let sig_env = classic
       var_env = [r,q,p]
       pre_type = DT.Pi (DT.Pi p DT.Bot) DT.Bot
-  in prove var_env sig_env pre_type
+  in prove var_env sig_env pre_type settingDef
 
-dni_4 :: [J.Judgement]
+dni_4 :: [J.Tree J.Judgement]
 dni_4 =
   let sig_env = classic
       var_env = []
       pre_type = DT.Pi (DT.Type) (DT.Pi (DT.Not $ DT.Not $ DT.Var 0) (DT.Var 1))
-  in prove var_env sig_env pre_type
+  in prove var_env sig_env pre_type settingDef
 
-dni_5 :: [J.Judgement]
+dni_5 :: [J.Tree J.Judgement]
 dni_5 =
   let sig_env = classic
       var_env = [DT.Not $ DT.Not $ DT.Var 0,DT.Type]
       pre_type = DT.Type
-  in prove var_env sig_env pre_type
+  in prove var_env sig_env pre_type settingDef
 
-efq :: [J.Judgement]
+efq :: [J.Tree J.Judgement]
 efq =
   let sig_env = classic
       var_env = [DT.Type, DT.Bot]
       pre_type = (DT.Var 0)
-  in prove var_env sig_env pre_type
+  in prove var_env sig_env pre_type settingDef
 
-dne :: [J.Judgement]
+dne :: [J.Tree J.Judgement]
 dne =
   let
     sig_env = classic
     var_env = [DT.Var 3,DT.Pi (DT.Var 3) (DT.Var 2),DT.Pi (DT.Var 1) (DT.Pi (DT.Pi (DT.Var 3) (DT.Bot)) (DT.Bot)),DT.Type,DT.Type,DT.Type]
     pre_type = DT.Var 3
-  in prove var_env sig_env pre_type
-lem :: [J.Judgement]
+  in prove var_env sig_env pre_type settingDef
+lem :: [J.Tree J.Judgement]
 lem =
   let
     sig_env = classic
     var_env = [DT.Type]
     pre_type = DT.Not (DT.Sigma (DT.Not $ DT.Var 0) (DT.Not (DT.Not (DT.Var 1))))
-  in prove var_env sig_env pre_type
+  in prove var_env sig_env pre_type settingDef
 
-tnd :: [J.Judgement]
+tnd :: [J.Tree J.Judgement]
 tnd =
   let
     sig_env = classic
     var_env = [DT.Type,DT.Type]
     pre_type = DT.Pi (DT.Pi (DT.Var 1) (DT.Var 1)) (DT.Pi (DT.Pi (DT.Not (DT.Var 2)) (DT.Var 2)) (DT.Var 2))
-  in prove var_env sig_env pre_type
+  in prove var_env sig_env pre_type settingDef
 
-pars :: [J.Judgement]
+pars :: [J.Tree J.Judgement]
 pars =
   let
     sig_env = []
     var_env = [DT.Type,DT.Type]
     pre_type = DT.Pi (DT.Pi (DT.Pi (DT.Var 1) (DT.Var 1)) (DT.Var 2)) (DT.Var 2)
-  in prove var_env sig_env pre_type
+  in prove var_env sig_env pre_type settingDef
 
-gem :: [J.Judgement]
+gem :: [J.Tree J.Judgement]
 gem =
   let
     sig_env = classic
     var_env = [DT.Type,DT.Type]
     pre_type = DT.Not (DT.Sigma (DT.Not (DT.Pi (DT.Var 1) (DT.Var 1))) (DT.Not (DT.Var 2)))
-  in prove var_env sig_env pre_type
+  in prove var_env sig_env pre_type settingDef
 
 --prove([e:set,f:e->prop,g:e->prop,a:sigma(A0:e,sigma(A1:f-A0,g-A0))],P:sigma(X:sigma(Y:e,f-Y),g-pi1(X))).
 --prove([e:prop],P:[P1:sigma(P2:[P3:e]=>false,[P4:[P5:[P6:e]=>false]=>false]=>false)]=>false).
 
 
-pred8 :: [J.Judgement]
+pred8 :: [J.Tree J.Judgement]
 pred8 =
   let
     sig_env = classic
     var_env = [DT.Pi (DT.Var 1) (DT.Type),DT.Pi (DT.Var 0) (DT.Type),DT.Type]
     pre_type = DT.Pi (DT.Sigma (DT.Var 2) (DT.Sigma (DT.App (DT.Var 2) (DT.Var 0)) (DT.App (DT.Var 2) (DT.Var 1)))) (DT.Sigma (DT.Sigma (DT.Var 3) (DT.App (DT.Var 3) (DT.Var 0))) (DT.App (DT.Var 2) (DT.Proj DT.Fst (DT.Var 0))))
-  in prove var_env sig_env pre_type
+  in prove var_env sig_env pre_type settingDef
 
-dne_2 :: [J.Judgement]
+dne_2 :: [J.Tree J.Judgement]
 dne_2 =
   let
     sig_env = classic
     var_env = [DT.Type,r,q]
     pre_type = DT.Pi (DT.Pi (DT.Pi (DT.Var 0) DT.Bot) DT.Bot) (DT.Var 1)
-  in prove var_env sig_env pre_type
+  in prove var_env sig_env pre_type settingDef
 
-dne' :: [J.Judgement]
+dne' :: [J.Tree J.Judgement]
 dne' =
   let
     sig_env = classic
     var_env = [DT.Type]
     pre_type = DT.Pi (DT.Not (DT.Not(DT.Not (DT.Var 0)))) (DT.Not (DT.Var 1))
-  in prove var_env sig_env pre_type
+  in prove var_env sig_env pre_type settingDef
 
-cm :: [J.Judgement]
+cm :: [J.Tree J.Judgement]
 cm =
   let
     sig_env = classic
     var_env = [DT.Type]
     pre_type =  DT.Pi (DT.Pi (DT.Var 0) (DT.Pi (DT.Var 1) DT.Bot)) (DT.Pi (DT.Var 1) DT.Bot)
-  in prove var_env sig_env pre_type
+  in prove var_env sig_env pre_type settingDef
 
-cm' :: [J.Judgement]
+cm' :: [J.Tree J.Judgement]
 cm' =
   let
     sig_env = classic
     var_env = [DT.Type]
     pre_type =  DT.Pi (DT.Pi (DT.Pi (DT.Var 0) DT.Bot) (DT.Var 1)) (DT.Var 1)
-  in prove var_env sig_env pre_type
+  in prove var_env sig_env pre_type settingDef
 
-raa :: [J.Judgement]
+raa :: [J.Tree J.Judgement]
 raa =
   let
     sig_env = classic
     var_env = [DT.Type]
     pre_type = DT.Pi (DT.Pi (DT.Var 0) DT.Bot) (DT.Not (DT.Var 1))
-  in     prove var_env sig_env pre_type
+  in     prove var_env sig_env pre_type settingDef
 
-raa' :: [J.Judgement]
+raa' :: [J.Tree J.Judgement]
 raa' =
   let
     sig_env = classic
     var_env = [DT.Type]
     pre_type = DT.Pi (DT.Pi (DT.Not (DT.Var 0)) DT.Bot) (DT.Var 1)
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
-con1 :: [J.Judgement]
+con1 :: [J.Tree J.Judgement]
 con1 =
   let
     sig_env = classic
     var_env = [DT.Type,DT.Type]
     pre_type = DT.Pi (DT.Pi (DT.Var 1) (DT.Var 1)) (DT.Pi (DT.Not (DT.Var 1)) (DT.Not (DT.Var 3)))
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
-con2 :: [J.Judgement]
+con2 :: [J.Tree J.Judgement]
 con2 =
   let
     sig_env = classic
     var_env = [DT.Type,DT.Type]
     pre_type = DT.Pi (DT.Pi (DT.Var 1) (DT.Not (DT.Var 1))) (DT.Pi (DT.Var 1) (DT.Not (DT.Var 3)))
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
-con3 :: [J.Judgement]
+con3 :: [J.Tree J.Judgement]
 con3 =
   let
     sig_env = classic
     var_env = [DT.Type,DT.Type]
     pre_type = DT.Pi (DT.Pi (DT.Not (DT.Var 1))  (DT.Var 1)) (DT.Pi (DT.Not (DT.Var 1)) (DT.Var 3))
-  in    prove var_env sig_env pre_type
+  in    prove var_env sig_env pre_type settingDef
 
-con4 :: [J.Judgement]
+con4 :: [J.Tree J.Judgement]
 con4 =
   let
     sig_env = classic
     var_env = [DT.Type,DT.Type]
     pre_type = DT.Pi (DT.Pi (DT.Not (DT.Var 1))  (DT.Not (DT.Var 1))) (DT.Pi (DT.Var 1) (DT.Var 3))
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
-false :: [J.Judgement]
+false :: [J.Tree J.Judgement]
 false =
   let
-    sig_env = classic
+    sig_env = []
     var_env = [DT.Type]
     pre_type =  DT.Bot
-  in    prove var_env sig_env pre_type
+  in    prove var_env sig_env pre_type settingDef
 
-formedness :: [J.Judgement]
+formedness :: [J.Tree J.Judgement]
 formedness =
   let
     sig_env = classic
     var_env = [DT.Pi p q,DT.Pi q r]
     pre_type = DT.Pi p r
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
-membership_test :: [J.Judgement]
+membership_test :: [J.Tree J.Judgement]
 membership_test =
   let
     var_env = [DT.Sigma (DT.Var 0)  (DT.Var 2),DT.Con $ T.pack "p",DT.Con $ T.pack "q"]
     sig_env = []
     pre_type = DT.Con $ T.pack "p"
-  in    prove var_env sig_env pre_type
+  in    prove var_env sig_env pre_type settingDef
 
-pi_intro_test :: [J.Judgement]
+pi_intro_test :: [J.Tree J.Judgement]
 pi_intro_test =
   let
     sig_env = []
     var_env = [DT.Con $ T.pack "r",DT.Con $ T.pack "q",DT.Con $ T.pack "p"]
     pre_type = DT.Pi (DT.Con $ T.pack "p") (DT.Con $ T.pack "p")
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
-pi_elim_test :: [J.Judgement]
+pi_elim_test :: [J.Tree J.Judgement]
 pi_elim_test =
   let
     sig_env = classic
     var_env = [r,q,p,DT.Pi p DT.Bot]
     pre_type = DT.Bot
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
-p_not_p :: [J.Judgement]
+p_not_p :: [J.Tree J.Judgement]
 p_not_p =
   let
     sig_env = classic
     var_env = [r,q,p]
     pre_type =  (DT.Pi p DT.Bot)
-  in    prove var_env sig_env pre_type
+  in    prove var_env sig_env pre_type settingDef
 
 --ok [p,q,r,¬¬pー＞¬r]->⊥
-ex1 :: [J.Judgement]
+ex1 :: [J.Tree J.Judgement]
 ex1 =
   let
     sig_env = classic
     var_env = [DT.Pi (DT.Pi (DT.Pi p DT.Bot) DT.Bot) (DT.Pi r DT.Bot),r,q,p]
     pre_type = DT.Bot
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
-importation :: [J.Judgement]
+importation :: [J.Tree J.Judgement]
 importation =
   let
     sig_env = classic
     var_env = [r,q,p]
     pre_type = DT.Pi (DT.Pi (DT.Sigma p q) r) (DT.Pi p (DT.Pi q r))
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
-mp :: [J.Judgement]
+mp :: [J.Tree J.Judgement]
 mp =
   let
     sig_env = classic
     var_env = [DT.Pi (DT.Var 2) (DT.Var 2), (DT.Var 1),DT.Type,DT.Type]
     pre_type = DT.Var 2
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
-s :: [J.Judgement]
+s :: [J.Tree J.Judgement]
 s =
   let
     sig_env = classic
     var_env = [DT.Type,DT.Type,DT.Type]
     pre_type = DT.Pi (DT.Pi (DT.Var 2) (DT.Pi (DT.Var 2) (DT.Var 2))) (DT.Pi (DT.Pi (DT.Var 3) (DT.Var 3)) (DT.Pi (DT.Var 4) (DT.Var 3)))
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
-k :: [J.Judgement]
+k :: [J.Tree J.Judgement]
 k =
   let
     sig_env = classic
     var_env = [DT.Type,DT.Type]
     pre_type =DT.Pi (DT.Var 1) (DT.Pi (DT.Var 1) (DT.Var 3))
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
-i :: [J.Judgement]
+i :: [J.Tree J.Judgement]
 i =
   let
     sig_env = classic
     var_env = [DT.Type]
     pre_type = DT.Pi (DT.Var 0) (DT.Var 1)
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
-b :: [J.Judgement]
+b :: [J.Tree J.Judgement]
 b =
   let
     sig_env = classic
     var_env = [DT.Type,DT.Type,DT.Type]
     pre_type = DT.Pi (DT.Pi (DT.Var 1) (DT.Var 1)) (DT.Pi (DT.Pi (DT.Var 3) (DT.Var 3)) (DT.Pi (DT.Var 4) (DT.Var 3)))
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
-c :: [J.Judgement]
+c :: [J.Tree J.Judgement]
 c =
   let
     sig_env = classic
     var_env = [DT.Type,DT.Type,DT.Type]
     pre_type = DT.Pi (DT.Pi (DT.Var 2) (DT.Pi (DT.Var 2) (DT.Var 2))) (DT.Pi (DT.Var 2) (DT.Pi (DT.Var 4) (DT.Var 3)))
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
-w :: [J.Judgement]
+w :: [J.Tree J.Judgement]
 w =
   let
     sig_env = classic
     var_env = [DT.Type,DT.Type]
     pre_type = DT.Pi (DT.Pi (DT.Var 1) (DT.Pi (DT.Var 2) (DT.Var 2))) (DT.Pi (DT.Var 2) (DT.Var 2))
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
-b' :: [J.Judgement]
+b' :: [J.Tree J.Judgement]
 b' =
   let
     sig_env = classic
     var_env = [DT.Type,DT.Type,DT.Type]
     pre_type =DT.Pi (DT.Pi (DT.Var 2) (DT.Var 2)) (DT.Pi (DT.Pi (DT.Var 2) (DT.Var 2)) (DT.Pi (DT.Var 4) (DT.Var 3)))
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
-c_star :: [J.Judgement]
+c_star :: [J.Tree J.Judgement]
 c_star =
   let
     sig_env = classic
     var_env = [DT.Type,DT.Type]
     pre_type = DT.Pi (DT.Var 1) (DT.Pi (DT.Pi (DT.Var 2) (DT.Var 2)) (DT.Var 2))
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
-ex2 :: [J.Judgement] --Alligatorでできなかった
+ex2 :: [J.Tree J.Judgement] --Alligatorでできなかった
 ex2 =
   let
     sig_env = classic
     var_env = [DT.Sigma (DT.Var 2) (DT.Sigma (DT.App (DT.Var 2) (DT.Var 0)) (DT.App (DT.Var 2) (DT.Var 1))),DT.Pi (DT.Var 1) DT.Type,DT.Pi (DT.Var 0) (DT.Type),DT.Type]
     pre_type = DT.Sigma (DT.Sigma (DT.Var 3) (DT.App (DT.Var 3) (DT.Var 0))) (DT.App (DT.Var 2) (DT.Proj DT.Fst (DT.Var 0)))
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
--- ex3 :: [J.Judgement] --Alligatorでできなかった
+-- ex3 :: [J.Tree J.Judgement] --Alligatorでできなかった
 ex3 =
   let
     sig_env = classic
     var_env = [DT.Sigma (DT.Var 2) (DT.App (DT.Var 1) (DT.Var 0)),DT.Pi (DT.Var 1) (DT.Var 1),DT.Type,DT.Type]
     pre_type = DT.Pi (DT.Var 3) (DT.Var 3)
-  in   prove' var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
-all1 :: [J.Judgement]
+all1 :: [J.Tree J.Judgement]
 all1 =
   let
     sig_env = classic
     var_env = [DT.Pi (DT.Type) (DT.App (DT.Var 1) (DT.Var 0)),DT.Pi (DT.Type) (DT.Type),DT.Type]
     pre_type = DT.App (DT.Var 1) (DT.Var 2)
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
--- all2 :: [J.Judgement]
+-- all2 :: [J.Tree J.Judgement]
 all2 =
   let
     sig_env = classic
     var_env = [DT.Pi (DT.Type) (DT.App (DT.Var 1) (DT.Var 3)),DT.Pi (DT.Type) (DT.Var 1),DT.Var 0,DT.Type,DT.Type]
     pre_type = DT.App (DT.Var 1) (DT.Var 3)
-  in   prove' var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
-all3 :: [J.Judgement]
+all3 :: [J.Tree J.Judgement]
 all3 =
   let
     sig_env = classic
     var_env = [DT.Pi (DT.Type) (DT.App (DT.Var 1) (DT.Var 0)),DT.Pi (DT.Type) (DT.Var 1),DT.Var 0,DT.Type]
     pre_type = DT.App (DT.Var 1) (DT.Var 3)
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
-all4 :: [J.Judgement]
+all4 :: [J.Tree J.Judgement]
 all4 =
   let
     sig_env = classic
     var_env = [DT.Var 0,DT.Type]
     pre_type = DT.Pi (DT.Type) (DT.Pi (DT.Var 0) (DT.Var 1))
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 --
--- all4 :: [J.Judgement]
+-- all4 :: [J.Tree J.Judgement]
 -- all4 =
 --   let
 --     sig_env = classic
 --     var_env = [DT.Var 0,DT.Type]
 --     pre_type = DT.Pi (DT.Var 1) (DT.Var 1)
---   in   prove var_env sig_env pre_type
+--   in   prove var_env sig_env pre_type settingDef
 
 shiftIndices :: DT.Preterm -> Int -> Int-> DT.Preterm
 shiftIndices term d i = DT.toDTT $ UD.shiftIndices  (DT.toUDTT term) d i
@@ -454,26 +452,26 @@ a_girl_writes_a_thesis en gi th wr =
       (DT.Proj DT.Fst $ DT.Proj DT.Snd $ DT.Var 0)
     )
 
--- is_there_a_girl :: [J.Judgement]
+-- is_there_a_girl :: [J.Tree J.Judgement]
 -- is_there_a_girl =
 --   let sig_env = classic
 --       var_env = [a_girl_writes_a_thesis (DT.Var 3) (DT.Var 2) (DT.Var 1) (DT.Var 0),write (DT.Var 2),thesis (DT.Var 1),girl (DT.Var 0),entity]
 --       pre_type = there_is_a_girl (DT.Var 4) (DT.Var 3)
---   in prove var_env sig_env pre_type
-not_false :: [J.Judgement]
+--   in prove var_env sig_env pre_type settingDef
+not_false :: [J.Tree J.Judgement]
 not_false =
   let
     sig_env = classic
     var_env = []
     pre_type =DT.Bot
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
 -- is_there_a_girl :: [AJudgement]
 -- is_there_a_girl =
 --   let sig_env = []
 --       var_env = [a_girl_writes_a_thesis (DT.Var 3) (DT.Var 2) (DT.Var 1) (DT.Var 0),write (DT.Var 2),thesis (DT.Var 1),girl (DT.Var 0),entity]
 --       pre_type = there_is_a_girl (DT.Var 4) (DT.Var 3)
---   in prove' var_env sig_env pre_type
+--   in prove var_env sig_env pre_type settingDef
 
 {-
 is_there_a_girl :: [AJudgement]
@@ -483,14 +481,14 @@ is_there_a_girl =
       prop = there_is_a_girl 4 3
   in prove sentences words prop
 -}
-lnc :: [J.Judgement]
+lnc :: [J.Tree J.Judgement]
 lnc =
   let sig_env = classic
       var_env = [DT.Type]
       pre_type = DT.Not (DT.Sigma (DT.Var 0) (DT.Not (DT.Var 1)))
-  in   prove var_env sig_env pre_type
+  in   prove var_env sig_env pre_type settingDef
 
-pel10 :: [J.Judgement]
+pel10 :: [J.Tree J.Judgement]
 pel10 =
   let sig_env = classic
       var_env = [DT.Pi (DT.Var 4) (DT.Not (DT.Sigma (DT.Not (DT.Var 4)) (DT.Not (DT.Var 4))) ),DT.Pi (DT.Var 1) (DT.Sigma (DT.Var 4) (DT.Var 4)),DT.Pi (DT.Var 1) (DT.Var 1),DT.Type,DT.Type,DT.Type]
@@ -498,9 +496,9 @@ pel10 =
       pre_type = DT.Pi (DT.Var 5) (DT.Var 5)
   in
     -- A.AJudgement (map (A.Conclusion) var_env) (A.Conclusion DT.Bot) (A.Conclusion pre_type)
-    prove var_env sig_env pre_type
+    prove var_env sig_env pre_type settingDef
 
--- extest :: [J.Judgement]
+-- extest :: [J.Tree J.Judgement]
 -- extest =
 --   let sigEnv = classic
 --       varEnv = [DT.App (DT.Var 0) (DT.Var 2),DT.Pi (DT.Type) (DT.Type),DT.Type]
@@ -508,22 +506,22 @@ pel10 =
 --   in
 --     prove varEnv sigEnv preType
 
--- extest :: [J.Judgement]
+-- extest :: [J.Tree J.Judgement]
 extest =
   let sigEnv = classic
       varEnv = [DT.App (DT.Var 0) (DT.Var 1),DT.Pi (DT.Var 1) (DT.Type),DT.Var 0,DT.Type]
       preType = DT.Sigma (DT.Var 3) (DT.App (DT.Var 2) (DT.Var 0))
   in
-    prove' varEnv sigEnv preType
+    prove varEnv sigEnv preType settingDef
 
 extest2 =
   let sigEnv = classic
       varEnv = [DT.App (DT.Var 0) (DT.Var 1),DT.Pi (DT.Type) (DT.Type),DT.Type]
       preType = DT.Sigma (DT.Type) (DT.App (DT.Var 2) (DT.Var 0))
   in
-    prove' varEnv sigEnv preType
+    prove varEnv sigEnv preType settingDef
 
-hasProof :: [J.Judgement]  -> Bool
+hasProof :: [J.Tree J.Judgement]  -> Bool
 hasProof = ([] /=)
 
 sk_lst = map hasProof [i,b,c,w,b',c_star,transitive_7_18,dni,dni_2,dni_3,dne',cm,raa,con1,con2]
@@ -535,156 +533,51 @@ truelst = map hasProof [membership_test,pi_intro_test,pi_elim_test,ex1]
 falselst = map hasProof [false,formedness]
 
 test =
-  (and sk_lst)
-  && (and not_sk_lst)
-  && (and tautology)
+  and sk_lst
+  && and not_sk_lst
+  && and tautology
   && not (or contradiction)
-  && (and truelst)
+  && and truelst
   && not (or falselst)
 
 
-
-{-
-con = [Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Con $ T.pack "p"),(Conclusion $ DT.Con $ T.pack "q")]
-depth = 1
-arrow_type = (Conclusion $ DT.Con $ T.pack  "p")
-deduce con arrow_type depth
-
-arrow_type = (Conclusion $ DT.Var 2)
-deduce con arrow_type depth
-
-arrow_type = (Conclusion $ DT.Var 1)
-deduce con arrow_type depth
-
-arrow_type = (Conclusion $ DT.Var 0)
-deduce con arrow_type depth
-
-arrow_type = Arrow_Sigma (Conclusion $ DT.Var 1) (Conclusion $ DT.Var 3)
-deduce con arrow_type depth
-
-
-con = [Arrow [Conclusion $ DT.Var 2] (Conclusion $ DT.Var 2),Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Var 0),(Conclusion $ DT.Con $ T.pack "q")]
-depth =  1
-arrow_type = Arrow [Conclusion $ DT.Var 2] (Conclusion $ DT.Var 4)
-deduce con arrow_type depth
-
-con = [(Conclusion $ DT.Var 2),Arrow [Conclusion $ DT.Var 2] (Conclusion $ DT.Var 2),Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Var 0),(Conclusion $ DT.Con $ T.pack "q")]
-depth =  1
-arrow_type = Arrow [Conclusion $ DT.Var 3] (Conclusion $ DT.Var 5)
-deduce con arrow_type depth
-
-
-arrow_type = Arrow [Conclusion $ DT.Var 1] (Conclusion $ DT.Con $ T.pack "q")
-pi_intro con arrow_type depth
-
-arrow_type = Arrow [Conclusion $ DT.Var 1] (Conclusion $ DT.Var 2)
-pi_intro con arrow_type depth
-
-
-con = [Arrow [Conclusion $ DT.Var 0] (Conclusion $ DT.Var 2),(Conclusion $DT.Var 0),(Conclusion $ DT.Con $ T.pack "q")]
-arrow_type =Conclusion $ DT.Var 2
-deduce con arrow_type depth
-
-
-test = Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r")))
-con =  [(Arrow [Conclusion $ DT.Con $ T.pack "p"] (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r"))),(Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r"))),to1Arrow test,Conclusion $ DT.Con $ T.pack "q"]
-b1 = (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r"))
-deduce con b1 depth
-
-
-con = [Arrow [Conclusion $ DT.Con $ T.pack "q"] (Conclusion $ DT.Var 3),Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Var 0),(Conclusion $ DT.Con $ T.pack "q")]
-depth = 1
-arrow_type = Arrow_Sigma (Conclusion $ DT.Var 2) (Conclusion $ DT.Var 3)
-deduce con arrow_type depth
--}
-
-{-
-con = [Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Con $ T.pack "p"),(Conclusion $ DT.Con $ T.pack "q")]
-depth = 1
-arrow_type = (Conclusion $ DT.Con $ T.pack  "p")
-deduce con arrow_type depth
-
-arrow_type = (Conclusion $ DT.Var 2)
-deduce con arrow_type depth
-
-arrow_type = (Conclusion $ DT.Var 1)
-deduce con arrow_type depth
-
-arrow_type = (Conclusion $ DT.Var 0)
-deduce con arrow_type depth
-
-arrow_type = Arrow_Sigma (Conclusion $ DT.Var 1) (Conclusion $ DT.Var 3)
-deduce con arrow_type depth
-
-
-con = [Arrow [Conclusion $ DT.Var 2] (Conclusion $ DT.Var 2),Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Var 0),(Conclusion $ DT.Con $ T.pack "q")]
-depth =  1
-arrow_type = Arrow [Conclusion $ DT.Var 2] (Conclusion $ DT.Var 4)
-deduce con arrow_type depth
-
-con = [(Conclusion $ DT.Var 2),Arrow [Conclusion $ DT.Var 2] (Conclusion $ DT.Var 2),Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Var 0),(Conclusion $ DT.Con $ T.pack "q")]
-depth =  1
-arrow_type = Arrow [Conclusion $ DT.Var 3] (Conclusion $ DT.Var 5)
-deduce con arrow_type depth
-
-
-arrow_type = Arrow [Conclusion $ DT.Var 1] (Conclusion $ DT.Con $ T.pack "q")
-pi_intro con arrow_type depth
-
-arrow_type = Arrow [Conclusion $ DT.Var 1] (Conclusion $ DT.Var 2)
-pi_intro con arrow_type depth
-
-
-con = [Arrow [Conclusion $ DT.Var 0] (Conclusion $ DT.Var 2),(Conclusion $DT.Var 0),(Conclusion $ DT.Con $ T.pack "q")]
-arrow_type =Conclusion $ DT.Var 2
-deduce con arrow_type depth
-
-
-test = Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r")))
-con =  [(Arrow [Conclusion $ DT.Con $ T.pack "p"] (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r"))),(Arrow [Conclusion $ DT.Con $ T.pack "q"] (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r"))),to1Arrow test,Conclusion $ DT.Con $ T.pack "q"]
-b1 = (Arrow_Sigma (Conclusion $ DT.Con $T.pack "s") (Conclusion $ DT.Con $T.pack "r"))
-deduce con b1 depth
-
-
-con = [Arrow [Conclusion $ DT.Con $ T.pack "q"] (Conclusion $ DT.Var 3),Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Var 0),(Conclusion $ DT.Con $ T.pack "q")]
-depth = 1
-arrow_type = Arrow_Sigma (Conclusion $ DT.Var 2) (Conclusion $ DT.Var 3)
-deduce con arrow_type depth
--}
-
-{-
-con = [Arrow_Sigma (Conclusion $ DT.Var 0) (Conclusion $ DT.Var 2),(Conclusion $DT.Var 0),(Conclusion $ DT.Con $ T.pack "q")]
-arrow_type = (Conclusion DT.Type)
-depth = 1
-arrow_term = Arrow [Conclusion $DT.Con $T.pack "q"] (Conclusion $ DT.Var 3)
-pi_form con arrow_term arrow_type depth
--}
-
-resultHtml = "DTS/Alligator/AlexHappy/result.html"
-
-testtree =
-  J.PiE
-    (J.Judgement [] DT.Type DT.Type)
-    (J.CON (J.Judgement [] DT.Type DT.Type))
-    (J.CON (J.Judgement [] DT.Type DT.Type))
-
-utesttree =
-  J.UPiE
-    (J.UJudgement [] UD.Type UD.Type)
-    (J.UCON (J.UJudgement [] UD.Type UD.Type))
-    (J.UCON (J.UJudgement [] UD.Type UD.Type))
-  -- J.UVAR (J.UJudgement [] UD.Type UD.Type)
-
-testhttp = do
-  putStrLn HTML.htmlHeader4MathML
-  T.putStrLn HTML.startMathML
-  T.putStrLn $J.treeToMathML testtree
-  T.putStrLn HTML.endMathML
-  putStrLn HTML.htmlFooter4MathML
-
-utesthttp = do
-  putStrLn HTML.htmlHeader4MathML
-  T.putStrLn HTML.startMathML
-  T.putStrLn $J.utreeToMathML utesttree
-  T.putStrLn HTML.endMathML
-  putStrLn HTML.htmlFooter4MathML
+-- searchProoftest1 = searchProof [A.Conclusion $ DT.Con (T.pack "p")] (A.Conclusion $ DT.Type) 1
+-- searchProoftest2 = searchProof [A.Conclusion $ DT.Con (T.pack "p")] (A.Conclusion $ DT.Con (T.pack "p")) 1
+-- searchProoftest3 = searchProof
+--   [A.Conclusion $ DT.Pi (DT.Con (T.pack "p")) (DT.Con (T.pack "q")),A.Conclusion $ DT.Con (T.pack "p")]
+--   (A.Conclusion $ DT.Con (T.pack "q"))
+--   1
+-- searchProoftest4 = searchProof
+--   [A.Conclusion $ DT.Pi (DT.Con (T.pack "p")) (DT.Con (T.pack "q")),A.Conclusion $ DT.Con (T.pack "p")]
+--   (A.Conclusion $ DT.Pi (DT.Pi (DT.Con (T.pack "p")) (DT.Con (T.pack "q"))) (DT.Con (T.pack "p")))
+--   1
+-- searchProoftest5 = searchProof
+--   [A.Conclusion $ DT.Var 1,A.Conclusion DT.Type,A.Conclusion DT.Type]
+--   (A.Arrow [A.Conclusion$ DT.Var 1] (A.Conclusion $DT.Var 3))
+--   1
+-- searchProoftest6 = searchProof
+--   [A.Conclusion $ DT.Var 1,A.Conclusion DT.Type,A.Conclusion DT.Type]
+--   (A.Arrow [A.Conclusion$ DT.Var 2,A.Conclusion$ DT.Var 2] (A.Conclusion $DT.Var 4))
+--   1
+--
+-- searchProoftest7 = searchProof
+--   [A.Arrow [A.Conclusion $ DT.Con $T.pack "p",A.Conclusion $ DT.Con $T.pack "q"] $ A.Arrow_Sigma (A.Conclusion $ DT.Var 4) (A.Conclusion $ DT.Con $T.pack "a"),A.Conclusion $ DT.Con $T.pack "p",A.Conclusion $ DT.Con $T.pack "q",A.Conclusion DT.Type]
+--   (A.Arrow [A.Conclusion $ DT.Con $T.pack "p",A.Conclusion $ DT.Con $T.pack "q"] (A.Conclusion $ DT.Var 5))
+--   1
+--
+-- searchProoftest8 = searchProof
+--   [A.Arrow [A.Conclusion $ DT.Con $T.pack "p",A.Conclusion $ DT.Con $T.pack "q"] $ A.Arrow_Sigma (A.Conclusion $ DT.Var 4) (A.Conclusion $ DT.Con $T.pack "a"),A.Conclusion $ DT.Con $T.pack "p",A.Conclusion $ DT.Con $T.pack "q",A.Conclusion DT.Type]
+--   (A.Conclusion $ DT.Var 3)
+--   1
+--
+-- searchProoftest9 = searchProof
+--   [A.Conclusion (DT.Var 1),A.Conclusion (DT.Var 1),A.Conclusion DT.Type,A.Conclusion DT.Type]
+--   (A.Arrow_Sigma (A.Conclusion $DT.Var 3) (A.Conclusion $DT.Var 3))
+--   1
+--
+-- testcon =[A.Arrow [A.Arrow [A.Conclusion $ DT.Var 0] (A.Conclusion DT.Bot)] (A.Conclusion DT.Bot) ,A.Conclusion DT.Type]
+-- testtype = A.Conclusion (DT.Var 1)
+-- searchProoftestlatest = searchProof
+--   testcon
+--   testtype
+--   1

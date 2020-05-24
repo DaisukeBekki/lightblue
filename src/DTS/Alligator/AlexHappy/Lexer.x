@@ -64,6 +64,10 @@ tokens :-
     { \s -> TokenInclude }
   \% [$space]* Number [$space]+ of [$space]+ predicates
     { \s -> TokenPreNum}
+  \% [$space]* Number [$space]+ of [$space]+ atoms
+    { \s -> TokenPreNum}
+  \% [$space]* Number [$space]+ of [$space]+ variables
+    { \s -> TokenPreNum}
   \% [$space]*Number [$space]+ of [$space]+ clauses
     { \s -> TokenClause}
 
