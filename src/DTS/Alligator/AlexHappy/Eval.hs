@@ -1,29 +1,29 @@
 module DTS.Alligator.AlexHappy.Eval (evalInfo) where
 
-import DTS.Alligator.AlexHappy.Syntax as S
-import DTS.Alligator.AlexHappy.Syntaxf as F
-import Control.Monad.State
+import qualified DTS.Alligator.AlexHappy.Syntax as S
+import qualified DTS.Alligator.AlexHappy.Syntaxf as F
 import qualified Data.Map as Map
 import qualified Data.List as L
-import DTS.Alligator.AlexHappy.Parser as P
-import DTS.Alligator.AlexHappy.Parserf as PF
+import qualified DTS.Alligator.AlexHappy.Parser as P
+import qualified DTS.Alligator.AlexHappy.Parserf as PF
 import qualified Data.Text.Lazy as Te
 import qualified Data.Text.IO as T
 import qualified DTS.DTT as DT
 import qualified DTS.Prover.Judgement as J
 import qualified DTS.Alligator.Arrowterm as A
 import qualified DTS.Alligator.Prover as AP
+import qualified DTS.Alligator.AlexHappy.TPTPInfo as TI
 
 import Data.Maybe
+import Control.Monad.State
 
-import DTS.Alligator.AlexHappy.TPTPInfo
 import Data.Default (Default(..))
 
 import Debug.Trace as D
 import System.Timeout
 
 
-testexpr = [Status "Theorem",PreNum 3,Formula "fof" "" "axiom" "p",Formula "fof" "" "axiom" "p=>q",Formula "fof" "" "axiom" "q=>r",Formula "fof" "" "conjecture" "r"]
+testexpr = [S.Status "Theorem",S.PreNum 3,S.Formula "fof" "" "axiom" "p",S.Formula "fof" "" "axiom" "p=>q",S.Formula "fof" "" "axiom" "q=>r",S.Formula "fof" "" "conjecture" "r"]
 
 updateConLst :: String -> [(String,Int)] -> Either String [(String,Int)]
 updateConLst con conlst =
@@ -45,88 +45,111 @@ dnPr = DT.Pi DT.Type (DT.Pi (DT.Pi (DT.Pi (DT.Var 0) DT.Bot) DT.Bot) (DT.Var 1))
 
 classic = [dnPr]
 
-importAxiom :: String -> Info -> Info
-importAxiom fname info = info
 
-importAxiomio :: String -> IO Info -> IO Info
+importAxiomio :: String -> IO TI.Info -> IO TI.Info
 importAxiomio fname infoio = do
-  input <- readFile $ tptpdir ++ (tail $ init fname)
+  input <- readFile $ TI.tptpdir ++ tail (init fname)
   info <- infoio
   let ast' = P.parseExpr input
   case ast' of
     Right ast -> do
-      info' <- setInfo ast
-      return $ info  {context = (context info') ++ (context info)} {strcontext =  ", load " ++ tptpdir ++ (tail $ init fname) ++ strcontext info}
+      info' <- foldl updateInfo infoio ast
+      return $ info  {TI.context = TI.context info' ++ TI.context info} {TI.strcontext =  ", load " ++ TI.tptpdir ++ tail ( init fname) ++ TI.strcontext info}
     Left err ->
-      return $ info {note = "axioim Parser Error" ++ show err}
+      return $ info {TI.note = "axioim Parser Error" ++ show err}
 
-updateInfo :: IO Info -> S.Expr -> IO Info
+generateType :: Int -> DT.Preterm
+generateType 0 = DT.Type
+generateType num = DT.Pi DT.Type (generateType (num-1))
+
+contextUpdate :: [(String,Int)] -> TI.Info ->  TI.Info
+contextUpdate conlst' base =
+  let conlst = filter ((/= 0).snd) conlst'
+      context' =  TI.context base
+  in
+    foldr
+      (
+        \(var,argnum) info ->
+          case lookup var $ TI.prelst info of
+            Nothing ->
+              let prelst2 =  filter ((== "").fst) $ TI.prelst info
+                  prelst' = (var,(snd . head)  prelst2) : tail prelst2  ++ filter ((/= "").fst)  (TI.prelst info)
+                  context' = take ((snd . head)  prelst2 - 1) (TI.context info) ++ [generateType argnum] ++ drop ((snd . head)  prelst2) (TI.context info)
+              in
+                 info {TI.context = context'} {TI.prelst = prelst'}
+            Just num ->
+              let context' = take num (TI.context info) ++ [generateType argnum] ++ drop (num+1) (TI.context info)
+              in
+                 info {TI.context = context'}
+      )
+      base
+      conlst
+
+updateInfo :: IO TI.Info -> S.Expr -> IO TI.Info
 updateInfo baseio expr = do
   base <- baseio
   case expr of
-    Sout a
-      -> return $ base
-    File a b
-      -> return $ base {filename = a}
-    Status a
-      -> return $ base {status = a}
-    PreNum a
-      -> return $ base {note = "prenum"} {prelst = L.zip (L.replicate a "") [1..a] ++ prelst base} {context = L.replicate a DT.Type  ++ context base}
-    Include a
-      -> importAxiomio a (return base)
-    Formula lan name sort f
+    S.Sout a
+      -> return  base
+    S.File a b
+      -> return $ base {TI.filename = a}
+    S.Status a
+      -> return $ base {TI.status = Just (read a :: TI.Status)}
+    S.PreNum a
+      -> return $ base  {TI.prelst = L.zip (L.replicate a "") [0..(a-1)] ++ map (\(str,int) -> (str,int + a)) (TI.prelst base)} {TI.context = L.replicate a DT.Type  ++ TI.context base}
+    S.Include a
+      -> importAxiomio a baseio
+    S.Formula lan name sort f
       -> do
-        let either_pre = processf f (filter (/= "") $ map fst $prelst base)
-            base' = base {language = lan}
+        let either_pre = processf' f (filter (/= "") $ map fst $TI.prelst base)
+            base2 = base {TI.language = Just (read lan ::TI.Language)}
         case either_pre of
-          Right (conlst,term) ->
-            let prelst' = foldr updateConLst' (prelst base) conlst
+          Right (conlst',term) ->
+            let conlst = map fst conlst'
+                prelst' = foldr updateConLst' (TI.prelst base) conlst
+                base' =contextUpdate conlst' base2
                 term' = foldr (\(con,varnum) preterm -> A.subst preterm (DT.Var varnum) (DT.Con $ Te.pack con)) term prelst'
-            in case sort of
-              "conjecture" -> return $ base' { target = Just term'} {strtarget = f}
-              "negated_conjecture" -> return $ base' { negated_conjecture = f : (negated_conjecture base')}
-              "plain" -> undefined
-              "type" -> undefined
-              "unknown" -> undefined
-              _ ->  --axiom-like formulae (axiom, hypothesis, definition, assumption, lemma, theorem, and corollary).
-                {- They are accepted, without proof, as a basis for proving conjectures in THF, TFF, and FOF problems. In CNF problems the axiom-like formulae are accepted as part of the set whose satisfiability has to be established. -}
-                return $ base' { prelst = map (\(str,int) -> (str,int + 1)) prelst'} {context = term' : context base} {strcontext = strcontext base ++ "," ++ f}
+            in case read sort :: TI.Role of
+              TI.Conjecture -> return $ base' { TI.target = Just term'} {TI.strtarget = f}
+              TI.NegatedConjecture -> return $ base'  { TI.negated_conjecture = Just $ case TI.negated_conjecture base' of Just term1 -> DT.Sigma term1 term' ; Nothing -> term'{-DT.Sigma (fromMaybe DT.Top $ negated_conjecture base') (term')-} } {TI.strnegated =  TI.strnegated base'++"& " ++ f }
+              TI.Plain -> undefined
+              TI.Type -> undefined
+              TI.RUnknown -> undefined
+              sort' ->
+                if TI.isAxiomLike sort'
+                then
+                  return $ base' { TI.prelst = map (\(str,int) -> (str,int + 1)) prelst'} {TI.context = term' : TI.context base} {TI.strcontext =  TI.strcontext base ++ "," ++ f}
+                else undefined
           Left err ->
-            return $ base' {note = "error in process" ++ f}
+            return $ base2 {TI.note = "error in process" ++ f}
     _ -> return base
 
-settarget :: Info -> Info
+settarget :: TI.Info -> TI.Info
 settarget base =
-  case target base of
+  case TI.target base of
     Just y -> base
     Nothing ->
-      case negated_conjecture base of
-        (fs:r) ->do
-          let f = case r of [] -> "~"++fs ; _ -> init $foldr (\a b -> "~" ++ a ++ "&"++ b) "" (fs:r)
-          case processf f (filter (/= "") $ map fst $prelst base) of
-            Right (conlst,term) ->
-              let prelst' = foldr updateConLst' (prelst base) conlst
-                  term' = foldr (\(con,varnum) preterm -> A.subst preterm (DT.Var varnum) (DT.Con $ Te.pack con)) term prelst' in
-              base {target = Just term'} {strtarget = f}
-            Left err -> base {note = "error in process" ++ f}
-        [] -> base {note = "found nothing to prove"}
+      case TI.negated_conjecture base of
+        Just y -> base {TI.target = Just y} {TI.strtarget = if TI.strtarget base == "" then "" else tail $ TI.strnegated base}
+        Nothing -> base {TI.note = "found nothing to prove"}
 
-gettarget :: Info -> DT.Preterm
-gettarget info =  fromMaybe DT.Bot $ target info
+gettarget :: TI.Info -> DT.Preterm
+gettarget info =  fromMaybe DT.Bot $ TI.target info
 
-setInfo :: [S.Expr] -> IO Info
+setInfo :: [S.Expr] -> IO TI.Info
 setInfo expr= do
-    x <- foldl updateInfo (return $ def{prelst = [("",0)]}{context = [DT.Type,DT.Top]}) expr
+    x <- foldl updateInfo (return $ def{TI.context = [DT.Type,DT.Top]}{TI.prelst=[("false",0)]}) expr--(return $ def{prelst = [("",0)]}{context = [DT.Type,DT.Top]}) expr
     let info = settarget x
-    return $ info {strcontext = if strcontext x == "" then "" else tail $ strcontext x} {strprocessed = if length (context x) <=  100 then show $ A.Arrow (map A.Conclusion (context x)) (A.Conclusion  $ gettarget info) else ""}
+    return $
+      info {TI.strcontext = if TI.strcontext x == "" then "" else tail $ TI.strcontext x} {TI.strprocessed = if length (TI.context x) <=  100 then show $ A.Arrow (map A.arrowNotat {-[DT.Not DT.Top]-}(TI.context x)) (A.arrowNotat  $ {-DT.Top-}gettarget info) else ""}
 
-evalInfo ::[S.Expr] -> IO Info
+evalInfo ::[S.Expr] -> IO TI.Info
 evalInfo expr = do
   base <- setInfo expr
-  case target base  of
+  case TI.target base  of
     Nothing -> return base --undefined --negated_conjectureでどうにもならなかったらfalse
     Just conjecture ->
-      return $ base {result = [] /= AP.prove (context base) classic conjecture} {context = []} {target = Nothing} {prelst = []}
+      return $ base {TI.result = [] /= AP.prove (TI.context base) classic conjecture} {TI.context = []} {TI.target = Nothing}
 
 processf :: String -> [String] -> Either String ([String] , DT.Preterm)
 processf input conlst = do
@@ -135,37 +158,94 @@ processf input conlst = do
     Right ast ->Right $ t2dt ast conlst
     Left err -> Left $ "Error in processf @" ++ input
 
+processf' :: String -> [String] -> Either String ([(String,Int)] , DT.Preterm)
+processf' input conlst = do
+  let ast' = PF.parseExpr input
+  case ast' of
+    -- Right ast ->D.trace input Right $ t2dt' ast $map (\x -> (x,0)) conlst
+    Right ast -> Right $ t2dt' ast $map (\x -> (x,0)) conlst
+    Left err -> Left $ "Error in processf @" ++ input
+
+
 t2dt :: F.Expr
-  -> [String]  -- ^ for bound variables in (Tall,Texist)
-  -> ([String],DT.Preterm)  -- ^ (bound variables,result)
-t2dt (Tletter con) s =
-  let s' = if con `elem` s then s else con :s
-  in (s' , DT.Con $ Te.pack con)
-t2dt Ttrue s = (s, DT.Top)
-t2dt Tfalse s= (s, DT.Bot)
-t2dt (Tneg formula) s=
+  -> [String]  -- ^ for bound variables in (F.Tall,F.Texist)
+  -> ([String],DT.Preterm)  -- ^ (bound variables,result,functions)
+t2dt (F.Tletter con) s =
+  let s' = L.nub con :s
+  in (s' , DT.Con $ Te.pack con )
+t2dt F.Ttrue s = (s, DT.Top)
+t2dt F.Tfalse s= (s, DT.Bot)
+t2dt (F.Tneg formula) s=
   let (s' , arg1) = t2dt formula s in
-    (s' , DT.Not arg1)
-t2dt (Tbinary biop f1 f2) s =
+     (s' , DT.Not arg1)
+t2dt (F.Tbinary biop f1 f2) s =
   let (s1 , arg1) = t2dt f1 s
       (s' , arg2) = t2dt f2 s1 in
     case biop of
-      Tand -> (s' , DT.Sigma arg1 arg2)
-      Tor -> (s' , DT.Not $ DT.Sigma (DT.Not arg1) (DT.Not arg2))
-      Timp -> (s' , DT.Pi arg1 arg2)
-      Tequiv -> (s' , DT.Sigma (DT.Pi arg1 arg2) (DT.Pi arg2 arg1))
-t2dt (TApp f []) s =t2dt f s
-t2dt (TApp f (a1:r)) s =
+      F.Tand -> (s' , DT.Sigma arg1 arg2)
+      F.Tor -> (s' , DT.Not $ DT.Sigma (DT.Not arg1) (DT.Not arg2))
+      F.Timp -> (s' , DT.Pi arg1 arg2)
+      F.Tequiv -> (s' , DT.Sigma (DT.Pi arg1 arg2) (DT.Pi arg2 arg1))
+t2dt (F.TApp f []) s =t2dt f s
+t2dt (F.TApp f (a1:r)) s =
   let (s1,alast) = t2dt a1 s
-      (s',args) = t2dt (TApp f r) s1 in
+      (s',args) = t2dt (F.TApp f r) s1 in
     (s' , DT.App args alast)
-t2dt (Tall [] f ) s = t2dt f s
-t2dt (Tall vars f ) s =
-  let Tvar var = head vars
-      (s' , arg2) = t2dt (Tall (tail vars) f) (var : s )
+t2dt (F.Tall [] f ) s = t2dt f s
+t2dt (F.Tall vars f ) s =
+  let F.Tvar var = head vars
+      (s' , arg2) = t2dt (F.Tall (tail vars) f) (var : s )
   in (filter (/= var) s' , DT.Pi DT.Type (A.subst arg2 (DT.Var 0) (DT.Con $ Te.pack var)))
-t2dt (Texist [] f ) s = t2dt f s
-t2dt (Texist vars f ) s =
-  let Tvar var = head vars
-      (s' , arg2) = t2dt (Texist (tail vars) f) (var : s )
+t2dt (F.Texist [] f ) s = t2dt f s
+t2dt (F.Texist vars f ) s =
+  let F.Tvar var = head vars
+      (s' , arg2) = t2dt (F.Texist (tail vars) f) (var : s )
   in (filter (/= var) s' , DT.Sigma DT.Type (A.subst arg2 (DT.Var 0) (DT.Con $ Te.pack var)))
+
+
+
+
+t2dt' :: F.Expr
+  -> [(String,Int)]  -- ^ for bound variables in (F.Tall,F.Texist)
+  -> ([(String,Int)],DT.Preterm)  -- ^ (bound variables,result,functions)
+t2dt' (F.Tletter con) s =
+  let s' = if con `elem` map fst s then s else (con,0) :s
+  in  (s' , DT.Con $ Te.pack con )
+t2dt' F.Ttrue s = (s, DT.Top)
+t2dt' F.Tfalse s=  (s, DT.Bot)
+t2dt' (F.Tneg formula) s=
+  let (s' , arg1) = t2dt' formula s in
+    (s' , DT.Not arg1)
+t2dt' (F.Tbinary biop f1 f2) s =
+  let (s1 , arg1) = t2dt' f1 s
+      (s' , arg2) = t2dt' f2 s1 in
+    case biop of
+      F.Tand -> (s' , DT.Sigma arg1 arg2)
+      F.Tor -> (s' , DT.Not $ DT.Sigma (DT.Not arg1) (DT.Not arg2))
+      F.Timp -> (s' , DT.Pi arg1 arg2)
+      F.Tequiv -> (s' , DT.Sigma (DT.Pi arg1 arg2) (DT.Pi arg2 arg1))
+t2dt' (F.TApp f []) s =t2dt' f s
+t2dt' (F.TApp f (a1:r)) s =
+  let (s1,alast) = t2dt' a1 s
+      (s2,args) = t2dt' (F.TApp f r) s1
+      f' = case f of
+        F.Tletter fstr -> fstr
+        _ -> " "
+      s' = case lookup f' s2 of
+        Nothing -> (f',length (a1:r)):s2
+        Just num -> if num < length (a1:r)
+          then (f',length (a1:r)) : L.delete (f',num) s2
+          else s2
+  in
+    (s' , DT.App args alast)
+    -- D.trace ("function : " ++  show f ++ (show $ length (a1:r))) (s' , DT.App args alast)
+t2dt' (F.Tall [] f ) s = t2dt' f s
+t2dt' (F.Tall vars f ) s =
+  let F.Tvar var = head vars
+      (s' , arg2) = t2dt' (F.Tall (tail vars) f) ((var,0) : s )
+  in (filter ((/= var).fst) s' , DT.Pi DT.Type (A.subst arg2 (DT.Var 0) (DT.Con $ Te.pack var)))
+t2dt' (F.Texist [] f ) s = t2dt' f s
+t2dt' (F.Texist vars f ) s =
+  let F.Tvar var = head vars
+      (s' , arg2) = t2dt' (F.Texist (tail vars) f) ((var,0) : s )
+  in (filter ((/= var).fst) s' , DT.Sigma DT.Type (A.subst arg2 (DT.Var 0) (DT.Con $ Te.pack var)))
