@@ -7,12 +7,11 @@ import System.Environment
 import DTS.Alligator.AlexHappy.TPTPInfo
 import Data.Default (Default(..))
 
-processInfo :: String -> IO Info
-processInfo input = do
+processInfo :: String -> String -> IO Info
+processInfo input fname = do
   let ast' = parseExpr input
   case ast' of
-    Right ast -> do
-      evalInfo ast
+    Right ast -> evalInfo ast fname
     Left err ->
       return $ def {note = "Parser Error" ++ show err}
 
@@ -20,4 +19,4 @@ processInfo input = do
 fileparseInfo :: String -> IO Info
 fileparseInfo fname  = do
   input <- readFile fname
-  processInfo input
+  processInfo input fname

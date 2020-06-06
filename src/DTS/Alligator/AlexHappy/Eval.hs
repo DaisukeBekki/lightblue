@@ -7,11 +7,13 @@ import qualified Data.List as L
 import qualified DTS.Alligator.AlexHappy.Parser as P
 import qualified DTS.Alligator.AlexHappy.Parserf as PF
 import qualified Data.Text.Lazy as Te
-import qualified Data.Text.IO as T
+-- import qualified Data.Text.IO as T
+import qualified Data.Text.Lazy.IO as T
 import qualified DTS.DTT as DT
 import qualified DTS.Prover.Judgement as J
 import qualified DTS.Alligator.Arrowterm as A
-import qualified DTS.Alligator.Prover as AP
+
+--import qualified DTS.Alligator.Prover as AP
 import qualified DTS.Alligator.AlexHappy.TPTPInfo as TI
 
 import Data.Maybe
@@ -40,10 +42,7 @@ updateConLst' con conlst =
     Right a -> a
     Left _ -> []
 
-dnPr :: DT.Preterm
-dnPr = DT.Pi DT.Type (DT.Pi (DT.Pi (DT.Pi (DT.Var 0) DT.Bot) DT.Bot) (DT.Var 1))
 
-classic = [dnPr]
 
 
 importAxiomio :: String -> IO TI.Info -> IO TI.Info
@@ -136,20 +135,24 @@ settarget base =
 gettarget :: TI.Info -> DT.Preterm
 gettarget info =  fromMaybe DT.Bot $ TI.target info
 
-setInfo :: [S.Expr] -> IO TI.Info
-setInfo expr= do
+setInfo :: [S.Expr] -> String -> IO TI.Info
+setInfo expr fname= do
     x <- foldl updateInfo (return $ def{TI.context = [DT.Type,DT.Top]}{TI.prelst=[("false",0)]}) expr--(return $ def{prelst = [("",0)]}{context = [DT.Type,DT.Top]}) expr
     let info = settarget x
     return $
-      info {TI.strcontext = if TI.strcontext x == "" then "" else tail $ TI.strcontext x} {TI.strprocessed = if length (TI.context x) <=  100 then show $ A.Arrow (map A.arrowNotat {-[DT.Not DT.Top]-}(TI.context x)) (A.arrowNotat  $ {-DT.Top-}gettarget info) else ""}
+      info {TI.filename = fname}{TI.strcontext = if TI.strcontext x == "" then "" else tail $ TI.strcontext x} --{TI.strprocessed = if length (TI.context x) <=  100 then show $ A.Arrow (map A.arrowNotat {-[DT.Not DT.Top]-}(TI.context x)) (A.arrowNotat  $ {-DT.Top-}gettarget info) else ""}
 
-evalInfo ::[S.Expr] -> IO TI.Info
-evalInfo expr = do
-  base <- setInfo expr
-  case TI.target base  of
-    Nothing -> return base --undefined --negated_conjectureでどうにもならなかったらfalse
-    Just conjecture ->
-      return $ base {TI.result = [] /= AP.prove (TI.context base) classic conjecture} {TI.context = []} {TI.target = Nothing}
+
+evalInfo ::[S.Expr] -> String -> IO TI.Info
+evalInfo expr fname = do
+  base <- setInfo expr fname
+  return base
+  -- dneBase <- computeWithDNE base
+  -- efqBase <- computeWithEFQ dneBase
+  -- return $ efqBase {TI.context = []} {TI.target = Nothing}
+
+
+      -- return $ base {TI.result = [] /= (AP.prove (TI.context base) classic conjecture)} {TI.context = []} {TI.target = Nothing}
 
 processf :: String -> [String] -> Either String ([String] , DT.Preterm)
 processf input conlst = do

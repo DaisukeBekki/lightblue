@@ -4,11 +4,15 @@ module DTS.Alligator.AlexHappy.TPTPTest (
 ) where
 
 import qualified DTS.Alligator.AlexHappy.FileParser as F
-import qualified DTS.Alligator.AlexHappy.TPTPInfo as TI
 
 import System.Directory
 import System.Timeout
 import Control.Monad
+import qualified DTS.Alligator.AlexHappy.Eval as E
+import qualified DTS.Alligator.AlexHappy.TPTPInfo as TI
+import qualified DTS.Alligator.ProofTree as APT
+import qualified Data.Text.Lazy.IO as T
+import qualified DTS.DTT as DT
 import Data.Default (Default(..))
 
 testFileExtentions :: [String]
@@ -116,9 +120,6 @@ dirs :: [String]
 -- dirs = ["DTS/Alligator/Test/"]
 dirs = ["DTS/Alligator/Test/","../../TPTP-v7.3.0/Problems/SYN/"]
 
-resultfname :: String
-resultfname = "DTS/Alligator/AlexHappy/result.csv"
-
 isTestFile :: String -> Bool
 isTestFile fname=
   any (\ex -> take (1 + length ex) (reverse fname) == reverse ('.':ex )) testFileExtentions
@@ -138,10 +139,34 @@ testInfoDir dir = do
           case justbase of
             Just base -> do
               let info = base {TI.filename = fname}
-              _ <- timeout TI.timelimit $ appendFile resultfname $ generateCsvRow info
-              appendFile resultfname ""
+              --dneBase <- E.computeWithDNE base
+  -- dneBase <- computeWithDNE base
+  -- efqBase <- computeWithEFQ dneBase
+  -- return $ efqBase {TI.context = []} {TI.target = Nothing}
+              _ <- writeResults info
+              _ <- timeout TI.timelimit $ appendFile TI.resultfname $ generateCsvRow info
+              appendFile TI.resultfname ""
             Nothing ->
-              appendFile resultfname $ generateCsvRow $def {TI.filename = fname} {TI.note = "timeout"})
+              appendFile TI.resultfname $ generateCsvRow $def {TI.filename = fname} {TI.note = "timeout"})
+
+writeResults :: TI.Info -> IO()
+writeResults info = do
+  appendFile TI.resultfname (  TI.filename info ++ "\t" ++"" ++ "\t" ++ (case TI.status info of Just sta -> show sta ; _ -> "") ++ "\t")
+  justdneBase <- timeout TI.timelimit $computeWithDNE info
+  case justdneBase of
+    Just dneBase -> appendFile TI.resultfname (show (TI.dneResult dneBase) ++ "\t" ++ (TI.dneUrl dneBase) ++ "\t")
+    Nothing -> appendFile TI.resultfname "timeout\t\t"
+  justefqBase <- timeout TI.timelimit $computeWithEFQ info
+  case justefqBase of
+    Just efqBase -> appendFile TI.resultfname (show (TI.efqResult efqBase) ++ "\t" ++ (TI.efqUrl efqBase) ++ "\t")
+    Nothing -> appendFile TI.resultfname "timeout\t\t"
+  appendFile TI.resultfname $(case TI.language info of Just lan -> show lan ; _ -> "") ++ "\t" ++ TI.strcontext info ++ "\t" ++TI.strtarget info ++ "\t" ++  TI.note info ++ "\t" ++ "\t" ++"\n"
+
+dnPr :: DT.Preterm
+dnPr = DT.Pi DT.Type (DT.Pi (DT.Pi (DT.Pi (DT.Var 0) DT.Bot) DT.Bot) (DT.Var 1))
+
+-- classic = [dnPr]
+classic = []
 
 testInfoFile :: String -> IO String
 testInfoFile fname = do
@@ -154,6 +179,53 @@ testInfoFile fname = do
     Nothing ->
       return $ generateCsvRow $def {TI.filename = fname} {TI.note = "timeout"}
 
+computeWithDNE :: TI.Info -> IO TI.Info
+computeWithDNE base =
+  case TI.target base  of
+    Nothing -> return base
+    Just conjecture ->
+      let dneYes = APT.prove (TI.context base) classic conjecture APT.settingDNE
+          url = TI.outputdir++(takeWhile (/= '.') $ reverse$ takeWhile (/='/')$ reverse $init$TI.filename base) ++ "_dts.html"
+      in
+        if not (null dneYes)
+        then do
+          contents <- APT.announce dneYes
+          T.writeFile url contents
+          return $  base {TI.dneResult =  TI.YES}{TI.dneUrl = url}
+        else
+          let dneNo = APT.prove (TI.context base) classic (DT.Not conjecture) APT.settingDNE
+          in
+            if not (null dneNo)
+            then do
+              contents <- APT.announce dneNo
+              T.writeFile url contents
+              return $ base {TI.dneResult =  TI.NO}{TI.dneUrl = url}
+            else return $ base {TI.dneResult = TI.UNKNOWN}
+
+computeWithEFQ :: TI.Info -> IO TI.Info
+computeWithEFQ base =
+  case TI.target base of
+    Nothing -> return base
+    Just conjecture ->
+        let efqYes = APT.prove (TI.context base) classic conjecture APT.settingEFQ
+            url = TI.outputdir ++(takeWhile (/= '.') $ reverse$ takeWhile (/='/')$ reverse $init $ TI.filename base) ++ "_efq.html"
+        in
+          if not (null efqYes)
+          then do
+            contents <- APT.announce efqYes
+            T.writeFile url contents
+            return $ base {TI.efqResult =  TI.YES}{TI.efqUrl = url}
+          else
+            let efqNo = APT.prove (TI.context base) classic (DT.Not conjecture) APT.settingEFQ in
+              if null efqNo
+              then do
+                contents <- APT.announce efqNo
+                T.writeFile url contents
+                return $ base {TI.efqResult = TI.UNKNOWN}{TI.efqUrl = url}
+              else
+                return $ base {TI.efqResult =  TI.NO}
+
+
 compete :: String -> Bool -> String
 compete "Theorem" b= show b
 compete _ _ = ""
@@ -163,20 +235,25 @@ generateCsvRow info =
   TI.filename info ++ "\t" ++
   "" ++ "\t" ++
   (case TI.status info of Just sta -> show sta ; _ -> "") ++ "\t" ++
-  show (TI.result info) ++ "\t"++
+  show (TI.dneResult info) ++ "\t"++
+  (TI.dneUrl info) ++ "\t"++
+  show (TI.efqResult info) ++ "\t"++
+  (TI.efqUrl info) ++ "\t"++
   (case TI.language info of Just lan -> show lan ; _ -> "") ++ "\t" ++
   TI.strcontext info ++ "\t" ++
   TI.strtarget info ++ "\t" ++
-  TI.strprocessed info ++ "\t" ++
+  -- TI.strprocessed info ++ "\t" ++
   TI.note info ++ "\t" ++ "\t" ++"\n"
 
 csvHeader :: String
-csvHeader="file\tassestment\tstatus\tresult\tlanguage\tcontext\ttarget\tprocessed\tnote\t\n"
+csvHeader="file\tassestment\tstatus\tdneresult\tdneurl\tefqresult\tefqurl\tlanguage\tcontext\ttarget\tnote\t\n"
+
+-- csvHeader="file\tassestment\tstatus\tdneresult\tefqresult\tlanguage\tcontext\ttarget\tprocessed\tnote\t\n"
 
 writeInfoCsv = do
-  writeFile resultfname csvHeader
+  writeFile TI.resultfname csvHeader
   forM_ dirs testInfoDir
   -- let result = concat result'
-  -- appendFile resultfname $"\n\t"++"True : "++ show (length $filter (==True) result) ++ "False : " ++ show  (length $filter (==False) result)
+  -- appendFile TI.resultfname $"\n\t"++"True : "++ show (length $filter (==True) result) ++ "False : " ++ show  (length $filter (==False) result)
   -- putStrLn "count True"
-  -- appendFile resultfname $"\n\t"++"True : "++ (show $ numOf True result) ++ " False : "++(show $ numOf False result)++"\t\t\t\t\t"
+  -- appendFile TI.resultfname $"\n\t"++"True : "++ (show $ numOf True result) ++ " False : "++(show $ numOf False result)++"\t\t\t\t\t"
