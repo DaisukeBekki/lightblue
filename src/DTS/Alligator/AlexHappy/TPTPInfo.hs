@@ -4,7 +4,7 @@ import Data.Default (Default(..))
 import qualified DTS.DTT as DT
 
 timelimit :: Int
-timelimit =  5000000
+timelimit =  60000000
 
 data Language =
  THF -- ^ formulae in typed higher-order form
@@ -96,12 +96,17 @@ shouldBeUnknown :: Status -> Bool
 shouldBeUnknown status =
   status `elem` [Satisfiable,Unknown,Open]
 
+data Result = YES | NO | UNKNOWN deriving (Show,Eq)
+
 data Info
   = Info{
       language :: Maybe Language,
       status :: Maybe Status,
       filename :: String,
-      result :: Bool,
+      dneResult :: Result,
+      efqResult :: Result,
+      dneUrl :: String,
+      efqUrl :: String,
       strcontext :: String,
       strtarget :: String,
       strprocessed :: String,
@@ -114,7 +119,13 @@ data Info
     } deriving (Show,Eq)
 
 instance Default Info where
-  def = Info{strnegated = "",negated_conjecture = Nothing,language = Nothing,status=Nothing,prelst=[],filename = "",result = False,strcontext = "",strtarget = "",strprocessed = "",note = "",context=[],target=Nothing}
+  def = Info{dneUrl = "",efqUrl ="",strnegated = "",negated_conjecture = Nothing,language = Nothing,status=Nothing,prelst=[],filename = "",dneResult = UNKNOWN,efqResult = UNKNOWN,strcontext = "",strtarget = "",strprocessed = "",note = "",context=[],target=Nothing}
 
 tptpdir :: String
 tptpdir = "../../TPTP-v7.3.0/"
+
+resultfname :: String
+resultfname = "DTS/Alligator/AlexHappy/output/result.csv"
+
+outputdir :: String
+outputdir = "DTS/Alligator/AlexHappy/output/"
