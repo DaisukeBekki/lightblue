@@ -2,8 +2,11 @@ module DTS.Alligator.ProofTree
 (
   prove,
   settingDef,
+  settingDNE,
+  settingEFQ,
   ProofMode(..),
-  Setting(..)
+  Setting(..),
+  announce
 ) where
 
 import qualified DTS.DTT as DT            -- DTT
@@ -21,18 +24,34 @@ data ProofMode = Plain | WithDNE | WithEFQ deriving (Show,Eq)
 data Setting = Setting {mode :: ProofMode,falsum :: Bool,maxdepth :: Int,maxtime :: Int}
 
 settingDef = Setting{mode = Plain,falsum = True,maxdepth = 9,maxtime = 100000}
+settingDNE = Setting{mode = WithDNE,falsum = True,maxdepth = 9,maxtime = 100000}
+settingEFQ = Setting{mode = WithEFQ,falsum = True,maxdepth = 9,maxtime = 100000}
 
 
-announce :: [J.Tree A.AJudgement] -> IO()
-announce [] = putStrLn "Nothing to announce"
-announce atrees = do
-  let atree = head atrees
-      testtree = A.aTreeTojTree atree
-  putStrLn HTML.htmlHeader4MathML
-  T.putStrLn HTML.startMathML
-  T.putStrLn $J.treeToMathML testtree
-  T.putStrLn HTML.endMathML
-  putStrLn HTML.htmlFooter4MathML
+-- aannounce :: [J.Tree A.AJudgement] -> IO()
+-- aannounce [] = putStrLn "Nothing to announce"
+-- aannounce atrees = announce (map A.aTreeTojTree atrees)
+--
+-- announce :: [J.Tree J.Judgement] -> IO()
+-- announce [] = putStrLn "Nothing to announce"
+-- announce jtrees = do
+--   let jtree = head jtrees
+--   putStrLn HTML.htmlHeader4MathML
+--   T.putStrLn HTML.startMathML
+--   T.putStrLn $J.treeToMathML jtree
+--   T.putStrLn HTML.endMathML
+--   putStrLn HTML.htmlFooter4MathML
+
+announce :: [J.Tree J.Judgement] -> IO T.Text
+announce [] = return $ T.pack "Nothing to announce"
+announce jtrees = do
+  let jtree = head jtrees
+  return
+    $ T.append (T.pack HTML.htmlHeader4MathML) $
+      T.append HTML.startMathML $
+      T.append (J.treeToMathML jtree) $
+      T.append HTML.endMathML
+       (T.pack HTML.htmlFooter4MathML)
 
 prove ::  A.TEnv -- ^ var_context ex)[(DT.Con (T.pack "prop")),(DT.Con (T.pack "set")),(DT.Con (T.pack "prop"))]
   -> A.TEnv -- ^ sig_context ex)[((T.pack "prop"),DT.Type),((T.pack "set"),DT.Type)] , classic
@@ -413,11 +432,31 @@ typecheck con arrow_term arrow_type depth setting
 --       let judgements = map (\f -> withLog f con arrow_type depth) [dne,membership,piIntro,piElim,sigmaIntro]
 --       in Right $ concat judgements
 
+efq :: [A.Arrowterm] -> A.Arrowterm -> Int -> Setting ->Either String [J.Tree A.AJudgement]
+efq con b depth setting
+  | depth > maxdepth setting = Left  $ "too deep @ efq " ++ show con ++" ト "++ show b
+  | null (withLog' typecheck con b (A.Conclusion DT.Type) (depth + 1) setting ) = Right []
+  | otherwise =
+    if null (withLog membership con (A.Conclusion DT.Bot) depth setting)
+    then
+      case deduceWithLog con (A.Conclusion DT.Bot) (depth + 1) setting of
+          [] -> Right []
+          botJs ->
+            Right
+              $map
+              (\dTree -> let (A.AJudgement env aTerm a_type) = A.downSide dTree in J.SigE (A.AJudgement env (A.Arrow_App (A.Conclusion $ DT.Con $T.pack "efq") aTerm) b) dTree)---(\dTree -> let (A.AJudgement env aTerm a_type) = A.downSide dTree in J.NotF (A.AJudgement env (A.Arrow_App (A.Conclusion $ DT.Con $T.pack "efq") aTerm) b) dTree)
+              botJs
+    else
+      Right
+        $map
+        (\dTree -> let (A.AJudgement env aTerm a_type) = A.downSide dTree in J.SigE (A.AJudgement env (A.Arrow_App (A.Conclusion $ DT.Con $T.pack "efq") aTerm) b) dTree)
+        (withLog membership con (A.Conclusion DT.Bot) depth setting)
 
+--(J.Treeで途中まで実装してしまったので)とりあえずEFQの代わりにNotFを使っている
 
 dne :: [A.Arrowterm] -> A.Arrowterm -> Int -> Setting -> Either String [J.Tree A.AJudgement]
 dne con b depth setting
-  | depth > (maxdepth setting) = Left $ "too deep @ dne " ++ show con ++" ト "++ show b
+  | depth > maxdepth setting = Left $ "too deep @ dne " ++ show con ++" ト "++ show b
   | null (withLog' typecheck con b (A.Conclusion DT.Type) (depth + 1) setting) = Right []
   | otherwise =
       case deduceWithLog con (A.Arrow [A.Arrow [b] (A.Conclusion DT.Bot)] (A.Conclusion DT.Bot)) (depth + 1) setting of
@@ -425,7 +464,7 @@ dne con b depth setting
         dneJs ->
               Right
                 $map
-                (\dTree -> let (A.AJudgement env aTerm a_type) = A.downSide dTree in J.NotF (A.AJudgement env (A.Arrow_App (A.Conclusion $ DT.Con $T.pack "dne") aTerm) b) dTree)
+                (\dTree -> let (A.AJudgement env aTerm a_type) = A.downSide dTree in J.SigE (A.AJudgement env (A.Arrow_App (A.Conclusion $ DT.Con $T.pack "dne") aTerm) b) dTree)
                 dneJs
 --(J.Treeで途中まで実装してしまったので)とりあえずDNEの代わりにNotFを使っている
 
@@ -438,16 +477,16 @@ deduce :: [A.Arrowterm] -- ^ context
 
 --type-ax
 deduce _ (A.Conclusion DT.Kind) depth setting
-  | depth > (maxdepth setting) = Left  "depth @ deduce - type-ax"
+  | depth > maxdepth setting = Left  "depth @ deduce - type-ax"
   | otherwise = Right [J.VAR $A.AJudgement [] (A.Conclusion DT.Type) (A.Conclusion DT.Kind)]
 -- --
 deduce con arrow_type depth setting
-  | depth > (maxdepth setting) = Left ("too deep @ deduce " ++ show con ++" | "++ show arrow_type)
+  | depth > maxdepth setting = Left ("too deep @ deduce " ++ show con ++" | "++ show arrow_type)
       -- let judgements = map (\f -> withLog f con arrow_type depth) [dne,membership,piIntro,piElim,sigmaIntro]
       -- in Right $ concat judgements
   | otherwise =
       let judgements = foldl
             (\js f -> if null js then withLog f con arrow_type depth setting else js)
             []
-            ([dne | arrow_type /= A.Conclusion DT.Bot && mode setting == WithDNE] ++ [membership,piIntro,piElim,sigmaIntro])
+            ([membership,piIntro,piElim,sigmaIntro] ++ [dne | arrow_type /= A.Conclusion DT.Bot && mode setting == WithDNE] ++ [efq | arrow_type /= A.Conclusion DT.Bot && mode setting == WithEFQ])
     in Right  judgements

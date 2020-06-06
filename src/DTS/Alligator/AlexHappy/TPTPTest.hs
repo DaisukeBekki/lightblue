@@ -144,7 +144,7 @@ testInfoDir dir = do
   -- efqBase <- computeWithEFQ dneBase
   -- return $ efqBase {TI.context = []} {TI.target = Nothing}
               _ <- writeResults info
-              _ <- timeout TI.timelimit $ appendFile TI.resultfname $ generateCsvRow info
+              -- _ <- timeout TI.timelimit $ appendFile TI.resultfname $ generateCsvRow info
               appendFile TI.resultfname ""
             Nothing ->
               appendFile TI.resultfname $ generateCsvRow $def {TI.filename = fname} {TI.note = "timeout"})
@@ -249,6 +249,8 @@ csvHeader :: String
 csvHeader="file\tassestment\tstatus\tdneresult\tdneurl\tefqresult\tefqurl\tlanguage\tcontext\ttarget\tnote\t\n"
 
 -- csvHeader="file\tassestment\tstatus\tdneresult\tefqresult\tlanguage\tcontext\ttarget\tprocessed\tnote\t\n"
+
+main = writeInfoCsv 
 
 writeInfoCsv = do
   writeFile TI.resultfname csvHeader

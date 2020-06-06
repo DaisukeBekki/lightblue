@@ -13,6 +13,7 @@ module DTS.Prover.Judgement
   getList,
   utreeToTeX,
   utreeToMathML,
+  treeToMathML,
   treeToTeX
 ) where
 
