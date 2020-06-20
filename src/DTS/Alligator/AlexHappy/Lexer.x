@@ -15,7 +15,7 @@ $alpha = [a-zA-Z]
 $eol   = [\n]
 $space = [\ ]
 $hyphen = [\-]
-$word = [A-Z a-z $digit \_ \' \- $hyphen \+ \! \? \; \= \$ \" \/ \{ \} \* \< \> \^ \\]
+$word = [A-Z a-z $digit \_ \' \- $hyphen \+ \[ \] \! \? \; \= \$ \" \/ \{ \} \* \< \> \^ \\]
 
 
 tokens :-
@@ -42,10 +42,6 @@ tokens :-
     { \s -> TokenConne s}
   \< \=
     { \s -> TokenConne s}
-  \<
-    { \s -> TokenConne s}
-  \>
-    { \s -> TokenConne s}
   \= \>
     { \s -> TokenConne s}
   \< \~ \>
@@ -62,8 +58,6 @@ tokens :-
     { \s -> TokenFOF }
   cnf
     { \s -> TokenCNF}
-  tff
-    { \s -> TokenTFF}
   [$space]* $digit+
     { \s -> TokenNum (read s) }
   include\(
@@ -92,8 +86,6 @@ Syntax   :
     { \s -> TokenWord s }
   [$word]+ \. [$word]+
     { \s -> TokenWord s }
-  [$word]+ \:\= [$word]+
-    { \s -> TokenWord s }
   \< \- \>
     { \s -> TokenWord "<->"}
   \- \>
@@ -112,7 +104,6 @@ data Token
   | TokenEOF
   | TokenFOF
   | TokenCNF
-  | TokenTFF
   | TokenHead
   | TokenCoron
   | TokenComma

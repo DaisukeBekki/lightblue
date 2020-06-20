@@ -32,11 +32,8 @@ import Control.Monad.Except
     period     { TokenPeriod }
     rbracket   { TokenRBracket }
     lbracket   { TokenLBracket }
-    rrbracket   { TokenRRBracket }
-    rlbracket   { TokenRLBracket }
     fof        { TokenFOF }
     cnf        { TokenCNF }
-    tff        { TokenTFF }
     include    { TokenInclude}
 
 %%
@@ -76,8 +73,10 @@ formula
     | coron formula          { ":" : $2 }
     | comma formula          { "," : $2 }
     | int formula            { (show $1) : $2 }
-    | lbracket formula rbracket { "(" : ($2 ++ [")"]) }
-    | rlbracket formula rrbracket { "[" : ($2 ++ ["]"]) }
+    | lbracket               { ["("] }
+    | rbracket               { [")"] }
+    | lbracket formula       { "(" : $2 }
+    | rbracket formula       { ")" : $2 }
 
 others
     : words                  {}
@@ -105,8 +104,6 @@ term
       { Formula "fof"  $3 $5 (L.init $ L.concat $7) }
    | cnf lbracket name comma word comma formula period
       { Formula "cnf"  $3 $5 (L.init $ L.concat $7) }
-   | tff lbracket name comma word comma formula period
-      { Formula "tff"  $3 $5 (L.init $ L.concat $7) }
    | per
       { Sout "" }
 
