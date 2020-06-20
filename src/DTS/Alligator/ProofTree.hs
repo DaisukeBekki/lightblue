@@ -23,6 +23,8 @@ import qualified Interface.HTML as HTML
 data ProofMode = Plain | WithDNE | WithEFQ deriving (Show,Eq)
 data Setting = Setting {mode :: ProofMode,falsum :: Bool,maxdepth :: Int,maxtime :: Int}
 
+
+
 settingDef = Setting{mode = Plain,falsum = True,maxdepth = 9,maxtime = 100000}
 settingDNE = Setting{mode = WithDNE,falsum = True,maxdepth = 9,maxtime = 100000}
 settingEFQ = Setting{mode = WithEFQ,falsum = True,maxdepth = 9,maxtime = 100000}
@@ -64,23 +66,6 @@ prove var_env sig_env pre_type setting=
       arrow_type = (A.arrowNotat . DT.toDTT . UD.betaReduce . DT.toUDTT) pre_type
       arrow_terms = searchProof arrow_env arrow_type 1 setting
   in  map A.aTreeTojTree arrow_terms
---
--- proveWithDNE ::  A.TEnv -- ^ var_context ex)[(DT.Con (T.pack "prop")),(DT.Con (T.pack "set")),(DT.Con (T.pack "prop"))]
---   -> A.TEnv -- ^ sig_context ex)[((T.pack "prop"),DT.Type),((T.pack "set"),DT.Type)] , classic
---   -> DT.Preterm -- type ex) (DT.Pi (DT.Var 0) (DT.Sigma (DT.Var 0,DT.Var 3)))
---   -> [J.Tree A.AJudgement] -- term  /変更:DT.Judgemnetにする
--- proveWithDNE var_env sig_env pre_type =
---   --A.TEnvをPA.TEnvに変える
---   let var_env' = var_env ++ sig_env
---       arrow_env = map (A.arrowNotat . DT.toDTT . UD.betaReduce . DT.toUDTT) var_env'
---       arrow_type = (A.arrowNotat . DT.toDTT . UD.betaReduce . DT.toUDTT) pre_type
---       arrow_terms = searchProofWithDNE arrow_env arrow_type 1
---   in  D.trace (show $  A.Arrow arrow_env arrow_type) arrow_terms
-
--- piRules = [(DT.Type, DT.Type),  (DT.Type, DT.Kind),  (DT.Kind, DT.Kind),   (DT.Kind, DT.Type)]
--- sigmaRules = [(DT.Type,DT.Type)]
-
-
 
 forwardContext :: [A.Arrowterm] -> [J.Tree A.AJudgement]
 
@@ -173,14 +158,6 @@ addLam num term = A.Arrow_Lam $ addLam (num - 1) term
 searchProof :: [A.Arrowterm] ->A.Arrowterm -> Int -> Setting-> [J.Tree A.AJudgement]
 searchProof a b c setting = L.nub $ deduceWithLog a b c setting
 
--- searchProof_with_EFQ :: [A.Arrowterm] ->A.Arrowterm -> Int -> [A.AJudgement]
--- searchProof_with_EFQ arrow_env arrow_type depth = deduceWithEFQWithLog arrow_env arrow_type depth
-
--- searchProofWithDNE :: [A.Arrowterm] ->A.Arrowterm -> Int -> [J.Tree A.AJudgement]
--- searchProofWithDNE= deduceWithLog
-
-
-
 membership :: [A.Arrowterm] ->  A.Arrowterm -> Int -> Setting -> Either String [J.Tree A.AJudgement]
 membership con arrow_type depth setting=
   let context = forwardContext con
@@ -188,7 +165,6 @@ membership con arrow_type depth setting=
         (\xTree -> let x = A.downSide xTree in A.shiftIndices (A.typefromAJudgement x) (length con - length (A.envfromAJudgement x)) 0 == arrow_type)
         context
   in Right matchlst
-
 
 piForm :: [A.Arrowterm] -> A.Arrowterm ->  A.Arrowterm -> Int -> Setting -> Either String [J.Tree A.AJudgement]
 piForm con (A.Arrow as b) arrow_type depth setting
@@ -261,20 +237,6 @@ headIsType _=False
 arrowConclusionB :: [A.AJudgement] -> A.Arrowterm -> [J.Tree A.AJudgement]
 arrowConclusionB judgements b= map J.VAR $filter (\j -> tailIsB (A.typefromAJudgement j) b) judgements
 
--- arrowConclusionB' :: [A.Arrowterm] -> A.Arrowterm -> Int -> [A.AJudgement]
--- arrowConclusionB' con b depth
---   | null (withLog' typecheck con b (A.Conclusion  DT.Type) depth) = []
---   | otherwise =
---     map
---       (\(A.AJudgement env aTerm a_type) -> A.AJudgement env (A.Arrow_App aTerm b) a_type)
---       $filter
---         (\(A.AJudgement _ _ j_type) ->
---           case  j_type of
---             A.Arrow j_a j_b -> tailIsB j_b (A.Conclusion $ DT.Var 0) && headIsType j_type
---             _ -> False)
---         (forwardContext con)
-
-
 deduceEnvs :: [A.Arrowterm] -> [J.Tree A.AJudgement] -> Int -> Setting -> [(J.Tree A.AJudgement,[[J.Tree A.AJudgement]])]
 deduceEnvs con aJudgements depth setting=
   let ajudges = map ((mapM (\(f:r) -> deduceWithLog (r++con) f depth setting) . (\(A.AJudgement _ _ (A.Arrow env _)) -> init $ L.tails env)) . A.downSide)  aJudgements
@@ -283,17 +245,9 @@ deduceEnvs con aJudgements depth setting=
 appAs :: A.Arrowterm -> [A.Arrowterm] -> A.Arrowterm
 appAs= foldl A.Arrow_App
 
--- substAsInPiElim :: A.Arrowterm -> [A.Arrowterm] -> A.Arrowterm
--- substAsInPiElim= foldl (\term f -> A.shiftIndices (A.arrowSubst term f (A.Conclusion $ DT.Var 0)) 0 0)
-
 substAsInPiElim:: A.Arrowterm -> [(Int,A.Arrowterm)] -> A.Arrowterm
 substAsInPiElim term [] = term
 substAsInPiElim term ((fn,f):r) =A.arrowSubst (substAsInPiElim term  r) f (A.Conclusion $ DT.Var fn)
-  -- let dummy = genFreeCon term "dummy"
-  --     term' = A.shiftIndices (A.arrowSubst term dummy (A.Conclusion $ DT.Var 0)) (-1) 0
-  -- in
-  --   A.arrowSubst (A.shiftIndices (substAsInPiElim term' $map (\x -> A.shiftIndices x (-1) 0) r) 1 0) f dummy
-
 
   -- A.shiftIndices (subst_as_in_pi_elim (A.shiftIndices (A.arrowSubst term f (A.Conclusion $ DT.Var 0)) (-1) 0) r) 1 0
 
@@ -353,12 +307,6 @@ sigmaIntro  con  arrow_type depth setting =Right []
 deduceWithLog :: [A.Arrowterm] -> A.Arrowterm ->Int -> Setting ->[J.Tree A.AJudgement]
 deduceWithLog = withLog deduce
 
--- deduceWithEFQWithLog :: [A.Arrowterm] -> A.Arrowterm ->Int ->[A.AJudgement]
--- deduceWithEFQWithLog = withLog deduceWithEFQ
-
--- deduceWithLog :: [A.Arrowterm] -> A.Arrowterm ->Int ->[J.Tree A.AJudgement]
--- deduceWithLog = withLog deduceWithDNE
-
 withLog' :: ([A.Arrowterm] -> A.Arrowterm -> A.Arrowterm ->Int -> Setting ->Either String [J.Tree A.AJudgement]) -> [A.Arrowterm] -> A.Arrowterm -> A.Arrowterm ->Int -> Setting ->[J.Tree A.AJudgement]
 withLog' f con arrow_term arrow_type depth setting =
   case f con arrow_term arrow_type depth setting of
@@ -389,48 +337,6 @@ typecheck con arrow_term arrow_type depth setting
     in
       Right $ deducejudgements ++ concatMap (\f -> withLog' f con arrow_term arrow_type depth setting) [piForm,sigmaForm]
 
-
-
-
--- deduceWithEFQ :: [A.Arrowterm] -- ^ context
---   -> A.Arrowterm -- ^  type
---   -> Int -- ^ depth
---   ->Either String [A.AJudgement]
--- deduceWithEFQ con arrow_type depth=
---   if depth < (maxdepth setting)
---   then
---     let judgements = map (\f -> withLog f con arrow_type depth) [efq,membership,piIntro,piElim,sigmaIntro]
---     in Right $ concat judgements
---   else
---     Left ("too deep @ deducewithEFQ " ++ show con ++" | "++ show arrow_type)
-
-
--- efq :: [A.Arrowterm] -> A.Arrowterm->Int->Either String [A.AJudgement]
--- efq con b depth
---   | depth > (maxdepth setting) = Left  $ "too deep @ efq " ++ show con ++" ト "++ show b
---   | [] /= withLog' typecheck con b (A.Conclusion DT.Type) (depth + 1) =
---     case deduceWithLog con (A.Conclusion DT.Bot) (depth + 1) of
---       [] -> Right []
---       bot_js ->
---           Right
---             $map
---             (\(A.AJudgement env aTerm a_type) -> A.AJudgement env (A.Arrow_App (A.Conclusion $ DT.Con $T.pack "efq") aTerm) b)
---             bot_js
---   | otherwise = Right []
---(J.Treeで途中まで実装してしまったので)とりあえずEFQの代わりにNotFを使っている
-
--- deduceWithDNE :: [A.Arrowterm] -- ^ context
---   -> A.Arrowterm -- ^  type
---   -> Int -- ^ depth
---   ->Either String [J.Tree A.AJudgement]
--- deduceWithDNE con arrow_type depth setting
---   | depth > (maxdepth setting) = Left ("too deep @ deducewithDNE " ++ show con ++" | "++ show arrow_type)
---   | arrow_type == A.Conclusion DT.Bot =
---       let judgements = map (\f -> withLog f con arrow_type depth) [membership,piIntro,piElim,sigmaIntro]
---       in Right $ concat judgements
---   | otherwise =
---       let judgements = map (\f -> withLog f con arrow_type depth) [dne,membership,piIntro,piElim,sigmaIntro]
---       in Right $ concat judgements
 
 efq :: [A.Arrowterm] -> A.Arrowterm -> Int -> Setting ->Either String [J.Tree A.AJudgement]
 efq con b depth setting
@@ -482,8 +388,6 @@ deduce _ (A.Conclusion DT.Kind) depth setting
 -- --
 deduce con arrow_type depth setting
   | depth > maxdepth setting = Left ("too deep @ deduce " ++ show con ++" | "++ show arrow_type)
-      -- let judgements = map (\f -> withLog f con arrow_type depth) [dne,membership,piIntro,piElim,sigmaIntro]
-      -- in Right $ concat judgements
   | otherwise =
       let judgements = foldl
             (\js f -> if null js then withLog f con arrow_type depth setting else js)
