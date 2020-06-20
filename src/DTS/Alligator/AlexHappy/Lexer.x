@@ -60,7 +60,7 @@ tokens :-
     { \s -> TokenCNF}
   [$space]* $digit+
     { \s -> TokenNum (read s) }
-  include\(
+  include
      { \s -> TokenInclude }
   \% [$space]* Number [$space]+ of [$space]+ predicates
     { \s -> TokenPreNum}

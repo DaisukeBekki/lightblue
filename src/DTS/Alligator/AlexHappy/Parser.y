@@ -49,6 +49,8 @@ words
     | period                 { [] }
     | connective             { [$1] }
     | and                    { ["&"] }
+    | include                { ["include"] }
+    | include words          { "include" : $2 }
     | and words              {  "&" : $2 }
     | coron words            { $2 }
     | period words           { $2 }
@@ -90,8 +92,8 @@ others
 term
    : file coron word coron words
       { File $3 (L.concat $5) }
-   | include word rbracket period
-      { Include $2 }
+   | include lbracket word rbracket period
+      { Include $3 }
    | status coron word
       { Status $3 --statusはTheorem/ContradictoryAxioms/CounterSatisfiable/Satisfiable/Unsatisfiable/Unknown/Openのどれか(どれも一語)}
    | predicates coron int lbracket words rbracket
