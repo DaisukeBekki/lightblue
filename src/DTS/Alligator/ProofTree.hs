@@ -29,21 +29,6 @@ settingDef = Setting{mode = Plain,falsum = True,maxdepth = 9,maxtime = 100000}
 settingDNE = Setting{mode = WithDNE,falsum = True,maxdepth = 9,maxtime = 100000}
 settingEFQ = Setting{mode = WithEFQ,falsum = True,maxdepth = 9,maxtime = 100000}
 
-
--- aannounce :: [J.Tree A.AJudgement] -> IO()
--- aannounce [] = putStrLn "Nothing to announce"
--- aannounce atrees = announce (map A.aTreeTojTree atrees)
---
--- announce :: [J.Tree J.Judgement] -> IO()
--- announce [] = putStrLn "Nothing to announce"
--- announce jtrees = do
---   let jtree = head jtrees
---   putStrLn HTML.htmlHeader4MathML
---   T.putStrLn HTML.startMathML
---   T.putStrLn $J.treeToMathML jtree
---   T.putStrLn HTML.endMathML
---   putStrLn HTML.htmlFooter4MathML
-
 announce :: [J.Tree J.Judgement] -> IO T.Text
 announce [] = return $ T.pack "Nothing to announce"
 announce jtrees = do
@@ -225,17 +210,9 @@ piIntro con (A.Arrow a b) depth setting
 
 piIntro  con arrow_type depth setting = Right []
 
-tailIsB :: A.Arrowterm -> A.Arrowterm -> Bool
-tailIsB (A.Arrow env b') b=
-  (A.shiftIndices b (length env) 0==b') || (case b' of A.Arrow b1 b2 -> tailIsB (A.Arrow b1 b2) (A.shiftIndices b (length env) 0);_ -> False)
-tailIsB _ _ =False
-
 headIsType :: A.Arrowterm -> Bool
 headIsType (A.Arrow env _) = (last env == A.Conclusion DT.Type) || (case last env of A.Arrow b1 b2 -> headIsType (A.Arrow b1 b2) ; _ -> False)
 headIsType _=False
-
-arrowConclusionB :: [A.AJudgement] -> A.Arrowterm -> [J.Tree A.AJudgement]
-arrowConclusionB judgements b= map J.VAR $filter (\j -> tailIsB (A.typefromAJudgement j) b) judgements
 
 deduceEnvs :: [A.Arrowterm] -> [J.Tree A.AJudgement] -> Int -> Setting -> [(J.Tree A.AJudgement,[[J.Tree A.AJudgement]])]
 deduceEnvs con aJudgements depth setting=
@@ -249,13 +226,49 @@ substAsInPiElim:: A.Arrowterm -> [(Int,A.Arrowterm)] -> A.Arrowterm
 substAsInPiElim term [] = term
 substAsInPiElim term ((fn,f):r) =A.arrowSubst (substAsInPiElim term  r) f (A.Conclusion $ DT.Var fn)
 
-  -- A.shiftIndices (subst_as_in_pi_elim (A.shiftIndices (A.arrowSubst term f (A.Conclusion $ DT.Var 0)) (-1) 0) r) 1 0
+compareArrow :: A.Arrowterm -> A.Arrowterm -> [A.Arrowterm]
+compareArrow (A.Arrow_Sigma a1 a2) (A.Arrow_Sigma a1' a2')= undefined
+compareArrow (A.Arrow_App a1 a2) (A.Arrow_App a1' a2')=undefined
+compareArrow (A.Arrow_Proj s a) (A.Arrow_Proj s' a') = undefined
+compareArrow (A.Arrow_Pair a1 a2) (A.Arrow_Pair a1' a2')=undefined
+compareArrow (A.Arrow_Lam a) (A.Arrow_Lam a') = undefined
+compareArrow (A.Arrow con a) (A.Arrow con' a') =
+  case length con - length con' of
+    0 -> foldr (\a b -> b ) (compareArrow a a') []
+    d ->undefined
+compareArrow other other' = [other,other']
+
+-- tailIsB :: A.Arrowterm -> A.Arrowterm -> Bool
+-- tailIsB (A.Arrow env (A.Arrow env2 b2)) b=
+--   tailIsB (A.Arrow (env2++env) b2) b
+-- tailIsB (A.Arrow env b') (A.Arrow env' b)=
+--   let d = length env -length env'
+--   in d >= 0&& b ==b' && env'== take (length env') env
+-- tailIsB (A.Arrow env b') b= b ==b'
+-- tailIsB _ _ =False
+tailIsB :: A.Arrowterm -> A.Arrowterm -> Bool
+tailIsB (A.Arrow env b) (A.Arrow env' b')=
+  let d = length env - length env'
+  in
+    if d < 0
+    then False
+    else (A.shiftIndices b d 0==b') && (take (length env') env) == (map (\c -> A.shiftIndices b d 0) env')
+tailIsB (A.Arrow env b') b=
+  (A.shiftIndices b (length env) 0==b')
+tailIsB _ _ =False
+
+arrowConclusionB :: A.AJudgement -> A.Arrowterm -> Bool
+arrowConclusionB j b=
+  tailIsB (A.typefromAJudgement j) b
+
+arrowConclusionBs :: [A.AJudgement] -> A.Arrowterm -> [J.Tree A.AJudgement]
+arrowConclusionBs judgements b= map J.VAR $filter (\j -> arrowConclusionB j b) judgements
 
 piElim :: [A.Arrowterm] -> A.Arrowterm -> Int -> Setting -> Either String [J.Tree A.AJudgement]
 piElim con b1 depth setting
   | depth > (maxdepth setting) = Left ("too deep @ piElim " ++ show con ++" ト "++ show b1)
   | otherwise =
-    let aJudgements = arrowConclusionB (map A.downSide $ forwardContext con) b1 -- ++ arrowConclusionB' con b1 (depth + 1)
+    let aJudgements = arrowConclusionBs (map A.downSide $ forwardContext con) b1 --
         a_type_terms = deduceEnvs con aJudgements depth setting
     in
       Right

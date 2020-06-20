@@ -32,18 +32,21 @@ updateConLst con conlst =
   case lookup con conlst of
     Just varnum ->Right conlst
     Nothing ->
-      case lookup "" conlst of
-        Just varnum ->  Right $ (con,varnum) : filter ((/= varnum) . snd) conlst
-        Nothing -> Left "Error at updateConLst"
+      let lst' = dropWhile ((/="") .fst) conlst
+      in
+        if null lst'
+        then
+          Left "Error at updateConLst"
+        else
+          let (_,varnum) = head lst'
+          in Right $(takeWhile ((/="") .fst) conlst) ++ ((con,varnum):tail lst')
+
 
 updateConLst' :: String -> [(String,Int)] -> [(String,Int)]
 updateConLst' con conlst =
   case updateConLst con conlst of
     Right a -> a
     Left _ -> []
-
-
-
 
 importAxiomio :: String -> IO TI.Info -> IO TI.Info
 importAxiomio fname infoio = do
@@ -71,8 +74,8 @@ contextUpdate conlst' base =
         \(var,argnum) info ->
           case lookup var $ TI.prelst info of
             Nothing ->
-              let prelst2 =  filter ((== "").fst) $ TI.prelst info
-                  prelst' = (var,(snd . head)  prelst2) : tail prelst2  ++ filter ((/= "").fst)  (TI.prelst info)
+              let prelst2 = dropWhile ((/= "").fst) $ TI.prelst info
+                  prelst' =  (takeWhile ((/="").fst) (TI.prelst info)) ++ ((var,(snd . head)  prelst2) : tail prelst2)
                   context' = take ((snd . head)  prelst2 - 1) (TI.context info) ++ [generateType argnum] ++ drop ((snd . head)  prelst2) (TI.context info)
               in
                  info {TI.context = context'} {TI.prelst = prelst'}
@@ -117,7 +120,7 @@ updateInfo baseio expr = do
               sort' ->
                 if TI.isAxiomLike sort'
                 then
-                  return $ base' { TI.prelst = ("",0):(map (\(str,int) -> (str,int + 1)) prelst')} {TI.context = term' : TI.context base} {TI.strcontext =  TI.strcontext base ++ "," ++ f}
+                  return $ base' { TI.prelst = ("axiom",0):(map (\(str,int) -> (str,int + 1)) prelst')} {TI.context = term' : TI.context base} {TI.strcontext =  TI.strcontext base ++ "," ++ f}
                 else undefined
           Left err ->
             return $ base2 {TI.note = "error in process" ++ f}
@@ -156,7 +159,7 @@ updateInfoAboutFormulae baseio expr = do
               sort' ->
                 if TI.isAxiomLike sort'
                 then
-                  return $ base' { TI.prelst = map (\(str,int) -> (str,int + 1)) prelst'} {TI.context = term' : TI.context base} {TI.strcontext =  TI.strcontext base ++ "," ++ f}
+                  return $ base' { TI.prelst = ("axiom",0):(map (\(str,int) -> (str,int + 1)) prelst')} {TI.context = term' : TI.context base} {TI.strcontext =  TI.strcontext base ++ "," ++ f}
                 else undefined
           Left err ->
             return $ base2 {TI.note = "error in process" ++ f}
@@ -177,7 +180,7 @@ gettarget info =  fromMaybe DT.Bot $ TI.target info
 setInfo :: [S.Expr] -> String -> IO TI.Info
 setInfo expr fname= do
     x2 <- foldl updateInfo (return $ def{TI.context = [DT.Type,DT.Top]}{TI.prelst=[("false",0),("top",1)]}) expr--(return $ def{prelst = [("",0)]}{context = [DT.Type,DT.Top]}) expr
-    let (prelst',context) = unzip $filter (\((str,_),_) -> str /= "") $zip (TI.prelst x2) (TI.context x2)
+    let (prelst',context) = unzip $filter (\((str,_),_) -> (str /= "") && (str /= "axiom")) $zip (TI.prelst x2) (TI.context x2)
         prelst = zip (map fst prelst') [0..]
     x <- foldl updateInfoAboutFormulae (return$ x2{TI.prelst=prelst}{TI.context=context}) expr
 
