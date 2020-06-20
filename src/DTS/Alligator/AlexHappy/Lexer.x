@@ -74,8 +74,6 @@ tokens :-
 Syntax   :
   \% [$space]*Syntax [$space]* :[$space]*Number [$space]+ of [$space]+ clauses
     { \s -> TokenClause}
-  \% [$space]* File
-    { \s -> TokenFile }
   \% [$space]* Status
     { \s -> TokenStatus}
   [$space]* \%
@@ -83,6 +81,8 @@ Syntax   :
   [$space]* \:
     { \s -> TokenCoron }
   [$word]+
+    { \s -> TokenWord s }
+  [$word]+ \. [$word]+
     { \s -> TokenWord s }
   [$word]+ \. [$word]+
     { \s -> TokenWord s }
@@ -110,7 +110,6 @@ data Token
   | TokenInclude
   | TokenConne String
   | TokenWord String
-  | TokenFile
   | TokenStatus
   | TokenAnd
   | TokenRBracket

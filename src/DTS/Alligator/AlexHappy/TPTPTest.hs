@@ -1,5 +1,7 @@
 module DTS.Alligator.AlexHappy.TPTPTest (
-  writeInfoCsv
+  writeInfoCsv,
+  fileParseTest,
+  parseTest
 ) where
 
 import qualified DTS.Alligator.AlexHappy.FileParser as F
@@ -204,27 +206,29 @@ testInfoDir :: String -> IO ()
 testInfoDir dir = do
   c <- getDirectoryContents dir
   let fnames = filter (`notElem` exceptList) $ map (dir ++ ) $filter isTestFile c
-  -- p/rint ""
-  -- map
-  --   (\(fname,num) -> do
-  --       print (show num ++"/"++ show (length fnames))
-  --       print  fname
-  --       testInfoFile fname)
-  --   (zip fnames [1..])
   forM_ (zip [1..] fnames)
     $ \ (num,fname) ->
       print (show num ++"/"++ show (length fnames))
       >>(
         do
-          -- print fname
-          -- base <- F.fileparseInfo fname
-          -- let info = base {TI.filename = fname}
-          -- _ <- writeResults info
           testInfoFile fname
           appendFile TI.resultfname "")
 
 
 main = writeInfoCsv
+
+parseTest dir = do
+  c <- getDirectoryContents dir
+  let fnames = filter (`notElem` exceptList) $ map (dir ++ ) $filter isTestFile c
+  forM_
+      fnames
+      fileParseTest
+  putStrLn "end"
+
+fileParseTest fname = do
+  base <- F.fileparseInfo fname
+  putStrLn $fname ++ (TI.note base)
+
 
 writeInfoCsv = do
   writeFile TI.resultfname csvHeader
