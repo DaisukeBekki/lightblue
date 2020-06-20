@@ -64,7 +64,7 @@ generateType num = DT.Pi DT.Type (generateType (num-1))
 contextUpdate :: [(String,Int)] -> TI.Info ->  TI.Info
 contextUpdate conlst' base =
   let conlst = filter ((/= 0).snd) conlst'
-      context' =  TI.context base
+      context' = TI.context base
   in
     foldr
       (
@@ -91,11 +91,50 @@ updateInfo baseio expr = do
     S.Sout a
       -> return  base
     S.File a b
-      -> return $ base {TI.filename = a}
+      -> return base
     S.Status a
       -> return $ base {TI.status = Just (read a :: TI.Status)}
     S.PreNum a
-      -> return $ base  {TI.prelst = L.zip (L.replicate a "") [0..(a-1)] ++ map (\(str,int) -> (str,int + a)) (TI.prelst base)} {TI.context = L.replicate a DT.Type  ++ TI.context base}
+      ->  return $ base  {TI.prelst = L.zip (L.replicate a "") [0..(a-1)] ++ map (\(str,int) -> (str,int + a)) (TI.prelst base)} {TI.context = L.replicate a DT.Type  ++ TI.context base}
+    S.Include a
+      -> importAxiomio a baseio
+    S.Formula lan name sort f
+      -> do
+        let either_pre = processf' f (filter (/= "") $ map fst $TI.prelst base)
+            base2 = base {TI.language = Just (read lan ::TI.Language)}
+        case either_pre of
+          Right (conlst',term) ->
+            let conlst = map fst conlst'
+                prelst' = foldr updateConLst' (TI.prelst base) conlst
+                base' =contextUpdate conlst' base2
+                term' = foldr (\(con,varnum) preterm -> A.subst preterm (DT.Var varnum) (DT.Con $ Te.pack con)) term prelst'
+            in case read sort :: TI.Role of
+              TI.Conjecture -> return $ base' { TI.target = Just term'} {TI.strtarget = f}
+              TI.NegatedConjecture -> return $ base'  { TI.negated_conjecture = Just $ case TI.negated_conjecture base' of Just term1 -> DT.Sigma term1 term' ; Nothing -> term'{-DT.Sigma (fromMaybe DT.Top $ negated_conjecture base') (term')-} } {TI.strnegated =  TI.strnegated base'++"& " ++ f }
+              TI.Plain -> undefined
+              TI.Type -> undefined
+              TI.RUnknown -> undefined
+              sort' ->
+                if TI.isAxiomLike sort'
+                then
+                  return $ base' { TI.prelst = ("",0):(map (\(str,int) -> (str,int + 1)) prelst')} {TI.context = term' : TI.context base} {TI.strcontext =  TI.strcontext base ++ "," ++ f}
+                else undefined
+          Left err ->
+            return $ base2 {TI.note = "error in process" ++ f}
+    _ -> return base
+
+updateInfoAboutFormulae :: IO TI.Info -> S.Expr -> IO TI.Info
+updateInfoAboutFormulae baseio expr = do
+  base <- baseio
+  case expr of
+    S.Sout a
+      -> return  base
+    S.File a b
+      -> return base
+    S.Status a
+      -> return base
+    S.PreNum a
+      -> return base
     S.Include a
       -> importAxiomio a baseio
     S.Formula lan name sort f
@@ -137,7 +176,13 @@ gettarget info =  fromMaybe DT.Bot $ TI.target info
 
 setInfo :: [S.Expr] -> String -> IO TI.Info
 setInfo expr fname= do
-    x <- foldl updateInfo (return $ def{TI.context = [DT.Type,DT.Top]}{TI.prelst=[("false",0)]}) expr--(return $ def{prelst = [("",0)]}{context = [DT.Type,DT.Top]}) expr
+    x2 <- foldl updateInfo (return $ def{TI.context = [DT.Type,DT.Top]}{TI.prelst=[("false",0),("top",1)]}) expr--(return $ def{prelst = [("",0)]}{context = [DT.Type,DT.Top]}) expr
+    let (prelst',context) = unzip $filter (\((str,_),_) -> str /= "") $zip (TI.prelst x2) (TI.context x2)
+        prelst = zip (map fst prelst') [0..]
+    x <- foldl updateInfoAboutFormulae (return$ x2{TI.prelst=prelst}{TI.context=context}) expr
+
+        -- minnum = foldr (\num -> \minInLeft ->min minInLeft num) (length context) prelstnum
+        -- map fst $ filter (\(_,num) -> (num<minnum) || num `elem` (8:prelstnum)) $zip context [0..]
     let info = settarget x
     return $
       info {TI.filename = fname}{TI.strcontext = if TI.strcontext x == "" then "" else tail $ TI.strcontext x} --{TI.strprocessed = if length (TI.context x) <=  100 then show $ A.Arrow (map A.arrowNotat {-[DT.Not DT.Top]-}(TI.context x)) (A.arrowNotat  $ {-DT.Top-}gettarget info) else ""}
@@ -196,14 +241,18 @@ t2dt (F.TApp f (a1:r)) s =
     (s' , DT.App args alast)
 t2dt (F.Tall [] f ) s = t2dt f s
 t2dt (F.Tall vars f ) s =
-  let F.Tvar var = head vars
-      (s' , arg2) = t2dt (F.Tall (tail vars) f) (var : s )
-  in (filter (/= var) s' , DT.Pi DT.Type (A.subst arg2 (DT.Var 0) (DT.Con $ Te.pack var)))
+  case head vars of
+    F.TDef _ _ -> D.trace "TDef" undefined
+    F.Tvar var ->
+      let (s' , arg2) = t2dt (F.Tall (tail vars) f) (var : s )
+      in (filter (/= var) s' , DT.Pi DT.Type (A.subst arg2 (DT.Var 0) (DT.Con $ Te.pack var)))
 t2dt (F.Texist [] f ) s = t2dt f s
 t2dt (F.Texist vars f ) s =
-  let F.Tvar var = head vars
-      (s' , arg2) = t2dt (F.Texist (tail vars) f) (var : s )
-  in (filter (/= var) s' , DT.Sigma DT.Type (A.subst arg2 (DT.Var 0) (DT.Con $ Te.pack var)))
+  case head vars of
+    F.TDef _ _ -> D.trace "TDef" undefined
+    F.Tvar var ->
+      let (s' , arg2) = t2dt (F.Texist (tail vars) f) (var : s )
+      in (filter (/= var) s' , DT.Sigma DT.Type (A.subst arg2 (DT.Var 0) (DT.Con $ Te.pack var)))
 
 
 

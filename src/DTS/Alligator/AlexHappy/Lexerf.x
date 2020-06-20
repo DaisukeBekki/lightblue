@@ -40,6 +40,8 @@ tokens :-
     { \s -> TokenAnd}
   \:
     { \s -> TokenCoron}
+  \!\=
+    { \s -> TokenNotEq}
   \!
     { \s -> TokenAll }
   \?
@@ -57,7 +59,7 @@ tokens :-
   \~ \&
     { \s -> TokenBiop s}
   \=
-    { \s -> TokenEquiv}
+    { \s -> TokenEq}
   \$ [$space]* true
     { \s -> TokenTop}
   \$ [$space]* false
@@ -79,6 +81,8 @@ data Token
   | TokenOr
   | TokenAll
   | TokenExists
+  | TokenNotEq
+  | TokenEq
   | TokenImp
   | TokenTop
   | TokenBot

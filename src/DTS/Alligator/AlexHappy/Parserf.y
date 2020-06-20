@@ -25,6 +25,8 @@ import Control.Monad.Except
     or         { TokenOr }
     imp        { TokenImp }
     equiv      { TokenEquiv }
+    eq         { TokenEq }
+    noteq      { TokenNotEq }
     top        { TokenTop }
     bot        { TokenBot }
     rbracket   { TokenRBracket }
@@ -54,6 +56,10 @@ formula
       { Tbinary Timp $1 $3}
     | formula equiv formula
       { Tbinary Tequiv $1 $3}
+    | formula eq formula
+      { Tbinary Tequiv $1 $3}
+    | formula noteq formula
+      { Tneg (Tbinary Tequiv $1 $3)}
     | formula biOp formula
       { Tbinary Tequiv $1 $3}
     | neg formula
@@ -66,11 +72,18 @@ formula
       { Texist $3 $6 }
     | formula lbracket formulae rbracket
       { TApp $1 $3 }
-vars
+
+var
     : word
       { [Tvar $1] }
-    | word comma vars
-      { (Tvar $1) : $3 }
+    | formula coron eq formula
+      { [TDef $1 $4] }
+
+vars
+    : var comma vars
+      { $1 ++ $3 }
+    | var
+      { $1 }
 
 formulae
     : formula

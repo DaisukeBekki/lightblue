@@ -96,7 +96,13 @@ shouldBeUnknown :: Status -> Bool
 shouldBeUnknown status =
   status `elem` [Satisfiable,Unknown,Open]
 
-data Result = YES | NO | UNKNOWN deriving (Show,Eq)
+statusToResult :: Status -> Result
+statusToResult status
+  | shouldBeTrue status = YES
+  | shouldBeFalse status = NO
+  | shouldBeUnknown status = UNKNOWN
+
+data Result = YES | NO | UNKNOWN deriving (Show,Read,Eq,Enum,Bounded)
 
 data Info
   = Info{

@@ -4,7 +4,10 @@
 *~
 *.txt
 *.bak*.*
+*.html
+*.log
 \#*
+.stack-work/
 tex/
 JSeM/
 dictionary/
