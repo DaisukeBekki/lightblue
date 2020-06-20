@@ -20,7 +20,6 @@ import Control.Monad.Except
 %token
     int        { TokenNum $$ }
     coron      { TokenCoron }
-    file       { TokenFile }
     status     { TokenStatus }
     per        { TokenHead }
     word       { TokenWord $$ }
@@ -90,9 +89,7 @@ others
     | formula                {}
 
 term
-   : file coron word coron words
-      { File $3 (L.concat $5) }
-   | include lbracket word rbracket period
+   : include lbracket word rbracket period
       { Include $3 }
    | status coron word
       { Status $3 --statusはTheorem/ContradictoryAxioms/CounterSatisfiable/Satisfiable/Unsatisfiable/Unknown/Openのどれか(どれも一語)}
@@ -106,6 +103,8 @@ term
       { Formula "fof"  $3 $5 (L.init $ L.concat $7) }
    | cnf lbracket name comma word comma formula period
       { Formula "cnf"  $3 $5 (L.init $ L.concat $7) }
+   | tff lbracket name comma word comma formula period
+      { Formula "tff"  $3 $5 (L.init $ L.concat $7) }
    | per
       { Sout "" }
 
