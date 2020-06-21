@@ -12,13 +12,16 @@ module DTS.Alligator.AlexHappy.Classification (
   variance,
   standartDeviation,
   main,
-  getAssesmentAndConfusionMatrix
+  getAssesmentAndConfusionMatrix,
+  resultClasssification
   ) where
 
 import Data.List (foldl')          --base
 import Text.Printf (printf)        --base
 import qualified Data.Text as T    --text
 import qualified Data.Text.IO as T --text
+import qualified DTS.Alligator.AlexHappy.TPTPInfo as TI
+import qualified Data.List.Split as S
 
 type ClassificationCounts = (Int,Int,Int,Int)
 
@@ -250,10 +253,27 @@ standartDeviation xs = sqrt $ variance xs
 
 data Animal = Cat | Fish | Hen deriving (Eq, Show, Enum, Bounded)
 
+
+
 -- *Torch.Util.Classification> data Answer = Yes | No | Unknown deriving(Eq,Show,Enum,Bounded)
 -- *Torch.Util.Classification> test = [(Yes,Yes),(No,No),(Yes,No),(No,Yes)]
 -- *Torch.Util.Classification> getAssesmentAndConfusionMatrix test
 --
+
+-- compareCsv TI.resultfname 3 2
+compareCsv :: String -> Int -> Int -> IO (Assesment,T.Text)
+compareCsv fname l1num l2num =do
+  csvstr <- readFile fname
+  let csv = map (S.splitOn "\t") $S.splitOn "\n"  csvstr
+      label = map (\lst -> (read (lst !! l1num) :: TI.Result,TI.statusToResult (read (lst !! l2num)::TI.Status) )) $tail csv
+  return $getAssesmentAndConfusionMatrix label
+
+resultClasssification :: IO()
+resultClasssification = do
+  (dneassesment,dneconMat) <- compareCsv TI.resultfname 3 2
+  writeFile (TI.outputdir++"compare.html")("dne\n"++(T.unpack dneconMat) ++ "\n" ++show dneassesment)
+  (efqassesment,efqconMat) <- compareCsv TI.resultfname 5 2
+  appendFile (TI.outputdir++"compare.html")("dne\n"++(T.unpack efqconMat) ++ "\n" ++show efqassesment)
 
 main :: IO()
 main = T.putStrLn $ showClassificationReport [
