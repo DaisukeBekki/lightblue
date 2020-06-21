@@ -217,7 +217,9 @@ headIsType _=False
 
 --形だけ比較
 canBeSame :: Int -> A.Arrowterm -> A.Arrowterm -> Bool
+canBeSame lim (A.Conclusion (DT.Top)) (A.Conclusion (DT.Top)) = True
 canBeSame lim (A.Conclusion (DT.Bot)) (A.Conclusion (DT.Bot)) = True
+canBeSame lim (A.Conclusion (DT.Type)) (A.Conclusion (DT.Type)) = True
 canBeSame lim (A.Conclusion (DT.Var anum)) (A.Conclusion (DT.Var anum')) =
   anum == anum' || anum <= lim
 canBeSame lim (A.Conclusion (DT.Var anum)) _ =
