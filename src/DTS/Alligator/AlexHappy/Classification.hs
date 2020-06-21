@@ -50,7 +50,7 @@ instance Show ClassificationReport where
 instance Show Assesment where
   show Assesment{..} =
     unlines ["Scores:",
-      "|\t| Prec \t| Rec \t| F1 \t| Supp \t|",
+      "\t Prec \t Rec \t F1 \t Supp \t",
       unlines $ for basica formatReport,
       formatReport $ microa,
       formatReport $ macroa,
@@ -59,13 +59,13 @@ instance Show Assesment where
     where
       formatReport :: ClassificationReport -> String
       formatReport repo = T.unpack $ T.concat [
-        "| ",
+        " ",
         title repo,
-        "\t| ",
-        T.intercalate "\t| " $ map (\action -> T.pack $ printf "%3.3f" $ action repo) [precision, recall, f1],
-        "\t| ",
+        "\t ",
+        T.intercalate "\t " $ map (\action -> T.pack $ printf "%3.3f" $ action repo) [precision, recall, f1],
+        "\t ",
         T.pack $ show $ support repo,
-        "\t|"
+        "\t"
         ]
 
 -- | ラベルの型はBounded (Prelude)であると仮定
@@ -179,23 +179,23 @@ showConfusionMatrix :: (Show label, Eq label, Enum label, Bounded label) => [(la
 showConfusionMatrix results =
   let labels = [minBound..maxBound]
   in T.concat [
-    "|\t",
+    "\t",
     T.concat $ for labels $ \answer -> T.concat [
-       "| ",
+       " ",
        T.pack $ show answer,
        "\t"
        ],
-    "|\n",
+    "\n",
     T.unlines $ for labels $ \prediction -> T.concat [
-       "| ",
+       " ",
        T.pack $ show prediction,
        "\t",
        T.concat $ for labels $ \answer -> T.concat [
-           "| ",
+           " ",
            T.pack $ show $ length $ filter (\(p,a) -> p==prediction && a==answer) results,
            "\t"
            ],
-       "|"
+       "\t"
        ]
      ]
 
@@ -218,7 +218,7 @@ showClassificationReport results =
       reports = map count2report $ zip (map (T.pack . show) labels) counts
   in T.unlines [
     "Scores:",
-    "|\t| Prec \t| Rec \t| F1 \t| Supp \t|",
+    "\t Prec \t Rec \t F1 \t Supp \t",
     T.unlines $ for reports formatReport,
     formatReport $ micro counts,
     formatReport $ macro labels counts,
@@ -230,13 +230,13 @@ showClassificationReport results =
   where
     formatReport :: ClassificationReport -> T.Text
     formatReport repo = T.concat [
-      "| ",
+      " ",
       title repo,
-      "\t| ",
-      T.intercalate "\t| " $ map (\action -> T.pack $ printf "%3.3f" $ action repo) [precision, recall, f1],
-      "\t| ",
+      "\t ",
+      T.intercalate "\t " $ map (\action -> T.pack $ printf "%3.3f" $ action repo) [precision, recall, f1],
+      "\t ",
       T.pack $ show $ support repo,
-      "\t|"
+      "\t"
       ]
 
 average :: (Real a) => [a] -> Double
@@ -268,12 +268,18 @@ compareCsv fname l1num l2num =do
       label = map (\lst -> (read (lst !! l1num) :: TI.Result,TI.statusToResult (read (lst !! l2num)::TI.Status) )) $tail csv
   return $getAssesmentAndConfusionMatrix label
 
+
+htmlhead = "<!DOCTYPE html><html lang=\"ja\"><head><meta charset =\"UTF-8\"><title>compare</title></head><body>"
+htmllast = "</body></html>"
+
 resultClasssification :: IO()
 resultClasssification = do
+  writeFile (TI.outputdir++"compare.csv") ""--htmlhead
   (dneassesment,dneconMat) <- compareCsv TI.resultfname 3 2
-  writeFile (TI.outputdir++"compare.html")("dne\n"++(T.unpack dneconMat) ++ "\n" ++show dneassesment)
+  appendFile (TI.outputdir++"compare.csv")("dne\n"++(T.unpack dneconMat) ++ "\n" ++show dneassesment)
   (efqassesment,efqconMat) <- compareCsv TI.resultfname 5 2
-  appendFile (TI.outputdir++"compare.html")("dne\n"++(T.unpack efqconMat) ++ "\n" ++show efqassesment)
+  appendFile (TI.outputdir++"compare.csv")("efq\n"++(T.unpack efqconMat) ++ "\n" ++show efqassesment)
+  -- appendFile (TI.outputdir++"compare.html") htmllast
 
 main :: IO()
 main = T.putStrLn $ showClassificationReport [
