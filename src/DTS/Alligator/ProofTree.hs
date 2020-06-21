@@ -19,6 +19,7 @@ import qualified Debug.Trace as D
 
 import qualified Data.Text.Lazy.IO as T
 import qualified Interface.HTML as HTML
+import qualified Data.Maybe as M
 
 data ProofMode = Plain | WithDNE | WithEFQ deriving (Show,Eq)
 data Setting = Setting {mode :: ProofMode,falsum :: Bool,maxdepth :: Int,maxtime :: Int}
@@ -214,55 +215,102 @@ headIsType :: A.Arrowterm -> Bool
 headIsType (A.Arrow env _) = (last env == A.Conclusion DT.Type) || (case last env of A.Arrow b1 b2 -> headIsType (A.Arrow b1 b2) ; _ -> False)
 headIsType _=False
 
-deduceEnvs :: [A.Arrowterm] -> [J.Tree A.AJudgement] -> Int -> Setting -> [(J.Tree A.AJudgement,[[J.Tree A.AJudgement]])]
+--形だけ比較
+canBeSame :: Int -> A.Arrowterm -> A.Arrowterm -> Bool
+canBeSame lim (A.Conclusion (DT.Bot)) (A.Conclusion (DT.Bot)) = True
+canBeSame lim (A.Conclusion (DT.Var anum)) (A.Conclusion (DT.Var anum')) =
+  anum == anum' || anum <= lim
+canBeSame lim (A.Conclusion (DT.Var anum)) _ =
+  anum <= lim
+canBeSame lim (A.Arrow_Sigma a1 a2) (A.Arrow_Sigma a1' a2')=
+  canBeSame lim a1 a1' && canBeSame (lim+1) a2 a2'
+canBeSame lim (A.Arrow_App a1 a2) (A.Arrow_App a1' a2')=
+  canBeSame lim a1 a1' && canBeSame lim a2 a2'
+canBeSame lim (A.Arrow_Proj s a) (A.Arrow_Proj s' a') =
+  s == s' && canBeSame lim a a'
+canBeSame lim (A.Arrow_Pair a1 a2) (A.Arrow_Pair a1' a2')=
+  canBeSame lim a1 a1' && canBeSame lim a2 a2'
+canBeSame lim (A.Arrow_Lam a) (A.Arrow_Lam a') = canBeSame lim a a'
+canBeSame lim (A.Arrow con a) (A.Arrow con' a') =
+  and $ map (\(num,(s,t)) -> canBeSame (lim+num) s t) $zip [0..] (zip (a:con) (a':con'))
+  -- case length con - length con' of
+  --   0 -> foldr (\a b -> b ) (canBeSame a a') []
+  --   d -> []
+canBeSame lim other other' = False
+
+match :: Int -> A.Arrowterm -> A.Arrowterm -> Bool
+match =canBeSame
+
+tailIsB :: A.Arrowterm -> A.Arrowterm -> (Int,Bool)
+tailIsB (A.Arrow env b) (A.Arrow env' b')=
+  let d = length env - length env'
+  in  (d
+      ,
+      d >= 0
+      &&
+      match (length env) b (A.shiftIndices b' d 0)
+      &&
+      and (map (\((s,num),t) -> match (num +　d) s t) $zip (zip (take (length env') env) [0..]) (map (\c' -> A.shiftIndices c' d 0) env')))
+tailIsB (A.Arrow env b) b'=
+  let result = (length env,match (length env) b (A.shiftIndices b' (length env) 0))
+  in {--D.trace ("match "++(show $ length env)++(show (A.Arrow env b))++" b : "++(show b)++" b' : "++(show $ (A.shiftIndices b' (length env) 0))++" result: "++(show result))--}
+    result
+tailIsB _ _ =(0,False)
+
+arrowConclusionB :: A.AJudgement -> A.Arrowterm -> ((Int,Bool),A.AJudgement)
+arrowConclusionB j b=
+  -- let foroutut = D.trace ("arrowConclusion j:"++(show j)++" b:"++(show b))  [] in
+  (tailIsB (A.typefromAJudgement j) b,j)
+
+arrowConclusionBs :: [A.AJudgement] -> A.Arrowterm -> [(Int,J.Tree A.AJudgement)]
+arrowConclusionBs judgements b=
+  map
+  (\((num ,b),j )-> (num,J.VAR j))
+  $filter
+    (snd . fst)
+    $map (\j -> arrowConclusionB j b) judgements
+
+deduceEnv :: [A.Arrowterm] -> (Int,J.Tree A.AJudgement) -> Int -> Setting -> (J.Tree A.AJudgement,[[J.Tree A.AJudgement]])
+deduceEnv con (num,aJudgement) depth setting=
+  case  A.downSide aJudgement of
+    A.AJudgement _ _ (A.Arrow env _) ->
+        let deduceTargetAndCons = reverse $take num $reverse $ init $ L.tails env
+            proofForEnv = map (\(f:r) -> deduceWithLog (r++con) f depth setting) deduceTargetAndCons
+        in
+          if or $map (null) proofForEnv
+          then (aJudgement,[])
+          else (aJudgement,proofForEnv)
+    _ -> (aJudgement, [])
+
+  -- let ajudge = ((mapM (\(f:r) -> deduceWithLog (r++con) f depth setting). (\(A.AJudgement _ _ (A.Arrow env _)) -> init $ L.tails env)) . A.downSide) ajudgement
+
+deduceEnvs :: [A.Arrowterm] -> [(Int,J.Tree A.AJudgement)] -> Int -> Setting -> [(J.Tree A.AJudgement,[[J.Tree A.AJudgement]])]
 deduceEnvs con aJudgements depth setting=
-  let ajudges = map ((mapM (\(f:r) -> deduceWithLog (r++con) f depth setting) . (\(A.AJudgement _ _ (A.Arrow env _)) -> init $ L.tails env)) . A.downSide)  aJudgements
-  in filter ((/= []) . snd) $zip aJudgements ajudges
+  let ajudges = map (\aj ->deduceEnv con aj depth setting) aJudgements
+  in filter ((/= []) . snd) ajudges
+
 
 appAs :: A.Arrowterm -> [A.Arrowterm] -> A.Arrowterm
 appAs= foldl A.Arrow_App
 
-substAsInPiElim:: A.Arrowterm -> [(Int,A.Arrowterm)] -> A.Arrowterm
-substAsInPiElim term [] = term
-substAsInPiElim term ((fn,f):r) =A.arrowSubst (substAsInPiElim term  r) f (A.Conclusion $ DT.Var fn)
+substAsInPiElim:: A.Arrowterm -> [A.Arrowterm] -> A.Arrowterm
+-- substAsInPiElim term [] = term
+-- substAsInPiElim term ((fn,f):r) =A.arrowSubst (substAsInPiElim term  r) f (A.Conclusion $ DT.Var fn)
+-- substAsInPiElim term [] = term
+substAsInPiElim (A.Arrow env t) args
+  | length env < length args = undefined
+  | otherwise =
+    let beforeSubst =
+          case (length env - length args) of
+            0 -> t
+            d -> A.Arrow (reverse $drop d $reverse env) t
+        afterSubst = foldr (\(num,a) -> \tt -> A.arrowSubst tt (A.shiftIndices a (length args) (0)) (A.Conclusion $ DT.Var num)) beforeSubst $zip [0..] args
+    in
+      A.shiftIndices afterSubst (0-length args) (length args)
+substAsInPiElim _ _= undefined
 
-compareArrow :: A.Arrowterm -> A.Arrowterm -> [A.Arrowterm]
-compareArrow (A.Arrow_Sigma a1 a2) (A.Arrow_Sigma a1' a2')= undefined
-compareArrow (A.Arrow_App a1 a2) (A.Arrow_App a1' a2')=undefined
-compareArrow (A.Arrow_Proj s a) (A.Arrow_Proj s' a') = undefined
-compareArrow (A.Arrow_Pair a1 a2) (A.Arrow_Pair a1' a2')=undefined
-compareArrow (A.Arrow_Lam a) (A.Arrow_Lam a') = undefined
-compareArrow (A.Arrow con a) (A.Arrow con' a') =
-  case length con - length con' of
-    0 -> foldr (\a b -> b ) (compareArrow a a') []
-    d ->undefined
-compareArrow other other' = [other,other']
 
--- tailIsB :: A.Arrowterm -> A.Arrowterm -> Bool
--- tailIsB (A.Arrow env (A.Arrow env2 b2)) b=
---   tailIsB (A.Arrow (env2++env) b2) b
--- tailIsB (A.Arrow env b') (A.Arrow env' b)=
---   let d = length env -length env'
---   in d >= 0&& b ==b' && env'== take (length env') env
--- tailIsB (A.Arrow env b') b= b ==b'
--- tailIsB _ _ =False
-tailIsB :: A.Arrowterm -> A.Arrowterm -> Bool
-tailIsB (A.Arrow env b) (A.Arrow env' b')=
-  let d = length env - length env'
-  in
-    if d < 0
-    then False
-    else (A.shiftIndices b d 0==b') && (take (length env') env) == (map (\c -> A.shiftIndices b d 0) env')
-tailIsB (A.Arrow env b') b=
-  (A.shiftIndices b (length env) 0==b')
-tailIsB _ _ =False
-
-arrowConclusionB :: A.AJudgement -> A.Arrowterm -> Bool
-arrowConclusionB j b=
-  tailIsB (A.typefromAJudgement j) b
-
-arrowConclusionBs :: [A.AJudgement] -> A.Arrowterm -> [J.Tree A.AJudgement]
-arrowConclusionBs judgements b= map J.VAR $filter (\j -> arrowConclusionB j b) judgements
+-- A.arrowSubst (substAsInPiElim term  r) f (A.Conclusion $ DT.Var fn)
 
 piElim :: [A.Arrowterm] -> A.Arrowterm -> Int -> Setting -> Either String [J.Tree A.AJudgement]
 piElim con b1 depth setting
@@ -270,21 +318,26 @@ piElim con b1 depth setting
   | otherwise =
     let aJudgements = arrowConclusionBs (map A.downSide $ forwardContext con) b1 --
         a_type_terms = deduceEnvs con aJudgements depth setting
-    in
-      Right
-        $concatMap
-          (\(base,ass) ->
-              map
-                (\as ->
-                  let env' = con
-                      aTerms' = appAs (A.termfromAJudgement $ A.downSide base) $map (A.termfromAJudgement . A.downSide) as
-                      a_type' = substAsInPiElim b1 $ zip [0..] $map (A.termfromAJudgement . A.downSide) as
-                  in
-                    J.PiE (A.AJudgement env' aTerms' a_type') base (head as)
-                )
-              ass
-          )
-          a_type_terms
+    in Right
+          $concatMap
+            (\(base,ass) ->
+                M.mapMaybe
+                  (\as ->
+                    let env' = con
+                        args = map (A.termfromAJudgement . A.downSide) as
+                        aTerms' = appAs (A.termfromAJudgement $ A.downSide base) args
+                        a_type' = substAsInPiElim (A.typefromAJudgement $A.downSide base) $  args
+                    in
+                      if a_type' == b1
+                      then
+                        Just $ J.PiE (A.AJudgement env' aTerms' a_type') base (head as)
+                      else
+                        Nothing
+                  )
+                (sequence ass)
+            )
+            (a_type_terms)
+
 
 sigmaIntro :: [A.Arrowterm] ->  A.Arrowterm -> Int -> Setting -> Either String [J.Tree A.AJudgement]
 sigmaIntro con  (A.Arrow_Sigma a b1) depth setting

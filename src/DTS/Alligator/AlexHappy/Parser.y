@@ -103,8 +103,6 @@ term
       { Formula "fof"  $3 $5 (L.init $ L.concat $7) }
    | cnf lbracket name comma word comma formula period
       { Formula "cnf"  $3 $5 (L.init $ L.concat $7) }
-   | tff lbracket name comma word comma formula period
-      { Formula "tff"  $3 $5 (L.init $ L.concat $7) }
    | per
       { Sout "" }
 
