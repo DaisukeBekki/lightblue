@@ -1,3 +1,8 @@
+module DTS.Alligator.AlexHappy.TPTPTest (
+  writeInfoCsv,
+  testInfoFile
+) where
+
 import qualified DTS.Alligator.AlexHappy.FileParser as F
 
 import System.Directory
@@ -9,16 +14,8 @@ import qualified DTS.Alligator.ProofTree as APT
 import qualified Data.Text.Lazy.IO as T
 import qualified DTS.DTT as DT
 import qualified Data.Maybe
-import Data.List.Split
 import Data.Default (Default(..))
 
-csvHeader :: String
-csvHeader="file\tassestment\tstatus\tdneresult\tdneurl\tefqresult\tefqurl\tlanguage\tcontext\ttarget\tnote\t\n"
-
-parseCSV :: String -> [[String]]
-parseCSV = (map (splitOn "\t")  .lines)
-
--- map (\lst -> lst !! 2) $parseCSV csv
 testFileExtentions :: [String]
 testFileExtentions = ["test","p"]
 
@@ -121,16 +118,39 @@ exceptList =
   ]
 
 dirs :: [String]
--- dirs = ["DTS/Alligator/Test/"]
-dirs = ["DTS/Alligator/Test/","../../TPTP-v7.3.0/Problems/SYN/"]
+dirs = ["DTS/Alligator/Test/"]
+-- dirs = ["DTS/Alligator/Test/","../../TPTP-v7.3.0/Problems/SYN/"]
 
 isTestFile :: String -> Bool
 isTestFile fname=
   any (\ex -> take (1 + length ex) (reverse fname) == reverse ('.':ex )) testFileExtentions
 
+
+testInfoDir :: String -> IO ()
+testInfoDir dir = do
+  c <- getDirectoryContents dir
+  let fnames = filter (`notElem` exceptList) $ map (dir ++ ) $filter isTestFile c
+  forM_ (zip [1..] fnames)
+    $ \ (num,fname) ->
+      print (show num ++"/"++ show (length fnames))
+      >>(
+        do
+          print fname
+          base <- F.fileparseInfo fname
+          let info = base {TI.filename = fname}
+          _ <- writeResults info
+          appendFile TI.resultfname "")
+          -- case justbase of
+          --   Just base -> do
+          --     let info = base {TI.filename = fname}
+          --     _ <- writeResults info
+          --     appendFile TI.resultfname ""
+          --   Nothing ->
+          --     appendFile TI.resultfname $ generateCsvRow $def {TI.filename = fname} {TI.note = "timeout"})
+
 answerIs :: TI.Result -> APT.ProofMode -> DT.Preterm -> TI.Info -> IO TI.Info
 answerIs yesOrNo proofMode conjecture base =
-  let dne = APT.prove (TI.context base) [] conjecture APT.settingDef{APT.mode = proofMode}
+  let dne = APT.prove (TI.context base) classic conjecture APT.settingDef{APT.mode = proofMode}
       url = TI.outputdir++takeWhile (/= '.') ( reverse$ takeWhile (/='/')$ reverse $init$TI.filename base) ++ "_dts.html"
   in
     if not (null dne)
@@ -162,15 +182,61 @@ computeWith proofMode base =
         return $ Data.Maybe.fromMaybe base justNo
 
 
-writeResults :: TI.Info -> IO TI.Info
+writeResults :: TI.Info -> IO()
 writeResults info = do
   appendFile TI.resultfname (  TI.filename info ++ "\t" ++"" ++ "\t" ++ (case TI.status info of Just sta -> show sta ; _ -> "") ++ "\t")
   dneBase <- computeWith APT.WithDNE info
   appendFile TI.resultfname (show (TI.dneResult dneBase) ++ "\t" ++ (TI.dneUrl dneBase) ++ "\t")
-  efqBase <- computeWith APT.WithEFQ dneBase
+  efqBase <- computeWith APT.WithEFQ info
   appendFile TI.resultfname (show (TI.efqResult efqBase) ++ "\t" ++ (TI.efqUrl efqBase) ++ "\t")
   appendFile TI.resultfname $(case TI.language info of Just lan -> show lan ; _ -> "") ++ "\t" ++ TI.strcontext info ++ "\t" ++TI.strtarget info ++ "\t" ++  TI.note info ++ "\t" ++ "\t" ++"\n"
-  return efqBase
+
+dnPr :: DT.Preterm
+dnPr = DT.Pi DT.Type (DT.Pi (DT.Pi (DT.Pi (DT.Var 0) DT.Bot) DT.Bot) (DT.Var 1))
+
+-- classic = [dnPr]
+classic = []
+
+testInfoFile :: String -> IO String
+testInfoFile fname = do
+  justbase <- timeout TI.timelimit $ F.fileparseInfo fname
+  print fname
+  case justbase of
+    Just base -> do
+      let info = base {TI.filename = fname}
+      return$ generateCsvRow info
+    Nothing ->
+      return $ generateCsvRow $def {TI.filename = fname} {TI.note = "timeout"}
+
+
+
+computeWithEFQ :: TI.Info -> IO TI.Info
+computeWithEFQ base =
+  case TI.target base of
+    Nothing -> return base
+    Just conjecture ->
+        let efqYes = APT.prove (TI.context base) classic conjecture APT.settingEFQ
+            url = TI.outputdir ++(takeWhile (/= '.') $ reverse$ takeWhile (/='/')$ reverse $init $ TI.filename base) ++ "_efq.html"
+        in
+          if not (null efqYes)
+          then do
+            contents <- APT.announce efqYes
+            T.writeFile url contents
+            return $ base {TI.efqResult =  TI.YES}{TI.efqUrl = url}
+          else
+            let efqNo = APT.prove (TI.context base) classic (DT.Not conjecture) APT.settingEFQ in
+              if null efqNo
+              then do
+                contents <- APT.announce efqNo
+                T.writeFile url contents
+                return $ base {TI.efqResult = TI.UNKNOWN}{TI.efqUrl = url}
+              else
+                return $ base {TI.efqResult =  TI.NO}
+
+
+compete :: String -> Bool -> String
+compete "Theorem" b= show b
+compete _ _ = ""
 
 generateCsvRow :: TI.Info -> String
 generateCsvRow info =
@@ -178,54 +244,26 @@ generateCsvRow info =
   "" ++ "\t" ++
   (case TI.status info of Just sta -> show sta ; _ -> "") ++ "\t" ++
   show (TI.dneResult info) ++ "\t"++
-  TI.dneUrl info ++ "\t"++
+  (TI.dneUrl info) ++ "\t"++
   show (TI.efqResult info) ++ "\t"++
-  TI.efqUrl info ++ "\t"++
+  (TI.efqUrl info) ++ "\t"++
   (case TI.language info of Just lan -> show lan ; _ -> "") ++ "\t" ++
   TI.strcontext info ++ "\t" ++
   TI.strtarget info ++ "\t" ++
+  -- TI.strprocessed info ++ "\t" ++
   TI.note info ++ "\t" ++ "\t" ++"\n"
 
+csvHeader :: String
+csvHeader="file\tassestment\tstatus\tdneresult\tdneurl\tefqresult\tefqurl\tlanguage\tcontext\ttarget\tnote\t\n"
 
 -- csvHeader="file\tassestment\tstatus\tdneresult\tefqresult\tlanguage\tcontext\ttarget\tprocessed\tnote\t\n"
 
-testInfoFile :: String -> IO TI.Info
-testInfoFile fname = do
-  base <- F.fileparseInfo fname
-  let info = base {TI.filename = fname}
-  writeResults info
-  -- return ((TI.dneResult info,TI.efqResult info),(case (TI.status info) of Just status -> Just $ TI.statusToResult status ; Nothing -> Nothing))
-
-testInfoDir :: String -> IO ()
-testInfoDir dir = do
-  c <- getDirectoryContents dir
-  let fnames = filter (`notElem` exceptList) $ map (dir ++ ) $filter isTestFile c
-  forM_ (zip [1..] fnames)
-    $ \ (num,fname) ->
-      print (show num ++"/"++ show (length fnames))
-      >>(
-        do
-          testInfoFile fname
-          appendFile TI.resultfname "")
-
-
 main = writeInfoCsv
-
-parseTest dir = do
-  c <- getDirectoryContents dir
-  let fnames = filter (`notElem` exceptList) $ map (dir ++ ) $filter isTestFile c
-  forM_
-      fnames
-      fileParseTest
-  putStrLn "end"
-
-fileParseTest fname = do
-  base <- F.fileparseInfo fname
-  putStrLn $fname ++ (TI.note base)
-
 
 writeInfoCsv = do
   writeFile TI.resultfname csvHeader
   forM_ dirs testInfoDir
-  -- result <- map testInfoDir dirs
-  -- print ""
+  -- let result = concat result'
+  -- appendFile TI.resultfname $"\n\t"++"True : "++ show (length $filter (==True) result) ++ "False : " ++ show  (length $filter (==False) result)
+  -- putStrLn "count True"
+  -- appendFile TI.resultfname $"\n\t"++"True : "++ (show $ numOf True result) ++ " False : "++(show $ numOf False result)++"\t\t\t\t\t"

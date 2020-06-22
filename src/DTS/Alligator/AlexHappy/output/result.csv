@@ -1,2 +1,20 @@
 file	assestment	status	dneresult	dneurl	efqresult	efqurl	language	context	target	note	
-DTS/Alligator/Test/dne.test		Theorem	YES	DTS/Alligator/AlexHappy/output/dne_dts.html	
+DTS/Alligator/Test/dne.test		Theorem	YES	DTS/Alligator/AlexHappy/output/dne_dts.html	UNKNOWN		fof	(q=>((p=>($false))=>($false))),(p=>r),(q),(q=>((p=>($false))=>($false))),(p=>r),(q)	(r)			
+DTS/Alligator/Test/dni.test		Theorem	YES	DTS/Alligator/AlexHappy/output/dni_dts.html	YES	DTS/Alligator/AlexHappy/output/dni_dts.html	fof		(p=>~(~(p)))			
+DTS/Alligator/Test/dni3.test		Theorem	YES	DTS/Alligator/AlexHappy/output/dni3_dts.html	YES	DTS/Alligator/AlexHappy/output/dni3_dts.html	fof	(p),(p)	((p=>($false))=>($false))			
+DTS/Alligator/Test/dni2.test		Theorem	YES	DTS/Alligator/AlexHappy/output/dni2_dts.html	YES	DTS/Alligator/AlexHappy/output/dni2_dts.html	fof		(p=>((p=>($false))=>($false)))			
+DTS/Alligator/Test/transitive.test		Theorem	YES	DTS/Alligator/AlexHappy/output/transitive_dts.html	YES	DTS/Alligator/AlexHappy/output/transitive_dts.html	fof	(p=>q),(q=>r),(p),(p=>q),(q=>r),(p)	(r)			
+DTS/Alligator/Test/exist1.test		Theorem	YES	DTS/Alligator/AlexHappy/output/exist1_dts.html	YES	DTS/Alligator/AlexHappy/output/exist1_dts.html	fof	(f(p)),(f(p))	?[a]:(f(a))			
+DTS/Alligator/Test/all.test		Theorem	YES	DTS/Alligator/AlexHappy/output/all_dts.html	YES	DTS/Alligator/AlexHappy/output/all_dts.html	fof		(![p]:(p=>p))			
+DTS/Alligator/Test/efq.test		Theorem	YES	DTS/Alligator/AlexHappy/output/efq_dts.html	YES	DTS/Alligator/AlexHappy/output/efq_dts.html	fof	(($false)),(($false))	(p)			
+DTS/Alligator/Test/lem.test		Theorem	YES	DTS/Alligator/AlexHappy/output/lem_dts.html	YES	DTS/Alligator/AlexHappy/output/lem_dts.html	fof		(p|~(p))			
+DTS/Alligator/Test/dni4.test		Theorem	YES	DTS/Alligator/AlexHappy/output/dni4_dts.html	YES	DTS/Alligator/AlexHappy/output/dni4_dts.html	fof		(p=>((~(~(p)))=>p))			
+DTS/Alligator/Test/exist.test		Theorem	YES	DTS/Alligator/AlexHappy/output/exist_dts.html	YES	DTS/Alligator/AlexHappy/output/exist_dts.html	fof	(f(x)),(f(x))	(?[b]:(f(b)))			
+DTS/Alligator/Test/all2.test		Theorem	YES	DTS/Alligator/AlexHappy/output/all2_dts.html	YES	DTS/Alligator/AlexHappy/output/all2_dts.html	fof	(![p]:(f(p))),(![p]:(f(p)))	(f(a))			
+DTS/Alligator/Test/app.test		Theorem	YES	DTS/Alligator/AlexHappy/output/app_dts.html	YES	DTS/Alligator/AlexHappy/output/app_dts.html	fof	(![a]:r(a)),(![a]:r(a))	(?[b]:(r(b)))			
+DTS/Alligator/Test/piElim2.test		Theorem	YES	DTS/Alligator/AlexHappy/output/piElim2_dts.html	YES	DTS/Alligator/AlexHappy/output/piElim2_dts.html	fof	(a),(a=>(b=>c)),(a),(a=>(b=>c))	(b=>c)			
+DTS/Alligator/Test/app2.test		Theorem	YES	DTS/Alligator/AlexHappy/output/app2_dts.html	YES	DTS/Alligator/AlexHappy/output/app2_dts.html	fof	(r(a)),(r(a))	(?[b]:(r(b)))			
+DTS/Alligator/Test/transitive2.test		Theorem	YES	DTS/Alligator/AlexHappy/output/transitive2_dts.html	YES	DTS/Alligator/AlexHappy/output/transitive2_dts.html	fof	(p=>q),(q=>r),(p=>q),(q=>r)	(p=>r)			
+DTS/Alligator/Test/or3.test		Theorem	YES	DTS/Alligator/AlexHappy/output/or3_dts.html	YES	DTS/Alligator/AlexHappy/output/or3_dts.html	fof	(a|~b),~a,(a|~b),~a	~b			
+DTS/Alligator/Test/or2.test		CounterSatisfiable	NO	DTS/Alligator/AlexHappy/output/or2_dts.html	NO	DTS/Alligator/AlexHappy/output/or2_dts.html	fof	(a|~b),~a,(a|~b),~a	b			
+DTS/Alligator/Test/or.test		Theorem	YES	DTS/Alligator/AlexHappy/output/or_dts.html	
