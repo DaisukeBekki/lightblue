@@ -1,4 +1,4 @@
-
+% Status : Theorem
 % Syntax   :
 %            Number of predicates  :    3 (   0 propositional; 3-3 arity)
 
@@ -31,7 +31,7 @@ fof(ax2,axiom,
   )
 ).
 
-fof(con,conjencture,
+fof(con,conjecture,
   (
     r
   )

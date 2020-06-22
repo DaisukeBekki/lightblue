@@ -1,18 +1,20 @@
-% Status   : Theorem
+
 % Syntax   :
-%            Number of predicates  :    1 (   0 propositional; 3-3 arity)
+%            Number of predicates  :    3 (   0 propositional; 3-3 arity)
 
-
+% Status   : Theorem
 % Comments :
 %--------------------------------------------------------------------------
 
 
-fof(con,conjecture,
+fof(con,axiom,
   (
-    p
-    |
-    ~(p)
+    ! [p] :
+      ( f(p) )
   )
 ).
+
+fof(con,conjecture,
+(f(a))).
 
 %--------------------------------------------------------------------------

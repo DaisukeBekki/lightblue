@@ -13,6 +13,7 @@ module DTS.Prover_daido.Judgement
   getList,
   utreeToTeX,
   utreeToMathML,
+  treeToMathML,
   treeToTeX
 ) where
 
