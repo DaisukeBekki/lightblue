@@ -67,18 +67,18 @@ generateType num = DT.Pi DT.Type (generateType (num-1))
 contextUpdate :: [(String,Int)] -> TI.Info ->  TI.Info
 contextUpdate conlst' base =
   let conlst = filter ((/= 0).snd) conlst'
-      context' = TI.context base
   in
     foldr
       (
         \(var,argnum) info ->
           case lookup var $ TI.prelst info of
             Nothing ->
-              let prelst2 = dropWhile ((/= "").fst) $ TI.prelst info
+              let prelst2 = {-D.trace ("beforecontextUpdate context : "++ (show $ (TI.context info)) ++ "\nprelst : "++ (show $(TI.prelst info))++"\nconlst"++(show $ conlst')++"\n")
+                    $-}dropWhile ((/= "").fst) $ TI.prelst info
                   prelst' =  (takeWhile ((/="").fst) (TI.prelst info)) ++ ((var,(snd . head)  prelst2) : tail prelst2)
-                  context' = take ((snd . head)  prelst2 - 1) (TI.context info) ++ [generateType argnum] ++ drop ((snd . head)  prelst2) (TI.context info)
+                  context' = take ((snd . head)  prelst2 ) (TI.context info) ++ [generateType argnum] ++ drop ((snd . head)  prelst2 + 1) (TI.context info)
               in
-                 info {TI.context = context'} {TI.prelst = prelst'}
+                 {-D.trace ("contextUpdate context : "++ (show $ context') ++ "\nprelst : "++ (show $prelst')) $-}info {TI.context = context'} {TI.prelst = prelst'}
             Just num ->
               let context' = take num (TI.context info) ++ [generateType argnum] ++ drop (num+1) (TI.context info)
               in
@@ -120,7 +120,7 @@ updateInfo baseio expr = do
               sort' ->
                 if TI.isAxiomLike sort'
                 then
-                  return $ base' { TI.prelst = ("axiom",0):map (\(str,int) -> (str,int + 1)) prelst'} {TI.context = term' : TI.context base} {TI.strcontext =  TI.strcontext base ++ "," ++ f}
+                  return {-$ D.trace ("updateInfo @"++(show expr)++ "context : "++ (show $length (term' : TI.context base)) ++"prelst : " ++ (show $ length (("axiom",0):map (\(str,int) -> (str,int + 1)) prelst')))-} $base' { TI.prelst = ("axiom",0):map (\(str,int) -> (str,int + 1)) prelst'} {TI.context = term' : TI.context base} {TI.strcontext =  TI.strcontext base ++ "," ++ f}
                 else undefined
           Left err ->
             return $ base2 {TI.note = "error in process" ++ f}
