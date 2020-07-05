@@ -18,9 +18,9 @@ import Control.Monad.Except
 %error { parseError }
 
 %token
+    biOp       { TokenBiop $$ }
     neg        { TokenNeg}
     word       { TokenWord $$ }
-    biOp       { TokenBiop $$ }
     and        { TokenAnd }
     or         { TokenOr }
     imp        { TokenImp }
@@ -44,6 +44,10 @@ import Control.Monad.Except
 formula
     : word
       { Tletter $1 }
+    | formula imp formula
+      { Tbinary Timp $1 $3}
+    | neg formula
+      { Tneg $2 }
     | top
       { Ttrue }
     | bot
@@ -52,8 +56,6 @@ formula
       { Tbinary Tand $1 $3}
     | formula or formula
       { Tbinary Tor $1 $3}
-    | formula imp formula
-      { Tbinary Timp $1 $3}
     | formula equiv formula
       { Tbinary Tequiv $1 $3}
     | formula eq formula
@@ -62,8 +64,6 @@ formula
       { Tneg (Tbinary Tequiv $1 $3)}
     | formula biOp formula
       { Tbinary Tequiv $1 $3}
-    | neg formula
-      { Tneg $2 }
     | lbracket formula rbracket
       { $2 }
     | all rlbracket vars rrbracket coron formula
