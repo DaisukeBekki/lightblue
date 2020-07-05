@@ -86,7 +86,6 @@ executables:
     - -with-rtsopts=-N
     dependencies: lightblue >= 0.2.0.4
 
-executables:
   tptp:
     source-dirs: app
     main: ../src/DTS/Alligator/AlexHappy/TPTPTest.hs
