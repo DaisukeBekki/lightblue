@@ -109,7 +109,7 @@ updateInfo baseio expr = do
           Right (conlst',term) ->
             let conlst = map fst conlst'
                 prelst' = foldr updateConLst' (TI.prelst base) conlst
-                base' =contextUpdate conlst' base2
+                base' = contextUpdate conlst' base2
                 term' = foldr (\(con,varnum) preterm -> A.subst preterm (DT.Var varnum) (DT.Con $ Te.pack con)) term prelst'
             in case read sort :: TI.Role of
               TI.Conjecture -> return $ base' { TI.prelst = prelst'}{ TI.target = Just term'} {TI.strtarget = f}
@@ -152,7 +152,7 @@ updateInfoAboutFormulae baseio expr = do
                 term' = foldr (\(con,varnum) preterm -> A.subst preterm (DT.Var varnum) (DT.Con $ Te.pack con)) term prelst'
             in case read sort :: TI.Role of
               TI.Conjecture -> return $ base' { TI.target = Just term'} {TI.strtarget = f}
-              TI.NegatedConjecture -> return $ base'  { TI.negated_conjecture = Just $ case TI.negated_conjecture base' of Just term1 -> DT.Sigma term1 term' ; Nothing -> term'{-DT.Sigma (fromMaybe DT.Top $ negated_conjecture base') (term')-} } {TI.strnegated =  TI.strnegated base'++"& " ++ f }
+              TI.NegatedConjecture -> return $ base' { TI.negated_conjecture = Just $ case TI.negated_conjecture base' of Just term1 -> DT.Sigma term1 term' ; Nothing -> term' } {TI.strnegated =  TI.strnegated base'++"& " ++ f }
               TI.Plain -> undefined
               TI.Type -> undefined
               TI.RUnknown -> undefined

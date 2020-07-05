@@ -70,6 +70,8 @@ tokens :-
     { \s -> TokenPreNum}
   \% [$space]*Number [$space]+ of [$space]+ clauses
     { \s -> TokenClause}
+  \% [$space]*Number [$space]+ of [$space]+ functors
+    { \s -> TokenPreNum}
 
 Syntax   :
   \% [$space]*Syntax [$space]* :[$space]*Number [$space]+ of [$space]+ clauses
