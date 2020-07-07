@@ -40,45 +40,52 @@ import Control.Monad.Except
 
 %%
 
-
 formula
     : word
       { Tletter $1 }
-    | formula imp formula
-      { Tbinary Timp $1 $3}
-    | neg formula
-      { Tneg $2 }
+    | lbracket formula imp formula rbracket
+      { Tbinary Timp $2 $4}
     | top
       { Ttrue }
     | bot
       { Tfalse }
-    | formula and formula
-      { Tbinary Tand $1 $3}
-    | formula or formula
-      { Tbinary Tor $1 $3}
-    | formula equiv formula
-      { Tbinary Tequiv $1 $3}
-    | formula eq formula
-      { Tbinary Tequiv $1 $3}
-    | formula noteq formula
-      { Tneg (Tbinary Tequiv $1 $3)}
-    | formula biOp formula
-      { Tbinary Tequiv $1 $3}
+    | lbracket formula and trueSubFormula rbracket
+      { Tbinary Tand $2 $4}
+    | lbracket formula or trueSubFormula rbracket
+      { Tbinary Tor $2 $4}
+    | lbracket formula equiv formula rbracket
+      { Tbinary Tequiv $2 $4}
+    | lbracket formula eq formula rbracket
+      { Tbinary Tequiv $2 $4}
+    | lbracket formula noteq formula rbracket
+      { Tneg (Tbinary Tequiv $2 $4)}
+    | lbracket formula biOp formula rbracket
+      { Tbinary Tequiv $2 $4}
     | lbracket formula rbracket
       { $2 }
     | all rlbracket vars rrbracket coron formula
       { Tall $3 $6 }
     | exists rlbracket vars rrbracket coron formula
       { Texist $3 $6 }
-    | formula lbracket formulae rbracket
+    | formula lbracket vars rbracket
       { TApp $1 $3 }
+    | neg formula
+      { Tneg $2 }
 
+
+
+trueSubFormula
+    : formula and trueSubFormula
+      { Tbinary Tand $1 $3}
+    | formula or trueSubFormula
+      { Tbinary Tor $1 $3}
+    | formula
+      { $1 }
 var
-    : word
-      { [Tvar $1] }
-    | formula coron eq formula
+    : formula coron eq formula
       { [TDef $1 $4] }
-
+    | formula
+      { [TFormula $1] }
 vars
     : var comma vars
       { $1 ++ $3 }

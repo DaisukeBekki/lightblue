@@ -221,7 +221,11 @@ parseTest dir = do
 
 fileParseTest fname = do
   base <- F.fileparseInfo fname
-  putStrLn $fname ++ (TI.note base)
+  if (TI.note base == "")
+  then
+    putStr "" 
+  else
+    putStrLn $fname ++ "\n\t"  ++ (TI.note base)
 
 
 writeInfoCsv = do

@@ -6,9 +6,9 @@
 % Comments :
 %--------------------------------------------------------------------------
 
-fof(ax1,axiom,(a|~b)).
+fof(ax1,axiom,(a|(~b))).
 
-fof(ax2,axiom,~a).
+fof(ax2,axiom,(~a)).
 
 fof(con,conjecture,b).
 
