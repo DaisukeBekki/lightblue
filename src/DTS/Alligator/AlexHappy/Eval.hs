@@ -103,7 +103,7 @@ updateInfo baseio expr = do
       -> importAxiomio a baseio
     S.Formula lan name sort f
       -> do
-        let either_pre = processf' f (filter (/= "") $ map fst $TI.prelst base)
+        let either_pre = processf  f (filter (/= "") $ map fst $TI.prelst base)
             base2 = base {TI.language = Just (read lan ::TI.Language)}
         case either_pre of
           Right (conlst',term) ->
@@ -142,7 +142,7 @@ updateInfoAboutFormulae baseio expr = do
       -> importAxiomio a baseio
     S.Formula lan name sort f
       -> do
-        let either_pre = processf' f (filter (/= "") $ map fst $TI.prelst base)
+        let either_pre = processf  f (filter (/= "") $ map fst $TI.prelst base)
             base2 = base {TI.language = Just (read lan ::TI.Language)}
         case either_pre of
           Right (conlst',term) ->
@@ -195,112 +195,64 @@ evalInfo ::[S.Expr] -> String -> IO TI.Info
 evalInfo expr fname = do
   base <- setInfo expr fname
   return base
-  -- dneBase <- computeWithDNE base
-  -- efqBase <- computeWithEFQ dneBase
-  -- return $ efqBase {TI.context = []} {TI.target = Nothing}
 
-
-      -- return $ base {TI.result = [] /= (AP.prove (TI.context base) classic conjecture)} {TI.context = []} {TI.target = Nothing}
-
-processf :: String -> [String] -> Either String ([String] , DT.Preterm)
-processf input conlst = do
+processf  :: String -> [String] -> Either String ([(String,Int)] , DT.Preterm)
+processf  input conlst = do
   let ast' = PF.parseExpr input
   case ast' of
-    Right ast ->Right $ t2dt ast conlst
+    -- Right ast ->D.trace input Right $ t2dt  ast $map (\x -> (x,0)) conlst
+    Right ast -> Right $ t2dt  ast $map (\x -> (x,0)) conlst
     Left err -> Left $ "Error in processf @" ++ input
 
-processf' :: String -> [String] -> Either String ([(String,Int)] , DT.Preterm)
-processf' input conlst = do
-  let ast' = PF.parseExpr input
-  case ast' of
-    -- Right ast ->D.trace input Right $ t2dt' ast $map (\x -> (x,0)) conlst
-    Right ast -> Right $ t2dt' ast $map (\x -> (x,0)) conlst
-    Left err -> Left $ "Error in processf @" ++ input
-
-
-t2dt :: F.Expr
-  -> [String]  -- ^ for bound variables in (F.Tall,F.Texist)
-  -> ([String],DT.Preterm)  -- ^ (bound variables,result,functions)
-t2dt (F.Tletter con) s =
-  let s' = L.nub con :s
-  in (s' , DT.Con $ Te.pack con )
-t2dt F.Ttrue s = (s, DT.Top)
-t2dt F.Tfalse s= (s, DT.Bot)
-t2dt (F.Tneg formula) s=
-  let (s' , arg1) = t2dt formula s in
-     (s' , DT.Not arg1)
-t2dt (F.Tbinary biop f1 f2) s =
-  let (s1 , arg1) = t2dt f1 s
-      (s' , arg2) = t2dt f2 s1 in
-    case biop of
-      F.Tand -> (s' , DT.Sigma arg1 arg2)
-      F.Tor -> (s' , DT.Not $ DT.Sigma (DT.Not arg1) (DT.Not arg2))
-      F.Timp -> (s' , DT.Pi arg1 arg2)
-      F.Tequiv -> (s' , DT.Sigma (DT.Pi arg1 arg2) (DT.Pi arg2 arg1))
-t2dt (F.TApp f []) s =t2dt f s
-t2dt (F.TApp f (a1:r)) s =
-  let (s1,alast) = t2dt a1 s
-      (s',args) = t2dt (F.TApp f r) s1 in
-    (s' , DT.App args alast)
-t2dt (F.Tall [] f ) s = t2dt f s
-t2dt (F.Tall vars f ) s =
-  case head vars of
-    F.TDef _ _ -> D.trace "TDef" undefined
-    F.Tvar var ->
-      let (s' , arg2) = t2dt (F.Tall (tail vars) f) (var : s )
-      in (filter (/= var) s' , DT.Pi DT.Type (A.subst arg2 (DT.Var 0) (DT.Con $ Te.pack var)))
-t2dt (F.Texist [] f ) s = t2dt f s
-t2dt (F.Texist vars f ) s =
-  case head vars of
-    F.TDef _ _ -> D.trace "TDef" undefined
-    F.Tvar var ->
-      let (s' , arg2) = t2dt (F.Texist (tail vars) f) (var : s )
-      in (filter (/= var) s' , DT.Sigma DT.Type (A.subst arg2 (DT.Var 0) (DT.Con $ Te.pack var)))
-
-
-
-
-t2dt' :: F.Expr
+t2dt  :: F.Expr
   -> [(String,Int)]  -- ^ for bound variables in (F.Tall,F.Texist)
   -> ([(String,Int)],DT.Preterm)  -- ^ (bound variables,result,functions)
-t2dt' (F.Tletter con) s =
+t2dt  (F.Tletter con) s =
   let s' = if con `elem` map fst s then s else (con,0) :s
   in  (s' , DT.Con $ Te.pack con )
-t2dt' F.Ttrue s = (s, DT.Top)
-t2dt' F.Tfalse s=  (s, DT.Bot)
-t2dt' (F.Tneg formula) s=
-  let (s' , arg1) = t2dt' formula s in
+t2dt  F.Ttrue s = (s, DT.Top)
+t2dt  F.Tfalse s=  (s, DT.Bot)
+t2dt  (F.Tneg formula) s=
+  let (s' , arg1) = t2dt  formula s in
     (s' , DT.Not arg1)
-t2dt' (F.Tbinary biop f1 f2) s =
-  let (s1 , arg1) = t2dt' f1 s
-      (s' , arg2) = t2dt' f2 s1 in
+t2dt  (F.Tbinary biop f1 f2) s =
+  let (s1 , arg1) = t2dt  f1 s
+      (s' , arg2) = t2dt  f2 s1 in
     case biop of
       F.Tand -> (s' , DT.Sigma arg1 arg2)
       F.Tor -> (s' , DT.Not $ DT.Sigma (DT.Not arg1) (DT.Not arg2))
       F.Timp -> (s' , DT.Pi arg1 arg2)
       F.Tequiv -> (s' , DT.Sigma (DT.Pi arg1 arg2) (DT.Pi arg2 arg1))
-t2dt' (F.TApp f []) s =t2dt' f s
-t2dt' (F.TApp f (a1:r)) s =
-  let (s1,alast) = t2dt' a1 s
-      (s2,args) = t2dt' (F.TApp f r) s1
-      f' = case f of
-        F.Tletter fstr -> fstr
-        _ -> " "
-      s' = case lookup f' s2 of
-        Nothing -> (f',length (a1:r)):s2
-        Just num -> if num < length (a1:r)
-          then (f',length (a1:r)) : L.delete (f',num) s2
-          else s2
-  in
-    (s' , DT.App args alast)
-    -- D.trace ("function : " ++  show f ++ (show $ length (a1:r))) (s' , DT.App args alast)
-t2dt' (F.Tall [] f ) s = t2dt' f s
-t2dt' (F.Tall vars f ) s =
-  let F.Tvar var = head vars
-      (s' , arg2) = t2dt' (F.Tall (tail vars) f) ((var,0) : s )
-  in (filter ((/= var).fst) s' , DT.Pi DT.Type (A.subst arg2 (DT.Var 0) (DT.Con $ Te.pack var)))
-t2dt' (F.Texist [] f ) s = t2dt' f s
-t2dt' (F.Texist vars f ) s =
-  let F.Tvar var = head vars
-      (s' , arg2) = t2dt' (F.Texist (tail vars) f) ((var,0) : s )
-  in (filter ((/= var).fst) s' , DT.Sigma DT.Type (A.subst arg2 (DT.Var 0) (DT.Con $ Te.pack var)))
+t2dt  (F.TApp f []) s =t2dt  f s
+t2dt  (F.TApp f (a:r)) s =
+  case a of
+    F.TFormula a1 ->
+      let (s1,alast) = t2dt a1 s
+          (s2,args) = t2dt  (F.TApp f r) s1
+          f' = case f of
+            F.Tletter fstr -> fstr
+            _ -> " "
+          s' = case lookup f' s2 of
+            Nothing -> (f',length (a:r)):s2
+            Just num -> if num < length (a:r)
+              then (f',length (a:r)) : L.delete (f',num) s2
+              else s2
+      in
+        (s' , DT.App args alast)
+    _ -> D.trace "TDef in app" undefined
+t2dt  (F.Tall [] f ) s = t2dt  f s
+t2dt  (F.Tall vars f ) s =
+  case head vars of
+    F.TDef _ _ -> D.trace "TDef in all" undefined
+    F.TFormula (F.Tletter var) ->
+      let (s' , arg2) = t2dt  (F.Tall (tail vars) f) ((var,0) : s )
+      in (filter ((/= var).fst) s' , DT.Pi DT.Type (A.subst arg2 (DT.Var 0) (DT.Con $ Te.pack var)))
+    F.TFormula _ -> D.trace "Tformula in all" undefined
+t2dt  (F.Texist [] f ) s = t2dt  f s
+t2dt  (F.Texist vars f ) s =
+  case head vars of
+    F.TDef _ _ -> D.trace "TDef in exist" undefined
+    F.TFormula (F.Tletter var) ->
+      let (s' , arg2) = t2dt  (F.Texist (tail vars) f) ((var,0) : s )
+      in (filter ((/= var).fst) s' , DT.Sigma DT.Type (A.subst arg2 (DT.Var 0) (DT.Con $ Te.pack var)))
+    F.TFormula _ -> D.trace "Tformula in exist" undefined

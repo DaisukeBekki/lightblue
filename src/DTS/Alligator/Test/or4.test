@@ -22,18 +22,18 @@
 
 % Comments :
 %--------------------------------------------------------------------------
-cnf(clause_1,axiom,
+fof(clause_1,axiom,
     ( big_f(f(a,b),f(b,c)) )).
 
-cnf(clause_2,axiom,
+fof(clause_2,axiom,
     ( big_f(f(b,c),f(a,c)) )).
 
-cnf(clause_3,axiom,
+fof(clause_3,axiom,
     ( ~ big_f(X,Y)
     | ~ big_f(Y,Z)
     | big_f(X,Z) )).
 
-cnf(prove_this,conjecture,
+fof(prove_this,conjecture,
     ( ~ big_f(f(a,b),f(a,c)) )).
 
 %--------------------------------------------------------------------------

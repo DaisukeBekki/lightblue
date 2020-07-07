@@ -11,7 +11,7 @@ fof(con,conjecture,
   (
     p
     |
-    ~(p)
+    (~(p))
   )
 ).
 

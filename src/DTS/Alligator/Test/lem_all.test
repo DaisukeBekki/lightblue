@@ -10,7 +10,7 @@
 fof(con,conjecture,
   (
     ! [p] :
-      ( p | ~(p) )
+      ( p | (~(p)) )
   )
 ).
 

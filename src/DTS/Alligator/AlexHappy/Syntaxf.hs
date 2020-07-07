@@ -1,8 +1,8 @@
 module DTS.Alligator.AlexHappy.Syntaxf where
 
 data Tvar =
-  Tvar String
-  | TDef Expr Expr
+  TDef Expr Expr
+  | TFormula Expr
   deriving (Eq,Show)
 
 data Tbop = Tand | Tor | Timp | Tequiv deriving (Eq,Show)
@@ -15,5 +15,5 @@ data Expr =
   | Tbinary Tbop Expr Expr
   | Tall [Tvar] Expr
   | Texist [Tvar] Expr
-  | TApp Expr [Expr]
+  | TApp Expr [Tvar]
   deriving (Eq, Show)
