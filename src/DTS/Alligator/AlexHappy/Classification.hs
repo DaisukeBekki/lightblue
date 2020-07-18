@@ -22,6 +22,7 @@ import qualified Data.Text as T    --text
 import qualified Data.Text.IO as T --text
 import qualified DTS.Alligator.AlexHappy.TPTPInfo as TI
 import qualified Data.List.Split as S
+import Debug.Trace as D
 
 type ClassificationCounts = (Int,Int,Int,Int)
 
@@ -265,7 +266,18 @@ compareCsv :: String -> Int -> Int -> IO (Assesment,T.Text)
 compareCsv fname l1num l2num =do
   csvstr <- readFile fname
   let csv = map (S.splitOn "\t") $S.splitOn "\n"  csvstr
-      label = map (\lst -> (read (lst !! l1num) :: TI.Result,TI.statusToResult (read (lst !! l2num)::TI.Status) )) $tail csv
+      label = map
+              (
+                \lst ->
+                  let f = case lst !! l1num of
+                            "" -> D.trace ("null in l"++(show l1num)++"@"++(head lst)) TI.UNKNOWN
+                            fw -> read fw :: TI.Result
+                      s = case lst !! l2num of
+                            "" -> D.trace ("null in l"++(show l2num)++"@"++(head lst))TI.UNKNOWN
+                            sw -> TI.statusToResult (read sw :: TI.Status)
+                  in (f,s)
+              )
+              $tail csv
   return $getAssesmentAndConfusionMatrix label
 
 

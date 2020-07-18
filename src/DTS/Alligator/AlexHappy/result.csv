@@ -1,4 +1,0 @@
-file	assestment	status	dneresult	efqresult	language	context	target	processed	note	
-DTS/Alligator/Test/dne.test		Theorem	YES	UNKNOWN	fof	(q=>((p=>($false))=>($false))),(p=>r),(q)	(r)	[  u0:T, u1:type, u2:type, u3:type, u4:type, u5:[  u6:u4, u7:[  u8:u3 ] =>⊥ ] =>⊥, u9:[  u10:u3 ] =>u2, u11:u4 ] =>u2			
-DTS/Alligator/Test/dni.test			YES	YES	fof		(p=>~(~(p)))	[  u0:T, u1:type, u2:type ] =>[  u3:u2, u4:[  u5:u2 ] =>⊥ ] =>⊥			
-DTS/Alligator/Test/dni3.test			YES	YES	fof	(p)	((p=>($false))=>($false))	[  u0:T, u1:type, u2:type, u3:type, u4:type, u5:u4 ] =>[  u6:[  u7:u4 ] =>⊥ ] =>⊥			
