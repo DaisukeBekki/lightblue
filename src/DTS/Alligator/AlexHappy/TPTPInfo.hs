@@ -1,5 +1,6 @@
 module DTS.Alligator.AlexHappy.TPTPInfo where
 
+import qualified DTS.Alligator.AlexHappy.Syntaxf as F
 import Data.Default (Default(..))
 import qualified DTS.DTT as DT
 
@@ -121,11 +122,14 @@ data Info
       context :: [DT.Preterm],
       prelst :: [(String,Int)],
       negated_conjecture :: Maybe DT.Preterm,
-      target :: Maybe DT.Preterm
+      target :: Maybe DT.Preterm,
+      contextWithTexpr :: [F.Expr],
+      targetWithTexpr :: Maybe F.Expr,
+      negatedWithTexpr :: Maybe F.Expr
     } deriving (Show,Eq)
 
 instance Default Info where
-  def = Info{dneUrl = "",efqUrl ="",strnegated = "",negated_conjecture = Nothing,language = Nothing,status=Nothing,prelst=[],filename = "",dneResult = UNKNOWN,efqResult = UNKNOWN,strcontext = "",strtarget = "",strprocessed = "",note = "",context=[],target=Nothing}
+  def = Info{contextWithTexpr = [],targetWithTexpr=Nothing,negatedWithTexpr = Nothing,dneUrl = "",efqUrl ="",strnegated = "",negated_conjecture = Nothing,language = Nothing,status=Nothing,prelst=[],filename = "",dneResult = UNKNOWN,efqResult = UNKNOWN,strcontext = "",strtarget = "",strprocessed = "",note = "",context=[],target=Nothing}
 
 tptpdir :: String
 tptpdir = "../../TPTP-v7.3.0/"

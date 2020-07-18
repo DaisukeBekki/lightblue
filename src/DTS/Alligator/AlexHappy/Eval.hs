@@ -106,14 +106,14 @@ updateInfo baseio expr = do
         let either_pre = processf  f (filter (/= "") $ map fst $TI.prelst base)
             base2 = base {TI.language = Just (read lan ::TI.Language)}
         case either_pre of
-          Right (conlst',term) ->
+          Right (ast,(conlst',term)) ->
             let conlst = map fst conlst'
                 prelst' = foldr updateConLst' (TI.prelst base) conlst
                 base' = contextUpdate conlst' base2
                 term' = foldr (\(con,varnum) preterm -> A.subst preterm (DT.Var varnum) (DT.Con $ Te.pack con)) term prelst'
             in case read sort :: TI.Role of
               TI.Conjecture -> return $ base' { TI.prelst = prelst'}{ TI.target = Just term'} {TI.strtarget = f}
-              TI.NegatedConjecture -> return $ base'  { TI.prelst = prelst'}{ TI.negated_conjecture = Just $ case TI.negated_conjecture base' of Just term1 -> DT.Sigma (DT.Not term1) term' ; Nothing -> term' } {TI.strnegated =  "(~("++TI.strnegated base'++"))& " ++ f }
+              TI.NegatedConjecture -> return $ base'  { TI.prelst = prelst'}{ TI.negated_conjecture = Just $ case TI.negated_conjecture base' of Just term1 -> DT.Sigma (DT.Not term1) term' ; Nothing -> DT.Not term' } {TI.strnegated =  "(~("++TI.strnegated base'++"))& " ++ f }
               TI.Plain -> undefined
               TI.Type -> undefined
               TI.RUnknown -> undefined
@@ -145,21 +145,21 @@ updateInfoAboutFormulae baseio expr = do
         let either_pre = processf  f (filter (/= "") $ map fst $TI.prelst base)
             base2 = base {TI.language = Just (read lan ::TI.Language)}
         case either_pre of
-          Right (conlst',term) ->
+          Right (ast,(conlst',term)) ->
             let conlst = map fst conlst'
                 prelst' = foldr updateConLst' (TI.prelst base) conlst
                 base' =contextUpdate conlst' base2
                 term' = foldr (\(con,varnum) preterm -> A.subst preterm (DT.Var varnum) (DT.Con $ Te.pack con)) term prelst'
             in case read sort :: TI.Role of
-              TI.Conjecture -> return $ base' { TI.target = Just term'} {TI.strtarget = f}
-              TI.NegatedConjecture -> return $ base' { TI.negated_conjecture = Just $ case TI.negated_conjecture base' of Just term1 -> DT.Sigma term1 term' ; Nothing -> term' } {TI.strnegated =  TI.strnegated base'++"& " ++ f }
+              TI.Conjecture -> return $ base' { TI.target = Just term'} {TI.strtarget = f}{TI.targetWithTexpr=Just ast}
+              TI.NegatedConjecture -> return $ base' { TI.negated_conjecture = Just $ case TI.negated_conjecture base' of Just term1 -> DT.Sigma (DT.Not term1) term' ; Nothing -> DT.Not term' }{TI.negatedWithTexpr= Just $ case TI.negatedWithTexpr base' of Just term1 -> F.Tbinary F.Tand (F.Tneg term1) ast ; Nothing -> F.Tneg ast} {TI.strnegated =  "(~("++TI.strnegated base'++"))"++"& " ++ f }
               TI.Plain -> undefined
               TI.Type -> undefined
               TI.RUnknown -> undefined
               sort' ->
                 if TI.isAxiomLike sort'
                 then
-                  return $ base' { TI.prelst = ("axiom",0):(map (\(str,int) -> (str,int + 1)) prelst')} {TI.context = term' : TI.context base} {TI.strcontext =  TI.strcontext base ++ "," ++ f}
+                  return $ base' { TI.prelst = ("axiom",0):(map (\(str,int) -> (str,int + 1)) prelst')} {TI.context = term' : TI.context base} {TI.strcontext =  TI.strcontext base ++ "," ++ f}{TI.contextWithTexpr = ast : TI.contextWithTexpr base}
                 else undefined
           Left err ->
             return $ base2 {TI.note = "error in process" ++ f}
@@ -196,13 +196,15 @@ evalInfo expr fname = do
   base <- setInfo expr fname
   return base
 
-processf  :: String -> [String] -> Either String ([(String,Int)] , DT.Preterm)
+processf  :: String -> [String] -> Either String (F.Expr,([(String,Int)] , DT.Preterm))
 processf  input conlst = do
   let ast' = PF.parseExpr input
   case ast' of
     -- Right ast ->D.trace input Right $ t2dt  ast $map (\x -> (x,0)) conlst
-    Right ast -> Right $ t2dt  ast $map (\x -> (x,0)) conlst
+    Right ast -> Right (ast, t2dt  ast $map (\x -> (x,0)) conlst)
     Left err -> Left $ "Error in processf @" ++ input
+
+
 
 t2dt  :: F.Expr
   -> [(String,Int)]  -- ^ for bound variables in (F.Tall,F.Texist)
