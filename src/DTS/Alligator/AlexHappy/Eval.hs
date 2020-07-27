@@ -64,6 +64,11 @@ generateType :: Int -> DT.Preterm
 generateType 0 = DT.Type
 generateType num = DT.Pi DT.Type (generateType (num-1))
 
+generateExpr :: Int -> F.Expr
+generateExpr 0 = F.Tletter "prop"
+generateExpr num = F.Tbinary F.Timp (F.Tletter "type") (generateExpr (num - 1))
+
+
 contextUpdate :: [(String,Int)] -> TI.Info ->  TI.Info
 contextUpdate conlst' base =
   let conlst = filter ((/= 0).snd) conlst'
@@ -75,14 +80,17 @@ contextUpdate conlst' base =
             Nothing ->
               let prelst2 = {-D.trace ("beforecontextUpdate context : "++ (show $ (TI.context info)) ++ "\nprelst : "++ (show $(TI.prelst info))++"\nconlst"++(show $ conlst')++"\n")
                     $-}dropWhile ((/= "").fst) $ TI.prelst info
-                  prelst' =  (takeWhile ((/="").fst) (TI.prelst info)) ++ ((var,(snd . head)  prelst2) : tail prelst2)
-                  context' = take ((snd . head)  prelst2 ) (TI.context info) ++ [generateType argnum] ++ drop ((snd . head)  prelst2 + 1) (TI.context info)
+                  targetNum =  (snd . head)  prelst2
+                  prelst' =  takeWhile ((/="").fst) (TI.prelst info) ++ ((var,targetNum) : tail prelst2)
+                  context' = take targetNum (TI.context info) ++ [generateType argnum] ++ drop (targetNum+ 1) (TI.context info)
+                  contextWithTexpr' = take targetNum (TI.contextWithTexpr info) ++ [generateExpr argnum] ++ drop (targetNum+ 1) (TI.contextWithTexpr info)
               in
-                 {-D.trace ("contextUpdate context : "++ (show $ context') ++ "\nprelst : "++ (show $prelst')) $-}info {TI.context = context'} {TI.prelst = prelst'}
+                 info {TI.context = context'} {TI.prelst = prelst'}{TI.contextWithTexpr = contextWithTexpr'}
             Just num ->
               let context' = take num (TI.context info) ++ [generateType argnum] ++ drop (num+1) (TI.context info)
+                  contextWithTexpr' = take num (TI.contextWithTexpr info) ++ [generateExpr argnum] ++ drop (num+1) (TI.contextWithTexpr info)
               in
-                 info {TI.context = context'}
+                 info {TI.context = context'}{TI.contextWithTexpr = contextWithTexpr'}
       )
       base
       conlst
@@ -98,7 +106,7 @@ updateInfo baseio expr = do
     S.Status a
       -> return $ base {TI.status = Just (read a :: TI.Status)}
     S.PreNum a
-      ->  return $ base  {TI.prelst = L.zip (L.replicate a "") [0..(a-1)] ++ map (\(str,int) -> (str,int + a)) (TI.prelst base)} {TI.context = L.replicate a DT.Type  ++ TI.context base}
+      ->  return $ base  {TI.prelst = L.zip (L.replicate a "") [0..(a-1)]  ++ map (\(str,int) -> (str,int + a)) (TI.prelst base)} {TI.context = L.replicate a DT.Type  ++ TI.context base}{TI.contextWithTexpr = L.replicate a (F.Tletter "type")  ++ TI.contextWithTexpr base}
     S.Include a
       -> importAxiomio a baseio
     S.Formula lan name sort f
@@ -120,7 +128,7 @@ updateInfo baseio expr = do
               sort' ->
                 if TI.isAxiomLike sort'
                 then
-                  return  $base' { TI.prelst = ("axiom",0):map (\(str,int) -> (str,int + 1)) prelst'} {TI.context = term' : TI.context base} {TI.strcontext =  TI.strcontext base ++ "," ++ f}
+                  return  $base' { TI.prelst = ("axiom",0):map (\(str,int) -> (str,int + 1)) prelst'} {TI.context = term' : TI.context base} {TI.contextWithTexpr = ast : TI.contextWithTexpr base}{TI.strcontext =  TI.strcontext base ++ "," ++ f}
                 else undefined
           Left err ->
             return $ base2 {TI.note = "error in process" ++ f}
@@ -159,7 +167,7 @@ updateInfoAboutFormulae baseio expr = do
               sort' ->
                 if TI.isAxiomLike sort'
                 then
-                  return $ base' { TI.prelst = ("axiom",0):(map (\(str,int) -> (str,int + 1)) prelst')} {TI.context = term' : TI.context base} {TI.strcontext =  TI.strcontext base ++ "," ++ f}{TI.contextWithTexpr = ast : TI.contextWithTexpr base}
+                  return $ base' { TI.prelst = ("axiom",0):map (\(str,int) -> (str,int + 1)) prelst'} {TI.context = term' : TI.context base}{TI.contextWithTexpr = ast : TI.contextWithTexpr base} {TI.strcontext =  TI.strcontext base ++ "," ++ f}{TI.contextWithTexpr = ast : TI.contextWithTexpr base}
                 else undefined
           Left err ->
             return $ base2 {TI.note = "error in process" ++ f}
@@ -179,16 +187,15 @@ gettarget info =  fromMaybe DT.Bot $ TI.target info
 
 setInfo :: [S.Expr] -> String -> IO TI.Info
 setInfo expr fname= do
-    x2 <- foldl updateInfo (return $ def{TI.context = [DT.Type,DT.Top]}{TI.prelst=[("false",0),("top",1)]}) expr--(return $ def{prelst = [("",0)]}{context = [DT.Type,DT.Top]}) expr
-    let (prelst',context) = unzip $filter (\((str,_),_) -> (str /= "") && (str /= "axiom")) $zip (TI.prelst x2) (TI.context x2)
+    x2 <- foldl updateInfo (return $ def{TI.context = [DT.Type,DT.Top]}{TI.contextWithTexpr = [F.Tletter "prop",F.Tneg $ F.Tletter "false"]}{TI.prelst=[("false",0),("top",1)]}) expr--(return $ def{prelst = [("",0)]}{context = [DT.Type,DT.Top]}) expr
+    let (prelst',contextcontextWithTexpr) = unzip $filter (\((str,_),_) -> (str /= "") && (str /= "axiom")) $zip (TI.prelst x2) $zip (TI.context x2) (TI.contextWithTexpr x2)
+        (context,contextWithTexpr) = unzip contextcontextWithTexpr
         prelst = zip (map fst prelst') [0..]
-    x <- foldl updateInfoAboutFormulae (return$ x2{TI.prelst=prelst}{TI.context=context}) expr
-
-        -- minnum = foldr (\num -> \minInLeft ->min minInLeft num) (length context) prelstnum
-        -- map fst $ filter (\(_,num) -> (num<minnum) || num `elem` (8:prelstnum)) $zip context [0..]
+    x <- foldl updateInfoAboutFormulae (return$ x2{TI.prelst=prelst}{TI.context=context}{TI.contextWithTexpr = contextWithTexpr}) expr
     let info = settarget x
+        prelstWithoutAxiomname = map (\(str,num) -> if str == "axiom" then ("axiom"++(show num),num) else (str,num) ) $TI.prelst info
     return $
-      info {TI.filename = fname}{TI.strcontext = if TI.strcontext x == "" then "" else tail $ TI.strcontext x} --{TI.strprocessed = if length (TI.context x) <=  100 then show $ A.Arrow (map A.arrowNotat {-[DT.Not DT.Top]-}(TI.context x)) (A.arrowNotat  $ {-DT.Top-}gettarget info) else ""}
+      info {TI.filename = fname}{TI.strcontext = if TI.strcontext x == "" then "" else tail $ TI.strcontext x} {TI.prelst = prelstWithoutAxiomname}--{TI.strprocessed = if length (TI.context x) <=  100 then show $ A.Arrow (map A.arrowNotat {-[DT.Not DT.Top]-}(TI.context x)) (A.arrowNotat  $ {-DT.Top-}gettarget info) else ""}
 
 
 evalInfo ::[S.Expr] -> String -> IO TI.Info
