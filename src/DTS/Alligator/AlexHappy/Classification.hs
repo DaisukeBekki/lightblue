@@ -269,15 +269,15 @@ compareCsv fname l1num l2num =do
       label = map
               (
                 \lst ->
-                  let f = case lst !! l1num of
-                            "" -> D.trace ("null in l"++(show l1num)++"@"++(head lst)) TI.UNKNOWN
-                            fw -> read fw :: TI.Result
-                      s = case lst !! l2num of
-                            "" -> D.trace ("null in l"++(show l2num)++"@"++(head lst))TI.UNKNOWN
-                            sw -> TI.statusToResult (read sw :: TI.Status)
-                  in (f,s)
+                    let f = case lst !! l1num of
+                              "" -> D.trace ("null in l"++(show l1num)++"@"++(head lst)) TI.UNKNOWN
+                              fw -> read fw :: TI.Result
+                        s = case lst !! l2num of
+                              "" -> D.trace ("null in l"++(show l2num)++"@"++(head lst))TI.UNKNOWN
+                              sw -> TI.statusToResult (read sw :: TI.Status)
+                    in (f,s)
               )
-              $tail csv
+              $filter (\lst -> length lst == 13) $tail csv
   return $getAssesmentAndConfusionMatrix label
 
 
