@@ -1,4 +1,4 @@
-module DTS.Alligator.AlexHappy.TPTP2Prolog where
+-- module DTS.Alligator.AlexHappy.TPTP2Prolog where
 
 import qualified DTS.Alligator.AlexHappy.Parser as P (parseExpr)
 import qualified DTS.Alligator.AlexHappy.Syntax as S
