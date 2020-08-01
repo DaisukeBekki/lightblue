@@ -1,5 +1,5 @@
 -- module DTS.Alligator.AlexHappy.TPTP2Prolog where
-
+import           System.Environment (getArgs)
 import qualified DTS.Alligator.AlexHappy.Parser as P (parseExpr)
 import qualified DTS.Alligator.AlexHappy.Syntax as S
 import qualified  DTS.Alligator.AlexHappy.Eval as E (evalInfo)
@@ -125,8 +125,10 @@ t2pl f =
 evalPl :: [S.Expr] -> String -> IO (Maybe (String,String,String))
 evalPl ast fname = do
   info <- E.evalInfo ast fname
-  contextWithTexpr <- D.trace (show $TI.contextWithTexpr info) $return $TI.contextWithTexpr info
-  prelst <- D.trace (show $TI.prelst info) $return $TI.prelst info
+  let contextWithTexpr = TI.contextWithTexpr info
+  {-contextWithTexpr <- D.trace (show $TI.contextWithTexpr info) $return $TI.contextWithTexpr info-}
+  let prelst = TI.prelst info
+  -- prelst <- {-D.trace (show $TI.prelst info) $-}return $TI.prelst info
   case TI.targetWithTexpr info of
     Just targetWithTexpr ->
       let pltarget = t2pl targetWithTexpr
@@ -135,9 +137,9 @@ evalPl ast fname = do
       in
         case status' of
           Just status ->
-            D.trace ("target"++show targetWithTexpr) $return $ Just (plcontext,pltarget,map toLower $show(TI.statusToResult status))
+            {-D.trace ("target"++show targetWithTexpr) $-}return $ Just (plcontext,pltarget,map toLower $show(TI.statusToResult status))
           Nothing ->
-            D.trace ("target"++show targetWithTexpr) $return $ Just (plcontext,pltarget,"unknown")
+            {-D.trace ("target"++show targetWithTexpr) $-}return $ Just (plcontext,pltarget,"unknown")
     Nothing ->
       return $ Just ("[]","(~(false))","unknown")
 
@@ -159,6 +161,8 @@ checkTheoremGen dir fname num = do
       return str
     Nothing -> return ""
 
+
+
 writePlInDir :: String -> IO ()
 writePlInDir dir = do
   c <- getDirectoryContents dir
@@ -176,4 +180,16 @@ writePlFile = do
   forM_ TI.dirs writePlInDir
   appendFile plFileName plFileTail
 
-main = writePlFile
+-- main = writePlFile
+main = do
+  args <- getArgs
+  let dir = head args
+  let fname = args !! 1
+  let num = read (args !! 2) :: Int
+  if isTestFile fname && fname `notElem` TI.exceptList
+  then do
+    str <- checkTheoremGen dir fname num
+    appendFile plFileName str
+    print $num+1
+  else
+    print num
