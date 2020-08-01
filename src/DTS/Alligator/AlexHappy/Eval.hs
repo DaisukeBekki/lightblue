@@ -179,7 +179,7 @@ settarget base =
     Just y -> base
     Nothing ->
       case TI.negated_conjecture base of
-        Just y -> base {TI.target = Just y} {TI.strtarget = if TI.strtarget base == "" then "" else tail $ TI.strnegated base}
+        Just y -> base {TI.target = Just y}{TI.targetWithTexpr = TI.negatedWithTexpr base} {TI.strtarget = if TI.strtarget base == "" then "" else tail $ TI.strnegated base}
         Nothing -> base {TI.note = "found nothing to prove"}
 
 gettarget :: TI.Info -> DT.Preterm
