@@ -186,10 +186,11 @@ main = do
   let dir = head args
   let fname = args !! 1
   let num = read (args !! 2) :: Int
+  let outputfname = args !! 3
   if isTestFile fname && fname `notElem` TI.exceptList
   then do
     str <- checkTheoremGen dir fname num
-    appendFile plFileName str
+    appendFile outputfname str
     print $num+1
   else
     print num
