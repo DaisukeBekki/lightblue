@@ -59,9 +59,9 @@ computeWith proofMode base =
 writeResults :: TI.Info -> IO TI.Info
 writeResults info = do
   appendFile TI.resultfname (  TI.filename info ++ "\t" ++"" ++ "\t" ++ (case TI.status info of Just sta -> show sta ; _ -> "") ++ "\t")
-  dneBase <- computeWith APT.WithDNE info
+  dneBase <- return info--computeWith APT.WithDNE info
   appendFile TI.resultfname (show (TI.dneResult dneBase) ++ "\t" ++ (TI.dneUrl dneBase) ++ "\t")
-  efqBase <- return dneBase--computeWith APT.WithEFQ dneBase  --時間削減のためにEFQ省略
+  efqBase <- {-return dneBase---}computeWith APT.WithEFQ dneBase  --時間削減のためにEFQ省略
   appendFile TI.resultfname (show (TI.efqResult efqBase) ++ "\t" ++ (TI.efqUrl efqBase) ++ "\t")
   appendFile TI.resultfname $(case TI.language info of Just lan -> show lan ; _ -> "") ++ "\t" ++ TI.strcontext info ++ "\t" ++TI.strtarget info ++ "\t" ++  TI.note info ++ "\t" ++ "\t" ++"\n"
   return efqBase
