@@ -190,7 +190,10 @@ main = do
   if isTestFile fname && fname `notElem` TI.exceptList
   then do
     str <- checkTheoremGen dir fname num
-    appendFile outputfname str
-    print $num+1
+    --appendFile outputfname str
+    -- print $num+1
+    putStrLn str
   else
-    print num
+    -- error "no parse"
+    -- print num
+    putStrLn ""
