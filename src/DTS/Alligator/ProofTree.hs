@@ -26,9 +26,9 @@ data Setting = Setting {mode :: ProofMode,falsum :: Bool,maxdepth :: Int,maxtime
 
 
 
-settingDef = Setting{mode = Plain,falsum = True,maxdepth = 9,maxtime = 100000}
-settingDNE = Setting{mode = WithDNE,falsum = True,maxdepth = 9,maxtime = 100000}
-settingEFQ = Setting{mode = WithEFQ,falsum = True,maxdepth = 9,maxtime = 100000}
+settingDef = Setting{mode = Plain,falsum = True,maxdepth = 8,maxtime = 100000}
+settingDNE = Setting{mode = WithDNE,falsum = True,maxdepth = 8,maxtime = 100000}
+settingEFQ = Setting{mode = WithEFQ,falsum = True,maxdepth = 8,maxtime = 100000}
 
 announce :: [J.Tree J.Judgement] -> IO T.Text
 announce [] = return $ T.pack "Nothing to announce"
