@@ -19,6 +19,8 @@ extra-source-files:
   - src/DTS/Alligator/AlexHappy/Parser.y
   - src/DTS/Alligator/AlexHappy/Lexerf.x
   - src/DTS/Alligator/AlexHappy/Parserf.y
+  - src/DTS/Alligator/AlexHappy/GetDepth/Lexer.x
+  - src/DTS/Alligator/AlexHappy/GetDepth/Parser.y
 
 
 dependencies:
@@ -72,6 +74,11 @@ library:
   - DTS.Alligator.AlexHappy.Syntaxf
   - DTS.Alligator.AlexHappy.FileParser
   - DTS.Alligator.AlexHappy.Classification
+  - DTS.Alligator.AlexHappy.GetDepth.Lexer
+  - DTS.Alligator.AlexHappy.GetDepth.Parser
+  - DTS.Alligator.AlexHappy.GetDepth.Syntax
+  - DTS.Alligator.AlexHappy.GetDepth.Eval
+  - DTS.Alligator.AlexHappy.GetDepth.FileParser
 
 
 
@@ -99,6 +106,15 @@ executables:
   tptp2pl:
     source-dirs:  app
     main: ../src/DTS/Alligator/AlexHappy/TPTP2Prolog.hs
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies: lightblue >= 0.2.0.4
+
+  tptp2depth:
+    source-dirs:  app
+    main: ../src/DTS/Alligator/AlexHappy/GetDepth/TPTPTest.hs
     ghc-options:
     - -threaded
     - -rtsopts
