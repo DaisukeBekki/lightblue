@@ -1,0 +1,32 @@
+dne
+	 YES	 NO	 UNKNOWN	
+ YES	 71	 0	 1		
+ NO	 0	 4	 0		
+ UNKNOWN	 232	 702	 224		
+
+Scores:
+	 Prec 	 Rec 	 F1 	 Supp 	
+ YES	 0.986	 0.234	 0.379	 303	
+ NO	 1.000	 0.006	 0.011	 706	
+ UNKNOWN	 0.193	 0.996	 0.324	 225	
+
+ micro	 0.242	 0.242	 0.242	 1234	
+ macro	 0.727	 0.412	 0.238	 1234	
+ w-avg	 0.850	 0.242	 0.158	 1234	
+
+efq
+	 YES	 NO	 UNKNOWN	
+ YES	 0	 0	 0		
+ NO	 0	 0	 0		
+ UNKNOWN	 303	 706	 225		
+
+Scores:
+	 Prec 	 Rec 	 F1 	 Supp 	
+ YES	 1.000	 0.000	 0.000	 303	
+ NO	 1.000	 0.000	 0.000	 706	
+ UNKNOWN	 0.182	 1.000	 0.308	 225	
+
+ micro	 0.182	 0.182	 0.182	 1234	
+ macro	 0.727	 0.333	 0.103	 1234	
+ w-avg	 0.851	 0.182	 0.056	 1234	
+
