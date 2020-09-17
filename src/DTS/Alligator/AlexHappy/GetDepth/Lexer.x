@@ -72,6 +72,8 @@ tokens :-
     { \s -> TokenNumOf "clauses"}
   \% [$space]*Number [$space]+ of [$space]+ clause size
     { \s -> TokenNumOf "clause size"}
+  \% [$space]*Maximal [$space]+ clause [$space]+ size
+    { \s -> TokenNumOf "clause size"}
   \% [$space]*Number [$space]+ of [$space]+ functors
     { \s -> TokenNumOf "functors"}
   \% [$space]*Maximal [$space]+ term [$space]+ depth
