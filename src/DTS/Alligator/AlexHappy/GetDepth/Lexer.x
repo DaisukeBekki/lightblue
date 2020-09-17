@@ -68,7 +68,7 @@ tokens :-
     { \s -> TokenNumOf "atoms"}
   \% [$space]* Number [$space]+ of [$space]+ variables
     { \s -> TokenNumOf "variables"}
-  \% [$space]*Number [$space]+ of [$space]+ clauses
+  \% [$space]* Syntax   : Number [$space]+ of [$space]+ clauses
     { \s -> TokenNumOf "clauses"}
   \% [$space]*Number [$space]+ of [$space]+ clause size
     { \s -> TokenNumOf "clause size"}
