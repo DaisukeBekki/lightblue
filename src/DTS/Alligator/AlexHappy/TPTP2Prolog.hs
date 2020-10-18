@@ -36,47 +36,66 @@ isTestFile :: String -> Bool
 isTestFile fname=
   any (\ex -> take (1 + length ex) (reverse fname) == reverse ('.':ex )) TI.testFileExtentions
 
-plContectGen :: [F.Expr] -> [(String,Int)] -> String
-plContectGen context prelst' =
+plContectGen :: [F.Expr] -> [(String,Int)] -> Int -> String
+plContectGen context prelst' cnum =
   let prelst = filter ((`notElem` ["false","top"]). fst) prelst'
-      contextLst = map
-        (\(conName,contextId) ->
-          let contextElement = context !! contextId
-              f = t2pl contextElement
-          in
-            (if isUpper $head conName then "big"++conName else conName) ++ " : ("++f ++ ")"
-        )
-        prelst
+      -- contextLst = map
+      --   (\(conName,contextId) ->
+      --     let contextElement = context !! contextId
+      --         f = t2pl contextElement
+      --     in
+      --       (if isUpper $head conName then "big"++conName else conName) ++ " : ("++f ++ ")"
+      --   )
+      --
+      --   prelst
+-- in foldl (\(a,n) -> \ b -> let b' = case var of F.TFormula f' -> let (f1,n1) = t2pl f' n' in "( "++ f1 ++" )" ; F.TDef _ _ -> "" in let a' = a ++ if b' == "" then "" else "-" ++ b' in (a',n+1)) (s,n') args
   in
-    (if null contextLst then "[ type:set " else init $ init $ foldr (\a b -> b ++ a ++ " , " ) "[ type:set ," contextLst) ++ "]"
+    let (lsthead,num) =
+            if null prelst
+              then ("[ type:set   ",cnum)
+              else
+                foldr
+                  (
+                    \(conName,contextId) (a,n) ->
+                        let contextElement = context !! contextId
+                            (f,n') = t2pl contextElement n
+                        in
+                          let b' =  (if isUpper $head conName then "big"++conName else conName) ++ " : ("++f ++ ")"
+                          in
+                            (b' ++ a ++ " , ",n')
+                  )
+                  ("[ type:set ,",cnum)
+                  prelst
+    in init $ init $ lsthead++"]"
 
 --(((p & q) -> r) -> (p -> q -> r))
-t2pl :: F.Expr -> String
-t2pl f =
+t2pl :: F.Expr -> Int -> (String,Int)
+t2pl f cnum=
   case f of
-    (F.Tletter con) -> "( "++(if isUpper $head con then "big"++con else con)++" )"
-    F.Ttrue -> "( ~false )"
-    F.Tfalse -> "( false )"
+    (F.Tletter con) -> ("( "++(if isUpper $head con then "big"++con else con)++" )",cnum)
+    F.Ttrue -> ("( pi( False : false,false) )",cnum)
+    F.Tfalse -> ("( false )",cnum)
     (F.Tneg formula) ->
-      let s1 = t2pl formula in
-      "~( "++s1++" )"
+      let (s1,n1) = t2pl formula cnum  in
+      ("pi( C"++show n1++" : "++s1++" , false )",n1+1)
     F.Tbinary biop f1 f2 ->
       let
-          s1'  = t2pl f1
-          s2'  = t2pl f2
+          (s1',n1')  = t2pl f1 cnum
+          (s2',n2')  = t2pl f2 n1'
           s1 = "( "++s1'++" )"
           s2 = "( "++s2'++" )" in
       case biop of
-        F.Tand ->  s1 ++ " & " ++ s2
-        F.Tor -> s1 ++ " \\/ " ++ s2
-        F.Timp -> s1 ++ " -> " ++ s2
-        F.Tequiv -> "( " ++ s1 ++ " -> " ++ s2 ++" ) & ( "++s2 ++ " -> "++ s1++" )"
+        F.Tand ->  ("( sigma( C"++show n2'++" : "++s1 ++ " , " ++ s2 ++" )",n2'+1)
+        F.Tor -> ("( pi( C"++show n2'++" : (sigma( C"++(show $n2'+1)++" : pi( C"++(show $n2'+2)++":"++s1++" , false) , pi( C"++(show $n2'+3)++" : "++s2++" , false)) , false))",n2'+4)
+        F.Timp -> ("( pi( C"++show n2'++" : "++s1++" , "++s2++" ))",n2'+1)
+        F.Tequiv -> ("(sigma( C"++show n2'++" : pi( C"++(show $n2'+1)++":"++s1++","++s2++") , pi( C"++(show $n2'+2)++" : "++s2++" , "++s1++") )",n2'+3)
     F.TApp f args->
-      let s' = t2pl f
+      let (s',n') = t2pl f cnum
           s = "( "++s'++" )"
-          plargs = map (\var -> case var of F.TFormula f' -> let f1 = t2pl f' in "( "++ f1 ++" )" ; F.TDef _ _ -> "") args
-      in foldl (\a b -> a ++ if b == "" then "" else "-"++b) s plargs
-    F.Tall [] f -> t2pl f
+          -- plargs = map (\var -> case var of F.TFormula f' -> let (f1,n1) = t2pl f' n' in "( "++ f1 ++" )" ; F.TDef _ _ -> "") args
+      in foldl (\(a,n) -> \ b -> let b' = case b of F.TFormula f' -> let (f1,n1) = t2pl f' n' in "( "++ f1 ++" )" ; F.TDef _ _ -> "" in let a' = a ++ if b' == "" then "" else "-" ++ b' in (a',n+1)) (s,n') args
+      -- in foldl (\a b -> a ++ if b == "" then "" else "-"++b) s plargs
+    F.Tall [] f -> let (s1,n1) = t2pl f cnum in (s1,n1)
     F.Tall (var:r) f->
       -- let s' = t2pl f
       --     s = "( "++s'++" )"
@@ -90,16 +109,16 @@ t2pl f =
       -- in
       --     foldl (\b (a1,a2) -> T.unpack $ T.replace (T.pack a1) (T.pack a2) (T.pack b)) s replaceTargets
       case var of
-        F.TDef _ _ -> D.trace "TDef in all" ""
+        F.TDef _ _ -> D.trace "TDef in all" ("",cnum)
         F.TFormula (F.Tletter var) ->
-          let s=  t2pl (F.Tall r f)
+          let (s,n)=  t2pl (F.Tall r f) cnum
               varR = map toUpper var
               f' = T.unpack $T.replace (T.pack var) (T.pack varR) (T.pack s)
           in
-          "pi("++varR++":type"++","++f'++ ")"
-        F.TFormula _ -> D.trace "Tformula in all" ""
+          ("pi( "++varR++" : type"++" , "++f'++ " )",n)
+        F.TFormula _ -> D.trace "Tformula in all" ("",cnum)
     F.Texist [] f ->
-      t2pl f
+      let (s,n) = t2pl f cnum in (s,n)
     F.Texist (var:r) f->
       -- let s = "( "++t2pl f++" )"
       --     replaceTarget var=
@@ -112,14 +131,14 @@ t2pl f =
       -- in
       --     foldl (\b (a1,a2) -> T.unpack $ T.replace (T.pack a1) (T.pack a2) (T.pack b)) s replaceTargets
       case var of
-        F.TDef _ _ -> D.trace "TDef in all" ""
+        F.TDef _ _ -> D.trace "TDef in all" ("",cnum)
         F.TFormula (F.Tletter var) ->
-          let s=  t2pl (F.Texist r f)
+          let (s,n)=  t2pl (F.Texist r f) cnum
               varR = map toUpper var
               f' = T.unpack $T.replace (T.pack var) (T.pack varR) (T.pack s)
           in
-          "sigma("++varR++":type"++","++f'++ ")"
-        F.TFormula _ -> D.trace "Tformula in all" ""
+          ("sigma( "++varR++" : type"++" , "++f'++ " )",n)
+        F.TFormula _ -> D.trace "Tformula in all" ("",cnum)
 
 
 evalPl :: [S.Expr] -> String -> IO (Maybe (String,String,String))
@@ -131,8 +150,8 @@ evalPl ast fname = do
   -- prelst <- {-D.trace (show $TI.prelst info) $-}return $TI.prelst info
   case TI.targetWithTexpr info of
     Just targetWithTexpr ->
-      let pltarget = t2pl targetWithTexpr
-          plcontext = plContectGen contextWithTexpr prelst
+      let (pltarget,cnum) = t2pl targetWithTexpr 0
+          plcontext = plContectGen contextWithTexpr prelst cnum
           status' = TI.status info
       in
         case status' of
