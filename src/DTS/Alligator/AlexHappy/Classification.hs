@@ -277,7 +277,7 @@ compareCsv fname l1num l2num =do
                               sw -> TI.statusToResult (read sw :: TI.Status)
                     in (f,s)
               )
-              $filter (\lst -> length lst == 13) $tail csv
+              $filter (\lst -> length lst > l1num) $tail csv
   return $getAssesmentAndConfusionMatrix label
 
 
