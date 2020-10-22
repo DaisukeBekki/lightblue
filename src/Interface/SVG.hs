@@ -85,7 +85,7 @@ printSVGnode :: SVGnode -> T.Text
 printSVGnode (SVGnode i label) = T.concat [
   "e",
   T.pack $ show i,
-  "[fontname=\"Helvetica,sans-Serif\", fontsize=12, shape = plain, label = \"",
+  "[fontname=\"Helvetica,sans-Serif\", fontsize=12, shape=plaintext, label=\"",
   label,
   "\"]\n"
   ]
