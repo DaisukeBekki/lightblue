@@ -128,7 +128,7 @@ fileParseTest fname = do
   else
     putStrLn $fname ++ "\n\t"  ++ (TI.note base)
 
---shでやること : csvHeaderをかく。ファイル名を指定する
+
 main = do
   args <- getArgs
   let fnum = if null args then "" else (head args)
