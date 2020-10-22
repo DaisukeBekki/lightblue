@@ -128,7 +128,7 @@ fileParseTest fname = do
   else
     putStrLn $fname ++ "\n\t"  ++ (TI.note base)
 
-
+--shでやること : csvHeaderをかく。ファイル名を指定する
 main = do
   args <- getArgs
   let fnum = if null args then "" else (head args)
@@ -136,6 +136,9 @@ main = do
   let outputfile = TI.resultfname++fnum++".csv"
   let fname = if null args then "../../TPTP-v7.3.0/Problems/SYN/dummy.p" else args !! 2
   let yesNoUnknown = if null args then TI.YES else ((read $args !! 3) :: TI.Result)
+  -- writeFile outputfile csvHeader
+  -- let dir = "../../TPTP-v7.3.0/Problems/SYN/"
+  -- c <- getDirectoryContents dir
   let toBeTested= case yesNoUnknown of TI.YES -> fname `elem` TI.yesList ; TI.NO -> fname `elem` TI.noList ; TI.UNKNOWN -> fname `notElem` (TI.yesList++TI.noList++TI.exceptList) && isTestFile fname
   if toBeTested
   then do
