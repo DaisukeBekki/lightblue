@@ -55,25 +55,33 @@ computeWith proofMode base depth=
     --     justNo <- timeout TI.timelimit $ answerIs TI.NO proofMode (DT.Not conjecture) base depth
     --     return $ Data.Maybe.fromMaybe base justNo
     Just conjecture -> do
-      yes <- answerIs TI.YES proofMode conjecture base depth
+      justYes <- timeout TI.timelimit $ answerIs TI.YES proofMode conjecture base depth
+      let yes = Data.Maybe.fromMaybe base justYes
+      -- yes <- answerIs TI.YES proofMode conjecture base depth
       let isYes =case proofMode of
             APT.WithDNE -> TI.dneResult yes == TI.YES
             APT.WithEFQ -> TI.efqResult yes == TI.YES
             APT.Plain -> undefined
-      if isYes then
+      if isYes then do
         return yes
-      else
-        answerIs TI.NO proofMode (DT.Not conjecture) base depth
+      else do
+        justNo <- timeout TI.timelimit $ answerIs TI.NO proofMode (DT.Not conjecture) base depth
+        return $ Data.Maybe.fromMaybe base justNo
+        -- answerIs TI.NO proofMode (DT.Not conjecture) base depth
 
 
 writeResults :: TI.Info -> Int -> String -> IO TI.Info
 writeResults info depth output = do
-  appendFile output (  TI.filename info ++ "\t" ++"" ++ "\t" ++ (case TI.status info of Just sta -> show sta ; _ -> "") ++ "\t")
+  -- appendFile output (  TI.filename info ++ "\t" ++"" ++ "\t" ++ (case TI.status info of Just sta -> show sta ; _ -> "") ++ "\t")
+  putStr (  TI.filename info ++ "\t" ++"" ++ "\t" ++ (case TI.status info of Just sta -> show sta ; _ -> "") ++ "\t")
   dneBase <- computeWith APT.WithDNE info depth
-  appendFile output (show (TI.dneResult dneBase) ++ "\t" ++ (TI.dneUrl dneBase) ++ "\t")
+  -- appendFile output (show (TI.dneResult dneBase) ++ "\t" ++ (TI.dneUrl dneBase) ++ "\t")
+  putStr (show (TI.dneResult dneBase) ++ "\t" ++ (TI.dneUrl dneBase) ++ "\t")
   efqBase <- return dneBase --computeWith APT.WithEFQ dneBase  --時間削減のためにEFQ省略
-  appendFile output (show (TI.efqResult efqBase) ++ "\t" ++ (TI.efqUrl efqBase) ++ "\t")
-  appendFile output $(case TI.language info of Just lan -> show lan ; _ -> "") ++ "\t" ++ TI.strcontext info ++ "\t" ++TI.strtarget info ++ "\t" ++  TI.note info ++ "\t" ++ "\t" ++"\n"
+  -- appendFile output (show (TI.efqResult efqBase) ++ "\t" ++ (TI.efqUrl efqBase) ++ "\t")
+  putStr (show (TI.efqResult efqBase) ++ "\t" ++ (TI.efqUrl efqBase) ++ "\t")
+  -- appendFile output $(case TI.language info of Just lan -> show lan ; _ -> "") ++ "\t" ++ TI.strcontext info ++ "\t" ++TI.strtarget info ++ "\t" ++  TI.note info ++ "\t" ++ "\t" ++"\n"
+  putStr $(case TI.language info of Just lan -> show lan ; _ -> "") ++ "\t" ++ TI.strcontext info ++ "\t" ++TI.strtarget info ++ "\t" ++  TI.note info ++ "\t" ++ "\t" ++"\n"
   return efqBase
 
 generateCsvRow :: TI.Info -> String
@@ -110,7 +118,8 @@ testInfoDir dir = do
       >>(
         do
           testInfoFile fname 9 (TI.resultfname++".csv")
-          appendFile TI.resultfname "")
+          -- appendFile TI.resultfname ""
+          putStr "")
 
 parseTest dir = do
   c <- getDirectoryContents dir
@@ -131,20 +140,20 @@ fileParseTest fname = do
 --shでやること : csvHeaderをかく。ファイル名を指定する
 main = do
   args <- getArgs
-  let fnum = if null args then "" else (head args)
-  let depth = if null args then 9 else ((read $args !! 1) :: Int)
+  let fnum = if null args then "" else head args
   let outputfile = TI.resultfname++fnum++".csv"
+  let depth = if null args then 9 else ((read $args !! 1) :: Int)
   let fname = if null args then "../../TPTP-v7.3.0/Problems/SYN/dummy.p" else args !! 2
   let yesNoUnknown = if null args then TI.YES else ((read $args !! 3) :: TI.Result)
-  -- writeFile outputfile csvHeader
-  -- let dir = "../../TPTP-v7.3.0/Problems/SYN/"
-  -- c <- getDirectoryContents dir
   let toBeTested= case yesNoUnknown of TI.YES -> fname `elem` TI.yesList ; TI.NO -> fname `elem` TI.noList ; TI.UNKNOWN -> fname `notElem` (TI.yesList++TI.noList++TI.exceptList) && isTestFile fname
   if toBeTested
   then do
     testInfoFile fname depth outputfile
-    appendFile outputfile ""
-  else appendFile outputfile ""
+    -- appendFile outputfile ""
+    putStr ""
+  else
+    -- appendFile outputfile ""
+    putStr ""
 
 
   -- let fnames = TI.yesList ++ TI.noList ++ (filter (\x -> x `notElem` (TI.yesList++TI.noList)) $ filter (`notElem` TI.exceptList) $ map (dir ++ ) $filter isTestFile c)
@@ -157,8 +166,8 @@ main = do
   --         appendFile outputfile "")
 
 
-writeInfoCsv fnum= do
-  writeFile (TI.resultfname++fnum++".csv") csvHeader
-  forM_ TI.dirs testInfoDir
+-- writeInfoCsv fnum= do
+--   writeFile (TI.resultfname++fnum++".csv") csvHeader
+--   forM_ TI.dirs testInfoDir
   -- result <- map testInfoDir dirs
   -- print ""

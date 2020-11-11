@@ -5,7 +5,7 @@ import Data.Default (Default(..))
 import qualified DTS.DTT as DT
 
 timelimit :: Int
-timelimit =  60000000
+timelimit =  180000000
 
 data Language =
  THF -- ^ formulae in typed higher-order form
@@ -135,7 +135,7 @@ tptpdir :: String
 tptpdir = "../../TPTP-v7.3.0/"
 
 resultfname :: String
-resultfname = "DTS/Alligator/AlexHappy/output/result.csv"
+resultfname = "DTS/Alligator/AlexHappy/output/result"
 
 outputdir :: String
 outputdir = "DTS/Alligator/AlexHappy/output/"
@@ -153,7 +153,6 @@ yesList =
   "../../TPTP-v7.3.0/Problems/SYN/SYN974+1.p",
   "../../TPTP-v7.3.0/Problems/SYN/SYN942+1.p",
   "../../TPTP-v7.3.0/Problems/SYN/SYN925+1.p",
-  "../../TPTP-v7.3.0/Problems/SYN/SYN000+1.p",
   "../../TPTP-v7.3.0/Problems/SYN/SYN920+1.p",
   "../../TPTP-v7.3.0/Problems/SYN/SYN946+1.p",
   "../../TPTP-v7.3.0/Problems/SYN/SYN470+1.p",
