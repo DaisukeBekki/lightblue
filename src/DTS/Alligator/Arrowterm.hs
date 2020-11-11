@@ -7,6 +7,7 @@ module DTS.Alligator.Arrowterm
   a2dtJudgement,
   dt2aJudgement,
   aTreeTojTree,
+  jTreeToaTree,
   TEnv,
   envfromAJudgement,
   termfromAJudgement,
@@ -310,3 +311,25 @@ aTreeTojTree atree =
     J.CHK a b -> J.CHK (a2dtJudgement a) (aTreeTojTree b)
     J.SigE a b -> J.SigE (a2dtJudgement a) (aTreeTojTree b)
     J.NotF a b -> J.NotF (a2dtJudgement a) (aTreeTojTree b)
+
+jTreeToaTree :: J.Tree J.Judgement -> J.Tree AJudgement
+jTreeToaTree atree =
+  case atree of
+    J.Error a t -> J.Error (dt2aJudgement a) t
+    J.CON a -> J.CON $ dt2aJudgement a
+    J.VAR a -> J.VAR $ dt2aJudgement a
+    J.TypeF a -> J.TypeF $ dt2aJudgement a
+    J.TopF a -> J.TopF $ dt2aJudgement a
+    J.TopI a -> J.TopI $ dt2aJudgement a
+    J.BotF a -> J.BotF $ dt2aJudgement a
+    J.DREL a -> J.DREL $ dt2aJudgement a
+    J.PiF a b c -> J.PiF (dt2aJudgement a) (jTreeToaTree b) (jTreeToaTree c)
+    J.PiI a b c -> J.PiI (dt2aJudgement a) (jTreeToaTree b) (jTreeToaTree c)
+    J.PiE a b c -> J.PiE (dt2aJudgement a) (jTreeToaTree b) (jTreeToaTree c)
+    J.SigF a b c -> J.SigF (dt2aJudgement a) (jTreeToaTree b) (jTreeToaTree c)
+    J.SigI a b c -> J.SigI (dt2aJudgement a) (jTreeToaTree b) (jTreeToaTree c)
+    J.NotI a b c -> J.NotI (dt2aJudgement a) (jTreeToaTree b) (jTreeToaTree c)
+    J.NotE a b c -> J.NotE (dt2aJudgement a) (jTreeToaTree b) (jTreeToaTree c)
+    J.CHK a b -> J.CHK (dt2aJudgement a) (jTreeToaTree b)
+    J.SigE a b -> J.SigE (dt2aJudgement a) (jTreeToaTree b)
+    J.NotF a b -> J.NotF (dt2aJudgement a) (jTreeToaTree b)
