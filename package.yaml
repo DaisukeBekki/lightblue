@@ -79,6 +79,7 @@ library:
   - DTS.Alligator.AlexHappy.GetDepth.Syntax
   - DTS.Alligator.AlexHappy.GetDepth.Eval
   - DTS.Alligator.AlexHappy.GetDepth.FileParser
+  - DTS.Alligator.Problem
 
 
 
@@ -115,6 +116,15 @@ executables:
   tptp2depth:
     source-dirs:  app
     main: ../src/DTS/Alligator/AlexHappy/GetDepth/TPTPTest.hs
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies: lightblue >= 0.2.0.4
+
+  test:
+    source-dirs:  app
+    main: ../src/DTS/Alligator/forTest.hs
     ghc-options:
     - -threaded
     - -rtsopts

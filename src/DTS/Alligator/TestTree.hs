@@ -14,10 +14,6 @@ import qualified Interface.HTML as HTML
 import qualified Data.Text.Lazy.IO as T
 
 
--- tabletimeout :: [Char]
--- tabletimeout =
---   justtimeout >>= (\x -> x)
-
 p :: DT.Preterm
 p = DT.Con $ T.pack "p"
 
@@ -30,7 +26,7 @@ r = DT.Con $ T.pack "r"
 dn_pr :: DT.Preterm
 dn_pr = DT.Pi (DT.Type) (DT.Pi (DT.Pi (DT.Pi (DT.Var 0) DT.Bot) DT.Bot) (DT.Var 1))
 
-classic = [dn_pr]
+classic = []
 
 transitive_7_18 :: [J.Tree J.Judgement]
 transitive_7_18 =
@@ -39,6 +35,14 @@ transitive_7_18 =
     var_env = [DT.Type,DT.Type,DT.Type]
     pre_type = DT.Pi (DT.Pi (DT.Var 2) (DT.Var 2)) (DT.Pi (DT.Pi (DT.Var 2) (DT.Var 2)) (DT.Pi (DT.Var 4) (DT.Var 3)))
   in prove var_env sig_env pre_type settingDef
+
+-- transitive_7_18 :: [J.Tree J.Judgement]
+transitive_7_18j =
+  let
+    sig_env = classic
+    var_env = [DT.Type,DT.Type,DT.Type]
+    pre_type = DT.Pi (DT.Pi (DT.Var 2) (DT.Var 2)) (DT.Pi (DT.Pi (DT.Var 2) (DT.Var 2)) (DT.Pi (DT.Var 4) (DT.Var 3)))
+  in map A.jTreeToaTree $prove var_env sig_env pre_type settingDef
 
 transitive :: [J.Tree J.Judgement]
 transitive =
@@ -452,12 +456,13 @@ a_girl_writes_a_thesis en gi th wr =
       (DT.Proj DT.Fst $ DT.Proj DT.Snd $ DT.Var 0)
     )
 
--- is_there_a_girl :: [J.Tree J.Judgement]
--- is_there_a_girl =
---   let sig_env = classic
---       var_env = [a_girl_writes_a_thesis (DT.Var 3) (DT.Var 2) (DT.Var 1) (DT.Var 0),write (DT.Var 2),thesis (DT.Var 1),girl (DT.Var 0),entity]
---       pre_type = there_is_a_girl (DT.Var 4) (DT.Var 3)
---   in prove var_env sig_env pre_type settingDef
+is_there_a_girl :: [J.Tree J.Judgement]
+is_there_a_girl =
+  let sig_env = classic
+      var_env = [a_girl_writes_a_thesis (DT.Var 3) (DT.Var 2) (DT.Var 1) (DT.Var 0),write (DT.Var 2),thesis (DT.Var 1),girl (DT.Var 0),entity]
+      pre_type = there_is_a_girl (DT.Var 4) (DT.Var 3)
+  in prove var_env sig_env pre_type settingDef
+
 not_false :: [J.Tree J.Judgement]
 not_false =
   let
