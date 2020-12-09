@@ -70,105 +70,63 @@ computeWith proofMode base depth=
         -- answerIs TI.NO proofMode (DT.Not conjecture) base depth
 
 
-writeResults :: TI.Info -> Int -> String -> IO TI.Info
-writeResults info depth output = do
+getResults :: TI.Info -> Int -> IO TI.Info
+getResults info depth = do
   -- appendFile output (  TI.filename info ++ "\t" ++"" ++ "\t" ++ (case TI.status info of Just sta -> show sta ; _ -> "") ++ "\t")
-  putStr (  TI.filename info ++ "\t" ++"" ++ "\t" ++ (case TI.status info of Just sta -> show sta ; _ -> "") ++ "\t")
+  -- putStr (  TI.filename info ++ "\t" ++"" ++ "\t" ++ (case TI.status info of Just sta -> show sta ; _ -> "") ++ "\t")
   dneBase <- computeWith APT.WithDNE info depth
   -- appendFile output (show (TI.dneResult dneBase) ++ "\t" ++ (TI.dneUrl dneBase) ++ "\t")
-  putStr (show (TI.dneResult dneBase) ++ "\t" ++ (TI.dneUrl dneBase) ++ "\t")
+  -- putStr (show (TI.dneResult dneBase) ++ "\t" ++ (TI.dneUrl dneBase) ++ "\t")
   efqBase <- return dneBase --computeWith APT.WithEFQ dneBase  --時間削減のためにEFQ省略
   -- appendFile output (show (TI.efqResult efqBase) ++ "\t" ++ (TI.efqUrl efqBase) ++ "\t")
-  putStr (show (TI.efqResult efqBase) ++ "\t" ++ (TI.efqUrl efqBase) ++ "\t")
+  -- putStr (show (TI.efqResult efqBase) ++ "\t" ++ (TI.efqUrl efqBase) ++ "\t")
   -- appendFile output $(case TI.language info of Just lan -> show lan ; _ -> "") ++ "\t" ++ TI.strcontext info ++ "\t" ++TI.strtarget info ++ "\t" ++  TI.note info ++ "\t" ++ "\t" ++"\n"
-  putStr $(case TI.language info of Just lan -> show lan ; _ -> "") ++ "\t" ++ TI.strcontext info ++ "\t" ++TI.strtarget info ++ "\t" ++  TI.note info ++ "\t" ++ "\t" ++"\n"
+  -- putStr $(case TI.language info of Just lan -> show lan ; _ -> "") ++ "\t" ++ TI.strcontext info ++ "\t" ++TI.strtarget info ++ "\t" ++  TI.note info ++ "\t" ++ "\t" ++"\n"
   return efqBase
 
-generateCsvRow :: TI.Info -> String
-generateCsvRow info =
-  TI.filename info ++ "\t" ++
-  "" ++ "\t" ++
-  (case TI.status info of Just sta -> show sta ; _ -> "") ++ "\t" ++
-  show (TI.dneResult info) ++ "\t"++
-  TI.dneUrl info ++ "\t"++
-  show (TI.efqResult info) ++ "\t"++
-  TI.efqUrl info ++ "\t"++
-  (case TI.language info of Just lan -> show lan ; _ -> "") ++ "\t" ++
-  TI.strcontext info ++ "\t" ++
-  TI.strtarget info ++ "\t" ++
-  TI.note info ++ "\t" ++ "\t" ++"\n"
+
+generateCsvRow :: TI.Info -> TI.Result -> String
+generateCsvRow info yesNoUnknown=
+  TI.filename info ++ "\\t" ++
+  (if (null $TI.dneUrl info) then "UNKNOWN" else show yesNoUnknown) ++ "\\t" ++
+  (case TI.status info of Just sta -> show sta ; _ -> "") ++ "\\t" ++
+  show (TI.dneResult info) ++ "\\t"++
+  TI.dneUrl info ++ "\\t"++
+  show (TI.efqResult info) ++ "\\t"++
+  TI.efqUrl info ++ "\\t"++
+  (case TI.language info of Just lan -> show lan ; _ -> "") ++ "\\t" ++
+  TI.strcontext info ++ "\\t" ++
+  TI.strtarget info ++ "\\t" ++
+  TI.note info  ++"\\n"
 
 
 -- csvHeader="file\tassestment\tstatus\tdneresult\tefqresult\tlanguage\tcontext\ttarget\tprocessed\tnote\t\n"
 
-testInfoFile :: String -> Int -> String -> IO TI.Info
-testInfoFile fname depth output= do
+testInfoFile :: String -> Int -> IO TI.Info
+testInfoFile fname depth= do
   base <- F.fileparseInfo fname
   let info = base {TI.filename = fname}
-  writeResults info depth output
+  getResults info depth
   -- return ((TI.dneResult info,TI.efqResult info),(case (TI.status info) of Just status -> Just $ TI.statusToResult status ; Nothing -> Nothing))
 
-testInfoDir :: String -> IO ()
-testInfoDir dir = do
-  c <- getDirectoryContents dir
-  let fnames = filter (`notElem` TI.exceptList) $ map (dir ++ ) $filter isTestFile c
-  forM_ (zip [1..] fnames)
-    $ \ (num,fname) ->
-      print (show num ++"/"++ show (length fnames))
-      >>(
-        do
-          testInfoFile fname 9 (TI.resultfname++".csv")
-          -- appendFile TI.resultfname ""
-          putStr "")
-
-parseTest dir = do
-  c <- getDirectoryContents dir
-  let fnames = filter (`notElem` TI.exceptList) $ map (dir ++ ) $filter isTestFile c
-  forM_
-      fnames
-      fileParseTest
-  putStrLn "end"
-
-fileParseTest fname = do
-  base <- F.fileparseInfo fname
-  if (TI.note base == "")
-  then
-    putStr ""
-  else
-    putStrLn $fname ++ "\n\t"  ++ (TI.note base)
-
 --shでやること : csvHeaderをかく。ファイル名を指定する
-main = do
-  args <- getArgs
-  let fnum = if null args then "" else head args
-  let outputfile = "DTS/Alligator/AlexHappy/output/TPTPoutput.csv"
-  let depth = if null args then 9 else ((read $args !! 1) :: Int)
-  let fname = if null args then "../../../TPTP-v7.3.0/Problems/SYN/dummy.p" else args !! 2
-  let yesNoUnknown = if null args then TI.YES else ((read $args !! 3) :: TI.Result)
+--stack run tptp 8 ../../TPTP-v7.3.0/Problems/SYN/SYN403+1.p YES
+
+hojo depth fname yesNoUnknown= do
   let toBeTested= case yesNoUnknown of TI.YES -> fname `elem` TI.yesList ; TI.NO -> fname `elem` TI.noList ; TI.UNKNOWN -> fname `notElem` (TI.yesList++TI.noList++TI.exceptList) && isTestFile fname
   if toBeTested
   then do
-    writeFile outputfile ""
-    testInfoFile fname depth outputfile
-    -- appendFile outputfile ""
-    putStr ""
-  else
-    -- appendFile outputfile ""
-    putStr ""
+    outputInfo <- testInfoFile fname depth
+    -- print outputInfo
+    let output = generateCsvRow outputInfo yesNoUnknown
+    return output
+  else do
+    return ""
 
-
-  -- let fnames = TI.yesList ++ TI.noList ++ (filter (\x -> x `notElem` (TI.yesList++TI.noList)) $ filter (`notElem` TI.exceptList) $ map (dir ++ ) $filter isTestFile c)
-  -- forM_ (zip [1..] fnames)
-  --   $ \ (num,fname) ->
-  --     print (show num ++"/"++ show (length fnames))
-  --     >>(
-  --       do
-  --         testInfoFile fname depth outputfile
-  --         appendFile outputfile "")
-
-
--- writeInfoCsv fnum= do
---   writeFile (TI.resultfname++fnum++".csv") csvHeader
---   forM_ TI.dirs testInfoDir
-  -- result <- map testInfoDir dirs
-  -- print ""
+main = do
+  args <- getArgs
+  let depth = if null args then 9 else ((read $args !! 0) :: Int)
+  let fname = if length args < 1 then "../../TPTP-v7.3.0/Problems/SYN/dummy.p" else args !! 1
+  let yesNoUnknown = if length args < 2 then TI.YES else ((read $args !! 2) :: TI.Result)
+  output <- hojo depth fname yesNoUnknown
+  putStrLn output
