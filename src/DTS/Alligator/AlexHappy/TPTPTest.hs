@@ -141,13 +141,14 @@ fileParseTest fname = do
 main = do
   args <- getArgs
   let fnum = if null args then "" else head args
-  let outputfile = TI.resultfname++fnum++".csv"
+  let outputfile = "DTS/Alligator/AlexHappy/output/TPTPoutput.csv"
   let depth = if null args then 9 else ((read $args !! 1) :: Int)
-  let fname = if null args then "../../TPTP-v7.3.0/Problems/SYN/dummy.p" else args !! 2
+  let fname = if null args then "../../../TPTP-v7.3.0/Problems/SYN/dummy.p" else args !! 2
   let yesNoUnknown = if null args then TI.YES else ((read $args !! 3) :: TI.Result)
   let toBeTested= case yesNoUnknown of TI.YES -> fname `elem` TI.yesList ; TI.NO -> fname `elem` TI.noList ; TI.UNKNOWN -> fname `notElem` (TI.yesList++TI.noList++TI.exceptList) && isTestFile fname
   if toBeTested
   then do
+    writeFile outputfile ""
     testInfoFile fname depth outputfile
     -- appendFile outputfile ""
     putStr ""
