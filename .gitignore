@@ -4,6 +4,8 @@
 *~
 *.txt
 *.bak*.*
+*.bak
+*.old
 \#*
 tex/
 JSeM/
