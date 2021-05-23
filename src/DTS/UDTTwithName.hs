@@ -101,14 +101,14 @@ instance SimpleText Preterm where
     Pi vname a b -> T.concat ["(", toText vname, ":", toText a, ")→ ", toText b]
     Not a -> T.concat["¬", toText a]
     Lam vname m -> T.concat ["λ", toText vname, ".", toText m]
-    App (App (Con cname) y) x -> 
+    App (App (Con cname) y) x ->
       T.concat [cname, "(", toText x, ",", toText y,")"]
-    App (App (App (Con cname) z) y) x -> 
+    App (App (App (Con cname) z) y) x ->
       T.concat [cname, "(", toText x, ",", toText y,",",toText z,")"]
-    App (App (App (App (Con cname) u) z) y) x -> 
+    App (App (App (App (Con cname) u) z) y) x ->
       T.concat [cname, "(", toText x, ",", toText y,",",toText z,",", toText u, ")"]
     App m n -> T.concat [toText m, "(", toText n, ")"]
-    Sigma vname a b -> case b of 
+    Sigma vname a b -> case b of
                          Top -> T.concat ["(", toText a, ")"]
                          _   -> T.concat ["(", toText vname, ":", toText a, ")× ", toText b]
     Pair m n  -> T.concat ["(", toText m, ",", toText n, ")"]
@@ -182,14 +182,14 @@ instance MathML Preterm where
     Pi vname a b -> T.concat ["<mrow><mfenced separators=':'>", toMathML vname, toMathML a, "</mfenced><mo>&rarr;</mo>", toMathML b, "</mrow>"]
     Not a -> T.concat["<mrow><mi>&not;</mi>", toMathML a, "</mrow>"]
     Lam vname m -> T.concat ["<mrow><mi>&lambda;</mi>", toMathML vname, "<mpadded lspace='-0.2em' width='-0.2em'><mo>.</mo></mpadded>", toMathML m, "</mrow>"]
-    App (App (Con cname) y) x -> 
+    App (App (Con cname) y) x ->
       T.concat ["<mrow><mtext>", cname, "</mtext><mfenced>", toMathML x, toMathML y,"</mfenced></mrow>"]
-    App (App (App (Con cname) z) y) x -> 
+    App (App (App (Con cname) z) y) x ->
       T.concat ["<mrow><mtext>", cname, "</mtext><mfenced>", toMathML x, toMathML y,toMathML z,"</mfenced></mrow>"]
-    App (App (App (App (Con cname) u) z) y) x -> 
+    App (App (App (App (Con cname) u) z) y) x ->
       T.concat ["<mrow><mtext>", cname, "</mtext><mfenced>", toMathML x, toMathML y, toMathML z, toMathML u, "</mfenced></mrow>"]
     App m n -> T.concat ["<mrow>", toMathML m, "<mfenced>", toMathML n, "</mfenced></mrow>"]
-    Sigma vname a b -> case b of 
+    Sigma vname a b -> case b of
                          Top -> toMathML a
                          _   -> T.concat ["<mfenced open='[' close=']'><mtable columnalign='left'><mtr><mtd>", toMathML vname, "<mo>:</mo>", toMathML a, "</mtd></mtr><mtr><mtd><mpadded height='-0.5em'>", toMathML b, "</mpadded></mtd></mtr></mtable></mfenced>"]
     Pair m n  -> T.concat ["<mfenced>", toMathML m, toMathML n, "</mfenced>"]
@@ -212,7 +212,7 @@ instance MathML Preterm where
 {- Judgment -}
 
 -- | A context is a list of pairs of a variable and a preterm.
-type Context = [(VarName,Preterm)] 
+type Context = [(VarName,Preterm)]
 
 instance SimpleText Context where
   toText = (T.intercalate ", ") . (map (\(nm,tm) -> T.concat [toText nm, ":", toText tm])) . reverse
@@ -240,7 +240,7 @@ printVerticalMathML cont = do
   T.putStrLn "</mtable>"
 
 -- | The data type for a judgment
-data Judgment = Judgment { 
+data Judgment = Judgment {
   context :: Context, -- ^ A context \Gamma in \Gamma \vdash M:A
   term :: Preterm,    -- ^ A term M in \Gamma \vdash M:A
   typ :: Preterm      -- ^ A type A in \Gamma \vdash M:A
@@ -254,4 +254,3 @@ instance Typeset Judgment where
 
 instance MathML Judgment where
   toMathML j = T.concat ["<mrow>", toMathML $ context j, "<mo>&vdash;</mo>", toMathML $ term j, "<mo>:</mo>", toMathML $ typ j, "</mrow>"]
-

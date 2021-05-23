@@ -1,0 +1,15 @@
+
+% Syntax   :
+%            Number of predicates  :    2 (   0 propositional; 3-3 arity)
+
+% Status : CounterSatisfiable
+% Comments :
+%--------------------------------------------------------------------------
+
+fof(ax1,axiom,(a|(~b))).
+
+fof(ax2,axiom,(~a)).
+
+fof(con,conjecture,(b)).
+
+%--------------------------------------------------------------------------

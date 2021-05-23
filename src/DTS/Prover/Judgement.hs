@@ -13,6 +13,7 @@ module DTS.Prover.Judgement
   getList,
   utreeToTeX,
   utreeToMathML,
+  treeToMathML,
   treeToTeX
 ) where
 
@@ -36,52 +37,52 @@ type TUEnv = [UD.Preterm]
 -- | haddock
 type TEnv = [DT.Preterm]
 
--- SUEnv : UDTTのシグネチャの型
+-- | SUEnv : UDTTのシグネチャの型
 type SUEnv = UD.Signature
 
--- getList : 環境 env の中で変数 var の値をすべて返す
+-- | getList : 環境 env の中で変数 var の値をすべて返す
 getList :: (Eq k, Show k) => [(k, v)] -> k -> [v]
 getList [] key = []
 getList ((k,v):xs) key
   | key == k  = v:(getList xs key)
   | otherwise = getList xs key
 
--- -- UJudgement : UDTTのジャッジメントの定義
+-- | UJudgement : UDTTのジャッジメントの定義
 data UJudgement =
   UJudgement TUEnv UD.Preterm UD.Preterm
     deriving (Eq, Show)
 
 instance Typeset UJudgement where
-  toTeX (UJudgement env preM preA) = 
+  toTeX (UJudgement env preM preA) =
     toTeX UD.Judgment {UD.context = env, UD.term = preM, UD.typ = preA}
 
 instance MathML UJudgement where
-  toMathML (UJudgement env preM preA) = 
+  toMathML (UJudgement env preM preA) =
     toMathML UD.Judgment {UD.context = env, UD.term = preM, UD.typ = preA}
 
 
--- Judgement : DTTのジャッジメントの定義
+-- | Judgement : DTTのジャッジメントの定義
 data Judgement =
   Judgement TEnv DT.Preterm DT.Preterm
     deriving (Eq, Show)
 
 instance Typeset Judgement where
-  toTeX (Judgement env preM preA) = 
+  toTeX (Judgement env preM preA) =
     let uenv = map DT.toUDTT env
         preM' = DT.toUDTT preM
         preA' = DT.toUDTT preA in
     toTeX UD.Judgment {UD.context = uenv, UD.term = preM', UD.typ = preA'}
 
 instance MathML Judgement where
-  toMathML (Judgement env preM preA) = 
+  toMathML (Judgement env preM preA) =
     let uenv = map DT.toUDTT env
         preM' = DT.toUDTT preM
         preA' = DT.toUDTT preA in
     toMathML UD.Judgment {UD.context = uenv, UD.term = preM', UD.typ = preA'}
 
 
--- UTree : UDTT用の木構造
-data UTree a = 
+-- | UTree : UDTT用の木構造
+data UTree a =
    UCHK a (UTree a)                -- (CHK) rule
  | UCON a                          -- (CON) rule
  | UVAR a                          -- (VAR) rule
@@ -105,49 +106,49 @@ data UTree a =
 --  UError a (UTree a) T.Text       -- for debug
 
 
--- utreeToTeX : UDTTのTree用のtoTeX関数
+-- | utreeToTeX : UDTTのTree用のtoTeX関数
 utreeToTeX :: (UTree UJudgement) -> T.Text
-utreeToTeX (UCHK judgement overTree) = 
+utreeToTeX (UCHK judgement overTree) =
   T.pack "\\nd[(\\underline{CHK})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (utreeToTeX overTree) `T.append` T.pack "}"
-utreeToTeX (UCON judgement) = 
+utreeToTeX (UCON judgement) =
   T.pack "\\nd[(\\underline{CON})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
-utreeToTeX (UVAR judgement) = 
+utreeToTeX (UVAR judgement) =
   T.pack "\\nd[(\\underline{VAR})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
-utreeToTeX (UTypeF judgement) = 
+utreeToTeX (UTypeF judgement) =
   T.pack "\\nd[(\\underline{typeF})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
-utreeToTeX (ASP judgement leftTree rightTree) = 
+utreeToTeX (ASP judgement leftTree rightTree) =
   T.pack "\\nd[(@)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (utreeToTeX leftTree) `T.append` T.pack "&" `T.append` (utreeToTeX rightTree) `T.append` T.pack "}"
-utreeToTeX (UPiF judgement leftTree rightTree) = 
+utreeToTeX (UPiF judgement leftTree rightTree) =
   T.pack "\\nd[(\\underline{\\Pi F})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (utreeToTeX leftTree) `T.append` T.pack "&" `T.append` (utreeToTeX rightTree) `T.append` T.pack "}"
-utreeToTeX (UPiI judgement leftTree rightTree) = 
+utreeToTeX (UPiI judgement leftTree rightTree) =
   T.pack "\\nd[(\\underline{\\Pi I})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (utreeToTeX leftTree) `T.append` T.pack "&" `T.append` (utreeToTeX rightTree) `T.append` T.pack "}"
-utreeToTeX (UPiE judgement leftTree rightTree) = 
+utreeToTeX (UPiE judgement leftTree rightTree) =
   T.pack "\\nd[(\\underline{\\Pi E})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (utreeToTeX leftTree) `T.append` T.pack "&" `T.append` (utreeToTeX rightTree) `T.append` T.pack "}"
-utreeToTeX (USigF judgement leftTree rightTree) = 
+utreeToTeX (USigF judgement leftTree rightTree) =
   T.pack "\\nd[(\\underline{\\Sigma F})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (utreeToTeX leftTree) `T.append` T.pack "&" `T.append` (utreeToTeX rightTree) `T.append` T.pack "}"
-utreeToTeX (USigI judgement leftTree rightTree) = 
+utreeToTeX (USigI judgement leftTree rightTree) =
   T.pack "\\nd[(\\underline{\\Sigma I})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (utreeToTeX leftTree) `T.append` T.pack "&" `T.append` (utreeToTeX rightTree) `T.append` T.pack "}"
-utreeToTeX (USigE judgement overTree) = 
+utreeToTeX (USigE judgement overTree) =
   T.pack "\\nd[(\\underline{\\Sigma E})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (utreeToTeX overTree) `T.append` T.pack "}"
-utreeToTeX (UNotF judgement overTree) = 
+utreeToTeX (UNotF judgement overTree) =
   T.pack "\\nd[(\\underline{\\neg F})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (utreeToTeX overTree) `T.append` T.pack "}"
-utreeToTeX (UNotI judgement leftTree rightTree) = 
+utreeToTeX (UNotI judgement leftTree rightTree) =
   T.pack "\\nd[(\\underline{\\neg I})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (utreeToTeX leftTree) `T.append` T.pack "&" `T.append` (utreeToTeX rightTree) `T.append` T.pack "}"
-utreeToTeX (UNotE judgement leftTree rightTree) = 
+utreeToTeX (UNotE judgement leftTree rightTree) =
   T.pack "\\nd[(\\underline{\\neg E})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (utreeToTeX leftTree) `T.append` T.pack "&" `T.append` (utreeToTeX rightTree) `T.append` T.pack "}"
-utreeToTeX (UTopF judgement) = 
+utreeToTeX (UTopF judgement) =
   T.pack "\\nd[(\\underline{\\top F})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
-utreeToTeX (UTopI judgement) = 
+utreeToTeX (UTopI judgement) =
   T.pack "\\nd[(\\underline{\\top I})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
-utreeToTeX (UBotF judgement) = 
+utreeToTeX (UBotF judgement) =
   T.pack "\\nd[(\\underline{\\bot F})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
-utreeToTeX (UDREL judgement) = 
+utreeToTeX (UDREL judgement) =
   T.pack "\\nd[(\\underline{DRel})]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
-utreeToTeX (UError judgement text) = 
+utreeToTeX (UError judgement text) =
   T.pack "\\nd[(Error)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` text `T.append` T.pack "}"
 
 
--- utreeToMathML : UDTTのTree用のtoMathML関数
+-- | utreeToMathML : UDTTのTree用のtoMathML関数
 utreeToMathML :: (UTree UJudgement) -> T.Text
 utreeToMathML (UCHK judgement overTree) = T.concat [
   T.pack "<mrow><mi fontsize='0.8'><p style='text-decoration: underline;'>(CHK)</p></mi><mfrac linethickness='2px'>",
@@ -299,7 +300,7 @@ utreeToMathML (UError judgement text) = T.concat [
 
 
 
--- Tree : DTT用の木構造
+-- | Tree : DTT用の木構造
 data Tree a =
    CHK a (Tree a)
  | CON a
@@ -322,47 +323,47 @@ data Tree a =
 -- Error a (Tree a) T.Text
  deriving (Eq, Show)
 
--- treeToTeX : DTTのTree用のtoTeX関数
+-- | treeToTeX : DTTのTree用のtoTeX関数
 treeToTeX :: (Tree Judgement) -> T.Text
-treeToTeX (CHK judgement overTree) = 
+treeToTeX (CHK judgement overTree) =
   T.pack "\\nd[(CHK)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (treeToTeX overTree) `T.append` T.pack "}"
-treeToTeX (CON judgement) = 
+treeToTeX (CON judgement) =
   T.pack "\\nd[(CON)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
-treeToTeX (VAR judgement) = 
+treeToTeX (VAR judgement) =
   T.pack "\\nd[(VAR)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
-treeToTeX (TypeF judgement) = 
+treeToTeX (TypeF judgement) =
   T.pack "\\nd[(typeF)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
-treeToTeX (PiF judgement leftTree rightTree) = 
+treeToTeX (PiF judgement leftTree rightTree) =
   T.pack "\\nd[(\\Pi F)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (treeToTeX leftTree) `T.append` T.pack "&" `T.append` (treeToTeX rightTree) `T.append` T.pack "}"
-treeToTeX (PiI judgement leftTree rightTree) = 
+treeToTeX (PiI judgement leftTree rightTree) =
   T.pack "\\nd[(\\Pi I)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (treeToTeX leftTree) `T.append` T.pack "&" `T.append` (treeToTeX rightTree) `T.append` T.pack "}"
-treeToTeX (PiE judgement leftTree rightTree) = 
+treeToTeX (PiE judgement leftTree rightTree) =
   T.pack "\\nd[(\\Pi E)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (treeToTeX leftTree) `T.append` T.pack "&" `T.append` (treeToTeX rightTree) `T.append` T.pack "}"
-treeToTeX (SigF judgement leftTree rightTree) = 
+treeToTeX (SigF judgement leftTree rightTree) =
   T.pack "\\nd[(\\Sigma F)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (treeToTeX leftTree) `T.append` T.pack "&" `T.append` (treeToTeX rightTree) `T.append` T.pack "}"
-treeToTeX (SigI judgement leftTree rightTree) = 
+treeToTeX (SigI judgement leftTree rightTree) =
   T.pack "\\nd[(\\Sigma I)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (treeToTeX leftTree) `T.append` T.pack "&" `T.append` (treeToTeX rightTree) `T.append` T.pack "}"
-treeToTeX (SigE judgement overTree) = 
+treeToTeX (SigE judgement overTree) =
   T.pack "\\nd[(\\Sigma E)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (treeToTeX overTree) `T.append` T.pack "}"
-treeToTeX (NotF judgement overTree) = 
+treeToTeX (NotF judgement overTree) =
   T.pack "\\nd[(\\neg F)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (treeToTeX overTree) `T.append` T.pack "}"
-treeToTeX (NotI judgement leftTree rightTree) = 
+treeToTeX (NotI judgement leftTree rightTree) =
   T.pack "\\nd[(\\neg I)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (treeToTeX leftTree) `T.append` T.pack "&" `T.append` (treeToTeX rightTree) `T.append` T.pack "}"
-treeToTeX (NotE judgement leftTree rightTree) = 
+treeToTeX (NotE judgement leftTree rightTree) =
   T.pack "\\nd[(\\neg E)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` (treeToTeX leftTree) `T.append` T.pack "&" `T.append` (treeToTeX rightTree) `T.append` T.pack "}"
-treeToTeX (TopF judgement) = 
+treeToTeX (TopF judgement) =
   T.pack "\\nd[(\\top F)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
-treeToTeX (TopI judgement) = 
+treeToTeX (TopI judgement) =
   T.pack "\\nd[(\\top I)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
-treeToTeX (BotF judgement) = 
+treeToTeX (BotF judgement) =
   T.pack "\\nd[(\\bot F)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
-treeToTeX (DREL judgement) = 
+treeToTeX (DREL judgement) =
   T.pack "\\nd[(DRel)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{}"
-treeToTeX (Error judgement text) = 
+treeToTeX (Error judgement text) =
   T.pack "\\nd[(Error)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` text `T.append` T.pack "}"
 
 
--- treeToMathML : DTTのTree用のtoMathML関数
+-- | treeToMathML : DTTのTree用のtoMathML関数
 treeToMathML :: (Tree Judgement) -> T.Text
 treeToMathML (CHK judgement overTree) = T.concat [
   T.pack "<mrow><mi fontsize='0.8'>(CHK)</mi><mfrac linethickness='2px'>",
@@ -502,7 +503,7 @@ treeToMathML (Error judgement text) = T.concat [
   ]
 
 
--- getTypeU : UDTTの証明木の一番下のTypeを取り出す
+-- | getTypeU : UDTTの証明木の一番下のTypeを取り出す
 getTypeU :: (UTree UJudgement) -> [UD.Preterm]
 getTypeU (UCHK (UJudgement env preM preA) over) = [preA]
 getTypeU (UCON (UJudgement env preCON preA)) = [preA]
@@ -525,7 +526,7 @@ getTypeU (UDREL (UJudgement env preBot preT)) = [preT]
 getTypeU (UError (UJudgement env preBot preT) text) = [preT]
 
 
--- getType : DTTの証明木の一番下のTypeを取り出す
+-- | getType : DTTの証明木の一番下のTypeを取り出す
 getType :: (Tree Judgement) -> [DT.Preterm]
 getType (CHK (Judgement env preM preA) over) = [preA]
 getType (CON (Judgement env preCON preA)) = [preA]
@@ -547,7 +548,7 @@ getType (DREL (Judgement env preBot preT)) = [preT]
 getType (Error (Judgement env preBot preT) text) = [preT]
 
 
--- getTermU : UDTTの証明木の一番下のTermを取り出す
+-- | getTermU : UDTTの証明木の一番下のTermを取り出す
 getTermU :: (UTree UJudgement) -> [UD.Preterm]
 getTermU (UCHK (UJudgement env preM preA) over) = [preM]
 getTermU (UCON (UJudgement env preCON preA)) = [preCON]
@@ -570,7 +571,7 @@ getTermU (UDREL (UJudgement env preBot preT)) = [preBot]
 getTermU (UError (UJudgement env preBot preT) text) = [preBot]
 
 
--- getTerm : DTTの証明木の一番下のTermを取り出す
+-- | getTerm : DTTの証明木の一番下のTermを取り出す
 getTerm :: (Tree Judgement) -> [DT.Preterm]
 getTerm (CHK (Judgement env preM preA) over) = [preM]
 getTerm (CON (Judgement env preCON preA)) = [preCON]
@@ -592,13 +593,13 @@ getTerm (DREL (Judgement env preBot preT)) = [preBot]
 getTerm (Error (Judgement env preBot preT) text) = [preBot]
 
 
--- printGammaU : UDTTの環境を出力する関数
+-- | printGammaU : UDTTの環境を出力する関数
 printGammaU :: TUEnv -> T.Text
 printGammaU [] = T.pack ""
 printGammaU [x] = toTeX x
 printGammaU (x:xs) = (toTeX x) `T.append` T.pack ", " `T.append` (printGammaU xs)
 
--- printGamma : DTTの環境を出力する関数
+-- | printGamma : DTTの環境を出力する関数
 printGamma :: TEnv -> T.Text
 printGamma [] = T.pack ""
 printGamma [x] = toTeX x

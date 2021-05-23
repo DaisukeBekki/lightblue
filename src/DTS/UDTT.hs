@@ -52,7 +52,7 @@ import Interface.Text
 import Interface.TeX
 import Interface.HTML
 
--- | 'Proj' 'Fst' m is the first projection of m, 
+-- | 'Proj' 'Fst' m is the first projection of m,
 -- while 'Proj' 'Snd' m is the second projection of m.
 data Selector = Fst | Snd deriving (Eq, Show)
 
@@ -123,7 +123,7 @@ toTextDeBruijn preterm = case preterm of
     App m n -> T.concat["(", toTextDeBruijn m, " ", toTextDeBruijn n, ")"]
     Sigma a b  -> T.concat["(Σ ", toTextDeBruijn a, ")", toTextDeBruijn b]
     Pair m n   -> T.concat["(", toTextDeBruijn m, ",", toTextDeBruijn n, ")"]
-    Proj s m   -> T.concat["π", toText s, "(", toTextDeBruijn m, ")"] 
+    Proj s m   -> T.concat["π", toText s, "(", toTextDeBruijn m, ")"]
     Lamvec m   -> T.concat ["λ+.", toTextDeBruijn m]
     Appvec i m -> T.concat ["(", toTextDeBruijn m, " ", T.pack (show i), "+)"]
     Unit  -> "()"
@@ -152,8 +152,8 @@ instance SimpleText Signature where
 --   "subst M L i" = M[L/i]
 subst :: Preterm -> Preterm -> Int -> Preterm
 subst preterm l i = case preterm of
-  Var j  -> if i == j 
-               then l 
+  Var j  -> if i == j
+               then l
                else Var j
   Con c  -> Con c
   Type   -> Type
@@ -184,8 +184,8 @@ subst preterm l i = case preterm of
 -- add d to all the indices that is greater than or equal to i within m (=d-place shift)
 shiftIndices :: Preterm -> Int -> Int -> Preterm
 shiftIndices preterm d i = case preterm of
-  Var j      -> if j >= i 
-                   then Var (j+d) 
+  Var j      -> if j >= i
+                   then Var (j+d)
                    else Var j
   Pi a b     -> Pi (shiftIndices a d i) (shiftIndices b d (i+1))
   Not m      -> Not (shiftIndices m d i)
@@ -325,7 +325,7 @@ multiply :: Preterm -> Preterm -> Preterm
 multiply m n = Natrec m Zero (Lam (Lam (add n (Var 0))))
 
 -- | addLambda i preterm: the first subroutine for 'transvec' function,
--- which takes an index and a preterm, transforms the latter in a way that the Var/Appvec with an index j that is equal or greater than i 
+-- which takes an index and a preterm, transforms the latter in a way that the Var/Appvec with an index j that is equal or greater than i
 -- Ex.
 -- addLambda 1 (Appvec 0 m) = Appvec 1 (addLambda 1 m)
 -- addLambda 0 (Appvec 0 m) = Appvec 0 (App () (Var 1))
@@ -532,7 +532,7 @@ fromDeBruijn vnames preterm = case preterm of
   -- App (App (Con (T.concat ["DRel",T.pack $ show j',"[",t,"]"])) m') n'
 
 variableNameFor :: Preterm -> Indexed VN.VarName
-variableNameFor preterm = 
+variableNameFor preterm =
   case preterm of
     Con cname | cname == "entity" -> do i <- xIndex; return $ VN.VarName 'x' i
               | cname == "evt"    -> do i <- eIndex; return $ VN.VarName 'e' i
@@ -541,7 +541,7 @@ variableNameFor preterm =
     Nat      -> do i <- xIndex; return $ VN.VarName 'k' i
     _        -> do i <- uIndex; return $ VN.VarName 'u' i
 
--- | translates a preterm with variable name into a preterm in de Bruijn notation. 
+-- | translates a preterm with variable name into a preterm in de Bruijn notation.
 toDeBruijn :: [VN.VarName]  -- ^ A context (= a list of variable names)
               -> VN.Preterm -- ^ A preterm with variable names
               -> Preterm    -- ^ A preterm in de Bruijn notation
@@ -558,7 +558,7 @@ toDeBruijn vnames preterm = case preterm of
   VN.App m n -> App (toDeBruijn vnames m) (toDeBruijn vnames n)
   VN.Sigma vname a b -> Sigma (toDeBruijn (vname:vnames) a) (toDeBruijn (vname:vnames) b)
   VN.Pair m n -> Pair (toDeBruijn vnames m) (toDeBruijn vnames n)
-  VN.Proj s m -> case s of 
+  VN.Proj s m -> case s of
                    VN.Fst -> Proj Fst (toDeBruijn vnames m)
                    VN.Snd -> Proj Snd (toDeBruijn vnames m)
   VN.Lamvec vname m -> Lamvec (toDeBruijn (vname:vnames) m)
@@ -592,8 +592,8 @@ instance Typeset Context where
 instance MathML Context where
   toMathML = toMathML . fromDeBruijnContext
 
--- | translates a context in de Bruijn notation (i.e. [DTS.DependentTypes.Preterm]) 
--- into one with variable names 
+-- | translates a context in de Bruijn notation (i.e. [DTS.DependentTypes.Preterm])
+-- into one with variable names
 -- (i.e. [(DTS.DTSwithVarName.VarName, DTS.DTSwithVarName.Preterm)]).
 fromDeBruijnContext :: Context -> VN.Context
 fromDeBruijnContext = snd . initializeIndex . fromDeBruijnContextLoop
@@ -631,7 +631,7 @@ printVerticalMathML :: [Preterm] -> IO()
 printVerticalMathML = VN.printVerticalMathML . fromDeBruijnSRlist
 
 -- | The data type for a judgment
-data Judgment = Judgment { 
+data Judgment = Judgment {
   context :: Context, -- ^ A context \Gamma in \Gamma \vdash M:A
   term :: Preterm,    -- ^ A term M in \Gamma \vdash M:A
   typ :: Preterm      -- ^ A type A in \Gamma \vdash M:A
@@ -646,10 +646,10 @@ instance Typeset Judgment where
 instance MathML Judgment where
   toMathML = toMathML . fromDeBruijnJudgment
 
--- | translates a judgment in de Bruijn notation into one with variable names 
+-- | translates a judgment in de Bruijn notation into one with variable names
 fromDeBruijnJudgment :: Judgment -> VN.Judgment
-fromDeBruijnJudgment judgment = 
-  let (vcontext', vterm', vtyp') 
+fromDeBruijnJudgment judgment =
+  let (vcontext', vterm', vtyp')
         = initializeIndex $ do
                             (varnames,vcontext) <- fromDeBruijnContextLoop $ context judgment
                             vterm <- fromDeBruijn varnames (term judgment)
@@ -661,11 +661,10 @@ fromDeBruijnJudgment judgment =
 
 -- | prints a proof search query in MathML
 printProofSearchQuery :: Context -> Preterm -> T.Text
-printProofSearchQuery cont ty = 
-  let (vcontext', vtyp') 
+printProofSearchQuery cont ty =
+  let (vcontext', vtyp')
         = initializeIndex $ do
                             (varnames,vcontext) <- fromDeBruijnContextLoop cont
                             vtyp <- fromDeBruijn varnames ty
                             return (vcontext, vtyp)
   in T.concat ["<mrow>", toMathML vcontext', "<mo>&vdash;</mo><mo>?</mo><mo>:</mo>", toMathML vtyp', "</mrow>"]
-

@@ -3,21 +3,7 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages:
-- completed:
-    cabal-file:
-      size: 3844
-      sha256: 243d2b91620424c0f3b9dc65266feb89a474dea00c82c216776ac0d3994094e2
-    name: jsem
-    version: 0.1.3
-    git: https://github.com/DaisukeBekki/JSeM.git
-    pantry-tree:
-      size: 5242
-      sha256: a0754da107e97d83631665385d9023635b5568ad116fda5ec91f111b887a9c95
-    commit: f7f1bb847c4eb5e37ec54906e61a96a0b427692c
-  original:
-    git: https://github.com/DaisukeBekki/JSeM.git
-    commit: f7f1bb847c4eb5e37ec54906e61a96a0b427692c
+packages: []
 snapshots:
 - completed:
     size: 523448

@@ -6,7 +6,11 @@
 *.bak*.*
 *.bak
 *.old
+*.html
+*.log
 \#*
+haddock/
+.stack-work/
 tex/
 JSeM/
 dictionary/
@@ -14,3 +18,12 @@ dist/
 script/
 testsuits/
 tools/
+*/swi_alligator1.0.pl
+src/.ftpconfig
+src/DTS/Alligator/AlexHappy/Test_Env_GPU.htm
+src/DTS/Alligator/AlexHappy/Test_Env_GPU_files/
+src/DTS/Alligator/AlexHappy/*.pl
+src/DTS/Alligator/AlexHappy/tptp2prolog.sh
+src/DTS/Alligator/AlexHappy/output7
+src/DTS/Alligator/AlexHappy/output_8
+src/DTS/Alligator/AlexHappy/output
