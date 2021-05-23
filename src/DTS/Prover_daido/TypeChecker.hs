@@ -78,10 +78,10 @@ transP (UD.Not preM) = do
   pretermM <- transP preM
   return (DT.Not pretermM)
 transP (UD.Asp _ _) = []
-transP (UD.DRel i t preM preN) = do
-  pretermA <- transP preM
-  pretermB <- transP preN
-  return (DT.DRel i t pretermA pretermB)
+--transP (UD.DRel i t preM preN) = do
+--  pretermA <- transP preM
+--  pretermB <- transP preN
+--  return (DT.DRel i t pretermA pretermB)
 transP _ = []
 
 
@@ -211,11 +211,11 @@ aspElim (UCHK (UJudgement uenv _ _) over) = do
   preA' <- getType resultO
   return (CHK (Judgement (transE uenv) preM' preA') resultO)
 -- (DRel)規則
-aspElim (UDREL (UJudgement uenv (UD.DRel i t preM preN) typ)) = do
-  preM' <- transP preM
-  preN' <- transP preN
-  typ' <- transP typ
-  return (DREL (Judgement (transE uenv) (DT.DRel i t preM' preN') typ'))
+--aspElim (UDREL (UJudgement uenv (UD.DRel i t preM preN) typ)) = do
+--  preM' <- transP preM
+--  preN' <- transP preN
+--  typ' <- transP typ
+--  return (DREL (Judgement (transE uenv) (DT.DRel i t preM' preN') typ'))
 -- (Error)
 aspElim (UError (UJudgement _ _ _) _) = []
 -- otherwise
@@ -384,8 +384,8 @@ typeInferU typeEnv sig (UD.Asp i preA) = do
   ansTree <- proofSearch typeEnv sig preA'
   return (ASP (UJudgement typeEnv (UD.Asp i preA) preA) leftTree ansTree)
 -- (DRel) rule
-typeInferU typeEnv _ (UD.DRel i t preM preN) = do
-  return (UDREL (UJudgement typeEnv (UD.DRel i t preM preN) UD.Type))
+--typeInferU typeEnv _ (UD.DRel i t preM preN) = do
+--  return (UDREL (UJudgement typeEnv (UD.DRel i t preM preN) UD.Type))
 -- otherwise
 typeInferU _ _ _ = []
 

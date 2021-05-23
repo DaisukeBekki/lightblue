@@ -1,3 +1,5 @@
+module DTS.Alligator.AlexHappy.TPTPTest where
+
 import qualified DTS.Alligator.AlexHappy.FileParser as F
 import System.Environment (getArgs)
 import System.Directory

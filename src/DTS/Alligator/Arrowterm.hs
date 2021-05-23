@@ -172,7 +172,7 @@ instance Show AJudgement where
       then
         " ト " ++ str ++ " : " ++  (show $ Arrow env a_type)
       else
-        (init $ tail $take f str)++" ト " ++ (drop (f + (length " =>")) str) ++ " : " ++ (drop (f + (length " =>")) $ show $ Arrow env a_type)
+        (init $ tail $take f str)++" ト " ++ (drop (f + (length (" =>"::String))) str) ++ " : " ++ (drop (f + (length (" =>"::String))) $ show $ Arrow env a_type)
 
 a2dtJudgement :: AJudgement -> J.Judgement
 a2dtJudgement (AJudgement env aterm atype) = J.Judgement (map arrow2DT env) (arrow2DT aterm) (arrow2DT atype)

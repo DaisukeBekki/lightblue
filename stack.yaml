@@ -3,13 +3,12 @@ resolver: lts-15.1
 flags: {}
 
 extra-deps:
-  - ../juman-tools
-  - git: https://github.com/DaisukeBekki/JSeM.git
+  - git: git@github.com:DaisukeBekki/JSeM.git
     commit: d5705b42006a08aa9dd8d2ea37d29fc7cf5559f6
   - git: git@github.com:DaisukeBekki/hasktorch-tools.git
-    commit: ec9e3e664b379627cb9466d922fe7a5a65602bb4
+    commit: 936928cdee27e179a5e3775d146046b107b0eba1
 
-  build:
+build:
   haddock: false
   haddock-arguments:
     haddock-args:

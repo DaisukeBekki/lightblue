@@ -1,3 +1,5 @@
+module DTS.Alligator.AlexHappy.GetDepth.TPTPTest where
+
 import System.Directory
 import System.Timeout
 import Control.Monad
