@@ -512,7 +512,17 @@ deduce con arrow_type depth setting
             (\js f -> if null js then withLog f con arrow_type depth setting{typecheckTerm = Nothing} else js)
             []
             ([membership,eqIntro,piIntro,sigmaIntro,piElim,eqElim] ++ [dne | arrow_type /= A.Conclusion DT.Bot && mode setting == WithDNE] ++ [efq | arrow_type /= A.Conclusion DT.Bot && mode setting == WithEFQ])
-    in (if null judgements then debugLog con arrow_type depth setting "deduce failed" else D.trace (L.replicate depth '\t' ++  (show depth) ++ " deduced :  " ++ (show $ A.downSide $ head judgements))) $Right  judgements
+    in (
+      if null judgements
+        then debugLog con arrow_type depth setting "deduce failed"
+        else
+          (
+            if debug setting
+              then D.trace (L.replicate depth '\t' ++  (show depth) ++ " deduced :  " ++ (show $ A.downSide $ head judgements))
+              else id
+          )
+      )
+      $Right  judgements
 
 debugLog :: {-(Show a) =>-} [A.Arrowterm] -> A.Arrowterm -> Int -> Setting -> String -> a -> a
 debugLog con=
