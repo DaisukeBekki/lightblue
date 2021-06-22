@@ -28,15 +28,15 @@ import qualified DTS.Prover.TypeChecker as Ty
 import qualified DTS.Prover.Judgement as Ty
 
 -- | type check with the default signature = entity:type, evt:type
-defaultTypeCheck :: UD.Signature -> UD.Context -> UD.Preterm -> UD.Preterm -> [Ty.UTree Ty.UJudgement]
+defaultTypeCheck :: UD.Signature -> UD.Context -> UD.Preterm -> UD.Preterm -> [Ty.UTree  Ty.UJudgement]
 defaultTypeCheck sig cont term typ = Ty.typeCheckU cont (("evt",UD.Type):("entity",UD.Type):sig) term typ
 
 -- | proof search with the default signature = entity:type, evt:type
-defaultProofSearch :: UD.Signature -> UD.Context -> UD.Preterm -> [Ty.UTree Ty.UJudgement]
+defaultProofSearch :: UD.Signature -> UD.Context -> UD.Preterm -> [Ty.UTree  Ty.UJudgement]
 defaultProofSearch sig cont typ = Ty.proofSearch cont (("evt",UD.Type):("entity",UD.Type):sig) typ
 
 -- | checks felicity condition
-checkFelicity :: UD.Signature -> [UD.Preterm] -> UD.Preterm -> [Ty.UTree Ty.UJudgement]
+checkFelicity :: UD.Signature -> [UD.Preterm] -> UD.Preterm -> [Ty.UTree  Ty.UJudgement]
 checkFelicity sig cont term = defaultTypeCheck sig cont term (UD.Type)
 
 -- | executes type check to a context
@@ -105,8 +105,8 @@ checkEntailment beam nbest premises hypothesis = do
   --
   if null pds
      then mapM_ T.putStrLn [
-           "No proof diagrams for: ", 
-           HTML.startMathML, 
+           "No proof diagrams for: ",
+           HTML.startMathML,
            UD.printProofSearchQuery (tail srs) (head srs),
            HTML.endMathML
            ]
