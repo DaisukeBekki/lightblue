@@ -263,7 +263,7 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
       mapM_
         --(\(sid,sentence) -> do
         (\(_,sentence) -> do
-          chart <- CP.parse beamw sentence
+          chart <- CP.parse beamw True (\_ _ -> id) sentence
           --let filterednodes = concat $ map snd $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
           --I.printNodes S.stdout I.HTML sid sentence False filterednodes
           mapM_ (\((x,y),node) -> do
@@ -367,7 +367,7 @@ parseSentence beam score sentence = do
   (i,j,k,total) <- score
   S.putStr $ "[" ++ show (total+1) ++ "] "
   T.putStrLn sentence
-  chart <- CP.parse beam sentence
+  chart <- CP.parse beam True (\_ _ -> id) sentence
   case CP.extractParseResult beam chart of
     CP.Full nodes -> 
        do
