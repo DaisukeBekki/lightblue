@@ -43,7 +43,7 @@ parse :: Int           -- ^ The beam width
          -> Bool       -- ^ If True, use purifyText
          -> (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ filter for CCG nodes
          -> T.Text     -- ^ A sentence to be parsed
-         -> IO(Chart) -- ^ A pair of the resulting CYK-chart and a list of CYK-charts for segments
+         -> IO (Chart) -- ^ A pair of the resulting CYK-chart and a list of CYK-charts for segments
 parse beam ifPurify filterNodes sentence 
   | sentence == T.empty = return M.empty -- returns an empty chart, otherwise foldl returns a runtime error when text is empty
   | otherwise = do
@@ -190,19 +190,21 @@ checkEmptyCategories prevlist =
 simpleParse :: Int    -- ^ beam 
             -> T.Text -- ^ an input text
             -> IO([CCG.Node])
-simpleParse beam = simpleParse' beam True (\_ _ -> id)
+simpleParse beam sentence = do 
+  (nodes,_) <- simpleParse' beam True (\_ _ -> id) sentence
+  return nodes
 
 simpleParse' :: Int    -- ^ beam 
             -> Bool   -- ^ If purify
             -> (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ filter for CCG nodes
             -> T.Text -- ^ an input text
-            -> IO([CCG.Node])
+            -> IO([CCG.Node],Chart)
 simpleParse' beam ifPurify filterNodes sentence = do
   chart <- parse beam ifPurify filterNodes sentence
   case extractParseResult beam chart of
-    Full nodes -> return nodes
-    Partial nodes -> return nodes
-    Failed -> return []
+    Full nodes -> return (nodes,chart)
+    Partial nodes -> return (nodes,chart)
+    Failed -> return ([],chart)
 
 -- | A data type for the parsing result.
 data ParseResult = 
