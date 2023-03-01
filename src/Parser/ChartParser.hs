@@ -26,7 +26,8 @@ module Parser.ChartParser (
   ) where
 
 import Data.List as L
-import Data.Char                       --base
+import Data.Char                          --base
+import System.IO.Unsafe (unsafePerformIO) --base
 import qualified Data.Text.Lazy as T   --text
 import qualified Data.Map as M         --container
 import qualified Parser.CCG as CCG --(Node, unaryRules, binaryRules, trinaryRules, isCONJ, cat, SimpleText)
@@ -124,14 +125,17 @@ boxAccumulator :: Int               -- ^ beam width
                   -> PartialBox     -- ^ accumulated result (Chart, Text, Int, Int)
                   -> Char           -- ^ 
                   -> PartialBox
-boxAccumulator beam filterNodes lexicon (chart,word,i,j) c =
+boxAccumulator beam filterNodes lexicon (chart,word,i,j) c = unsafePerformIO $ do
   let newword = T.cons c word;
       list0 = if (T.compareLength newword 23) == LT 
                 -- Does not execute lookup for a long word. Run "LongestWord" to check that the length of the longest word (=23).
                 then L.lookupLexicon newword lexicon
                 else [];
-      list1 = checkEmptyCategories $ checkParenthesisRule i j chart $ checkCoordinationRule i j chart $ checkBinaryRules i j chart $ checkUnaryRules list0 in
-  ((M.insert (i,j) (take beam $ filterNodes i j $ L.sort list1) chart), newword, i-1, j)
+      list1 = checkEmptyCategories $ checkParenthesisRule i j chart $ checkCoordinationRule i j chart $ checkBinaryRules i j chart $ checkUnaryRules list0 
+      whatToAdd = take beam $ filterNodes i j $ L.sort list1
+  putStrLn $ "\n------" ++ (show (i,j)) ++ "------"  
+  print whatToAdd
+  return $ ((M.insert (i,j) whatToAdd chart), newword, i-1, j)
   --((M.insert (i,j) (cutoff (max (beam+i-j) 24) list1) chart), newword, i-1, j)
 
 -- | take `beam` nodes from the top of `ndoes`.
