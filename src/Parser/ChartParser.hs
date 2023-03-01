@@ -134,11 +134,14 @@ boxAccumulator beam filterNodes lexicon (chart,word,i,j) c = unsafePerformIO $ d
       list1 = checkEmptyCategories $ checkParenthesisRule i j chart $ checkCoordinationRule i j chart $ checkBinaryRules i j chart $ checkUnaryRules list0 
       beforeFiltering = L.sort list1
       afterFiltering = take beam $ filterNodes i j $ beforeFiltering
-  putStr $ "\n------" ++ (show (i,j)) ++ "------"  
-  putStrLn "\nBefore filtering: "
-  print beforeFiltering
-  putStrLn "\nAfter filtering: "
-  print afterFiltering
+  if i <= 10 && j >= 12
+    then do
+      putStr $ "\n------" ++ (show (i,j)) ++ "------"  
+      putStrLn "\nBefore filtering: "
+      print beforeFiltering
+      putStrLn "\nAfter filtering: "
+      print afterFiltering
+    else return ()
   return $ ((M.insert (i,j) afterFiltering chart), newword, i-1, j)
   --((M.insert (i,j) (cutoff (max (beam+i-j) 24) list1) chart), newword, i-1, j)
 
