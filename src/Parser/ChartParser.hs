@@ -134,7 +134,7 @@ boxAccumulator beam filterNodes lexicon (chart,word,i,j) c = unsafePerformIO $ d
       list1 = checkEmptyCategories $ checkParenthesisRule i j chart $ checkCoordinationRule i j chart $ checkBinaryRules i j chart $ checkUnaryRules list0 
       beforeFiltering = L.sort list1
       afterFiltering = take beam $ filterNodes i j $ beforeFiltering
-  if i <= 10 && j >= 12
+  if i >= 10 && j <= 12
     then do
       putStr $ "\n------" ++ (show (i,j)) ++ "------"  
       putStrLn "\nBefore filtering: "
