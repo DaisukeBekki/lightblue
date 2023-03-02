@@ -131,9 +131,9 @@ boxAccumulator beam filterNodes lexicon (chart,word,i,j) c = unsafePerformIO $ d
                 -- Does not execute lookup for a long word. Run "LongestWord" to check that the length of the longest word (=23).
                 then L.lookupLexicon newword lexicon
                 else [];
-      list1 = checkEmptyCategories $ checkParenthesisRule i j chart $ checkCoordinationRule i j chart $ checkBinaryRules i j chart $ checkUnaryRules list0 
-      beforeFiltering = L.sort list1
-      afterFiltering = take beam $ filterNodes i j $ beforeFiltering
+      list1 = checkBinaryRules i j chart $ checkUnaryRules list0 
+      beforeFiltering = list1
+      afterFiltering = take beam $ L.sort $ checkEmptyCategories $ checkParenthesisRule i j chart $ checkCoordinationRule i j chart $ filterNodes i j $ beforeFiltering
   if i >= 10 && j <= 12
     then do
       putStr $ "\n------" ++ (show (i,j)) ++ "------"  
