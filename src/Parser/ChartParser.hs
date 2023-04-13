@@ -45,9 +45,9 @@ parse :: Int           -- ^ The beam width
          -> (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ filter for CCG nodes
          -> T.Text     -- ^ A sentence to be parsed
          -> IO (Chart) -- ^ A pair of the resulting CYK-chart and a list of CYK-charts for segments
-parse = parse' False
+parse = parse' Nothing
 
-parse' :: Bool          -- ^ If True, debug mode
+parse' :: Maybe (Int,Int) -- ^ Debug mode: If Just (i,j), dump parse result of (i,j). 
           -> Int        -- ^ The beam width
           -> Bool       -- ^ If True, use purifyText
           -> (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ filter for CCG nodes
@@ -82,7 +82,7 @@ purifyText text =
 type PartialChart = (Chart,[Int],Int,T.Text)
 
 -- | The 'chartAccumulator' function is the accumulator of the 'parse' function
-chartAccumulator :: Bool              -- ^ If debug mode
+chartAccumulator :: Maybe (Int,Int)   -- ^ Debug mode: If Just (i,j), dump parse result of (i,j). 
                     -> Int            -- ^ The beam width as the first parameter
                     -> L.LexicalItems -- ^ my lexicon as the second parameter
                     -> (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ filter for CCG nodes
@@ -128,7 +128,7 @@ emptyCM c = LT.lexicalitem c "punct" 99 (((CCG.T True 1 LT.modifiableS) `CCG.SL`
 type PartialBox = (Chart,T.Text,Int,Int)
 
 -- | The 'boxAccumulator' function
-boxAccumulator :: Bool              -- ^ debug mode
+boxAccumulator :: Maybe (Int,Int)   -- ^ Debug mode: If Just (i,j), dump parse result of (i,j). 
                   -> Int            -- ^ beam width
                   -> (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ filter for appropriate CCG nodes
                   -> L.LexicalItems -- ^ my lexicon
@@ -144,14 +144,17 @@ boxAccumulator ifDebug beam filterNodes lexicon (chart,word,i,j) c = unsafePerfo
       list1 = checkBinaryRules i j chart $ checkUnaryRules list0 
       beforeFiltering = list1
       afterFiltering = take beam $ L.sort $ checkEmptyCategories $ checkParenthesisRule i j chart $ checkCoordinationRule i j chart $ filterNodes i j $ beforeFiltering
-  if ifDebug && i >= 10 && j <= 12
-    then do
-      putStr $ "\n------" ++ (show (i,j)) ++ "------"  
-      putStrLn "\nBefore filtering: "
-      print beforeFiltering
-      putStrLn "\nAfter filtering: "
-      print afterFiltering
-    else return ()
+  case ifDebug of
+    Just (x,y) ->
+      if i >= x && j <= y
+        then do
+          putStr $ "\n------" ++ (show (i,j)) ++ "------"  
+          putStrLn "\nBefore filtering: "
+          print beforeFiltering
+          putStrLn "\nAfter filtering: "
+          print afterFiltering
+        else return ()
+    Nothing -> return ()
   return $ ((M.insert (i,j) afterFiltering chart), newword, i-1, j)
   --((M.insert (i,j) (cutoff (max (beam+i-j) 24) list1) chart), newword, i-1, j)
 
@@ -213,10 +216,10 @@ simpleParse :: Int    -- ^ beam
             -> T.Text -- ^ an input text
             -> IO([CCG.Node])
 simpleParse beam sentence = do 
-  (nodes,_) <- simpleParse' False beam True (\_ _ -> id) sentence
+  (nodes,_) <- simpleParse' Nothing beam True (\_ _ -> id) sentence
   return nodes
 
-simpleParse' :: Bool  -- ^ If True, debug mode
+simpleParse' :: Maybe (Int,Int)   -- ^ Debug mode: If Just (i,j), dump parse result of (i,j). 
             -> Int    -- ^ beam 
             -> Bool   -- ^ If purify
             -> (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ filter for CCG nodes
