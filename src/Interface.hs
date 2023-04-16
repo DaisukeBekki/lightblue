@@ -28,7 +28,7 @@ import qualified Data.Text.Lazy.IO as T   --text
 import qualified System.IO as S           --base
 import qualified Parser.ChartParser as CP
 import qualified Parser.CCG as CCG
-import qualified Parser.Japanese.Lexicon as LEX
+import qualified Parser.Language.Japanese.Lexicon as LEX
 import qualified Interface.Text as T
 import qualified Interface.TeX as TEX
 import qualified Interface.HTML as HTML

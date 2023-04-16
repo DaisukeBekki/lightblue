@@ -11,7 +11,7 @@ Stability   : beta
 A set of lexical templates for building a lexicon.
 -}
 
-module Parser.Japanese.Templates (
+module Parser.Language.Japanese.Templates (
   -- * Templates for lexical items
   lexicalitem,
   -- * Templates for CCG syntactic features

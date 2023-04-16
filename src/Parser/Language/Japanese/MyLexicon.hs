@@ -10,7 +10,7 @@ Stability   : beta
 
 The lexicon for functional lexical items in Japanese.
 -}
-module Parser.Japanese.MyLexicon (
+module Parser.Language.Japanese.MyLexicon (
   emptyCategories,
   myLexicon
   ) where
@@ -19,7 +19,7 @@ import Prelude hiding (id)
 import qualified Data.Text.Lazy as T
 import Data.Ratio
 import Parser.CCG
-import Parser.Japanese.Templates
+import Parser.Language.Japanese.Templates
 import DTS.UDTT
 
 -- | defines a lexical entry for an empty category
