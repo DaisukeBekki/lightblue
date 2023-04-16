@@ -31,6 +31,7 @@ import System.IO.Unsafe (unsafePerformIO) --base
 import qualified Data.Text.Lazy as T   --text
 import qualified Data.Map as M         --container
 import qualified Parser.CCG as CCG --(Node, unaryRules, binaryRules, trinaryRules, isCONJ, cat, SimpleText)
+import Parser.Language (LangOptions(..),jpOptions)
 import qualified Parser.Language.Japanese.Lexicon as L (LexicalItems, lookupLexicon, setupLexicon, emptyCategories)
 import qualified Parser.Language.Japanese.Templates as LT
 
@@ -71,8 +72,8 @@ purifyText text =
   case T.uncons text of -- remove a non-literal symbol at the beginning of a sentence (if any)
     Nothing -> T.empty
     Just (c,t) | isSpace c                                  -> purifyText t               -- ignore white spaces
-               | T.any (==c) "！？!?…「」◎○●▲△▼▽■□◆◇★☆※†‡." -> purifyText t              -- ignore meaningless symbols
-               | T.any (==c) "，,-―?／＼"                    -> T.cons '、' $ purifyText t -- punctuations
+               | T.any (==c) (meaninglessSymbols jpOptions) -> purifyText t               -- ignore meaningless symbols
+               | T.any (==c) (punctuations jpOptions)       -> T.cons '、' $ purifyText t -- punctuations
                | otherwise                                  -> T.cons c $ purifyText t
 
 -- | quadruples representing a state during parsing:

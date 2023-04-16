@@ -39,6 +39,7 @@ library:
   exposed-modules:
   - Parser.ChartParser
   - Parser.CCG
+  - Parser.Language
   - Parser.Language.Japanese.Lexicon
   - Parser.Language.Japanese.CallJuman
   - Parser.Language.Japanese.MyLexicon
