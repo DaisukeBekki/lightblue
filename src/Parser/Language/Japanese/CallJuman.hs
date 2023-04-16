@@ -10,7 +10,7 @@ Stability   : beta
 
 A module for compound nouns in Japanese.
 -}
-module Parser.Japanese.CallJuman (
+module Parser.Language.Japanese.CallJuman (
   jumanCompoundNouns
   ) where
 
@@ -19,7 +19,7 @@ import qualified Data.Text.Lazy as T                 --text
 import qualified Data.Text.Lazy.IO as T              --text
 import qualified System.Process as S                 --process
 import Parser.CCG
-import qualified Parser.Japanese.Templates as TPL
+import qualified Parser.Language.Japanese.Templates as TPL
 
 {-
 see :: [JumanPair] -> IO([JumanPair])

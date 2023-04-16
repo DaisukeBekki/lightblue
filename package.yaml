@@ -14,7 +14,7 @@ stability:           beta
 extra-source-files:
   - README.md
   - ChangeLog.md
-  - src/Parser/Japanese/Juman.dic
+  - src/Parser/Language/Japanese/Juman.dic
 
 dependencies:
   - base >= 4.8 && <5
@@ -39,10 +39,10 @@ library:
   exposed-modules:
   - Parser.ChartParser
   - Parser.CCG
-  - Parser.Japanese.Lexicon
-  - Parser.Japanese.CallJuman
-  - Parser.Japanese.MyLexicon
-  - Parser.Japanese.Templates
+  - Parser.Language.Japanese.Lexicon
+  - Parser.Language.Japanese.CallJuman
+  - Parser.Language.Japanese.MyLexicon
+  - Parser.Language.Japanese.Templates
   - Interface
   - Interface.Text
   - Interface.TeX

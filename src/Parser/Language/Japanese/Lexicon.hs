@@ -10,7 +10,7 @@ Stability   : beta
 
 A Japanese CCG lexicon.
 -}
-module Parser.Japanese.Lexicon (
+module Parser.Language.Japanese.Lexicon (
   --Node(..),
   LexicalItems,
   --isCONJ,
@@ -27,9 +27,9 @@ import qualified Data.List as L         -- base
 import qualified Data.Map as M          -- base
 import qualified System.Environment as E -- base
 import Parser.CCG
-import qualified Parser.Japanese.CallJuman as JU
-import qualified Parser.Japanese.MyLexicon as LEX
-import Parser.Japanese.Templates
+import qualified Parser.Language.Japanese.CallJuman as JU
+import qualified Parser.Language.Japanese.MyLexicon as LEX
+import Parser.Language.Japanese.Templates
 import DTS.UDTT
 
 -- | Lexicon consists of a set of CCG Nodes
@@ -44,7 +44,7 @@ setupLexicon :: T.Text -> IO(LexicalItems)
 setupLexicon sentence = do
   --  1. Setting up lexical items provided by JUMAN++
   lightbluepath <- E.getEnv "LIGHTBLUE"
-  jumandic <- T.readFile $ lightbluepath ++ "src/Parser/Japanese/Juman.dic"
+  jumandic <- T.readFile $ lightbluepath ++ "src/Parser/Language/Japanese/Juman.dic"
   let jumandicFiltered = filter (\l -> (head l) `T.isInfixOf` sentence) $ map (T.split (=='\t')) (T.lines jumandic)
   let (jumandicParsed,(cn,pn)) = L.foldl' parseJumanLine ([],(M.empty,M.empty)) $ jumandicFiltered
   --  2. Setting up private lexicon
