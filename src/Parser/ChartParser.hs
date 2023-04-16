@@ -47,12 +47,13 @@ parse :: Int           -- ^ The beam width
          -> IO (Chart) -- ^ A pair of the resulting CYK-chart and a list of CYK-charts for segments
 parse = parse' Nothing
 
-parse' :: Maybe (Int,Int) -- ^ Debug mode: If Just (i,j), dump parse result of (i,j). 
-          -> Int        -- ^ The beam width
-          -> Bool       -- ^ If True, use purifyText
+-- | The main routine of 'parse' function
+parse' :: Maybe (Int,Int) -- ^ Debug mode: If Just (i,j), then debug mode and dump parse result of (i,j). If Nothing, then non-debug mode
+          -> Int          -- ^ The beam width
+          -> Bool         -- ^ If True, use purifyText
           -> (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ filter for CCG nodes
-          -> T.Text     -- ^ A sentence to be parsed
-          -> IO (Chart) -- ^ A pair of the resulting CYK-chart and a list of CYK-charts for segments
+          -> T.Text       -- ^ A sentence to be parsed
+          -> IO (Chart)   -- ^ A pair of the resulting CYK-chart and a list of CYK-charts for segments
 parse' ifDebug beam ifPurify filterNodes sentence 
   | sentence == T.empty = return M.empty -- returns an empty chart, otherwise foldl returns a runtime error when text is empty
   | otherwise = do
