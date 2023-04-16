@@ -1,8 +1,8 @@
 {-# OPTIONS -Wall #-}
-{-# LANGUAGE OverloadedStrings, DeriveGeneric, DefaultSignatures #-}
+{-# LANGUAGE DeriveGeneric, DefaultSignatures #-}
 
 {-|
-Module      : Parser.Japanese.Lexicon
+Module      : Parser.Language.Japanese.Lexicon
 Copyright   : (c) Daisuke Bekki, 2016
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
