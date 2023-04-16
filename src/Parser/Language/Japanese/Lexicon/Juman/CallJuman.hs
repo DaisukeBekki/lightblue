@@ -10,7 +10,7 @@ Stability   : beta
 
 A module for compound nouns in Japanese.
 -}
-module Parser.Language.Japanese.CallJuman (
+module Parser.Language.Japanese.Lexicon.Juman.CallJuman (
   jumanCompoundNouns
   ) where
 
