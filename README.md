@@ -38,7 +38,7 @@ $ sudo port install tidy
 ### Download lightblue
 Do the following in the directory under which you'd like to install *lightblue*.
 ```
-$ git clone git@bitbucket.org:DaisukeBekki/lightblue.git
+$ git clone https://github.com/DaisukeBekki/lightblue.git
 ```
 This operation will create the directory *lightblue* (henceforth we will refer to this directory as <lightblue>) under the current directory.
 
