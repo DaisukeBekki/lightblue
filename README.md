@@ -23,8 +23,14 @@ The followint tools must be installed before executing *lightblue*.
 
   1. [JUMAN (a User-Extensible Morphological Analyzer for Japanese)](http://nlp.ist.i.kyoto-u.ac.jp/EN/index.php?JUMAN) (>= version 7.0)
   1. tidy (only for prettyprinting XML outputs)
-    * Debian: `sudo apt-get install tidy`
-    * Mac: `sudo port install tidy`
+In Linux:
+```
+$ sudo apt install tidy
+```
+In Mac:
+```
+$ sudo port install tidy
+```
 
 [//]: # (1. blas and lapack )
 [//]: # (`sudo apt-get install libblas-dev liblapack-dev` )
