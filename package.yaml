@@ -1,5 +1,5 @@
 name:                lightblue
-version:             0.2.2.0
+version:             0.2.2.1
 description:         Please see the README on GitHub at <https://github.com/DaisukeBekki/lightblue#README.md>
 homepage:            https://github.com/DaisukeBekki/lightblue
 category:            CCG Parser, Dependent Type Prover
@@ -25,7 +25,7 @@ dependencies:
   - xml-conduit >= 1.9
   - optparse-applicative >= 0.13
   - semigroups >= 0.16
-  - jsem >= 0.0.0
+  - jsem >= 0.1
   - array >= 0.5.3.0
   - mtl >= 2.2.2
   - directory >=1.3.3.0
@@ -78,17 +78,17 @@ executables:
     source-dirs:  app
     main:         lightblueMain.hs
     ghc-options:  [-threaded, -rtsopts, -with-rtsopts=-N]
-    dependencies: lightblue >= 0.2.2.0
+    dependencies: lightblue
   buildLexicion:
     source-dirs:  app/Juman
     main:         buildLexicon.hs
     ghc-options:  [-threaded, -rtsopts, -with-rtsopts=-N]
-    dependencies: lightblue >= 0.2.2.0
+    dependencies: lightblue
     
 tests:
   testJumanDicSettings:
     source-dirs:  test/Juman
     main:         testJumanDicSettings.hs
     ghc-options:  [-threaded, -rtsopts, -with-rtsopts=-N]
-    dependencies: lightblue >= 0.2.2.0
+    dependencies: lightblue
 
