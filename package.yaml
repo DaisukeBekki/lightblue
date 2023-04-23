@@ -37,6 +37,8 @@ dependencies:
   - hexpat >= 0.20
   - parsec >= 3.1.14
   - filepath >= 1.4
+  - xml-prettify-text >= 1.0.0.3
+  - protolude >= 0.3.0
 
 library:
   source-dirs: src

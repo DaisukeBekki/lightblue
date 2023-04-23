@@ -2,7 +2,7 @@
 ## What is this repository for?
 
 * *lightblue* is a Japanese CCG parser with DTS representations
-* Current version: 0.2.0.0
+* Current version: 0.2.2.0
 * Copyright owner: Daisuke Bekki
 
 
@@ -22,15 +22,6 @@ See https://docs/haskellstack.org/en/stable/README/#how-to-install for details.
 The followint tools must be installed before executing *lightblue*.
 
   1. [JUMAN (a User-Extensible Morphological Analyzer for Japanese)](http://nlp.ist.i.kyoto-u.ac.jp/EN/index.php?JUMAN) (>= version 7.0)
-  1. tidy (only for prettyprinting XML outputs)
-In Linux:
-```
-$ sudo apt install tidy
-```
-In Mac:
-```
-$ sudo port install tidy
-```
 
 [//]: # (1. blas and lapack )
 [//]: # (`sudo apt-get install libblas-dev liblapack-dev` )
@@ -59,11 +50,7 @@ $ chmod 755 tidy
 
 To parse a Japanese sentence and get a text|HTML|TeX|XML representation, execute:
 ```
-$ echo 太郎がパンを食べた。 | ./lightblue parse -s {text|html|tex}
-```
-or
-```
-$ echo 太郎がパンを食べた。 | ./lightblue parse -s xml | ./tidy
+$ echo 太郎がパンを食べた。 | ./lightblue parse -s {text|html|tex|xml}
 ```
 
 With '-n|--nbest' option, *lightblue* will show the N-best parse results.
