@@ -2,7 +2,6 @@
 *.hi
 *.o
 *~
-*.txt
 *.bak*.*
 *.bak
 *.old
@@ -21,3 +20,4 @@ tools/
 */swi_alligator1.0.pl
 src/.ftpconfig
 stack.yaml.lock
+config.yaml
