@@ -1,8 +1,8 @@
 name:                lightblue
-version:             0.2.1.2
+version:             0.2.2.0
 description:         Please see the README on GitHub at <https://github.com/DaisukeBekki/lightblue#README.md>
 homepage:            https://github.com/DaisukeBekki/lightblue
-category:            CCG Parser, Higher-order Logic Prover
+category:            CCG Parser, Dependent Type Prover
 synopsis:            A Japanese CCG parser with DTS
 license:             AllRightsReserved
 license-file:        LICENSE
@@ -14,7 +14,7 @@ stability:           beta
 extra-source-files:
   - README.md
   - ChangeLog.md
-  - src/Parser/Japanese/Juman.dic
+  - src/Parser/Language/Japanese/Juman/Juman.dic
 
 dependencies:
   - base >= 4.8 && <5
@@ -31,6 +31,12 @@ dependencies:
   - directory >=1.3.3.0
   - data-default
   - split
+  - aeson >= 1.0
+  - bytestring >= 0.10
+  - yaml >= 0.8.3
+  - hexpat >= 0.20
+  - parsec >= 3.1.14
+  - filepath >= 1.4
 
 library:
   source-dirs: src
@@ -39,10 +45,16 @@ library:
   exposed-modules:
   - Parser.ChartParser
   - Parser.CCG
-  - Parser.Japanese.Lexicon
-  - Parser.Japanese.CallJuman
-  - Parser.Japanese.MyLexicon
-  - Parser.Japanese.Templates
+  - Parser.Language
+  - Parser.Language.Japanese.Lexicon
+  - Parser.Language.Japanese.MyLexicon
+  - Parser.Language.Japanese.Templates
+  - Parser.Language.Japanese.Juman.CallJuman
+  - Parser.Language.Japanese.Juman.Config  
+  - Parser.Language.Japanese.Juman.ParseJumanDic
+  - Parser.Language.Japanese.Juman.ParseCaseFrame
+  - Parser.Language.Japanese.Juman.ConvertJumanDic
+  - Parser.Language.Japanese.Juman.ShowCaseFrame
   - Interface
   - Interface.Text
   - Interface.TeX
@@ -63,7 +75,20 @@ library:
 
 executables:
   lightblue:
-    source-dirs: app
-    main: lightblueMain.hs
+    source-dirs:  app
+    main:         lightblueMain.hs
     ghc-options:  [-threaded, -rtsopts, -with-rtsopts=-N]
-    dependencies: lightblue >= 0.2.1.0
+    dependencies: lightblue >= 0.2.2.0
+  buildLexicion:
+    source-dirs:  app/Juman
+    main:         buildLexicon.hs
+    ghc-options:  [-threaded, -rtsopts, -with-rtsopts=-N]
+    dependencies: lightblue >= 0.2.2.0
+    
+tests:
+  testJumanDicSettings:
+    source-dirs:  test/Juman
+    main:         testJumanDicSettings.hs
+    ghc-options:  [-threaded, -rtsopts, -with-rtsopts=-N]
+    dependencies: lightblue >= 0.2.2.0
+
