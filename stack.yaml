@@ -7,6 +7,7 @@ extra-deps:
     commit: d5705b42006a08aa9dd8d2ea37d29fc7cf5559f6
 #  - git: git@github.com:DaisukeBekki/hasktorch-tools.git
 #    commit: 936928cdee27e179a5e3775d146046b107b0eba1
+  - xml-prettify-text-1.0.0.3
 
 build:
   haddock: false
