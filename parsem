@@ -5,4 +5,4 @@
 # Usage
 #   ./parsem <sentence>
 cd ${LIGHTBLUE}
-echo $1 | ./lightblue parse -s svg | dot -Tsvg > tmp.svg; qlmanage -p tmp.svg
+echo $1 | stack run lightblue -- parse -s svg | dot -Tsvg > tmp.svg; qlmanage -p tmp.svg
