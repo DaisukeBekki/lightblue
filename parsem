@@ -1,8 +1,8 @@
 #!/bin/bash
 # Install:
 #   brew install graphviz
-#   chmod 755 parse
+#   chmod 755 parsem
 # Usage
-#   ./parse <sentence>
+#   ./parsem <sentence>
 cd ${LIGHTBLUE}
 echo $1 | ./lightblue parse -s svg | dot -Tsvg > tmp.svg; qlmanage -p tmp.svg
