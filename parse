@@ -1,2 +1,8 @@
 #!/bin/bash
+# Linux:
+#   sudo apt install graphviz
+#   sudo apt install inkscape
+# Mac:
+#   brew install graphviz
+#   brew install inkscape
 echo $1 | ./lightblue parse -s svg | dot -Tsvg > tmp.svg; inkview tmp.svg
