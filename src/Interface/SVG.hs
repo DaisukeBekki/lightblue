@@ -103,9 +103,11 @@ cat2text category = case category of
     BS x y      -> T.concat [cat2text x, "\\\\", cat2text' y]
     T True i _     -> T.concat ["T", T.pack $ show i]
     T False i c     -> T.concat [cat2text c, "<", (T.pack $ show i), ">"]
-    S (_:(conj:_)) -> 
+    S (pos:(conj:_)) -> 
               T.concat [
                        "S[",
+                       toText pos,
+                       "&",
                        toText conj,
                        "]"
                        ]
