@@ -107,7 +107,7 @@ cat2text category = case category of
               T.concat [
                        "S[",
                        toText pos,
-                       "&",
+                       "][",
                        toText conj,
                        "]"
                        ]
