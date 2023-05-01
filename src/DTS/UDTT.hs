@@ -1,5 +1,4 @@
-{-# OPTIONS -Wall #-}
-{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, GADTs #-}
 
 {-|
 Copyright   : (c) Daisuke Bekki, 2016
@@ -65,13 +64,19 @@ instance SimpleText Selector where
 instance Typeset Selector where
   toTeX = toText
 
+-- | GADTs化：それほど自明ではなかった。
+-- |   Preterm aのaは型でなければならないこと
+-- |   Pi A BはAやBに@を含んでいたらら、Preterm DTTなのかPreterm UDTTなのか？
+data DTT = DTT
+data ASP = ASP
+
 -- | Preterms of Underspecified Dependent Type Theory (UDTT).
-data Preterm =
-  Var Int                 -- ^ Variables
-  | Con T.Text            -- ^ Constant symbols
-  | Type                  -- ^ The sort \"type\"
-  | Kind                  -- ^ The sort \"kind\"
-  | Pi Preterm Preterm    -- ^ Dependent function types (or Pi types)
+data Preterm a where
+  Var  :: Int -> Preterm DTT    -- ^ Variables
+  Con  :: T.Text -> Preterm DTT -- ^ Constant symbols
+  Type :: Preterm DTT           -- ^ The sort \"type\"
+  Kind :: Preterm DTT           -- ^ The sort \"kind\"
+  Pi   :: (exist a => Preterm a) -> Preterm a -> Preterm DTT  -- ^ Dependent function types (or Pi types)
   | Not Preterm           -- ^ Negations
   | Lam Preterm           -- ^ Lambda abstractions
   | App Preterm Preterm   -- ^ Function Applications
@@ -91,6 +96,7 @@ data Preterm =
   | Eq Preterm Preterm Preterm     -- ^ Intensional equality types
   | Refl Preterm Preterm           -- ^ refl
   | Idpeel Preterm Preterm         -- ^ idpeel
+  -}
   -- DRel Int T.Text Preterm Preterm  -- ^ Discourse relations
   deriving (Eq)
 

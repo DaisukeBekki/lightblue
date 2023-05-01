@@ -10,6 +10,7 @@ copyright:           Daisuke Bekki
 author:              Daisuke Bekki and Bekki Laboratory
 maintainer:          Daisuke Bekki
 stability:           beta
+ghc-options:         -Wall
 
 extra-source-files:
   - README.md
