@@ -1,5 +1,4 @@
-{-# OPTIONS -Wall #-}
-{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 
 {-|
 Module      : Interface.XML
@@ -19,8 +18,7 @@ import Prelude hiding (id)
 import qualified Data.Text.Lazy as T      --text
 import qualified Control.Applicative as M --base
 import qualified Control.Monad as M       --base
-import qualified Text.XML.Prettify as X   --xml-prettify-text
-import qualified Protolude as X           --protolude
+import qualified Text.XML as X            --xml-conduit
 import Parser.CCG
 import Interface.Text
 import Interface.HTML
@@ -84,8 +82,11 @@ node2XML i j iflexonly node =
 
 prettifyXML :: T.Text -> T.Text
 prettifyXML text =
-  let opts = X.PrettifyOpts {X.indentStyle = X.SPACE 2, X.endOfLine = X.LF} in
-  T.fromStrict $ X.prettyPrintXml opts $ X.toS text
+  X.renderText X.def $ X.parseText_ X.def text
+
+--prettifyXML text =
+--  let opts = X.PrettifyOpts {X.indentStyle = X.SPACE 2, X.endOfLine = X.LF} in
+--  T.fromStrict $ X.prettyPrintXml opts $ X.toS text
 
 traverseNode :: String            -- ^ Sentence ID
                 -> Bool           -- ^ If True, only lexical items will be printed
