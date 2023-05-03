@@ -37,7 +37,6 @@ This operation will create the directory *lightblue* (henceforth we will refer t
 You need to add the environment variable LIGHTBLUE and set its value as <lightblue>.  You may add the line `export LIGHTBLUE=<lightblue>` to .bashrc, .bash.profile, .bash_profile, or whatever configuration file for your shell.  Then move to <lightblue> and:
 ```
 $ cd <lightblue>
-$ stack setup
 $ stack build
 ```
 
@@ -45,7 +44,6 @@ $ stack build
 Set the permission of two shell scripts `lightblue` and `tidy` to executable.
 ```
 $ chmod 755 lightblue
-$ chmod 755 tidy
 ```
 
 To parse a Japanese sentence and get a text|HTML|TeX|XML representation, execute:

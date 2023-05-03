@@ -1,0 +1,9 @@
+#!/bin/bash
+# Install:
+#   sudo apt install graphviz
+#   sudo apt install inkscape
+#   chmod 755 parse
+# Usage
+#   ./parse <sentence>
+cd ${LIGHTBLUE}
+echo $1 | stack run lightblue -- parse -s svg | dot -Tsvg > tmp.svg; inkview tmp.svg
