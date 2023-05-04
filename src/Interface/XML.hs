@@ -15,9 +15,10 @@ module Interface.XML (
   ) where
 
 import Prelude hiding (id)
-import qualified Data.Text.Lazy as T      --text
+import qualified Data.Map as Map          --base
 import qualified Control.Applicative as M --base
 import qualified Control.Monad as M       --base
+import qualified Data.Text.Lazy as T      --text
 import qualified Text.XML as X            --xml-conduit
 import Parser.CCG
 import Interface.Text
@@ -82,7 +83,7 @@ node2XML i j iflexonly node =
 
 prettifyXML :: T.Text -> T.Text
 prettifyXML text =
-  X.renderText X.def $ X.parseText_ X.def text
+  X.renderText X.def { X.rsPretty = True } $ X.parseText_ X.def text
 
 --prettifyXML text =
 --  let opts = X.PrettifyOpts {X.indentStyle = X.SPACE 2, X.endOfLine = X.LF} in
