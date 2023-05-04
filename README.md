@@ -5,7 +5,6 @@
 * Current version: 0.2.2.0
 * Copyright owner: Daisuke Bekki
 
-
 ## Installing lightblue
 ### Prerequisite 1: Haskell Stack
 In Linux:
@@ -18,10 +17,10 @@ $ brew install haskell-stack
 ```
 See https://docs/haskellstack.org/en/stable/README/#how-to-install for details.
 
-### Prerequisite 2: command-line tools
+### Prerequisite 2: JUMAN++
 The followint tools must be installed before executing *lightblue*.
 
-  1. [JUMAN (a User-Extensible Morphological Analyzer for Japanese)](http://nlp.ist.i.kyoto-u.ac.jp/EN/index.php?JUMAN) (>= version 7.0)
+[JUMAN (a User-Extensible Morphological Analyzer for Japanese)](http://nlp.ist.i.kyoto-u.ac.jp/EN/index.php?JUMAN) (>= version 7.0)
 
 [//]: # (1. blas and lapack )
 [//]: # (`sudo apt-get install libblas-dev liblapack-dev` )
@@ -29,19 +28,19 @@ The followint tools must be installed before executing *lightblue*.
 ### Download lightblue
 Do the following in the directory under which you'd like to install *lightblue*.
 ```
-$ git clone https://github.com/DaisukeBekki/lightblue.git
+$ git clone --depth=1 https://github.com/DaisukeBekki/lightblue.git
 ```
-This operation will create the directory *lightblue* (henceforth we will refer to this directory as &lt;lightblue&gt;) under the current directory.
+This operation will create, under the current directory, a new directory *lightblue*.  Henceforth we will refer to the full path to this directory as &lt;lightblue&gt;.
 
 ### Configuration and Installation
-You need to add the environment variable LIGHTBLUE and set its value as &lt;lightblue&gt;.  You may add the line `export LIGHTBLUE=<lightblue>` to .bashrc, .bash.profile, .bash_profile, or whatever configuration file for your shell.  Then move to &lt;lightblue&gt; and:
+You need to add the environment variable LIGHTBLUE and set its value as &lt;lightblue&gt;.  You may add the line `export LIGHTBLUE=<lightblue>` to .bashrc, .bash.profile, .bash_profile, or whatever configuration file for your shell.  Then move to &lt;lightblue&gt; and do the following:
 ```
 $ cd <lightblue>
 $ stack build
 ```
 
 ### How to run
-Set the permission of two shell scripts `lightblue` to executable.
+Set the permission of the shell scripts `lightblue` to executable.
 ```
 $ chmod 755 lightblue
 ```
@@ -51,9 +50,9 @@ To parse a Japanese sentence and get a text|HTML|TeX|XML representation, execute
 $ echo 太郎がパンを食べた。 | ./lightblue parse -s {text|html|tex|xml}
 ```
 
-With '-n|--nbest' option, *lightblue* will show the N-best parse results.
+With `-n|--nbest` option, *lightblue* will show the N-best parse results.
 
-With '--time' option, *lightblue* will show the execution time for parsing.
+With `--time` option, *lightblue* will show the execution time for parsing.
 
 *lightblue* can be used as a part-of-speech tagger when the `-o postag` option is specified:
 ```
@@ -97,7 +96,7 @@ $ lightblue --stat
 ### For developpers ###
 Installing Haskell-mode for Emacs will help.
 ```
-$ sudo apt-get install haskell-mode
+$ sudo apt install haskell-mode
 ```
 
 The following command creates an HTML document at: `<lightblue>/haddock/doc/html/lightblue/index.html`
@@ -108,5 +107,4 @@ $ stack build --haddock
 
 ## Contact ##
 
-* Repo owner: [Daisuke Bekki](http://www.is.ocha.ac.jp/~bekki/)
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+* Repo owner: [Daisuke Bekki](https://daisukebekki.github.io/)
