@@ -34,14 +34,14 @@ $ git clone https://github.com/DaisukeBekki/lightblue.git
 This operation will create the directory *lightblue* (henceforth we will refer to this directory as &lt;lightblue&gt;) under the current directory.
 
 ### Configuration and Installation
-You need to add the environment variable LIGHTBLUE and set its value as $lightblue>.  You may add the line `export LIGHTBLUE=&lt;lightblue&gt;` to .bashrc, .bash.profile, .bash_profile, or whatever configuration file for your shell.  Then move to &lt;lightblue&gt; and:
+You need to add the environment variable LIGHTBLUE and set its value as &lt;lightblue&gt;.  You may add the line `export LIGHTBLUE=<lightblue>` to .bashrc, .bash.profile, .bash_profile, or whatever configuration file for your shell.  Then move to &lt;lightblue&gt; and:
 ```
-$ cd &lt;lightblue&gt;
+$ cd <lightblue>
 $ stack build
 ```
 
 ### How to run
-Set the permission of two shell scripts `lightblue` and `tidy` to executable.
+Set the permission of two shell scripts `lightblue` to executable.
 ```
 $ chmod 755 lightblue
 ```
@@ -67,24 +67,24 @@ $ echo 太郎がパンを食べた。| ./lightblue parse -o numeration
 
 If you have a text file (one sentence per line) &lt;corpusfile&gt;, then you can feed it to *lightblue* by:
 ```
-$ ./lightblue demo -f &lt;corpusfile&gt;
+$ ./lightblue demo -f <corpusfile>
 ```
 
 To parse a JSeM file and execute inferences therein, then you can feed it to *lightblue* by:
 ```
-$ ./lightblue infer -i jsem -f &lt;jsemfile&gt;
+$ ./lightblue infer -i jsem -f <jsemfile>
 ```
 
 To check the inference relations &lt;premise_1&gt;, ..., &lt;premise_n&gt; |- &lt;hypothesis&gt;, simply execute:
 ```
-$ ./lightblue infer -f &lt;filename&gt;
+$ ./lightblue infer -f <filename>
 ```
 where &lt;filename&gt; is the path of a text file, consisting of premises and a hypothesis with one sentence per each line:
 ```
-&lt;premise_1&gt;
+<premise_1>
 ...
-&lt;premise_n&gt;
-&lt;hypothesis&gt;
+<premise_n>
+<hypothesis>
 ```
 
 Check also:
@@ -100,7 +100,7 @@ Installing Haskell-mode for Emacs will help.
 $ sudo apt-get install haskell-mode
 ```
 
-The following command creates an HTML document at: `&lt;lightblue&gt;/haddock/doc/html/lightblue/index.html`
+The following command creates an HTML document at: `<lightblue>/haddock/doc/html/lightblue/index.html`
 
 ```
 $ stack build --haddock
