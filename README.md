@@ -31,12 +31,12 @@ Do the following in the directory under which you'd like to install *lightblue*.
 ```
 $ git clone https://github.com/DaisukeBekki/lightblue.git
 ```
-This operation will create the directory *lightblue* (henceforth we will refer to this directory as <lightblue>) under the current directory.
+This operation will create the directory *lightblue* (henceforth we will refer to this directory as &lt;lightblue&gt;) under the current directory.
 
 ### Configuration and Installation
-You need to add the environment variable LIGHTBLUE and set its value as <lightblue>.  You may add the line `export LIGHTBLUE=<lightblue>` to .bashrc, .bash.profile, .bash_profile, or whatever configuration file for your shell.  Then move to <lightblue> and:
+You need to add the environment variable LIGHTBLUE and set its value as $lightblue>.  You may add the line `export LIGHTBLUE=&lt;lightblue&gt;` to .bashrc, .bash.profile, .bash_profile, or whatever configuration file for your shell.  Then move to &lt;lightblue&gt; and:
 ```
-$ cd <lightblue>
+$ cd &lt;lightblue&gt;
 $ stack build
 ```
 
@@ -65,26 +65,26 @@ The following command shows the list of lexical items prepared for pasing the gi
 $ echo 太郎がパンを食べた。| ./lightblue parse -o numeration
 ```
 
-If you have a text file (one sentence per line) <corpusfile>, then you can feed it to *lightblue* by:
+If you have a text file (one sentence per line) &lt;corpusfile&gt;, then you can feed it to *lightblue* by:
 ```
-$ ./lightblue demo -f <corpusfile>
+$ ./lightblue demo -f &lt;corpusfile&gt;
 ```
 
 To parse a JSeM file and execute inferences therein, then you can feed it to *lightblue* by:
 ```
-$ ./lightblue infer -i jsem -f <jsemfile>
+$ ./lightblue infer -i jsem -f &lt;jsemfile&gt;
 ```
 
-To check the inference relations <premise_1>, ..., <premise_n> |- <hypothesis>, simply execute:
+To check the inference relations &lt;premise_1&gt;, ..., &lt;premise_n&gt; |- &lt;hypothesis&gt;, simply execute:
 ```
-$ ./lightblue infer -f <filename>
+$ ./lightblue infer -f &lt;filename&gt;
 ```
-where <filename> is the path of a text file, consisting of premises and a hypothesis with one sentence per each line:
+where &lt;filename&gt; is the path of a text file, consisting of premises and a hypothesis with one sentence per each line:
 ```
-<premise_1>
+&lt;premise_1&gt;
 ...
-<premise_n>
-<hypothesis>
+&lt;premise_n&gt;
+&lt;hypothesis&gt;
 ```
 
 Check also:
@@ -100,7 +100,7 @@ Installing Haskell-mode for Emacs will help.
 $ sudo apt-get install haskell-mode
 ```
 
-The following command creates an HTML document at: `<lightblue>/haddock/doc/html/lightblue/index.html`
+The following command creates an HTML document at: `&lt;lightblue&gt;/haddock/doc/html/lightblue/index.html`
 
 ```
 $ stack build --haddock
