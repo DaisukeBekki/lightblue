@@ -1,5 +1,4 @@
-{-# OPTIONS -Wall #-}
-{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 
 {-|
 Module      : DTS.UDTTwithName
@@ -23,9 +22,6 @@ module DTS.UDTTwithName (
 
 import qualified Data.Text.Lazy as T    -- text
 import qualified Data.Text.Lazy.IO as T -- text
---import qualified System.IO as S         -- base
---import Control.Applicative              -- base
---import Data.Traversable                 -- base
 import Interface.Text
 import Interface.TeX
 import Interface.HTML
@@ -221,7 +217,7 @@ instance Typeset Context where
   toTeX = (T.intercalate ",") . (map (\(nm,tm) -> T.concat [toTeX nm, ":", toTeX tm])) . reverse
 
 instance MathML Context where
-  toMathML cont = T.concat $ ["<mrow>"] ++ (map (\(nm,tm) -> T.intercalate "," T.concat [toMathML nm, "<mo>:</mo>", toMathML tm]) $ reverse cont) ++ ["</mrow>"]
+  toMathML = (T.intercalate ",") . (map (\(nm,tm) -> T.concat [toMathML nm, "<mo>:</mo>", toMathML tm])) . reverse
 
 -- | prints a context vertically.
 toVerticalMathML :: Context -> T.Text
