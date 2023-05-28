@@ -1,5 +1,4 @@
-{-# OPTIONS -Wall #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 {-|
 Module      : DTS.Prover
@@ -12,10 +11,11 @@ A Prover-Interfaces for DTS.
 -}
 
 module DTS.Prover (
-  defaultTypeCheck,
-  defaultProofSearch,
-  checkFelicity,
-  checkEntailment
+  defaultTypeCheck
+  , defaultProofSearch
+  , checkFelicity
+  , InferenceSetting(..)
+  , checkEntailment
   ) where
 
 import qualified Data.Text.Lazy as T      --text
@@ -51,13 +51,27 @@ sequentialTypeCheck sig = foldr (\sr cont -> let result = do
                                                 else (head result):cont
                                 ) []
 
+data InferenceSetting = InferenceSetting {
+  beam :: Int     -- ^ beam width
+  , nbest :: Int  -- ^ n-best
+  } deriving (Eq, Show)
+
+data InferencePair = InferencePair {
+  premises :: [T.Text]   -- ^ premises
+  , hypothesis :: T.Text -- ^ a hypothesis
+  } deriving (Eq, Show)
+
+data InferenceResult = InferenceResult {
+  inferencePair :: InferencePair
+  , nodes :: [CP.Node]
+  , maxDepth :: Maybe Int
+  } deriving (Eq, Show)
+
 -- | checks if premises entails hypothesis
-checkEntailment :: Int         -- ^ beam width
-                   -> Int      -- ^ n-best
-                   -> [T.Text] -- ^ premises
-                   -> T.Text   -- ^ a hypothesis
-                   -> IO()
-checkEntailment beam nbest premises hypothesis = do
+checkEntailment :: InferenceSetting 
+                   -> InferencePair 
+                   -> IO(InferenceResult)
+checkEntailment InferenceSetting{..} InferencePair{..} = do
   let hline = "<hr size='15' />"
   --
   -- Show premises and hypothesis
@@ -120,3 +134,8 @@ checkEntailment beam nbest premises hypothesis = do
 choice :: [[a]] -> [[a]]
 choice [] = [[]]
 choice (a:as) = [x:xs | x <- a, xs <- choice as]
+
+instance MathML InferenceResult where
+  toMathml (InferenceResult a b) =
+    -> T.Text
+

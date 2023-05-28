@@ -1,15 +1,16 @@
-name:                lightblue
-version:             0.2.2.2
-description:         Please see the README on GitHub at <https://github.com/DaisukeBekki/lightblue#README.md>
-homepage:            https://github.com/DaisukeBekki/lightblue
-category:            CCG Parser, Dependent Type Prover
-synopsis:            A Japanese CCG parser with DTS
-license:             AllRightsReserved
-license-file:        LICENSE
-copyright:           Daisuke Bekki
-author:              Daisuke Bekki and Bekki Laboratory
-maintainer:          Daisuke Bekki
-stability:           beta
+name:         lightblue
+version:      0.2.2.3
+description:  Please see the README on GitHub at <https://github.com/DaisukeBekki/lightblue#README.md>
+homepage:     https://github.com/DaisukeBekki/lightblue
+category:     CCG Parser, Dependent Type Prover
+synopsis:     A Japanese CCG parser with DTS
+license:      AllRightsReserved
+license-file: LICENSE
+copyright:    Daisuke Bekki
+author:       Daisuke Bekki and Bekki Laboratory
+maintainer:   Daisuke Bekki
+stability:    beta
+ghc-options:  -Wall
 
 extra-source-files:
   - README.md
@@ -25,7 +26,7 @@ dependencies:
   - xml-conduit >= 1.9
   - optparse-applicative >= 0.13
   - semigroups >= 0.16
-  - jsem >= 0.1
+  - jsem >= 1.0
   - array >= 0.5.3.0
   - mtl >= 2.2.2
   - directory >=1.3.3.0
