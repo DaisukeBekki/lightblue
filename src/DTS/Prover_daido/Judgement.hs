@@ -1,13 +1,30 @@
+{-|
+  Module      : DTS.Prover_daido.Judgement
+  DTS.Prover.Judgement in different notation
+
+  = When adding new rules, edit ...
+  * `Label`
+  * show Label
+  * labelToMathML
+  * labelToTex
+-}
 module DTS.Prover_daido.Judgement
-( Judgement(..),
-  UJudgement(..),
+( -- * Types
   TEnv,
   TUEnv,
   SUEnv,
-  Tree(..),
-  UTree (..),
+  -- * Judgements
+  Judgement(..),
+  UJudgement(..),
+  -- * Trees
+  -- ** Labels
   Label(..),
   ULabel(..),
+  -- ** Trees
+  -- $judgements
+  Tree(..),
+  UTree (..),
+  -- * Functions
   getTerm,
   getType,
   getTypeU,
@@ -30,45 +47,61 @@ import Interface.Text
 import Interface.TeX
 import Interface.HTML
 
-
--- TUEnv : UDTTの型環境の型
--- | haddock
+-- | Type Environment for __UDTT__
+--
+-- Newer variables come former.
 type TUEnv = [UD.Preterm]
 
--- TEnv : DTTの型環境の型
--- | haddock
+-- | Type Environment for __DTT__
+--
+-- Newer variables come former.
+--
+-- For examples, following environment is notated as [c,b,a]
+-- \[
+-- \Gamma \equiv a,b,c
+-- \]
 type TEnv = [DT.Preterm]
 
--- | SUEnv : UDTTのシグネチャの型
-type SUEnv = UD.Signature
+-- | Signature Environment Type for __UDTT__
+--  
+-- Newer variables come former.
+--
+--  When Signature "fuga" has value "@UD.Var 0@", Signature is notated as @(fuga,UD.Var 0)@
+type SUEnv = [(T.Text,UD.Preterm)]
 
--- | getList : 環境 env の中で変数 var の値をすべて返す
-getList :: (Eq k, Show k) => [(k, v)] -> k -> [v]
+-- | getList : get all velues for @var@ in @env@
+getList :: 
+     (Eq k, Show k) 
+  => [(k, v)] -- ^ env
+  -> k -- ^ var
+  -> [v]
 getList [] key = []
 getList ((k,v):xs) key
   | key == k  = v:(getList xs key)
   | otherwise = getList xs key
 
 
--- | UJudgement : UDTTのジャッジメントの定義
+-- | UJudgement : Judgement for __UDTT__
 data UJudgement =
   UJudgement TUEnv UD.Preterm UD.Preterm
     deriving (Eq, Show)
 
+-- | translates a UDTT Judgement into a tex source code.
 instance Typeset UJudgement where
   toTeX (UJudgement env preM preA) =
     toTeX UD.Judgment {UD.context = env, UD.term = preM, UD.typ = preA}
 
+-- | translates a UDTT Judgement into a MathML notation.
 instance MathML UJudgement where
   toMathML (UJudgement env preM preA) =
     toMathML UD.Judgment {UD.context = env, UD.term = preM, UD.typ = preA}
 
-
--- | Judgement : DTTのジャッジメントの定義
+-- | Judgement : Judgement for __DTT__
 data Judgement =
   Judgement TEnv DT.Preterm DT.Preterm
     deriving (Eq, Show)
 
+-- | translates a DTT Judgement into a tex source code.
 instance Typeset Judgement where
   toTeX (Judgement env preM preA) =
     let uenv = map DT.toUDTT env
@@ -76,6 +109,7 @@ instance Typeset Judgement where
         preA' = DT.toUDTT preA in
     toTeX UD.Judgment {UD.context = uenv, UD.term = preM', UD.typ = preA'}
 
+-- | translates a DTT Judgement into a MathML notation.
 instance MathML Judgement where
   toMathML (Judgement env preM preA) =
     let uenv = map DT.toUDTT env
@@ -83,25 +117,32 @@ instance MathML Judgement where
         preA' = DT.toUDTT preA in
     toMathML UD.Judgment {UD.context = uenv, UD.term = preM', UD.typ = preA'}
 
--- | 規則
+-- $tree
+--
+-- Most important change from DTS.Prover.Judgement
+
+
+-- | rule names
 data Label =
-   CHK   -- (CHK) rule
- | CON   -- (CON) rule
- | VAR   -- (VAR) rule
- | TypeF  -- (typeF) rule
- | PiF    -- (Pi F) rule
- | PiI    -- (Pi I) rule
- | PiE    -- (Pi E) rule
- | SigF   -- (Sig F) rule
- | SigI   -- (Sig I) rule
- | SigE   -- (Sig E) rule
- | NotF   -- (Not F) rule
- | NotI   -- (Not I) rule
- | NotE   -- (Not E) rule
- | TopF   -- (TF) rule
- | TopI   -- (TI) rule
- | BotF   -- (Bot F) rule
- | DREL   -- (DRel) rule
+   CHK   -- ^(CHK) rule
+ | CON   -- ^(CON) rule
+ | VAR   -- ^(VAR) rule
+ | TypeF  -- ^(typeF) rule
+ | PiF    -- ^(Pi F) rule
+ | PiI    -- ^(Pi I) rule
+ | PiE    -- ^(Pi E) rule
+ | SigF   -- ^(Sig F) rule
+ | SigI   -- ^(Sig I) rule
+ | SigE   -- ^(Sig E) rule
+ | NotF   -- ^(Not F) rule
+ | NotI   -- ^(Not I) rule
+ | NotE   -- ^(Not E) rule
+ | TopF   -- ^(TF) rule
+ | TopI   -- ^(TI) rule
+ | BotF   -- ^(Bot F) rule
+ | DREL   -- ^(DRel) rule
+ | EqE    -- ^(EqE) rule
+ | EqF    -- ^(EqI) rule
  deriving (Eq)
 
 instance Show Label where
@@ -124,7 +165,10 @@ instance Show Label where
      TopI   -> "TI"
      BotF   -> "Bot F"
      DREL   -> "DRel"
+     EqE    -> "Eq E"
+     EqF    -> "Eq F"
 
+-- | translate label into a MathML notation
 labelToMathML :: Label -> String
 labelToMathML label =
     case label of
@@ -140,8 +184,11 @@ labelToMathML label =
      TopF   -> "&top;F"
      TopI   -> "&top;I"
      BotF   -> "&bot;F"
+     EqE    -> "= E"
+     EqF    -> "= F"
      _ -> show label
 
+-- | translate label into a tex source code
 labelToTeX :: Label -> String
 labelToTeX label =
     case label of
@@ -157,9 +204,14 @@ labelToTeX label =
      TopF   -> "\\top F"
      TopI   -> "\\top I"
      BotF   -> "\\bot F"
+     EqE    -> "= E"
+     EqE    -> "= F"
      _ -> show label
 
-data ULabel = ASP' | L Label deriving (Eq) -- (@) rule
+data ULabel = 
+   ASP'  -- ^ underspecified type
+  | L Label -- ^ otherwise
+  deriving (Eq)
 
 instance Show ULabel where
   show ulabel =
@@ -167,28 +219,34 @@ instance Show ULabel where
      ASP'     -> "@"
      L label    -> show label
 
+-- | translate ulabel into a MathML notation
 ulabelToMathML :: ULabel -> String
 ulabelToMathML ulabel =
     case ulabel of
      L label    -> labelToMathML label
      ASP' -> show ulabel
 
+-- | translate ulabel into a tex source code
 ulabelToTeX :: ULabel -> String
 ulabelToTeX ulabel =
     case ulabel of
      L label    -> labelToTeX label
      ASP' -> show ulabel
 
--- | UTree  : UDTT用の木構造
-data UTree  a = UT ULabel a [UTree  a] | UError' a T.Text deriving (Eq, Show)
+-- | UTree  : Tree for __UDTT__
+data UTree  a = 
+   UT ULabel a [UTree  a] -- ^ tree
+  | UError' a T.Text -- ^ error
+  deriving (Eq, Show) 
 
--- | utreeToTeX : UDTTのTree用のtoTeX関数
+-- | translate uTree into a tex source code
 utreeToTeX  :: (UTree  UJudgement) -> T.Text
 utreeToTeX (UT label downside upside) =
   T.pack ("\\nd[(\\underline{"++ ulabelToTeX label ++ "})]{") `T.append` (toTeX downside) `T.append` T.pack "}{" `T.append`  (if null upside then T.pack "" else T.init $ T.concat$ map (\tree -> utreeToTeX tree `T.append`  T.pack "&") upside) `T.append` T.pack "}"
 utreebaseToTex (UError' judgement msg) =
   T.pack "\\nd[(Error)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` msg `T.append` T.pack "}"
 
+-- | translate uTree into a MathML notation
 utreeToMathML :: (UTree  UJudgement) -> T.Text
 utreeToMathML (UT label downside upside) =
   case length upside of
@@ -206,19 +264,19 @@ utreeToMathML (UT label downside upside) =
         toMathML downside,
         T.pack "</mi></mrow>"
         ]
-    2 ->
-        T.concat [
+    num ->
+        T.append (T.concat [
           T.pack ("<mrow><mi fontsize='0.8'><p style='text-decoration: underline;'>("++ ulabelToMathML label ++")</p></mi><mfrac linethickness='2px'>"),
-          T.pack "<mrow>",
-          utreeToMathML $head upside,
+          T.pack "<mrow>"])
+        (T.append (T.concat $
+          foldr (\n lst -> (utreeToMathML $upside !! n):((T.pack " "):lst)) [] [0..(num-1)] 
+          {-[utreeToMathML $head upside,
           T.pack " ",
-          utreeToMathML $upside !! 1 ,
-          T.pack "</mrow>",
+          utreeToMathML $upside !! 1 ]-})
+          (T.concat [T.pack "</mrow>",
           toMathML downside,
           T.pack "</mfrac></mrow>"
-          ]
-    _ ->
-      T.pack ""
+          ]))
 utreeToMathML (UError' judgement msg) =
    T.concat [
      T.pack "<mrow><mi fontsize='0.8'>(Error)</mi><mfrac linethickness='2px'>",
@@ -227,16 +285,32 @@ utreeToMathML (UError' judgement msg) =
      T.pack "</mfrac></mrow>"
      ]
 
--- | Tree : DTT用の木構造
-data Tree a = T Label a [Tree a] | Error' a T.Text deriving (Eq, Show)
+-- | Tree for __DTT__
+--
+-- Second input comes bottom of the tree and third come upside.
+--
+-- For example, following tree is notated as @T SigI a&b [ tree to b,tree to a]@
+--
+-- Dash in @Error'@ is to avoid conflict with DTS.Prover.Judgement.Error
+--
+-- a  \   b
+--
+-- \------
+--
+-- a & b
+data Tree a = 
+   T Label a [Tree a] -- ^ tree
+  | Error' a T.Text -- ^ error
+  deriving (Eq, Show)
 
--- | treeToTeX : DTTのTree用のtoTeX関数
+-- | translate uTree into a tex source code
 treeToTeX  :: (Tree Judgement) -> T.Text
 treeToTeX (T label downside upside) =
   T.pack ("\\nd[("++ labelToTeX label ++ ")]{") `T.append` (toTeX downside) `T.append` T.pack "}{" `T.append`  (if null upside then T.pack "" else T.init $ T.concat$ map (\tree -> treeToTeX tree `T.append`  T.pack "&") upside) `T.append` T.pack "}"
 treebaseToTex (Error' judgement msg) =
   T.pack "\\nd[(Error)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` msg `T.append` T.pack "}"
 
+-- | translate uTree into a MathML notation
 treeToMathML :: (Tree Judgement) -> T.Text
 treeToMathML (T label downside upside) =
   case length upside of
@@ -254,19 +328,16 @@ treeToMathML (T label downside upside) =
         toMathML downside,
         T.pack "</mi></mrow>"
         ]
-    2 ->
-        T.concat [
+    num ->
+        T.append (T.concat [
           T.pack ("<mrow><mi fontsize='0.8'><p style='text-decoration: underline;'>("++ labelToMathML label ++")</p></mi><mfrac linethickness='2px'>"),
-          T.pack "<mrow>",
-          treeToMathML $head upside,
-          T.pack " ",
-          treeToMathML $upside !! 1 ,
-          T.pack "</mrow>",
+          T.pack "<mrow>"])
+        (T.append (T.concat $
+          foldr (\n lst -> (treeToMathML $upside !! n):((T.pack " "):lst)) [] [0..(num-1)] )
+          (T.concat [T.pack "</mrow>",
           toMathML downside,
           T.pack "</mfrac></mrow>"
-          ]
-    _ ->
-      T.pack ""
+          ]))
 treeToMathML (Error' judgement msg) =
    T.concat [
      T.pack "<mrow><mi fontsize='0.8'>(Error)</mi><mfrac linethickness='2px'>",
@@ -275,33 +346,33 @@ treeToMathML (Error' judgement msg) =
      T.pack "</mfrac></mrow>"
      ]
 
--- | getTypeU : UDTTの証明木の一番下のTypeを取り出す
+-- | get bottom type from UTree
 getTypeU :: (UTree  UJudgement) -> [UD.Preterm]
 getTypeU (UT ulabel (UJudgement env preM preA) upside) = [preA]
 getTypeU (UError' (UJudgement env preM preA) text) = [preA]
 
--- | getTermU : UDTTの証明木の一番下のTermを取り出す
+-- | get bottom term from UTree
 getTermU :: (UTree  UJudgement) -> [UD.Preterm]
 getTermU (UT ulabel (UJudgement env preM preA) upside) = [preM]
 getTermU (UError' (UJudgement env preM preA) text) = [preM]
 
--- | getType : DTTの証明木の一番下のTypeを取り出す
+-- | get bottom type from Tree]
 getType :: (Tree Judgement) -> [DT.Preterm]
 getType (T label (Judgement env preM preA) upside) =  [preA]
 getType (Error' (Judgement env preM preA) text) = [preA]
 
--- | getTerm : DTTの証明木の一番下のTermを取り出す
+-- | get bottom term from Tree
 getTerm :: (Tree Judgement) -> [DT.Preterm]
 getTerm (T label (Judgement env preM preA) upside) =  [preM]
 getTerm (Error' (Judgement env preM preA) text) = [preM]
 
--- | printGammaU : UDTTの環境を出力する関数
+-- | print UDTT type environment
 printGammaU :: TUEnv -> T.Text
 printGammaU [] = T.pack ""
 printGammaU [x] = toTeX x
 printGammaU (x:xs) = (toTeX x) `T.append` T.pack ", " `T.append` (printGammaU xs)
 
--- | printGamma : DTTの環境を出力する関数
+-- | print DTT type environment
 printGamma :: TEnv -> T.Text
 printGamma [] = T.pack ""
 printGamma [x] = toTeX x

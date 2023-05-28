@@ -27,12 +27,7 @@ import qualified DTS.UDTT as UD           -- UDTT
 import qualified DTS.DTT as DT            -- DTT
 import qualified Data.Text.Lazy as T      -- text
 import qualified Data.List as L           -- base
---import qualified Control.Applicative as M -- base
---import qualified Control.Monad as M       -- base
---import qualified DTS.UDTTwithName as VN
 import Interface.Text
---import Interface.TeX
---import Interface.HTML
 import DTS.Prover_daido.Judgement
 
 -- transP : UDTTの項をDTTの項に変換する関数
@@ -73,10 +68,6 @@ transP (UD.Not preM) = do
   pretermM <- transP preM
   return (DT.Not pretermM)
 transP (UD.Asp _ _) = []
---transP (UD.DRel i t preM preN) = do
---  pretermA <- transP preM
---  pretermB <- transP preN
---  return (DT.DRel i t pretermA pretermB)
 transP _ = []
 
 

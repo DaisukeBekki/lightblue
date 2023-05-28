@@ -1,5 +1,5 @@
 name:                lightblue
-version:             0.2.2.1
+version:             0.2.2.2
 description:         Please see the README on GitHub at <https://github.com/DaisukeBekki/lightblue#README.md>
 homepage:            https://github.com/DaisukeBekki/lightblue
 category:            CCG Parser, Dependent Type Prover
@@ -70,8 +70,11 @@ library:
   - DTS.Prover_daido.Judgement
   - DTS.Prover_daido.TypeChecker
   - DTS.DTStoProlog
-  - DTS.Alligator.Arrowterm
-  - DTS.Alligator.ProofTree
+  - DTS.Wani.WaniBase
+  - DTS.Wani.Forward
+  - DTS.Wani.Backward
+  - DTS.Wani.Arrowterm
+  - DTS.Wani.Prove
 
 executables:
   lightblue:
