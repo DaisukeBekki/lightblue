@@ -489,6 +489,7 @@ myLexicon = concat $ [
   mylex ["あ"] "(381)" (defS [V5ARU] [Stem] `BS` defS verb [TeForm]) (eventModifier "＃テアル"),
   mylex ["あ"] "(381)" (defS [V5ARU] [Stem] `BS` defS adjective [Cont]) (eventModifier "＃テアル"),
   mylex ["あ"] "(381)" (defS [V5ARU] [Stem] `BS` defS [Nda] [TeForm]) (id,[]),
+  mylex ["お"] "(381*)" (defS [V5k] [Stem] `BS` defS verb [TeForm]) (eventModifier "＃テオク"),
   mylex ["な"] "(383)" ((S [F[ANAS],F[Stem],F[M],F[M],F[P],F[M],F[M]] `BS` NP [F[Ga]]) `BS` (defS adjective [Cont]) `BS` NP [F[Ga]]) negOperator2,
   mylex ["な"] "(383)" ((S [F[ANAS],F[Stem],F[M],F[M],F[P],F[M],F[M]] `BS` NP [F[Ga]]) `BS` (defS [Nda] [TeForm] `BS` NP [F[Ga]])) negOperator2,
   mylex ["な"] "(384)" ((defS [V5r] [Stem] `BS` NP [F[Ga]]) `BS` (defS adjective [Cont] `BS` NP [F[Ga]])) (intensionalEvent 1 "成る/なる"),
