@@ -912,5 +912,7 @@ myLexicon = concat $ [
   mylex ["時には"] "PB12-86" (defS [Nemp] [NStem] `BS` NP[F[Ga]]) (commonNounSR "時には/ときには"), -- 「時に」は副詞エントリがあるが意味が異なる
   mylex ["真っ暗闇"] "PB12-86" N (commonNounSR "真っ暗闇/まっくらやみ"), -- 「真っ」は接頭語のエントリ有り？
   -- PN
-  mylex ["☎"] "PN" (NP [F[Nc]]) (properNameSR "電話番号")
+  mylex ["☎"] "PN" (NP [F[Nc]]) (properNameSR "電話番号"),
+  -- ABCbank
+  mylex ["ところ"] "(ABC)" (defS [Nda,Nni,Nemp] [NStem] `BS` S [F anyPos,F[Attr],F[P,M],F[M],F[P,M],F[M],F[M]]) (modalSR "＃トコロ")
   ]
