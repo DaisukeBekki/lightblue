@@ -2,14 +2,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 {-|
-Module      : DTS.DTStoProlog
+Module      : DTS.Prover.Coq.DTStoProlog
 Copyright   : (c) Ribeka Tanaka, 2016
 Licence     : All right reserved
 Maintainer  : Ribeka Tanaka
 Stability   : beta
 -}
 
-module DTS.DTStoProlog (
+module DTS.Prover.Coq.DTStoProlog (
   dts2prolog
   ) where
 

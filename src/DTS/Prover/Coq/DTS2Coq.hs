@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 {-|
-Module      : DTS2Coq
+Module      : DTS.Prover.Coq.DTS2Coq
 Description : 
 Copyright   : 
 Licence     : 

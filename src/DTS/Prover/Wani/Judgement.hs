@@ -8,7 +8,7 @@
   * labelToMathML
   * labelToTex
 -}
-module DTS.Prover_daido.Judgement
+module DTS.Prover.Wani.Judgement
 ( -- * Types
   TEnv,
   TUEnv,

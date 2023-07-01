@@ -24,8 +24,8 @@ import qualified Data.List as L           --base
 import qualified Parser.ChartParser as CP
 import qualified Interface.HTML as HTML
 import qualified DTS.UDTT as UD
-import qualified DTS.Prover.TypeChecker as Ty
-import qualified DTS.Prover.Judgement as Ty
+import qualified DTS.Prover.Diag.TypeChecker as Ty
+import qualified DTS.Prover.Diag.Judgement as Ty
 
 -- | type check with the default signature = entity:type, evt:type
 defaultTypeCheck :: UD.Signature -> UD.Context -> UD.Preterm -> UD.Preterm -> [Ty.UTree  Ty.UJudgement]
@@ -135,7 +135,7 @@ choice :: [[a]] -> [[a]]
 choice [] = [[]]
 choice (a:as) = [x:xs | x <- a, xs <- choice as]
 
-instance MathML InferenceResult where
-  toMathml (InferenceResult a b) =
-    -> T.Text
+--instance MathML InferenceResult where
+--  toMathml (InferenceResult a b) =
+--    -> T.Text
 

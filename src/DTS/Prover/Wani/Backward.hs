@@ -1,20 +1,20 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module DTS.Wani.Backward (
+module DTS.Prover.Wani.Backward (
     deduce
 ) where
 
 import qualified DTS.DTT as DT            -- DTT
-import qualified DTS.Wani.Arrowterm as A -- Aterm
-import qualified DTS.Wani.Forward as F  --Forward Inference
-import qualified DTS.Prover_daido.Judgement  as J -- Judgement
+import qualified DTS.Prover.Wani.Arrowterm as A -- Aterm
+import qualified DTS.Prover.Wani.Forward as F  --Forward Inference
+import qualified DTS.Prover.Wani.Judgement  as J -- Judgement
 
 import qualified Data.List as L -- List
 import qualified Debug.Trace as D -- Trace
 import qualified Data.Text.Lazy as T -- Text
 import qualified Data.Maybe as M -- Maebe
 
-import qualified DTS.Wani.WaniBase as B
+import qualified DTS.Prover.Wani.WaniBase as B
 
 -- | Execute proof search.
 deduce :: B.DeduceRule

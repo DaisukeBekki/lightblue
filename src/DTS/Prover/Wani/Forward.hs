@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
-module DTS.Wani.Forward (forwardContext) where
+module DTS.Prover.Wani.Forward (forwardContext) where
 
 import qualified Data.List as L 
 
 import qualified DTS.DTT as DT            -- DTT
-import qualified DTS.Wani.Arrowterm as A
-import qualified DTS.Prover_daido.Judgement  as J
+import qualified DTS.Prover.Wani.Arrowterm as A
+import qualified DTS.Prover.Wani.Judgement  as J
 
-import qualified DTS.Wani.WaniBase as B 
+import qualified DTS.Prover.Wani.WaniBase as B 
 
 
 import qualified Debug.Trace as D

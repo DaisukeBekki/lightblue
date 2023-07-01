@@ -63,19 +63,19 @@ library:
   - Interface.HTML
   - Interface.SVG
   - DTS.DTT
-  - DTS.UDTTwithName
   - DTS.UDTT
+  - DTS.UDTTwithName
   - DTS.Prover
-  - DTS.Prover.Judgement
-  - DTS.Prover.TypeChecker
-  - DTS.Prover_daido.Judgement
-  - DTS.Prover_daido.TypeChecker
-  - DTS.DTStoProlog
-  - DTS.Wani.WaniBase
-  - DTS.Wani.Forward
-  - DTS.Wani.Backward
-  - DTS.Wani.Arrowterm
-  - DTS.Wani.Prove
+  - DTS.Prover.Diag.Judgement
+  - DTS.Prover.Diag.TypeChecker
+  - DTS.Prover.Wani.Judgement
+  - DTS.Prover.Wani.TypeChecker
+  - DTS.Prover.Wani.WaniBase
+  - DTS.Prover.Wani.Forward
+  - DTS.Prover.Wani.Backward
+  - DTS.Prover.Wani.Arrowterm
+  - DTS.Prover.Wani.Prove
+  - DTS.Prover.Coq.DTStoProlog
 
 executables:
   lightblue:

@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 {-|
-Module      : DTS.Prover.TypeChecker
+Module      : DTS.Prover.Diag.TypeChecker
 Copyright   : Miho Sato
 Licence     : All right reserved
 Maintainer  : Miho Sato <satoh.miho@is.ocha.ac.jp>
@@ -10,7 +10,7 @@ Stability   : beta
 
 A Typechecker and a theorem prover for DTS.
 -}
-module DTS.Prover.TypeChecker
+module DTS.Prover.Diag.TypeChecker
 ( aspElim,
   typeCheckU,
   typeInferU,
@@ -33,7 +33,7 @@ import qualified Data.List as L           -- base
 import Interface.Text
 --import Interface.TeX
 --import Interface.HTML
-import DTS.Prover.Judgement
+import DTS.Prover.Diag.Judgement
 
 -- transP : UDTTの項をDTTの項に変換する関数
 -- (Asp)は変換先がないので、[]が返る(?)

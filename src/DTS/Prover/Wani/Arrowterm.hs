@@ -1,6 +1,6 @@
 {-# LANGUAGE  TypeSynonymInstances, FlexibleInstances  #-}
 
-module DTS.Wani.Arrowterm
+module DTS.Prover.Wani.Arrowterm
 (
   Arrowterm(..),
   AJudgement(..),
@@ -51,7 +51,7 @@ import qualified DTS.DTT as DT            -- DTT
 import qualified DTS.UDTT as UD            -- DTT
 import qualified Data.Text.Lazy as T      -- text
 import qualified Data.List as L           -- base
-import qualified DTS.Prover_daido.Judgement as J
+import qualified DTS.Prover.Wani.Judgement as J
 import Interface.Text ( SimpleText(..) )
 import qualified Data.Bifunctor
 import qualified DTS.UDTTwithName as VN

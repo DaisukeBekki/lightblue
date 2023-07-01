@@ -8,6 +8,8 @@ extra-deps:
 #  - git: git@github.com:DaisukeBekki/hasktorch-tools.git
 #    commit: 936928cdee27e179a5e3775d146046b107b0eba1
 
+allow-newer: true
+
 build:
   haddock: false
   haddock-arguments:

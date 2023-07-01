@@ -3,7 +3,7 @@
   Module      : DTS.Wani.WaniBase
   Definitions for wani
 -}
-module DTS.Wani.WaniBase (
+module DTS.Prover.Wani.WaniBase (
    -- * Parameters
     ATerm,
     AType,
@@ -28,8 +28,8 @@ module DTS.Wani.WaniBase (
 ) where
 
 import qualified DTS.DTT as DT            -- DTT
-import qualified DTS.Wani.Arrowterm as A
-import qualified DTS.Prover_daido.Judgement  as J
+import qualified DTS.Prover.Wani.Arrowterm as A
+import qualified DTS.Prover.Wani.Judgement  as J
 
 import qualified Data.Text.Lazy as T 
 import qualified Data.List as L 

@@ -1,4 +1,4 @@
-module DTS.Prover.Judgement
+module DTS.Prover.Diag.Judgement
 ( Judgement(..),
   UJudgement(..),
   TEnv,

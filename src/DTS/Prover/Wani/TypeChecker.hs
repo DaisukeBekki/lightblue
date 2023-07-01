@@ -10,7 +10,7 @@ Stability   : beta
 
 A Typechecker and a theorem prover for DTS.
 -}
-module DTS.Prover_daido.TypeChecker
+module DTS.Prover.Wani.TypeChecker
 ( aspElim,
   typeCheckU,
   typeInferU,
@@ -28,7 +28,7 @@ import qualified DTS.DTT as DT            -- DTT
 import qualified Data.Text.Lazy as T      -- text
 import qualified Data.List as L           -- base
 import Interface.Text
-import DTS.Prover_daido.Judgement
+import DTS.Prover.Wani.Judgement
 
 -- transP : UDTTの項をDTTの項に変換する関数
 -- (Asp)は変換先がないので、[]が返る(?)

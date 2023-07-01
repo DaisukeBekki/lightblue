@@ -24,7 +24,8 @@ import qualified JSeM as J
 import qualified JSeM.XML as J
 import qualified DTS.UDTT as DTS
 --import qualified DTS.Prover.TypeChecker as TC
-import qualified DTS.Prover as Prover
+import qualified DTS.Wani as Wani
+import qualified DTS.Prover as Diag
 import qualified DTS.DTStoProlog as D2P
 
 data Options =
@@ -59,10 +60,11 @@ instance Read ParseOutput where
     ++ [(POSTAG,s) | (x,s) <- lex r, map C.toLower x == "postag"]
     ++ [(NUMERATION,s) | (x,s) <- lex r, map C.toLower x == "numeration"]
 
-data ProverName = DTS | Coq deriving (Eq,Show)
+data ProverName = Wani | Diagonal | Coq | deriving (Eq,Show)
 instance Read ProverName where
   readsPrec _ r =
-    [(DTS,s) | (x,s) <- lex r, map C.toLower x == "dts"]
+    [(Wani,s) | (x,s) <- lex r, map C.toLower x == "wani"]
+    ++ [(Diagonal,s) | (x,s) <- lex r, map C.toLower x == "diagonal"]
     ++ [(Coq,s) | (x,s) <- lex r, map C.toLower x == "coq"]
 
 -- | Main function.  Check README.md for the usage.
@@ -151,9 +153,9 @@ inferOptionParser = Infer
   <$> option auto
     ( long "prover"
       <> short 'p'
-      <> metavar "DTS|Coq"
+      <> metavar "Wani|Diagonal|Coq"
       <> showDefault
-      <> value DTS
+      <> value Wani
       <> help "Choose prover" )
 
 debugOptionParser :: Parser Command
@@ -228,10 +230,12 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
     lightblueMainLocal (Infer prover) contents = do
       let handle = S.stdout;
           proverf = case prover of
-           DTS -> Prover.checkEntailment beamw nbest
+           Wani -> Wani.
+           Diag -> Diag.checkEntailment beamw nbest
            Coq -> D2P.dts2prolog beamw nbest
       case prover of
-        DTS -> S.hPutStrLn handle $ I.headerOf I.HTML
+        Wani -> S.hPutStrLn handle $ I.headerOf I.HTML
+        Diag -> S.hPutStrLn handle $ I.headerOf I.HTML
         Coq -> return ()
       case input of --  $ ligthblue infer -i jsem -f ../JSeM_beta/JSeM_beta_150415.xml
         SENTENCES -> do
@@ -243,13 +247,13 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
         JSEM -> do
                 --S.hPutStrLn S.stdout $ I.headerOf I.HTML
                 parsedJSeM <- J.xml2jsemData $ T.toStrict contents
-                mapM_ (\j -> do
-                          mapM_ T.putStr ["JSeM [", T.fromStrict $ J.jsem_id j, "] "]
-                          proverf (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
-                          ) parsedJSeM
+                forM_ parsedJSeM $ \j -> do
+                  mapM_ T.putStr ["JSeM [", T.fromStrict $ J.jsem_id j, "] "]
+                  proverf (map T.fromStrict $ J.premises j) $ T.fromStrict $ J.hypothesis j
                 --S.hPutStrLn S.stdout $ I.footerOf I.HTML
       case prover of
-        DTS -> S.hPutStrLn handle $ I.footerOf I.HTML
+        Wani -> S.hPutStrLn handle $ I.footerOf I.HTML
+        Diag -> S.hPutStrLn handle $ I.footerOf I.HTML
         Coq -> return ()
     -- |
     -- | Debug

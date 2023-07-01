@@ -1,6 +1,6 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE OverloadedStrings #-}
-module DTS.Wani.Prove
+module DTS.Prover.Wani.Prove
 (
   settingDNE,
   settingEFQ,
@@ -12,10 +12,10 @@ module DTS.Wani.Prove
 
 import qualified DTS.DTT as DT            -- DTT
 import qualified DTS.UDTT as UD            -- DTT
-import qualified DTS.Wani.Arrowterm as A
-import qualified DTS.Prover_daido.Judgement  as J
-import qualified DTS.Wani.Backward as B
-import qualified DTS.Wani.WaniBase as WB 
+import qualified DTS.Prover.Wani.Arrowterm as A
+import qualified DTS.Prover.Wani.Judgement  as J
+import qualified DTS.Prover.Wani.Backward as B
+import qualified DTS.Prover.Wani.WaniBase as WB 
 
 import qualified Data.Text.Lazy as T 
 import qualified Data.List as L 
