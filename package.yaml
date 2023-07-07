@@ -65,7 +65,8 @@ library:
   - DTS.DTT
   - DTS.UDTT
   - DTS.UDTTwithName
-  - DTS.Prover
+  - DTS.Inference
+  - DTS.Prover.Diag.Prover
   - DTS.Prover.Diag.Judgement
   - DTS.Prover.Diag.TypeChecker
   - DTS.Prover.Wani.Judgement

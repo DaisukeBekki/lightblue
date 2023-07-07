@@ -35,8 +35,8 @@ import qualified Interface.HTML as HTML
 import qualified Interface.XML as X
 import qualified DTS.UDTT as DTS
 import qualified DTS.UDTTwithName as VN
-import qualified DTS.Prover as Prover
-import qualified DTS.Prover.Judgement as Ty
+import qualified DTS.Prover.Diag.Prover as Ty
+import qualified DTS.Prover.Diag.Judgement as Ty
 --import qualified Classifier.DiscourseRelation as DR
 import qualified Interface.SVG as SVG
 
@@ -99,7 +99,7 @@ printNodes handle HTML sid sentence typecheck nodes = do
           if typecheck 
              then do
                   T.hPutStrLn handle $ HTML.startMathML;
-                  let trees = map Ty.utreeToMathML $ Prover.checkFelicity (CCG.sig node) [] (CCG.sem node);
+                  let trees = map Ty.utreeToMathML $ Ty.checkFelicity (CCG.sig node) [] (CCG.sem node);
                       -- T.hPutStrLn handle $ DTS.toVerticalMathML $ do
                       --   t1 <- Ty.checkFelicity (CCG.sig node) [] (CCG.sem node);
                       --   t2 <- Ty.aspElim t1

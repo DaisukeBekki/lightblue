@@ -13,7 +13,7 @@ module DTS.Prover.Wani.Prove
 import qualified DTS.DTT as DT            -- DTT
 import qualified DTS.UDTT as UD            -- DTT
 import qualified DTS.Prover.Wani.Arrowterm as A
-import qualified DTS.Prover.Wani.Judgement  as J
+import qualified DTS.Prover.Wani.Judgement as J
 import qualified DTS.Prover.Wani.Backward as B
 import qualified DTS.Prover.Wani.WaniBase as WB 
 
