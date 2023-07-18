@@ -1,5 +1,4 @@
-{-# OPTIONS -Wall #-}
-{-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 
 {-|
 Copyright   : (c) Daisuke Bekki, 2016
@@ -13,7 +12,6 @@ module DTS.UDTT (
   -- * Types
   Preterm(..),
   Selector(..),
-  Signature,
   --printSignature,
   toTextDeBruijn,
   -- * Syntactic Operations
@@ -34,6 +32,7 @@ module DTS.UDTT (
   fromDeBruijn,
   toDeBruijn,
   -- * Judgment
+  Signature,
   Context,
   toVerticalMathML,
   printVerticalMathML,
@@ -41,7 +40,7 @@ module DTS.UDTT (
   fromDeBruijnContext,
   fromDeBruijnJudgment,
   fromDeBruijnSRlist,
-  printProofSearchQuery
+  UDTTruleName(..)
   ) where
 
 import qualified Data.Text.Lazy as T      -- text
@@ -139,13 +138,6 @@ toTextDeBruijn preterm = case preterm of
     Refl a m -> T.concat ["refl", toTextDeBruijn a, "(", toTextDeBruijn m, ")"]
     Idpeel m n -> T.concat ["idpeel(", toTextDeBruijn m, ",", toTextDeBruijn n, ")"]
     --DRel i t m n -> T.concat ["DRel", T.pack (show i), "[", t, "](", toTextDeBruijn m, ",", toTextDeBruijn n, ")"]
-
--- | A type of an element of a type signature, that is, a list of pairs of a preterm and a type.
--- ex. [entity:type, state:type, event:type, student:entity->type]
-type Signature = [(T.Text,Preterm)]
-
-instance SimpleText Signature where
-  toText sigs = T.concat ["[", (T.intercalate ", " $ map (\(cname,ty) -> T.concat $ [toText (Con cname), ":", toText ty]) sigs), "]"]
 
 {- Syntactic Operations -}
 
@@ -581,6 +573,13 @@ toDeBruijn vnames preterm = case preterm of
 
 {- Judgment of UDTT in de Bruijn notation -}
 
+-- | A type of an element of a type signature, that is, a list of pairs of a preterm and a type.
+-- ex. [entity:type, state:type, event:type, student:entity->type]
+type Signature = [(T.Text,Preterm)]
+
+instance SimpleText Signature where
+  toText sigs = T.concat ["[", (T.intercalate ", " $ map (\(cname,ty) -> T.concat $ [toText (Con cname), ":", toText ty]) sigs), "]"]
+
 -- | A context is a list of preterms
 type Context = [Preterm]
 
@@ -632,11 +631,13 @@ printVerticalMathML :: [Preterm] -> IO()
 printVerticalMathML = VN.printVerticalMathML . fromDeBruijnSRlist
 
 -- | The data type for a judgment
+-- | - UDTTのsignatureにはDTTのpretermしか現れない
 data Judgment = Judgment {
+  sig :: DTT.Signature,
   context :: Context, -- ^ A context \Gamma in \Gamma \vdash M:A
   term :: Preterm,    -- ^ A term M in \Gamma \vdash M:A
   typ :: Preterm      -- ^ A type A in \Gamma \vdash M:A
-  } deriving (Eq)
+  } deriving (Eq, Show)
 
 instance SimpleText Judgment where
   toText = toText . fromDeBruijnJudgment
@@ -650,22 +651,27 @@ instance MathML Judgment where
 -- | translates a judgment in de Bruijn notation into one with variable names
 fromDeBruijnJudgment :: Judgment -> VN.Judgment
 fromDeBruijnJudgment judgment =
-  let (vcontext', vterm', vtyp')
+  let (vsig', vcontext', vterm', vtyp')
         = initializeIndex $ do
                             (varnames,vcontext) <- fromDeBruijnContextLoop $ context judgment
                             vterm <- fromDeBruijn varnames (term judgment)
                             vtyp <- fromDeBruijn varnames (typ judgment)
-                            return (vcontext, vterm, vtyp)
-  in VN.Judgment { VN.context = vcontext',
+                            return (vsig, vcontext, vterm, vtyp)
+  in VN.Judgment { VN.sig = vsig',
+                   VN.context = vcontext',
                    VN.term = vterm',
                    VN.typ = vtyp' }
 
--- | prints a proof search query in MathML
-printProofSearchQuery :: Context -> Preterm -> T.Text
-printProofSearchQuery cont ty =
-  let (vcontext', vtyp')
-        = initializeIndex $ do
-                            (varnames,vcontext) <- fromDeBruijnContextLoop cont
-                            vtyp <- fromDeBruijn varnames ty
-                            return (vcontext, vtyp)
-  in T.concat ["<mrow>", toMathML vcontext', "<mo>&vdash;</mo><mo>?</mo><mo>:</mo>", toMathML vtyp', "</mrow>"]
+data UDTTruleName = Var | Con | Typ | Asp | PiF | PiI | PiE | SigmaF | SigmaI | SigmaE | DisjF | DisjI | DisjE | EnumF | EnumI | EnumE | IqF | IqI | IqE | NumF | NumI | NumE deriving (Eq, Show, Read)
+
+instance SimpleText UDTTrule where
+  toText = T.pack . show
+
+instance MathML UDTTrule where
+  toMathML Var = "<mo>VAR</mo>"
+  toMathML _ = "<err>"
+
+instance TypeSet UDTTrule where
+  toTeX Var = "\\mathit{Var}"
+  toTeX _ = ""
+

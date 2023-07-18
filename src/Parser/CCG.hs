@@ -12,8 +12,8 @@ Syntactic categories, syntactic features and combinatory rules of Combinatory Ca
 -}
 module Parser.CCG (
   -- * Types
-  Node(..),
-  RuleSymbol(..),
+  CCGnode(..),
+  RuleName(..),
   Cat(..),
   Feature(..),
   FeatureValue(..),
@@ -46,6 +46,7 @@ import DTS.UDTT
 import Interface.Text
 import Interface.TeX
 import Interface.HTML
+import Interface.Tree
 
 -- | A node in CCG derivation tree.
 data Node = Node {
@@ -95,6 +96,10 @@ instance MathML Node where
     case daughters node of 
       [] -> T.concat ["<mrow><mfrac linethickness='2px'><mtext fontsize='1.0' color='Black'>", pf node, "</mtext><mfrac linethickness='0px'><mstyle color='Red'>", toMathML $ cat node, "</mstyle><mstyle color='Black'>", toMathML $ betaReduce $ sem node, "</mstyle></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", source node, "</mtext></mrow>"] 
       dtrs -> T.concat ["<mrow><mfrac linethickness='2px'><mrow>", T.concat $ map toMathML dtrs, "</mrow><mfrac linethickness='0px'><mstyle color='Red'>", toMathML $ cat node, "</mstyle><mstyle color='Black'>", toMathML $ betaReduce $ sem node, "</mstyle></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", toMathML $ rs node, "</mtext></mrow>"] 
+
+-- | ゆくゆくは、Catはtype classとして再定義し、
+-- | merge : Cat -> Cat -> Cat??のようにclass関数を用意してパーザはそれのみ使う
+-- | Featureは言語別にモジュールを分けて定義できるようにする
 
 -- | Syntactic categories of 
 data Cat =

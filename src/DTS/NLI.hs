@@ -1,16 +1,16 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards, DuplicateRecordFields #-}
 
 {-|
-Module      : DTS.Inference
+Module      : DTS.NLI
 Copyright   : Daisuke Bekki
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
 
-A Prover-Interfaces for DTS.
+A module for Natural Language Inference 
 -}
 
-module DTS.Inference (
+module DTS.NLI (
   InferenceSetting(..)
   , InferencePair(..)
   , InferenceResult(..)
@@ -22,34 +22,36 @@ import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.List as L           --base
 import qualified Parser.ChartParser as CP
 import qualified Interface.HTML as HTML
+import qualified Interface.TEX as TEX
 import qualified DTS.UDTT as UD
+import qualified DTS.DTT as DTT
+import qualified DTS.Proof as Pr
 --import qualified DTS.Prover.Diag.Prover as Ty
 import qualified DTS.Prover.Diag.TypeChecker as Ty
-import qualified DTS.Prover.Diag.Judgement as Ty
+--import qualified DTS.Prover.Diag.Judgement as Ty
 
 data InferenceSetting = InferenceSetting {
   beam :: Int     -- ^ beam width
   , nbest :: Int  -- ^ n-best
-  , typeChecker :: UD.Signatuer -> UD.Context -> UD.Preterm -> UD.Preterm -> [
-  , prover :: UD.Signature -> UD.Context -> UD.Preterm -> [Ty.
-  } deriving (Eq, Show)
+  , maxDepth :: Int -- ^ max depth for prover
+  , typeChecker :: Pr.TypeChecker
+  , prover :: Pr.Prover
+  } 
+
+data InferenceLabel = YES | NO | UNK deriving (Eq, Show, Read)
 
 data InferencePair = InferencePair {
   premises :: [T.Text]   -- ^ premises
   , hypothesis :: T.Text -- ^ a hypothesis
   } deriving (Eq, Show)
 
-data InferenceResult = InferenceResult {
-  inferencePair :: InferencePair
-  , nodes :: [CP.Node]
-  , maxDepth :: Maybe Int
-  } deriving (Eq, Show)
+data InferenceResult = InferenceResult [([CP.Node], ProofSearchResult)] deriving (Eq, Show)
 
 -- | Checks if the premise texts entails the hypothesis text.
 -- | The specification of this function reflects a view about what are entailments between texts, that is an interface problem between natural language semantics and logic
 checkEntailment :: InferenceSetting 
                    -> InferencePair 
-                   -> IO(InferenceResult)
+                   -> IO InferenceResult
 checkEntailment InferenceSetting{..} InferencePair{..} = do
   -- | Parse sentences
   let sentences = hypothesis:(reverse premises)     -- reverse the order of sentences (hypothesis first, the first premise last)
@@ -76,36 +78,42 @@ checkEntailment InferenceSetting{..} InferencePair{..} = do
       (nds,srs,pds) = if null nodeSrPrList
                         then head tripledNodes
                         else head nodeSrPrList
+  return $ InferenceResult (InferencePair remises hypothesis) nds maxDepth
 
 choice :: [[a]] -> [[a]]
 choice [] = [[]]
 choice (a:as) = [x:xs | x <- a, xs <- choice as]
 
-instance MathML InferenceResult where
-  toMathml InferenceResult {..} = 
+instance HTML.MathML InferenceResult where
+  toMathML InferenceResult{..} = 
     let hline = "<hr size='15' />" in T.concat [
-      -- | Show premises and hypothesis
-      --mapM_ T.putStr ["[", jsem_id, "]"]
-      mapM (\p -> mapM_ T.putStr ["<p>P: ", p, "</p>"]) premises
-      mapM_ T.putStr ["<p>H: ", hypothesis, "</p>"]
-      , hline
-      -- | Show parse trees
-      , HTML.startMathML
-    mapM_ (T.putStrLn . HTML.toMathML) $ reverse nds
-    T.putStrLn HTML.endMathML
-    T.putStrLn hline
+    -- | Show premises and hypothesis
+    --mapM_ T.putStr ["[", jsem_id, "]"]
+    T.concat $ map (\p -> T.concat ["<p>P: ", p, "</p>"]) premises
+    , T.concat ["<p>H: ", hypothesis, "</p>"]
+    , hline
+    -- | Show parse trees
+    , HTML.startMathML
+    , T.concat $ map HTML.toMathML $ reverse nds
+    , HTML.endMathML
+    , hline
     -- | Show proof diagrams
-    if null pds
-       then mapM_ T.putStrLn [
-           "No proof diagrams for: ",
-           HTML.startMathML,
-           UD.printProofSearchQuery (tail srs) (head srs),
-           HTML.endMathML
+    , if null pds
+        then T.concat [
+           "No proof diagrams for: "
+           , HTML.startMathML
+           , UD.printProofSearchQuery (tail srs) (head srs)
+           , HTML.endMathML
            ]
-       else do
-           T.putStrLn "Proved: "
-           T.putStrLn HTML.startMathML
-           mapM_ (T.putStrLn . Ty.utreeToMathML) pds
-           T.putStrLn HTML.endMathML
-    T.putStrLn hline
+        else T.concat [
+           "Proved: "
+           , HTML.startMathML
+           , T.concat $ map Ty.utreeToMathML pds
+           , HTML.endMathML
+           ]
+    , hline
+    ]
 
+instance TEX.TypeSet InferenceResult where
+  toTeX InferenceResult{..} =
+    ""

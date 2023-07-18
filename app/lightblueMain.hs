@@ -60,11 +60,11 @@ instance Read ParseOutput where
     ++ [(POSTAG,s) | (x,s) <- lex r, map C.toLower x == "postag"]
     ++ [(NUMERATION,s) | (x,s) <- lex r, map C.toLower x == "numeration"]
 
-data ProverName = Wani | Diagonal | Coq | deriving (Eq,Show)
+data ProverName = Wani | Diag | Coq | deriving (Eq,Show)
 instance Read ProverName where
   readsPrec _ r =
     [(Wani,s) | (x,s) <- lex r, map C.toLower x == "wani"]
-    ++ [(Diagonal,s) | (x,s) <- lex r, map C.toLower x == "diagonal"]
+    ++ [(Diag,s) | (x,s) <- lex r, map C.toLower x == "diagonal"]
     ++ [(Coq,s) | (x,s) <- lex r, map C.toLower x == "coq"]
 
 -- | Main function.  Check README.md for the usage.

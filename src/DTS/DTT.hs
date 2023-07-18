@@ -13,10 +13,12 @@ module DTS.DTT (
   -- * Types
   Preterm(..),
   Selector(..),
-  Signature,
-  --printSignature,
   toUDTT,
-  toDTT
+  toDTT,
+  Signature,
+  toUDTTsig,
+  toDTTsig,
+  Context(..)
   ) where
 
 import qualified Data.Text.Lazy as T      -- text
@@ -38,7 +40,7 @@ instance SimpleText Selector where
 instance Typeset Selector where
   toTeX = toText
 
--- | Preterms of Underspecified Dependent Type Theory (DTT).
+-- | Preterms of Dependent Type Theory (DTT).
 data Preterm =
   Var Int |               -- ^ Variables
   Con T.Text |            -- ^ Constant symbols
@@ -79,13 +81,6 @@ instance Typeset Preterm where
 instance MathML Preterm where
   toMathML = toMathML . toUDTT
 
--- | A type of an element of a type signature, that is, a list of pairs of a preterm and a type.
--- ex. [entity:type, state:type, event:type, student:entity->type]
-type Signature = [(T.Text,Preterm)]
-
-instance SimpleText Signature where
-  toText = toText . toUDTTsig
-
 -- | DTT to UDTT
 toUDTT :: Preterm -> UDTT.Preterm
 toUDTT preterm = case preterm of
@@ -111,14 +106,6 @@ toUDTT preterm = case preterm of
   Refl a m     -> UDTT.Refl (toUDTT a) (toUDTT m)
   Idpeel m n   -> UDTT.Idpeel (toUDTT m) (toUDTT n)
   --DRel i t m n -> UDTT.DRel i t (toUDTT m) (toUDTT n)
-
-toUDTTselector :: Selector -> UDTT.Selector
-toUDTTselector Fst = UDTT.Fst
-toUDTTselector Snd = UDTT.Snd
-
-toUDTTsig :: Signature -> UDTT.Signature
-toUDTTsig [] = []
-toUDTTsig ((cname,typ):sigs) = (cname, toUDTT typ):(toUDTTsig sigs)
 
 -- | UDTT to DTT
 toDTT :: UDTT.Preterm -> Preterm
@@ -152,3 +139,64 @@ toDTT preterm = case preterm of
 toDTTselector :: UDTT.Selector -> Selector
 toDTTselector UDTT.Fst = Fst
 toDTTselector UDTT.Snd = Snd
+
+toUDTTselector :: Selector -> UDTT.Selector
+toUDTTselector Fst = UDTT.Fst
+toUDTTselector Snd = UDTT.Snd
+
+-- | Judgement
+
+-- | A type of an element of a type signature, that is, a list of pairs of a preterm and a type.
+-- ex. [entity:type, state:type, event:type, student:entity->type]
+type Signature = [(T.Text,Preterm)]
+
+instance SimpleText Signature where
+  toText = toText . toUDTTsig
+
+instance MathML Signature where
+  toMathML = toMathML . toUDTTsig
+
+toUDTTsig :: Signature -> UDTT.Signature
+toUDTTsig [] = []
+toUDTTsig ((cname,typ):sigs) = (cname, toUDTT typ):(toUDTTsig sigs)
+
+toDTTsig :: UDTT.Signature -> Signature
+toDTTsig [] = []
+toDTTsig ((cname,typ):sigs) = (cname, toDTT typ)](toDTTsig sigs)
+
+type Context = [Preterm]
+
+toUDTTcontext :: Context -> UDTT.Context
+toUDTTcontext [] = []
+toUDTTcontext = map toUDTT
+
+instance SimpleText Context where
+  toText = toText . toUDTTcontext
+
+instance Typeset Context where
+  toTeX = toTeX . toUDTTcontext
+
+instance MathML Context where
+  toMathML = toMathML . toUDTTcontext
+
+-- | The data type for a DTT judgment
+data Judgment = Judgment {
+  sig :: Signature,
+  context :: Context, -- ^ A context \Gamma in \Gamma \vdash M:A
+  term :: Preterm,    -- ^ A term M in \Gamma \vdash M:A
+  typ :: Preterm      -- ^ A type A in \Gamma \vdash M:A
+  } deriving (Eq, Show)
+
+toUDTTJudgment :: Judgment -> UDTT.Judgment
+
+
+instance SimpleText Judgment where
+  toText = toText . fromDeBruijnJudgment . toUDTT
+
+instance Typeset Judgment where
+  toTeX = toTeX . fromDeBruijnJudgment . toUDTT
+
+instance MathML Judgment where
+  toMathML = toMathML . fromDeBruijnJudgment . toUDTT
+
+
