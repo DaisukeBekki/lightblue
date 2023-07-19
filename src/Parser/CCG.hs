@@ -186,7 +186,7 @@ instance MathML Cat where
     SL x y      -> T.concat ["<mrow>", toMathML x, "<mo>/</mo>", toMathML' y, "</mrow>"]
     BS x y      -> T.concat ["<mrow>", toMathML x, "<mo>\\</mo>", toMathML' y, "</mrow>"]
     T True i _  -> T.concat ["<msub><mi>T</mi><mn>",(T.pack $ show i),"</mn></msub>"]
-    T False i u -> T.concat ["<msub>", toMathML' u, "<mn>",(T.pack $ show i),"</mn></msub>"]
+    T False i u -> T.concat ["<msub>", toMathML' u, "<mn>",(T.pack $ "<"++ show i ++">"),"</mn></msub>"]
     S (pos:(conj:pm)) -> 
                    T.concat [
                      "<msub><mi>S</mi><mstyle color='Purple'><mtable columnalign='left'><mtr><mtd>",

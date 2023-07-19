@@ -179,11 +179,11 @@ instance MathML Preterm where
     Not a -> T.concat["<mrow><mi>&not;</mi>", toMathML a, "</mrow>"]
     Lam vname m -> T.concat ["<mrow><mi>&lambda;</mi>", toMathML vname, "<mpadded lspace='-0.2em' width='-0.2em'><mo>.</mo></mpadded>", toMathML m, "</mrow>"]
     App (App (Con cname) y) x ->
-      T.concat ["<mrow><mtext>", cname, "</mtext><mo>(</mo>", toMathML x, toMathML y,"<mo>)</mo></mrow>"]
+      T.concat ["<mrow><mtext>", cname, "</mtext><mo>(</mo>", toMathML x, "<mo>,</mo>", toMathML y,"<mo>)</mo></mrow>"]
     App (App (App (Con cname) z) y) x ->
-      T.concat ["<mrow><mtext>", cname, "</mtext><mo>(</mo>", toMathML x, toMathML y,toMathML z,"<mo>)</mo></mrow>"]
+      T.concat ["<mrow><mtext>", cname, "</mtext><mo>(</mo>", toMathML x, "<mo>,</mo>", toMathML y, "<mo>,</mo>", toMathML z,"<mo>)</mo></mrow>"]
     App (App (App (App (Con cname) u) z) y) x ->
-      T.concat ["<mrow><mtext>", cname, "</mtext><mo>(</mo>", toMathML x, toMathML y, toMathML z, toMathML u, "<mo>)</mo></mrow>"]
+      T.concat ["<mrow><mtext>", cname, "</mtext><mo>(</mo>", toMathML x, "<mo>,</mo>", toMathML y, "<mo>,</mo>", toMathML z, "<mo>,</mo>", toMathML u, "<mo>)</mo></mrow>"]
     App m n -> T.concat ["<mrow>", toMathML m, "<mo>(</mo>", toMathML n, "<mo>)</mo></mrow>"]
     Sigma vname a b -> case b of
                          Top -> toMathML a
