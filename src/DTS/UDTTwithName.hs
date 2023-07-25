@@ -209,7 +209,18 @@ instance MathML Preterm where
     Idpeel m n -> T.concat ["<mrow><mi>idpeel</mi><mfenced>", toMathML m, toMathML n, "</mfenced></mrow>"]
     --DRel i t u v -> T.concat ["<mrow><msub><mi>DRel</mi><mn>", T.pack (show i), "</mn></msub><mtext>", t, "</mtext><mfenced>", toMathML u, toMathML v, "</mfenced></mrow>"]
 
-{- Judgment -}
+-- | Judgment
+
+type Signature = [(T.Text,Preterm)]
+
+instance SimpleText Signature where
+  toText sigs = T.concat ["[", (T.intercalate ", " $ map (\(cname,ty) -> T.concat $ [toText (Con cname), ":", toText ty]) sigs), "]"]
+
+instance Typeset Signature where
+  toTeX _ = T.pack "to be implemented"
+
+instance MathML Signature where
+  toMathML = T.intercalate "<mo>, </mo>" . map (\(cname,ty) -> T.concat [toMathML (Con cname), "<mo>:</mo>", toMathML ty])
 
 -- | A context is a list of pairs of a variable and a preterm.
 type Context = [(VarName,Preterm)]
@@ -241,16 +252,17 @@ printVerticalMathML cont = do
 
 -- | The data type for a judgment
 data Judgment = Judgment {
-  context :: Context, -- ^ A context \Gamma in \Gamma \vdash M:A
-  term :: Preterm,    -- ^ A term M in \Gamma \vdash M:A
-  typ :: Preterm      -- ^ A type A in \Gamma \vdash M:A
+  sig :: Signature
+  , ctx :: Context -- ^ A context \Gamma in \Gamma \vdash M:A
+  , trm :: Preterm -- ^ A term M in \Gamma \vdash M:A
+  , typ :: Preterm -- ^ A type A in \Gamma \vdash M:A
   } deriving (Eq)
 
 instance SimpleText Judgment where
-  toText j = T.concat [toText $ context j, " |- ", toText $ term j, ":", toText $ typ j]
+  toText j = T.concat [toText $ ctx j, " |- ", toText $ trm j, ":", toText $ typ j]
 
 instance Typeset Judgment where
-  toTeX j = T.concat [toTeX $ context j, "{\\vdash}", toTeX $ term j, "{:}", toTeX $ typ j]
+  toTeX j = T.concat [toTeX $ ctx j, "{\\vdash}", toTeX $ trm j, "{:}", toTeX $ typ j]
 
 instance MathML Judgment where
-  toMathML j = T.concat ["<mrow>", toMathML $ context j, "<mo>&vdash;</mo>", toMathML $ term j, "<mo>:</mo>", toMathML $ typ j, "</mrow>"]
+  toMathML j = T.concat ["<mrow>", toMathML $ ctx j, "<mo>&vdash;</mo>", toMathML $ trm j, "<mo>:</mo>", toMathML $ typ j, "</mrow>"]

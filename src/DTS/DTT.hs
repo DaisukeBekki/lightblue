@@ -11,14 +11,13 @@ Dependent Type Theory (in de Bruijn index)
 -}
 module DTS.DTT (
   -- * Types
-  Preterm(..),
-  Selector(..),
-  toUDTT,
-  toDTT,
-  Signature,
-  toUDTTsig,
-  toDTTsig,
-  Context(..)
+  Preterm(..)
+  , Selector(..)
+  , toUDTT
+  , toDTT
+  , Signature
+  , Context
+  , toUDTTcontext
   ) where
 
 import qualified Data.Text.Lazy as T      -- text
@@ -146,28 +145,22 @@ toUDTTselector Snd = UDTT.Snd
 
 -- | Judgement
 
--- | A type of an element of a type signature, that is, a list of pairs of a preterm and a type.
+-- | Signature is the type of an element of a type signature, that is, a list of pairs of a preterm and a type.
 -- ex. [entity:type, state:type, event:type, student:entity->type]
 type Signature = [(T.Text,Preterm)]
 
 instance SimpleText Signature where
-  toText = toText . toUDTTsig
+  toText sigs = T.concat ["[", (T.intercalate ", " $ map (\(cname,ty) -> T.concat $ [toText (Con cname), ":", toText ty]) sigs), "]"]
+
+instance Typeset Signature where
+  toTeX _ = T.pack "to be implemented"
 
 instance MathML Signature where
-  toMathML = toMathML . toUDTTsig
-
-toUDTTsig :: Signature -> UDTT.Signature
-toUDTTsig [] = []
-toUDTTsig ((cname,typ):sigs) = (cname, toUDTT typ):(toUDTTsig sigs)
-
-toDTTsig :: UDTT.Signature -> Signature
-toDTTsig [] = []
-toDTTsig ((cname,typ):sigs) = (cname, toDTT typ)](toDTTsig sigs)
+  toMathML = T.intercalate "<mo>, </mo>" . map (\(cname,ty) -> T.concat [toMathML (Con cname), "<mo>:</mo>", toMathML ty])
 
 type Context = [Preterm]
 
 toUDTTcontext :: Context -> UDTT.Context
-toUDTTcontext [] = []
 toUDTTcontext = map toUDTT
 
 instance SimpleText Context where
@@ -178,25 +171,5 @@ instance Typeset Context where
 
 instance MathML Context where
   toMathML = toMathML . toUDTTcontext
-
--- | The data type for a DTT judgment
-data Judgment = Judgment {
-  sig :: Signature,
-  context :: Context, -- ^ A context \Gamma in \Gamma \vdash M:A
-  term :: Preterm,    -- ^ A term M in \Gamma \vdash M:A
-  typ :: Preterm      -- ^ A type A in \Gamma \vdash M:A
-  } deriving (Eq, Show)
-
-toUDTTJudgment :: Judgment -> UDTT.Judgment
-
-
-instance SimpleText Judgment where
-  toText = toText . fromDeBruijnJudgment . toUDTT
-
-instance Typeset Judgment where
-  toTeX = toTeX . fromDeBruijnJudgment . toUDTT
-
-instance MathML Judgment where
-  toMathML = toMathML . fromDeBruijnJudgment . toUDTT
 
 

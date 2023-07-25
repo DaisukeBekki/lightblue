@@ -10,37 +10,33 @@ Implementation of Underspecified Dependent Type Theory (Bekki forthcoming).
 -}
 module DTS.UDTT (
   -- * Types
-  Preterm(..),
-  Selector(..),
-  --printSignature,
-  toTextDeBruijn,
+  Preterm(..)
+  , Selector(..)
+  --printSignature
+  , toTextDeBruijn
   -- * Syntactic Operations
-  subst,
-  shiftIndices,
-  addLambda,
-  deleteLambda,
-  replaceLambda,
+  , subst
+  , shiftIndices
+  , addLambda
+  , deleteLambda
+  , replaceLambda
   -- * Computations
-  betaReduce,
-  strongBetaReduce,
-  sigmaElimination,
-  add,
-  multiply,
+  , betaReduce
+  , strongBetaReduce
+  , sigmaElimination
+  , add
+  , multiply
   -- * De Bruijn notation from/to Variable-name notation
-  Indexed(..),
-  initializeIndex,
-  fromDeBruijn,
-  toDeBruijn,
+  , Indexed(..)
+  , initializeIndex
+  , fromDeBruijn
+  , toDeBruijn
   -- * Judgment
-  Signature,
-  Context,
-  toVerticalMathML,
-  printVerticalMathML,
-  Judgment(..),
-  fromDeBruijnContext,
-  fromDeBruijnJudgment,
-  fromDeBruijnSRlist,
-  UDTTruleName(..)
+  , Context
+  , toVerticalMathML
+  , printVerticalMathML
+  , fromDeBruijnContext
+  , fromDeBruijnContextLoop
   ) where
 
 import qualified Data.Text.Lazy as T      -- text
@@ -389,19 +385,18 @@ replaceLambda i preterm = deleteLambda i (addLambda i preterm)
 {- Initializing or Re-indexing of vars, @s and DRels -}
 
 -- | Indexed monad controls indices to be attached to preterms.  Arguments correspond to:
---   u for variables for propositions
--- | x for variables for entities
--- | e for variables for eventualities
--- | indices for asp-operators
--- | indices for DReL operators
-newtype Indexed a = Indexed { indexing :: Int -> Int -> Int -> Int -> Int -> Int -> (a,Int,Int,Int,Int,Int,Int) }
+-- |   s for variables for xxx
+-- |   u for variables for propositions
+-- |   x for variables for entities
+-- |   e for variables for eventualities
+newtype Indexed a = Indexed { indexing :: Int -> Int -> Int -> Int -> Int -> (a,Int,Int,Int,Int,Int) }
 
 instance Monad Indexed where
-  return m = Indexed (\s u x e a d -> (m,s,u,x,e,a,d))
-  (Indexed m) >>= f = Indexed (\s u x e a d -> let (m',s',u',x',e',a',d') = m s u x e a d;
+  return m = Indexed (\s u x e a -> (m,s,u,x,e,a))
+  (Indexed m) >>= f = Indexed (\s u x e a -> let (m',s',u',x',e',a') = m s u x e a;
                                                    (Indexed n) = f m';
                                                in
-                                               n s' u' x' e' a' d')
+                                               n s' u' x' e' a')
 
 instance Functor Indexed where
   fmap = M.liftM
@@ -412,26 +407,23 @@ instance M.Applicative Indexed where
 
 -- | A sequential number for variable names (i.e. x_1, x_2, ...) in a context
 sIndex :: Indexed Int
-sIndex = Indexed (\s u x e a d -> (s,s+1,u,x,e,a,d))
+sIndex = Indexed (\s u x e a -> (s,s+1,u,x,e,a))
 
 uIndex :: Indexed Int
-uIndex = Indexed (\s u x e a d -> (u,s,u+1,x,e,a,d))
+uIndex = Indexed (\s u x e a -> (u,s,u+1,x,e,a))
 
 xIndex :: Indexed Int
-xIndex = Indexed (\s u x e a d -> (x,s,u,x+1,e,a,d))
+xIndex = Indexed (\s u x e a -> (x,s,u,x+1,e,a))
 
 eIndex :: Indexed Int
-eIndex = Indexed (\s u x e a d -> (e,s,u,x,e+1,a,d))
+eIndex = Indexed (\s u x e a -> (e,s,u,x,e+1,a))
 
 aspIndex :: Indexed Int
-aspIndex = Indexed (\s u x e a d -> (a,s,u,x,e,a+1,d))
-
-dRelIndex :: Indexed Int
-dRelIndex = Indexed (\s u x e a d -> (d,s,u,x,e,a,d+1))
+aspIndex = Indexed (\s u x e a -> (a,s,u,x,e,a+1))
 
 -- | re-assigns sequential indices to all asperands that appear in a given preterm.
 initializeIndex :: Indexed a -> a
-initializeIndex (Indexed m) = let (m',_,_,_,_,_,_) = m 0 0 0 0 0 0 in m'
+initializeIndex (Indexed m) = let (m',_,_,_,_,_) = m 0 0 0 0 0 in m'
 
 -- | translates a preterm in de Bruijn notation into a preterm with variable name.
 fromDeBruijn :: [VN.VarName] -- ^ A context (= a list of variable names)
@@ -455,8 +447,8 @@ fromDeBruijn vnames preterm = case preterm of
   Lam m   -> do
     i <- xIndex
     let vname = case m of
-                  Sigma _ _ -> VN.VarName 'x' i
-                  Pi _ _    -> VN.VarName 'x' i
+                  Sigma _ _ -> VN.VarName 'k' i
+                  Pi _ _    -> VN.VarName 'k' i
                   _         -> VN.VarName 'x' i
     m' <- fromDeBruijn (vname:vnames) m
     return $ VN.Lam vname m'
@@ -573,12 +565,8 @@ toDeBruijn vnames preterm = case preterm of
 
 {- Judgment of UDTT in de Bruijn notation -}
 
--- | A type of an element of a type signature, that is, a list of pairs of a preterm and a type.
--- ex. [entity:type, state:type, event:type, student:entity->type]
-type Signature = [(T.Text,Preterm)]
-
-instance SimpleText Signature where
-  toText sigs = T.concat ["[", (T.intercalate ", " $ map (\(cname,ty) -> T.concat $ [toText (Con cname), ":", toText ty]) sigs), "]"]
+--fromDeBruijnSignature :: DTT.Signature -> VN.Signature
+--fromDeBruijnSignature = 
 
 -- | A context is a list of preterms
 type Context = [Preterm]
@@ -629,49 +617,4 @@ fromDeBruijnSRlistLoop varnames (x:xs) = do
 -- | prints an SR list in vertical manner.
 printVerticalMathML :: [Preterm] -> IO()
 printVerticalMathML = VN.printVerticalMathML . fromDeBruijnSRlist
-
--- | The data type for a judgment
--- | - UDTTのsignatureにはDTTのpretermしか現れない
-data Judgment = Judgment {
-  sig :: DTT.Signature,
-  context :: Context, -- ^ A context \Gamma in \Gamma \vdash M:A
-  term :: Preterm,    -- ^ A term M in \Gamma \vdash M:A
-  typ :: Preterm      -- ^ A type A in \Gamma \vdash M:A
-  } deriving (Eq, Show)
-
-instance SimpleText Judgment where
-  toText = toText . fromDeBruijnJudgment
-
-instance Typeset Judgment where
-  toTeX = toTeX . fromDeBruijnJudgment
-
-instance MathML Judgment where
-  toMathML = toMathML . fromDeBruijnJudgment
-
--- | translates a judgment in de Bruijn notation into one with variable names
-fromDeBruijnJudgment :: Judgment -> VN.Judgment
-fromDeBruijnJudgment judgment =
-  let (vsig', vcontext', vterm', vtyp')
-        = initializeIndex $ do
-                            (varnames,vcontext) <- fromDeBruijnContextLoop $ context judgment
-                            vterm <- fromDeBruijn varnames (term judgment)
-                            vtyp <- fromDeBruijn varnames (typ judgment)
-                            return (vsig, vcontext, vterm, vtyp)
-  in VN.Judgment { VN.sig = vsig',
-                   VN.context = vcontext',
-                   VN.term = vterm',
-                   VN.typ = vtyp' }
-
-data UDTTruleName = Var | Con | Typ | Asp | PiF | PiI | PiE | SigmaF | SigmaI | SigmaE | DisjF | DisjI | DisjE | EnumF | EnumI | EnumE | IqF | IqI | IqE | NumF | NumI | NumE deriving (Eq, Show, Read)
-
-instance SimpleText UDTTrule where
-  toText = T.pack . show
-
-instance MathML UDTTrule where
-  toMathML Var = "<mo>VAR</mo>"
-  toMathML _ = "<err>"
-
-instance TypeSet UDTTrule where
-  toTeX Var = "\\mathit{Var}"
-  toTeX _ = ""
 
