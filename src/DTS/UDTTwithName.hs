@@ -36,7 +36,7 @@ instance Typeset VarName where
   toTeX (VarName v i) = T.cons v $ T.concat ["_{", T.pack (show i), "}"]
 
 instance MathML VarName where
-  toMathML (VarName v i) = T.concat ["<msub><mi>", T.singleton v, "</mi><mn>", T.pack (show i), "</mn></msub>"]
+  toMathML (VarName v i) = T.concat ["<msub><mi>", T.singleton v, "</mi><mn><mstyle fontsize=8pt>", T.pack (show i), "</mstyle></mn></msub>"]
 
 -- | 'Proj' 'Fst' m is the first projection of m, while 'Proj' 'Snd' m is the second projection of m.
 data Selector = Fst | Snd
@@ -195,7 +195,7 @@ instance MathML Preterm where
     Unit       -> "<mi>()</mi>"
     Top        -> "<mi>&top;</mi>"
     Bot        -> "<mi>&bot;</mi>"
-    Asp j m    -> T.concat["<mrow><msub><mo>@</mo><mn>", T.pack (show j), "</mn></msub><mo>::</mo>", toMathML m, "</mrow>"]
+    Asp j m    -> T.concat["<mrow><mo>@</mo>", toMathML m, "</mrow>"]
     Nat    -> "<mi>N</mi>"
     Zero   -> "<mi>0</mi>"
     Succ n -> T.concat ["<mrow><mi>s</mi>", toMathML n, "</mrow>"]
