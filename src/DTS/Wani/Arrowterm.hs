@@ -41,6 +41,7 @@ module DTS.Wani.Arrowterm
   canBeSame,
   aj,
   addLam,
+  addLam',
   addApp,
   thereIsVar,
   varsInaTerm,
@@ -69,6 +70,7 @@ data Arrowterm =
   | ArrowPair Arrowterm Arrowterm -- ^ Pair型
   | ArrowProj ArrowSelector Arrowterm -- ^ Proj型
   | ArrowLam Arrowterm -- ^ Lam型
+  | ArrowLam' [Maybe Arrowterm] Arrowterm -- ^ Lam 型
   | Arrow AEnv  Arrowterm -- ^ Pi型
   | ArrowEq Arrowterm Arrowterm Arrowterm -- ^ 型 項1 項2 型
   deriving (Eq)
@@ -129,6 +131,8 @@ prestr2arrowstr prestr aTerm =
         in take 2 prestr ++"(" ++ prestr2arrowstr (snd parentheses) t ++ ")"
       (ArrowLam t) -> 
         takeWhile (/= '.') prestr ++ ".(" ++ prestr2arrowstr  (tail $ dropWhile (/= '.') prestr) t ++")"
+      (ArrowLam' a t) -> 
+        takeWhile (/= '.') prestr ++ ".(" ++ prestr2arrowstr  (tail $ dropWhile (/= '.') prestr) t ++")"
       (ArrowPair h t) ->
         let contents = init $ tail $prestr
             trCon = treatParentheses contents  '(' ')' 
@@ -168,6 +172,7 @@ arrow2DT (ArrowPair h t)= DT.Pair (arrow2DT h) (arrow2DT t)
 arrow2DT (ArrowApp a b) = DT.App (arrow2DT a) (arrow2DT b)
 arrow2DT (ArrowProj s p) = DT.Proj (dtNotatSelector s) (arrow2DT p)
 arrow2DT (ArrowLam p) = DT.Lam (arrow2DT p)
+arrow2DT (ArrowLam' a p) = DT.Lam (arrow2DT p)
 arrow2DT (Arrow [] t) = arrow2DT t
 arrow2DT (Arrow (f:r) t) = arrow2DT (Arrow r (Conclusion (DT.Pi (arrow2DT f)  (arrow2DT t))))
 arrow2DT (ArrowEq a b t) = DT.Eq (arrow2DT a) (arrow2DT b) (arrow2DT t)
@@ -182,6 +187,7 @@ thereIsVar num aTerm= case aTerm of
   ArrowPair ar ar' -> any (thereIsVar num) [ar,ar']
   ArrowProj as ar -> thereIsVar num ar
   ArrowLam ar -> thereIsVar (num+1) ar
+  ArrowLam' a ar -> thereIsVar (num + (length a)) ar
   Arrow ars ar -> 
     let arsLen = length ars
     in or $ zipWith (\num' a ->  thereIsVar (num + arsLen - num') a) [0..] (ar:ars)
@@ -200,6 +206,7 @@ varsInaTerm' base aTerm =
     ArrowPair ar ar' -> concatMap (varsInaTerm' base) [ar,ar'] 
     ArrowProj as ar -> varsInaTerm' base ar
     ArrowLam ar -> varsInaTerm' (base+1) ar
+    ArrowLam' a ar -> varsInaTerm' (base+(length a)) ar
     Arrow ars ar -> concatMap (\(num,a) -> varsInaTerm' (base+num) a) (zip [0..] $reverse $ ar:ars)
     ArrowEq ar ar' ar2 -> concatMap (varsInaTerm' base) [ar,ar',ar2]  
 
@@ -225,7 +232,7 @@ dt2Arrow (DT.Pair a b) =
 dt2Arrow (DT.Proj selector p) =
   ArrowProj (dtToArrowSelector selector) (dt2Arrow p)
 dt2Arrow (DT.Lam p) =
-  ArrowLam (dt2Arrow p)
+  ArrowLam' [Nothing] (dt2Arrow p)
 dt2Arrow (DT.Eq a b t) =
   ArrowEq (dt2Arrow a) (dt2Arrow b) (dt2Arrow t)
 dt2Arrow dt= Conclusion dt
@@ -242,6 +249,7 @@ betaReduce aterm = case aterm of
     Conclusion t -> Conclusion t
     ArrowSigma' ars ar -> ArrowSigma' (map betaReduce ars) (betaReduce ar)
     ArrowApp ar ar' -> case betaReduce ar of 
+      ArrowLam' (h:t) a -> ArrowLam' t (betaReduce $ shiftIndices (arrowSubst a (shiftIndices ar' 1 0) (Conclusion $DT.Var 0)) (-1) 0)
       ArrowLam a -> betaReduce $ shiftIndices (arrowSubst a (shiftIndices ar' 1 0) (Conclusion $DT.Var 0)) (-1) 0
       e -> ArrowApp e (betaReduce ar')
     ArrowPair ar ar' -> ArrowPair (betaReduce ar) (betaReduce ar')
@@ -249,6 +257,7 @@ betaReduce aterm = case aterm of
       ArrowPair x y -> case as of ArrowFst -> x ; ArrowSnd -> y
       e -> ArrowProj as e
     ArrowLam ar -> ArrowLam (betaReduce ar)
+    ArrowLam' a ar -> ArrowLam' a (betaReduce ar)
     Arrow ars ar -> Arrow (map betaReduce ars) (betaReduce ar)
     ArrowEq ar ar' ar2 ->  ArrowEq (betaReduce ar) (betaReduce ar') (betaReduce ar2)
 
@@ -442,6 +451,7 @@ canBeSame lim (  ArrowProj s a) (  ArrowProj s' a') =
 canBeSame lim (  ArrowPair a1 a2) (  ArrowPair a1' a2')=
   canBeSame lim a1 a1' && canBeSame lim a2 a2'
 canBeSame lim (  ArrowLam a) (  ArrowLam a') = canBeSame lim a a'
+canBeSame lim (  ArrowLam' b a) (  ArrowLam' b' a') = canBeSame lim a a'
 canBeSame lim (  Arrow con a) (  Arrow con' a') =
    all (\(num,(s,t)) -> canBeSame (lim+num) s t) (zip [0..] (zip (a:con) (a':con')))
 canBeSame lim (  ArrowEq a b t) (  ArrowEq a' b' t') =
@@ -455,6 +465,13 @@ addApp num base = addApp (num - 1) $ ArrowApp (shiftIndices base 1 0) (Conclusio
 addLam :: Int -> Arrowterm -> Arrowterm
 addLam 0 term = term
 addLam num term = ArrowLam $ addLam (num - 1) term
+
+addLam' :: [Maybe Arrowterm] -> Arrowterm -> Arrowterm
+addLam' [] term = term
+addLam' l term =
+  case term of
+    ArrowLam' lst ant -> ArrowLam' (l ++ lst) ant
+    _ -> ArrowLam' l term 
 
 sameCon :: Context -> Context -> Bool
 sameCon (sigCon1,varCon1) (sigCon2,varCon2) = 
