@@ -471,7 +471,7 @@ addLam' :: [Maybe Arrowterm] -> Arrowterm -> Arrowterm
 addLam' [] term = term
 addLam' l term =
   case term of
-    ArrowLam' lst ant -> ArrowLam' (l ++ lst) ant
+    ArrowLam' lst ant -> ArrowLam' (lst ++ l) ant
     _ -> ArrowLam' l term 
 
 sameCon :: Context -> Context -> Bool
