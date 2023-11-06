@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings, TypeSynonymInstances, FlexibleInstances #-}
 
 {-|
-Copyright   : (c) Daisuke Bekki, 2016
+Copyright   : (c) Daisuke Bekki, 2016-
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
@@ -62,7 +62,6 @@ data Preterm =
   Eq Preterm Preterm Preterm |     -- ^ Intensional equality types
   Refl Preterm Preterm |           -- ^ refl
   Idpeel Preterm Preterm          -- ^ idpeel
-  --DRel Int T.Text Preterm Preterm  -- ^ Discourse relations
   deriving (Eq)
 
 instance Show Preterm where

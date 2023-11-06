@@ -1,18 +1,19 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 
-module DTS.DTTJudgment (
+module DTS.Judgment (
   Judgment(..)
-  , RuleName(..)
+  -- * Type system of DTT
+  , TypingRuleName(..)
   -- * DTT type checking
-  , TypeChecker
-  , TypeCheckQuery(..)
-  , TypeCheckResult(..)
+  --, TypeChecker
+  --, TypeCheckQuery(..)
+  --, TypeCheckResult(..)
   --, signatureChecker
   --, contextChecker
   -- * DTT proof search
-  , Prover
-  , ProofSearchQuery(..)
-  , ProofSearchResult(..)
+  --, Prover
+  --, ProofSearchQuery(..)
+  --, ProofSearchResult(..)
   ) where
 
 import qualified Data.Text.Lazy as T
@@ -26,28 +27,25 @@ import qualified DTS.DTT          as DTT
 
 -- | The data type for a DTT judgment
 data Judgment = Judgment {
-  sig :: DTT.Signature
+  sig :: DTT.Signature -- ^ A signature \sigma
   , ctx :: DTT.Context -- ^ A context \Gamma in \Gamma \vdash M:A
-  , trm :: DTT.Preterm    -- ^ A term M in \Gamma \vdash M:A
-  , typ :: DTT.Preterm     -- ^ A type A in \Gamma \vdash M:A
+  , trm :: DTT.Preterm -- ^ A term M in \Gamma \vdash M:A
+  , typ :: DTT.Preterm -- ^ A type A in \Gamma \vdash M:A
   } deriving (Eq, Show)
 
-data RuleName = Var | Con | Typ | PiF | PiI | PiE | SigmaF | SigmaI | SigmaE | DisjF | DisjI | DisjE | EnumF | EnumI | EnumE | IqF | IqI | IqE | NumF | NumI | NumE deriving (Eq, Show, Read)
+data TypingRuleName = Var | Con | Typ | PiF | PiI | PiE | SigmaF | SigmaI | SigmaE | DisjF | DisjI | DisjE | EnumF | EnumI | EnumE | IqF | IqI | IqE | NumF | NumI | NumE deriving (Eq, Show, Read)
 
 -- | Type checking in DTT
 
-data TypeCheckQuery = TypeCheckQuery {
+data UDTTTypeCheckQuery = TypeCheckQuery {
   sig :: DTT.Signature
   , ctx :: DTT.Context
-  , trm :: DTT.Preterm
+  , trm :: UDTT.Preterm
   , typ :: DTT.Preterm
   } deriving (Eq, Show)
 
-data TypeCheckResult = TypeCheckResult {
-  diagrams :: [Tree Judgment RuleName]
-  } deriving (Eq, Show)
-
-type TypeChecker = TypeCheckQuery -> TypeCheckResult
+--data TypeCheckResult = Diagrams [Tree Judgment RuleName] deriving (Eq, Show)
+--type UDTTTypeChecker = UDTTTypeCheckQuery -> TypeCheckResult
 
 {-
 signatureChecker :: TypeChecker -> DTT.Signature -> Bool
@@ -81,7 +79,7 @@ data ProofSearchQuery = ProofSearchQuery {
   , typ :: DTT.Preterm
   } deriving (Eq, Show)
 
-type Prover = ProofSearchSetting -> ProofSearchQuery -> ProofSearchResult
+--type Prover = ProofSearchSetting -> ProofSearchQuery -> ProofSearchResult
 
 instance MathML ProofSearchQuery where
   toMathML (ProofSearchQuery _ cont typ) = -- | prints a proof search query in MathML
@@ -91,9 +89,6 @@ instance MathML ProofSearchQuery where
                                return (vcontext, vtyp)
     in T.concat ["<mrow>", toMathML vcontext', "<mo>&vdash;</mo><mo>?</mo><mo>:</mo>", toMathML vtyp', "</mrow>"]
 
-data ProofSearchResult = ProofSearchResult {
-  diagrams :: [Tree Judgment RuleName]
-  , maxDepth :: Maybe Int
-  } deriving (Eq, Show)
+--data ProofSearchResult = Diagrams [Tree Judgment RuleName] deriving (Eq, Show)
 
 

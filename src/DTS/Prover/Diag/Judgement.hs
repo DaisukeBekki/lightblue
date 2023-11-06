@@ -18,7 +18,7 @@ module DTS.Prover.Diag.Judgement
 ) where
 
 import qualified DTS.UDTT as UD           -- UDTT
-import qualified DTS.UDTTJudgment as UD   -- UDTT
+import qualified DTS.Judgment as UD   -- UDTT
 import qualified DTS.DTT as DT            -- DTT
 import qualified DTS.DTTJudgment as DT    -- DTT
 import qualified Data.Text.Lazy as T      -- text

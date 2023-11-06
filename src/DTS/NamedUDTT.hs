@@ -11,7 +11,7 @@ Stability   : beta
 Underspecified Dependent Type Theory (with variable names).
 -}
 
-module DTS.UDTTwithName (
+module DTS.NamedUDTT (
   VarName(..),
   Selector(..),
   Preterm(..),
@@ -23,9 +23,6 @@ module DTS.UDTTwithName (
 
 import qualified Data.Text.Lazy as T    -- text
 import qualified Data.Text.Lazy.IO as T -- text
---import qualified System.IO as S         -- base
---import Control.Applicative              -- base
---import Data.Traversable                 -- base
 import Interface.Text
 import Interface.TeX
 import Interface.HTML
@@ -84,7 +81,6 @@ data Preterm =
   Eq Preterm Preterm Preterm |     -- ^ Intensional equality type
   Refl Preterm Preterm |           -- ^ refl
   Idpeel Preterm Preterm           -- ^ idpeel
-  --DRel Int T.Text Preterm Preterm  -- ^ Discourse relations
   deriving (Eq)
 
 {- Printing of Preterms -}

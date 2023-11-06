@@ -37,14 +37,14 @@ module DTS.Prover.Wani.Judgement
 ) where
 
 import qualified DTS.UDTT as UD           -- UDTT
-import qualified DTS.UDTTJudgment as UD   -- UDTT
+import qualified DTS.Judgment as UD   -- UDTT
 import qualified DTS.DTT as DT            -- DTT
 import qualified DTS.DTTJudgment as DT    -- DTT
 import qualified Data.Text.Lazy as T      -- text
 import qualified Data.List as L           -- base
 import qualified Control.Applicative as M -- base
 import qualified Control.Monad as M       -- base
-import qualified DTS.UDTTwithName as VN
+import qualified DTS.NamedUDTT as VN
 import Interface.Text
 import Interface.TeX
 import Interface.HTML

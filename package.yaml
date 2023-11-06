@@ -64,22 +64,22 @@ library:
   - Interface.SVG
   - Interface.Tree
   - DTS.DTT
-  - DTS.DTTJudgment
   - DTS.UDTT
-  - DTS.UDTTwithName
-  - DTS.UDTTJudgment
+  - DTS.NamedUDTT
+  - DTS.Judgment
+  - DTS.Index
   - DTS.NLI
-  - DTS.Prover.Diag.Prover
-  - DTS.Prover.Diag.Judgement
-  - DTS.Prover.Diag.TypeChecker
-  - DTS.Prover.Wani.Judgement
-  - DTS.Prover.Wani.TypeChecker
-  - DTS.Prover.Wani.WaniBase
-  - DTS.Prover.Wani.Forward
-  - DTS.Prover.Wani.Backward
-  - DTS.Prover.Wani.Arrowterm
-  - DTS.Prover.Wani.Prove
-  - DTS.Prover.Coq.DTStoProlog
+#  - DTS.Prover.Diag.Prover
+#  - DTS.Prover.Diag.Judgement
+#  - DTS.Prover.Diag.TypeChecker
+#  - DTS.Prover.Wani.Judgement
+#  - DTS.Prover.Wani.TypeChecker
+#  - DTS.Prover.Wani.WaniBase
+#  - DTS.Prover.Wani.Forward
+#  - DTS.Prover.Wani.Backward
+#  - DTS.Prover.Wani.Arrowterm
+#  - DTS.Prover.Wani.Prove
+#  - DTS.Prover.Coq.DTStoProlog
 
 executables:
   lightblue:
