@@ -73,3 +73,6 @@ searchProof :: WB.DeduceRule
 searchProof a b c setting= 
   let result =  B.deduce a b c setting
   in result{WB.trees = L.nub (WB.trees result)}
+
+checkEntailment :: (J.TEnv ,A.SUEnv) -> UD.Preterm -> [J.Tree J.Judgement]
+checkEntailment = undefined
