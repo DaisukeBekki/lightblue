@@ -257,6 +257,7 @@ betaReduce aterm = case aterm of
       ArrowPair x y -> case as of ArrowFst -> x ; ArrowSnd -> y
       e -> ArrowProj as e
     ArrowLam ar -> ArrowLam (betaReduce ar)
+    ArrowLam' [] ar -> betaReduce ar
     ArrowLam' a ar -> ArrowLam' a (betaReduce ar)
     Arrow ars ar -> Arrow (map betaReduce ars) (betaReduce ar)
     ArrowEq ar ar' ar2 ->  ArrowEq (betaReduce ar) (betaReduce ar') (betaReduce ar2)
