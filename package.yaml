@@ -61,6 +61,8 @@ library:
   - Interface.XML
   - Interface.HTML
   - Interface.SVG
+  - DTS.GeneralizedUDTT
+  - DTS.NamedGeneralizedUDTT
   - DTS.DTT
   - DTS.UDTTwithName
   - DTS.UDTT
