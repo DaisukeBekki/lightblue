@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards, DuplicateRecordFields #-}
 
 {-|
-Module      : DTS.NLI
+Module      : DTS.NaturalLanguageInference
 Copyright   : Daisuke Bekki
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
@@ -10,11 +10,12 @@ Stability   : beta
 A module for Natural Language Inference 
 -}
 
-module DTS.NLI (
+module DTS.NaturalLanguageInference (
   InferenceSetting(..)
   , InferencePair(..)
   , InferenceResult(..)
-  , checkEntailment
+  , ProverName(..)
+  , checkInference
   ) where
 
 import qualified Data.Text.Lazy as T      --text
@@ -25,10 +26,6 @@ import qualified Interface.HTML as HTML
 import qualified Interface.TEX as TEX
 import qualified DTS.UDTT as UD
 import qualified DTS.DTT as DTT
-import qualified DTS.Proof as Pr
---import qualified DTS.Prover.Diag.Prover as Ty
-import qualified DTS.Prover.Diag.TypeChecker as Ty
---import qualified DTS.Prover.Diag.Judgement as Ty
 
 data InferenceSetting = InferenceSetting {
   beam :: Int     -- ^ beam width
@@ -47,15 +44,23 @@ data InferencePair = InferencePair {
 
 data InferenceResult = InferenceResult [([CP.Node], ProofSearchResult)] deriving (Eq, Show)
 
+data ProverName = Wani | Diag | Coq | deriving (Eq,Show)
+
+instance Read ProverName where
+  readsPrec _ r =
+    [(Wani,s) | (x,s) <- lex r, map C.toLower x == "wani"]
+    ++ [(Diag,s) | (x,s) <- lex r, map C.toLower x == "diag"]
+    ++ [(Coq,s) | (x,s) <- lex r, map C.toLower x == "coq"]
+
 -- | Checks if the premise texts entails the hypothesis text.
 -- | The specification of this function reflects a view about what are entailments between texts, that is an interface problem between natural language semantics and logic
-checkEntailment :: InferenceSetting 
+checkInference :: InferenceSetting 
                    -> InferencePair 
                    -> IO InferenceResult
-checkEntailment InferenceSetting{..} InferencePair{..} = do
+checkInference InferenceSetting{..} InferencePair{..} = do
   -- | Parse sentences
-  let sentences = hypothesis:(reverse premises)     -- reverse the order of sentences (hypothesis first, the first premise last)
-  nodeslist <- mapM (CP.simpleParse beam) sentences -- parse sentences
+  let sentences = hypothesis:(reverse premises)     -- | reverse the order of sentences (hypothesis first, the first premise last)
+  nodeslist <- mapM (CP.simpleParse beam) sentences -- | [[CCG.Node]] parse sentences
   let pairslist = map ((map (\node -> (node, UD.betaReduce $ UD.sigmaElimination $ CP.sem node))).(take nbest)) nodeslist;
       -- | Example: [[(nodeA1,srA1),(nodeA2,srA2)],[(nodeB1,srB1),(nodeB2,srB2)],[(nodeC1,srC1),(nodeC2,srC2)]]
       -- |          where sentences = A,B,C (where A is the hypothesis), nbest = 2_

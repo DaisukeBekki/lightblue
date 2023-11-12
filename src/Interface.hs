@@ -35,7 +35,11 @@ import qualified Interface.HTML as HTML
 import qualified Interface.XML as X
 import qualified DTS.UDTT as DTS
 import qualified DTS.UDTTwithName as VN
+<<<<<<< Updated upstream
 import qualified DTS.Prover.Diag.Prover as Ty
+=======
+import qualified DTS.Prover as Prover
+>>>>>>> Stashed changes
 import qualified DTS.Prover.Diag.Judgement as Ty
 --import qualified Classifier.DiscourseRelation as DR
 import qualified Interface.SVG as SVG

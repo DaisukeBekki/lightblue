@@ -68,7 +68,7 @@ library:
   - DTS.NamedUDTT
   - DTS.Judgment
   - DTS.Index
-  - DTS.NLI
+  - DTS.NaturalLanguageInference
 #  - DTS.Prover.Diag.Prover
 #  - DTS.Prover.Diag.Judgement
 #  - DTS.Prover.Diag.TypeChecker

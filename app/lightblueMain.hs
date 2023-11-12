@@ -23,10 +23,11 @@ import qualified Interface.Text as T
 import qualified JSeM as J
 import qualified JSeM.XML as J
 import qualified DTS.UDTT as DTS
+import qualified DTS.NaturalLanguageInference as NLI
 --import qualified DTS.Prover.TypeChecker as TC
-import qualified DTS.Wani as Wani
-import qualified DTS.Prover as Diag
-import qualified DTS.DTStoProlog as D2P
+import qualified DTS.Prover.Wani.WaniBase as Wani
+import qualified DTS.Prover.Diag.TypeChecker as Diag
+import qualified DTS.Prover.Coq.DTStoProlog as D2P
 
 data Options =
   Version
@@ -37,7 +38,7 @@ data Options =
 
 data Command =
   Parse ParseOutput I.Style Bool
-  | Infer ProverName
+  | Infer NLI.ProverName
   | Debug Int Int
   | Demo
   | Treebank
@@ -59,13 +60,6 @@ instance Read ParseOutput where
     [(TREE,s) | (x,s) <- lex r, map C.toLower x == "tree"]
     ++ [(POSTAG,s) | (x,s) <- lex r, map C.toLower x == "postag"]
     ++ [(NUMERATION,s) | (x,s) <- lex r, map C.toLower x == "numeration"]
-
-data ProverName = Wani | Diag | Coq | deriving (Eq,Show)
-instance Read ProverName where
-  readsPrec _ r =
-    [(Wani,s) | (x,s) <- lex r, map C.toLower x == "wani"]
-    ++ [(Diag,s) | (x,s) <- lex r, map C.toLower x == "diagonal"]
-    ++ [(Coq,s) | (x,s) <- lex r, map C.toLower x == "coq"]
 
 -- | Main function.  Check README.md for the usage.
 main :: IO()
@@ -153,7 +147,7 @@ inferOptionParser = Infer
   <$> option auto
     ( long "prover"
       <> short 'p'
-      <> metavar "Wani|Diagonal|Coq"
+      <> metavar "Wani|Diag|Coq"
       <> showDefault
       <> value Wani
       <> help "Choose prover" )
@@ -227,16 +221,16 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
     -- |
     -- | Infer
     -- |
-    lightblueMainLocal (Infer prover) contents = do
-      let handle = S.stdout;
-          proverf = case prover of
-           Wani -> Wani.
-           Diag -> Diag.checkEntailment beamw nbest
-           Coq -> D2P.dts2prolog beamw nbest
-      case prover of
+    lightblueMainLocal (Infer proverName) contents = do
+      case proverName of
         Wani -> S.hPutStrLn handle $ I.headerOf I.HTML
         Diag -> S.hPutStrLn handle $ I.headerOf I.HTML
         Coq -> return ()
+      let handle = S.stdout;
+          proverf = case proverName of
+           Wani -> Diag.checkEntailment beamw nbest
+           Diag -> Diag.checkEntailment beamw nbest
+           Coq -> D2P.dts2prolog beamw nbest
       case input of --  $ ligthblue infer -i jsem -f ../JSeM_beta/JSeM_beta_150415.xml
         SENTENCES -> do
           let sentences = T.lines contents;
@@ -251,7 +245,7 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
                   mapM_ T.putStr ["JSeM [", T.fromStrict $ J.jsem_id j, "] "]
                   proverf (map T.fromStrict $ J.premises j) $ T.fromStrict $ J.hypothesis j
                 --S.hPutStrLn S.stdout $ I.footerOf I.HTML
-      case prover of
+      case proverName of
         Wani -> S.hPutStrLn handle $ I.footerOf I.HTML
         Diag -> S.hPutStrLn handle $ I.footerOf I.HTML
         Coq -> return ()
