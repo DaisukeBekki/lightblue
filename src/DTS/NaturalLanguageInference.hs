@@ -25,7 +25,9 @@ import qualified Parser.ChartParser as CP
 import qualified Interface.HTML as HTML
 import qualified Interface.TEX as TEX
 import qualified DTS.UDTT as UD
-import qualified DTS.DTT as DTT
+import qualified DTS.DTT as DT
+import qualified DTS.Query
+import qualified DTS.TypeChecker (typeChecker)
 
 data InferenceSetting = InferenceSetting {
   beam :: Int     -- ^ beam width

@@ -63,11 +63,12 @@ library:
   - Interface.HTML
   - Interface.SVG
   - Interface.Tree
-  - DTS.DTT
+  - DTS.UDTTdeBruijn
+  - DTS.UDTTvarName
   - DTS.UDTT
-  - DTS.NamedUDTT
-  - DTS.Judgment
-  - DTS.Index
+  - DTS.DTT
+  - DTS.Query
+  - DTS.TypeChecker
   - DTS.NaturalLanguageInference
 #  - DTS.Prover.Diag.Prover
 #  - DTS.Prover.Diag.Judgement

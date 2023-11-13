@@ -1,5 +1,6 @@
 {-|
   Module      : DTS.Prover_daido.Judgement
+  Maintainer  : Daido Hinari <daido.hinari@is.ocha.ac.jp>
   DTS.Prover.Judgement in different notation
 
   = When adding new rules, edit ...
@@ -37,14 +38,15 @@ module DTS.Prover.Wani.Judgement
 ) where
 
 import qualified DTS.UDTT as UD           -- UDTT
-import qualified DTS.Judgment as UD   -- UDTT
 import qualified DTS.DTT as DT            -- DTT
-import qualified DTS.DTTJudgment as DT    -- DTT
+import qualified DTS.UDTTdeBruijn as UDdB  -- UDTT
+import qualified DTS.UDTTvarName as UDvN   -- UDTT
+--import qualified DTS.Judgment as UD   -- UDTT
+--import qualified DTS.DTTJudgment as DT    -- DTT
 import qualified Data.Text.Lazy as T      -- text
 import qualified Data.List as L           -- base
 import qualified Control.Applicative as M -- base
 import qualified Control.Monad as M       -- base
-import qualified DTS.NamedUDTT as VN
 import Interface.Text
 import Interface.TeX
 import Interface.HTML
@@ -57,7 +59,7 @@ type TUEnv = [UD.Preterm]
 -- | Type Environment for __DTT__
 --
 -- Newer variables come former.
---
+  --
 -- For examples, following environment is notated as [c,b,a]
 -- \[
 -- \Gamma \equiv a,b,c
@@ -91,12 +93,12 @@ data UJudgement =
 -- | translates a UDTT Judgement into a tex source code.
 instance Typeset UJudgement where
   toTeX (UJudgement env preM preA) =
-    toTeX UD.Judgment {UD.context = env, UD.term = preM, UD.typ = preA}
+    toTeX UDdB.Judgment {UDdB.context = env, UDdB.term = preM, UDdB.typ = preA}
 
 -- | translates a UDTT Judgement into a MathML notation.
 instance MathML UJudgement where
   toMathML (UJudgement env preM preA) =
-    toMathML UD.Judgment {UD.context = env, UD.term = preM, UD.typ = preA}
+    toMathML UDdB.Judgment {UDdB.context = env, UDdB.term = preM, UDdB.typ = preA}
 
 -- | Judgement : Judgement for __DTT__
 data Judgement =
@@ -106,18 +108,18 @@ data Judgement =
 -- | translates a DTT Judgement into a tex source code.
 instance Typeset Judgement where
   toTeX (Judgement env preM preA) =
-    let uenv = map DT.toUDTT env
-        preM' = DT.toUDTT preM
-        preA' = DT.toUDTT preA in
-    toTeX UD.Judgment {UD.context = uenv, UD.term = preM', UD.typ = preA'}
+    let uenv = map UDdB.toUDTT env
+        preM' = UDdB.toUDTT preM
+        preA' = UDdB.toUDTT preA in
+    toTeX UDdB.Judgment {UDdB.context = uenv, UDdB.term = preM', UDdB.typ = preA'}
 
 -- | translates a DTT Judgement into a MathML notation.
 instance MathML Judgement where
   toMathML (Judgement env preM preA) =
-    let uenv = map DT.toUDTT env
-        preM' = DT.toUDTT preM
-        preA' = DT.toUDTT preA in
-    toMathML UD.Judgment {UD.context = uenv, UD.term = preM', UD.typ = preA'}
+    let uenv = map UDdB.toUDTT env
+        preM' = UDdB.toUDTT preM
+        preA' = UDdB.toUDTT preA in
+    toMathML UDdB.Judgment {UDdB.context = uenv, UDdB.term = preM', UDdB.typ = preA'}
 
 -- $tree
 --

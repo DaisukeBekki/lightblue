@@ -42,7 +42,8 @@ import qualified Data.List as L      --base
 import qualified Data.Maybe as Maybe --base
 import Data.Fixed                    --base
 import Data.Ratio                    --base
-import DTS.UDTT
+import DTS.UDTT (Preterm(..))
+import DTS.UDTTdeBruijn (betaReduce)
 import Interface.Text
 import Interface.TeX
 import Interface.HTML

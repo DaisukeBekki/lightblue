@@ -2,6 +2,7 @@
 
 module Interface.Tree (
   Tree(..)
+  , isLeaf
   ) where
 
 import qualified Data.Text.Lazy as T
@@ -18,11 +19,16 @@ data Tree a b = Tree {
   , daughters :: [Tree a b]
   } deriving (Eq, Show)
 
+isLeaf :: (Tree a b) -> Bool
+isLeaf (Tree _ _ dtrs) = case dtrs of
+  [] -> True
+  _  -> False
+
 -- | ゆくゆくはCCG.Nodeも Tree CCG.Node として定義しなおすことで、
 -- | Treeに対する可視化の関数を共有するようにする（が、CCG.Nodeは
 -- | - leafのときのみPFを表示する
 -- | - top-levelでのみsignatureを表示する
--- | いったクセがあるので要検討
+-- | いったクセがあるので要検討  MathMLtree（メソッドはprintAsLeafを定義）のようなclassを作ろう
 instance (SimpleText a, SimpleText b) => SimpleText (Tree a b) where
   toText = toTextLoop 0 
 
