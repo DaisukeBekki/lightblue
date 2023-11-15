@@ -23,7 +23,7 @@ import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.List as L           --base
 import qualified Parser.ChartParser as CP
 import qualified Interface.HTML as HTML
-import qualified Interface.TEX as TEX
+import qualified Interface.TeX as TEX
 import qualified DTS.UDTT as UD
 import qualified DTS.DTT as DT
 import qualified DTS.Query
