@@ -17,5 +17,5 @@ import qualified Data.List as L           -- base
 import qualified DTS.UDTTdeBruijn as DB   -- lightblue
 import qualified DTS.UDTTvarName as VN    -- lightblue
 
-type Preterm = UB.Preterm UB.UDTT
+type Preterm = DB.Preterm DB.UDTT
 
