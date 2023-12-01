@@ -37,14 +37,10 @@ module DTS.Prover.Wani.Judgement
   treeToTeX
 ) where
 
-import qualified DTS.UDTT as UD           -- UDTT
-import qualified DTS.DTT as DT            -- DTT
 import qualified DTS.UDTTdeBruijn as UDdB  -- UDTT
-import qualified DTS.UDTTvarName as UDvN   -- UDTT
---import qualified DTS.Judgment as UD   -- UDTT
---import qualified DTS.DTTJudgment as DT    -- DTT
 import qualified Data.Text.Lazy as T      -- text
 import qualified Data.List as L           -- base
+import qualified Data.Maybe as M
 import qualified Control.Applicative as M -- base
 import qualified Control.Monad as M       -- base
 import Interface.Text
@@ -54,7 +50,7 @@ import Interface.HTML
 -- | Type Environment for __UDTT__
 --
 -- Newer variables come former.
-type TUEnv = [UD.Preterm]
+type TUEnv = UDdB.Context
 
 -- | Type Environment for __DTT__
 --
@@ -64,14 +60,14 @@ type TUEnv = [UD.Preterm]
 -- \[
 -- \Gamma \equiv a,b,c
 -- \]
-type TEnv = [DT.Preterm]
+type TEnv = [(UDdB.Preterm UDdB.DTT)]
 
 -- | Signature Environment Type for __UDTT__
 --  
 -- Newer variables come former.
 --
 --  When Signature "fuga" has value "@UD.Var 0@", Signature is notated as @(fuga,UD.Var 0)@
-type SUEnv = [(T.Text,UD.Preterm)]
+type SUEnv = [(T.Text,(UDdB.Preterm UDdB.UDTT))]
 
 -- | getList : get all velues for @var@ in @env@
 getList :: 
@@ -87,42 +83,57 @@ getList ((k,v):xs) key
 
 -- | UJudgement : Judgement for __UDTT__
 data UJudgement =
-  UJudgement TUEnv UD.Preterm UD.Preterm
+  UJudgement TUEnv (UDdB.Preterm UDdB.UDTT) (UDdB.Preterm UDdB.UDTT)
     deriving (Eq, Show)
 
+toUJudgment :: UJudgement  -> UDdB.Judgment UDdB.UDTT
+toUJudgment (UJudgement env preM preA) = UDdB.Judgment {UDdB.context = env, UDdB.term = preM, UDdB.typ = (M.fromMaybe UDdB.Type (UDdB.toDTT preA))}
+
+instance Typeset UJudgement where
+  toTeX = undefined
+
+instance MathML UJudgement where
+  toMathML = undefined
+
+{--
 -- | translates a UDTT Judgement into a tex source code.
 instance Typeset UJudgement where
-  toTeX (UJudgement env preM preA) =
-    toTeX UDdB.Judgment {UDdB.context = env, UDdB.term = preM, UDdB.typ = preA}
+  toTeX = toTeX . toUJudgment
 
 -- | translates a UDTT Judgement into a MathML notation.
 instance MathML UJudgement where
-  toMathML (UJudgement env preM preA) =
-    toMathML UDdB.Judgment {UDdB.context = env, UDdB.term = preM, UDdB.typ = preA}
+  toMathML = toMathML . toUJudgment
+--}
 
 -- | Judgement : Judgement for __DTT__
 data Judgement =
-  Judgement TEnv DT.Preterm DT.Preterm
+  Judgement TEnv (UDdB.Preterm UDdB.DTT) (UDdB.Preterm UDdB.DTT)
     deriving (Eq, Show)
 
--- | translates a DTT Judgement into a tex source code.
+toJudgment :: Judgement  -> UDdB.Judgment UDdB.UDTT
+toJudgment (Judgement env preM preA) = 
+    let preM' = UDdB.toUDTT preM in
+    UDdB.Judgment {UDdB.context = env, UDdB.term = preM', UDdB.typ = preA}
+
+
+  -- | translates a DTT Judgement into a tex source code.
 instance Typeset Judgement where
-  toTeX (Judgement env preM preA) =
-    let uenv = map UDdB.toUDTT env
-        preM' = UDdB.toUDTT preM
-        preA' = UDdB.toUDTT preA in
-    toTeX UDdB.Judgment {UDdB.context = uenv, UDdB.term = preM', UDdB.typ = preA'}
+  toTeX  = undefined
 
 -- | translates a DTT Judgement into a MathML notation.
 instance MathML Judgement where
-  toMathML (Judgement env preM preA) =
-    let uenv = map UDdB.toUDTT env
-        preM' = UDdB.toUDTT preM
-        preA' = UDdB.toUDTT preA in
-    toMathML UDdB.Judgment {UDdB.context = uenv, UDdB.term = preM', UDdB.typ = preA'}
+  toMathML  = undefined
 
--- $tree
---
+{--
+  -- | translates a DTT Judgement into a tex source code.
+instance Typeset Judgement where
+  toTeX  = toTeX . toJudgment
+
+-- | translates a DTT Judgement into a MathML notation.
+instance MathML Judgement where
+  toMathML  = toMathML . toJudgment
+--}
+
 -- Most important change from DTS.Prover.Judgement
 
 
@@ -245,13 +256,18 @@ data UTree  a =
 
 -- | translate uTree into a tex source code
 utreeToTeX  :: (UTree  UJudgement) -> T.Text
+utreeToTeX = undefined
+{--
 utreeToTeX (UT label downside upside) =
   T.pack ("\\nd[(\\underline{"++ ulabelToTeX label ++ "})]{") `T.append` (toTeX downside) `T.append` T.pack "}{" `T.append`  (if null upside then T.pack "" else T.init $ T.concat$ map (\tree -> utreeToTeX tree `T.append`  T.pack "&") upside) `T.append` T.pack "}"
 utreebaseToTex (UError' judgement msg) =
   T.pack "\\nd[(Error)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` msg `T.append` T.pack "}"
+--}
 
 -- | translate uTree into a MathML notation
 utreeToMathML :: (UTree  UJudgement) -> T.Text
+utreeToMathML = undefined
+{--
 utreeToMathML (UT label downside upside) =
   case length upside of
     0 ->
@@ -288,6 +304,7 @@ utreeToMathML (UError' judgement msg) =
      toMathML judgement,
      T.pack "</mfrac></mrow>"
      ]
+--}
 
 -- | Tree for __DTT__
 --
@@ -309,13 +326,18 @@ data Tree a =
 
 -- | translate uTree into a tex source code
 treeToTeX  :: (Tree Judgement) -> T.Text
+treeToTeX = undefined
+{--
 treeToTeX (T label downside upside) =
   T.pack ("\\nd[("++ labelToTeX label ++ ")]{") `T.append` (toTeX downside) `T.append` T.pack "}{" `T.append`  (if null upside then T.pack "" else T.init $ T.concat$ map (\tree -> treeToTeX tree `T.append`  T.pack "&") upside) `T.append` T.pack "}"
 treebaseToTex (Error' judgement msg) =
   T.pack "\\nd[(Error)]{" `T.append` (toTeX judgement) `T.append` T.pack "}{" `T.append` msg `T.append` T.pack "}"
+--}
 
 -- | translate uTree into a MathML notation
 treeToMathML :: (Tree Judgement) -> T.Text
+treeToMathML = undefined
+{--
 treeToMathML (T label downside upside) =
   case length upside of
     0 ->
@@ -349,35 +371,42 @@ treeToMathML (Error' judgement msg) =
      toMathML judgement,
      T.pack "</mfrac></mrow>"
      ]
+--}
 
 -- | get bottom type from UTree
-getTypeU :: (UTree  UJudgement) -> [UD.Preterm]
+getTypeU :: (UTree  UJudgement) -> [(UDdB.Preterm UDdB.UDTT)]
 getTypeU (UT ulabel (UJudgement env preM preA) upside) = [preA]
 getTypeU (UError' (UJudgement env preM preA) text) = [preA]
 
 -- | get bottom term from UTree
-getTermU :: (UTree  UJudgement) -> [UD.Preterm]
+getTermU :: (UTree  UJudgement) -> [(UDdB.Preterm UDdB.UDTT)]
 getTermU (UT ulabel (UJudgement env preM preA) upside) = [preM]
 getTermU (UError' (UJudgement env preM preA) text) = [preM]
 
 -- | get bottom type from Tree]
-getType :: (Tree Judgement) -> [DT.Preterm]
+getType :: (Tree Judgement) -> [(UDdB.Preterm UDdB.DTT)]
 getType (T label (Judgement env preM preA) upside) =  [preA]
 getType (Error' (Judgement env preM preA) text) = [preA]
 
 -- | get bottom term from Tree
-getTerm :: (Tree Judgement) -> [DT.Preterm]
+getTerm :: (Tree Judgement) -> [(UDdB.Preterm UDdB.DTT)]
 getTerm (T label (Judgement env preM preA) upside) =  [preM]
 getTerm (Error' (Judgement env preM preA) text) = [preM]
 
 -- | print UDTT type environment
 printGammaU :: TUEnv -> T.Text
+printGammaU = undefined
+{--
 printGammaU [] = T.pack ""
 printGammaU [x] = toTeX x
 printGammaU (x:xs) = (toTeX x) `T.append` T.pack ", " `T.append` (printGammaU xs)
+--}
 
 -- | print DTT type environment
 printGamma :: TEnv -> T.Text
+printGamma x = undefined
+{--
 printGamma [] = T.pack ""
 printGamma [x] = toTeX x
 printGamma (x:xs) = (toTeX x) `T.append` T.pack ", " `T.append` (printGamma xs)
+--}
