@@ -1,14 +1,13 @@
-{-# OPTIONS -Wall #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GADTs #-}
 
-{-
+{-|
 -- Module      : Interface
 -- Copyright   : (c) Daisuke Bekki, 2016
 -- Licence     : All right reserved
 -- Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 -- Stability   : beta
 -- 
--- Interfaces.
+-- Interface programs
 -}
 
 module Interface (
@@ -33,14 +32,10 @@ import qualified Interface.Text as T
 import qualified Interface.TeX as TEX
 import qualified Interface.HTML as HTML
 import qualified Interface.XML as X
-import qualified DTS.UDTT as DTS
-import qualified DTS.UDTTwithName as VN
-<<<<<<< Updated upstream
-import qualified DTS.Prover.Diag.Prover as Ty
-=======
-import qualified DTS.Prover as Prover
->>>>>>> Stashed changes
-import qualified DTS.Prover.Diag.Judgement as Ty
+--import qualified DTS.UDTTdeBruijn as DTS
+import qualified DTS.UDTTvarName as VN
+--import qualified DTS.Prover.Diag.Prover as Ty
+--import qualified DTS.Prover.Diag.Judgement as Ty
 --import qualified Classifier.DiscourseRelation as DR
 import qualified Interface.SVG as SVG
 
@@ -103,7 +98,7 @@ printNodes handle HTML sid sentence typecheck nodes = do
           if typecheck 
              then do
                   T.hPutStrLn handle $ HTML.startMathML;
-                  let trees = map Ty.utreeToMathML $ Ty.checkFelicity (CCG.sig node) [] (CCG.sem node);
+                  let trees = [] -- map Ty.utreeToMathML $ Ty.checkFelicity (CCG.sig node) [] (CCG.sem node);
                       -- T.hPutStrLn handle $ DTS.toVerticalMathML $ do
                       --   t1 <- Ty.checkFelicity (CCG.sig node) [] (CCG.sem node);
                       --   t2 <- Ty.aspElim t1
@@ -167,7 +162,7 @@ node2PosTags style node =
 
 printLexicalItem :: Style -> CCG.Node -> T.Text
 printLexicalItem style node = case style of
-  TEXT -> T.concat [CCG.pf node, "\t", T.toText (CCG.cat node), " \t", T.toText (CCG.sem node), "\t", CCG.source node, "\t[", CCG.showScore node, "]"]
+  TEXT -> T.concat [CCG.pf node, "\t", T.toText (CCG.cat node), " \t", T.toText $ VN.fromDeBruijn $ CCG.sem node, "\t", CCG.source node, "\t[", CCG.showScore node, "]"]
   TEX  -> TEX.toTeX node
   HTML -> T.concat $ [HTML.startMathML, HTML.toMathML node, HTML.endMathML]
   XML  -> X.node2XML 0 0 True node
@@ -179,13 +174,14 @@ printNumeration handle style sentence = do
   numeration <- LEX.setupLexicon sentence
   mapM_ ((T.hPutStrLn handle) . (printLexicalItem style)) numeration
 
+-- | Deprecated:
 -- | parses sentences in the given corpus and yields a list of SRs in HTML format.
 treebankBuilder :: Int -> [T.Text] -> IO()
 treebankBuilder beam sentences = do
   S.putStrLn HTML.htmlHeader4MathML
   T.putStrLn HTML.startMathML
   nodes <- mapM (CP.simpleParse beam) sentences
-  let srs = DTS.fromDeBruijnSRlist $ map (CP.sem . head) nodes
+  let srs = VN.fromDeBruijnList $ map (CP.sem . head) nodes
   S.putStrLn "<mtable columnalign='left'>"
   mapM_ (\(sentence,(var,term)) -> do
             T.hPutStrLn S.stderr sentence
@@ -203,8 +199,9 @@ treebankBuilder beam sentences = do
   T.putStrLn HTML.endMathML
   S.putStrLn HTML.htmlFooter4MathML
 
+-- | Deprecated:
 -- | traverses a DTS preterm and output a TSV line when finding a DRel (used in the `lightblue treebank` command)
-sr2drelTSV :: VN.Preterm -> IO()
+sr2drelTSV :: VN.Preterm a -> IO()
 sr2drelTSV preterm = case preterm of
   VN.Pi _ a b -> do {sr2drelTSV a; sr2drelTSV b}
   VN.Not a    -> sr2drelTSV a

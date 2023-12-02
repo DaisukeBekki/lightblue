@@ -1,5 +1,4 @@
-{-# OPTIONS -Wall #-}
-{-# LANGUAGE OverloadedStrings, FlexibleInstances #-}
+{-# LANGUAGE GADTs, FlexibleInstances #-}
 
 {-|
 Module      : Parser.CCG
@@ -12,8 +11,8 @@ Syntactic categories, syntactic features and combinatory rules of Combinatory Ca
 -}
 module Parser.CCG (
   -- * Types
-  CCGnode(..),
-  RuleName(..),
+  Node(..),
+  RuleSymbol(..),
   Cat(..),
   Feature(..),
   FeatureValue(..),
@@ -42,19 +41,21 @@ import qualified Data.List as L      --base
 import qualified Data.Maybe as Maybe --base
 import Data.Fixed                    --base
 import Data.Ratio                    --base
-import DTS.UDTT (Preterm(..))
-import DTS.UDTTdeBruijn (betaReduce)
+import DTS.UDTTdeBruijn as DTS hiding (sig)--lightblue
+import qualified DTS.UDTTvarName as DTSv --lightblue
+import qualified Interface.Tree as Tree --lightblue
 import Interface.Text
 import Interface.TeX
 import Interface.HTML
-import Interface.Tree
+
+type UDTTpreterm = DTS.Preterm DTS.UDTT
 
 -- | A node in CCG derivation tree.
 data Node = Node {
   rs :: RuleSymbol,    -- ^ The name of the rule
   pf :: T.Text,        -- ^ The phonetic form
   cat :: Cat,          -- ^ The syntactic category (in CCG)
-  sem :: Preterm,      -- ^ The semantic representation (in DTS)
+  sem :: UDTTpreterm,      -- ^ The semantic representation (in DTS)
   sig :: Signature,    -- ^ Signature
   daughters :: [Node], -- ^ The daughter nodes
   score :: Rational,   -- ^ The score (between 0.00 to 1.00, larger the better)
@@ -80,23 +81,23 @@ showScore node = T.pack (show ((fromRational $ score node)::Fixed E2))
 
 instance SimpleText Node where
   toText n -- @(Node _ _ _ _ sig' _ _ _) 
-    = T.concat [toTextLoop "" n, "Sig. ", toText (sig n), "\n"]
+    = T.concat [toTextLoop "" n, "Sig. ", toText $ DTSv.fromDeBruijnSignature $ sig n, "\n"]
     where toTextLoop indent node =
             case daughters node of 
-              [] -> T.concat [T.pack indent, toText (rs node), " ", pf node, " ", toText (cat node), " ", toText (sem node), " ", source node, " [", showScore node, "]\n"]
-              dtrs -> T.concat $ [T.pack indent, toText (rs node), " ", toText (cat node), " ", toText (sem node), " [", showScore node, "]\n"] ++ (map (\d -> toTextLoop (indent++"  ") d) dtrs)
+              [] -> T.concat [T.pack indent, toText (rs node), " ", pf node, " ", toText (cat node), " ", toText $ DTSv.fromDeBruijn $ sem node, " ", source node, " [", showScore node, "]\n"]
+              dtrs -> T.concat $ [T.pack indent, toText (rs node), " ", toText (cat node), " ", toText $ DTSv.fromDeBruijn $ sem node, " [", showScore node, "]\n"] ++ (map (\d -> toTextLoop (indent++"  ") d) dtrs)
 
 instance Typeset Node where
   toTeX node = -- @(Node _ _ _ _ _ _ _ _) =
     case daughters node of 
-      [] -> T.concat ["\\vvlex[", (source node), "]{", (pf node), "}{", toTeX (cat node), "}{", toTeX $ sem node, "}"] --, "\\ensuremath{", (source node), "}"]
-      dtrs -> T.concat ["\\nd[", toTeX (rs node), "]{\\vvcat{", toTeX (cat node), "}{", toTeX $ sem node, "}}{", T.intercalate "&" $ map toTeX dtrs, "}"] --, "\\ensuremath{", (source node), "}"]
+      [] -> T.concat ["\\vvlex[", (source node), "]{", (pf node), "}{", toTeX (cat node), "}{", toTeX $ DTSv.fromDeBruijn $ sem node, "}"] --, "\\ensuremath{", (source node), "}"]
+      dtrs -> T.concat ["\\nd[", toTeX (rs node), "]{\\vvcat{", toTeX (cat node), "}{", toTeX $ DTSv.fromDeBruijn $ sem node, "}}{", T.intercalate "&" $ map toTeX dtrs, "}"] --, "\\ensuremath{", (source node), "}"]
 
 instance MathML Node where
   toMathML node = -- @(Node _ _ _ _ _ _ _ _) =
     case daughters node of 
-      [] -> T.concat ["<mrow><mfrac linethickness='2px'><mtext fontsize='1.0' color='Black'>", pf node, "</mtext><mfrac linethickness='0px'><mstyle color='Red'>", toMathML $ cat node, "</mstyle><mstyle color='Black'>", toMathML $ betaReduce $ sem node, "</mstyle></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", source node, "</mtext></mrow>"] 
-      dtrs -> T.concat ["<mrow><mfrac linethickness='2px'><mrow>", T.concat $ map toMathML dtrs, "</mrow><mfrac linethickness='0px'><mstyle color='Red'>", toMathML $ cat node, "</mstyle><mstyle color='Black'>", toMathML $ betaReduce $ sem node, "</mstyle></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", toMathML $ rs node, "</mtext></mrow>"] 
+      [] -> T.concat ["<mrow><mfrac linethickness='2px'><mtext fontsize='1.0' color='Black'>", pf node, "</mtext><mfrac linethickness='0px'><mstyle color='Red'>", toMathML $ cat node, "</mstyle><mstyle color='Black'>", toMathML $ DTSv.fromDeBruijn $ betaReduce $ sem node, "</mstyle></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", source node, "</mtext></mrow>"] 
+      dtrs -> T.concat ["<mrow><mfrac linethickness='2px'><mrow>", T.concat $ map toMathML dtrs, "</mrow><mfrac linethickness='0px'><mstyle color='Red'>", toMathML $ cat node, "</mstyle><mstyle color='Black'>", toMathML $ DTSv.fromDeBruijn $ betaReduce $ sem node, "</mstyle></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", toMathML $ rs node, "</mtext></mrow>"] 
 
 -- | ゆくゆくは、Catはtype classとして再定義し、
 -- | merge : Cat -> Cat -> Cat??のようにclass関数を用意してパーザはそれのみ使う
@@ -926,9 +927,9 @@ parenthesisRule _ _ _ prevlist = prevlist
 {- Variable-length Lambda Calculus -}
 
 -- | Lamvec, Appvec: 
--- "transvec" function transforms the first argument (of type Preterm)
+-- "transvec" function transforms the first argument (of type UDTTpreterm)
 -- into the one without 
-transvec :: Cat -> Preterm -> Preterm
+transvec :: Cat -> UDTTpreterm -> UDTTpreterm
 transvec c preterm = case c of
   SL x _ -> case preterm of 
               Lam m    -> Lam (transvec x m)
@@ -1194,7 +1195,7 @@ unifyFeatures fsub f1 f2 = case (f1,f2) of
 
 {- Functions for partial parsing -}
 
-category2type :: Cat -> Preterm
+category2type :: Cat -> UDTTpreterm
 category2type ct = case ct of
   SL x y -> Pi (category2type y) (category2type x)
   BS x y -> Pi (category2type y) (category2type x)
@@ -1205,7 +1206,7 @@ category2type ct = case ct of
   T _ _ c -> category2type c
   _ -> Unit
 
-preterm2prop :: Cat -> Preterm -> Preterm
+preterm2prop :: Cat -> UDTTpreterm -> UDTTpreterm
 preterm2prop ct preterm = case ct of
   SL x y -> Sigma (category2type y) (preterm2prop x (App (shiftIndices preterm 1 0) (Var 0)))
   BS x y -> Sigma (category2type y) (preterm2prop x (App (shiftIndices preterm 1 0) (Var 0)))

@@ -494,3 +494,5 @@ instance Typeset (Judgment a) where
 instance MathML (Judgment a) where
   toMathML = toMathML . fromDeBruijnJudgment
 -}
+
+

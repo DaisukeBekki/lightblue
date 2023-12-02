@@ -20,6 +20,8 @@ module DTS.UDTTvarName (
   --, initializeIndex
   , fromDeBruijn
   , toDeBruijn
+  , fromDeBruijnSignature
+  , fromDeBruijnList
   -- * Judgment
   , Signature
   , Context
@@ -406,6 +408,10 @@ type Signature = [(T.Text, Preterm DB.DTT)]
 
 instance SimpleText Signature where
   toText sigs = T.concat ["[", (T.intercalate ", " $ map (\(cname,ty) -> T.concat $ [toText $ Con cname, ":", toText ty]) sigs), "]"]
+instance Typeset Signature where
+  toTeX _ = T.empty
+instance MathML Signature where
+  toMathML _ = T.empty
 
 fromDeBruijnSignature :: DB.Signature -> Signature
 fromDeBruijnSignature = map (\(cname, ty) -> (cname, fromDeBruijn ty))

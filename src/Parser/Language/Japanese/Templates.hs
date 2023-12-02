@@ -67,7 +67,10 @@ import Prelude hiding (id)
 import qualified Data.Text.Lazy as T -- text
 import Data.Ratio
 import Parser.CCG
-import DTS.UDTT
+import DTS.UDTTdeBruijn as DTS hiding (sig)
+
+type UDTTpreterm = DTS.Preterm DTS.UDTT
+type DTTpreterm = DTS.Preterm DTS.DTT
 
 {- Some Macros for defining lexical items -}
 
@@ -76,7 +79,7 @@ lexicalitem :: T.Text                    -- ^ A phonetic form
                -> T.Text                 -- ^ A source of a lexical item, such as a number in the CCG textbook.
                -> Integer                -- ^ A score (0 to 100)
                -> Cat                    -- ^ A syntactic category
-               -> (Preterm, Signature) -- ^ A semantic representation (in DTS) and a list of signatures
+               -> (UDTTpreterm, Signature) -- ^ A semantic representation (in DTS) and a list of signatures
                -> Node
 lexicalitem pf' source' score' cat' (sem',sig') = Node {rs=LEX, pf=pf', cat=cat', sem=sem', daughters=[], score=(score' % 100), source=source', sig=sig'}
 
@@ -86,14 +89,14 @@ lexicalitem pf' source' score' cat' (sem',sig') = Node {rs=LEX, pf=pf', cat=cat'
 defS :: [FeatureValue] -> [FeatureValue] -> Cat
 defS p c = S [F p,F c,F[M],F[M],F[M],F[M],F[M]]
 
-entity :: Preterm
+entity :: DTS.Preterm a
 entity = Con "entity"
 
-event :: Preterm
-event = Con "evt"
+event :: DTS.Preterm a
+event = Con "entity"
 
-state :: Preterm
-state = Con "evt"
+state :: DTS.Preterm a
+state = Con "entity"
 
 --catS :: [FeatureValue] -> [FeatureValue] -> Feature -> Feature -> Feature -> Feature -> Feature -> Cat
 --catS pos conj pm1 pm2 pm3 pm4 pm5 = S [F pos, F conj, pm1, pm2, pm3, pm4, pm5]
@@ -147,7 +150,7 @@ mppmm = [F[M],F[P],F[P],F[M],F[M]]
 
 {- Templates for Semantic Representation -}
 -- | Lam x.x
-id :: Preterm
+id :: DTS.Preterm a
 id = Lam (Var 0)
 
 verbCat :: T.Text            -- ^ a case frame (e.g. "ガヲニ")
@@ -173,7 +176,7 @@ verbCat' caseframe ct = case T.uncons caseframe of
 -- i==2 -> S\NP\NP:       \y.\x.\c.(e:event)X(op(e,x,y)X(ce)
 -- i==3 -> S\NP\NP\NP: \z.\y.\x.\c.(e:event)X(op(e,x,y,z)X(ce)
 -- ...
-verbSR :: T.Text -> Preterm -> T.Text -> (Preterm, Signature)
+verbSR :: T.Text -> DTTpreterm -> T.Text -> (UDTTpreterm, Signature)
 verbSR daihyo eventuality caseframe = 
   let predname = T.concat [daihyo, "/", caseframe] in
   (verbSR' predname caseframe caseframe, [(predname, nPlaceVerbType eventuality caseframe)])
@@ -181,22 +184,22 @@ verbSR daihyo eventuality caseframe =
 verbSR' :: T.Text      -- ^ daihyo
           -> T.Text -- ^ A case frame
           -> T.Text -- ^ A case frame (save)
-          -> Preterm
+          -> UDTTpreterm
 verbSR' daihyo caseframe caseframe2 = case T.uncons caseframe of
   --let n = ((fromIntegral $ T.length caseframe)::Int) + 1 in
   Just (_,cs) -> Lam (verbSR' daihyo cs caseframe2)
   Nothing -> (Lam (Sigma event (Sigma (App (argstcore 2 (Con daihyo) caseframe2) (Var 0)) (App (Var 2) (Var 1)))))
 
-argstcore :: Int -> Preterm -> T.Text -> Preterm
+argstcore :: Int -> DTS.Preterm a -> T.Text -> DTS.Preterm a
 argstcore n tm caseframe = 
   case T.uncons caseframe of
     Nothing -> tm
     Just (c,cs) | c == 'ト' -> App (argstcore (n+1) tm cs) (App (Var n) (Lam Top))
                 | otherwise -> App (argstcore (n+1) tm cs) (Var n)
 
-nPlaceVerbType :: Preterm     -- ^ Eventuarlity
-                  -> T.Text -- ^ A case frame
-                  -> Preterm
+nPlaceVerbType :: DTS.Preterm a    -- ^ Eventuarlity
+                  -> T.Text        -- ^ A case frame
+                  -> DTS.Preterm a
 nPlaceVerbType eventuality caseframe = case T.uncons caseframe of
   Nothing -> Pi eventuality Type
   Just (c,cs) | c == 'ガ' -> Pi entity (nPlaceVerbType eventuality cs)
@@ -207,107 +210,107 @@ nPlaceVerbType eventuality caseframe = case T.uncons caseframe of
               | c == 'ヨ' -> Pi entity (nPlaceVerbType eventuality cs)
               | otherwise -> nPlaceVerbType eventuality cs
 
-nPlaceEventType :: Int -> Preterm
+nPlaceEventType :: Int -> DTS.Preterm a
 nPlaceEventType i
   | i < 0 = Con $ T.concat ["nPlaceEvent with: ", T.pack (show i)]
   | i == 0 = Pi event Type
   | otherwise = Pi entity (nPlaceEventType (i-1))
 
-nPlaceStateType :: Int -> Preterm
+nPlaceStateType :: Int -> DTS.Preterm a
 nPlaceStateType i
   | i < 0 = Con $ T.concat ["nPlaceState with: ", T.pack (show i)]
   | i == 0 = Pi state Type
   | otherwise = Pi entity (nPlaceStateType (i-1))
 
-nPlacePredType :: Int -> Preterm
+nPlacePredType :: Int -> DTS.Preterm a
 nPlacePredType i
   | i < 0 = Con $ T.concat ["nPlacePred with: ", T.pack (show i)]
   | i == 0 = Type
   | otherwise = Pi entity (nPlaceStateType (i-1))
 
 -- | S\NP: \x.\c.(s:state)Xop(s,x)X(ce)
-predSR :: Int -> T.Text -> (Preterm,Signature)
+predSR :: Int -> T.Text -> (UDTTpreterm, Signature)
 predSR i op | i == 1 = ((Lam (Lam (Sigma state (Sigma (App (App (Con op) (Var 2)) (Var 0)) (App (Var 2) (Var 1)))))), [(op, nPlacePredType 1)])
             | i == 2 = ((Lam (Lam (Lam (Sigma state (Sigma (App (App (App (Con op) (Var 3)) (Var 2)) (Var 0)) (App (Var 2) (Var 1))))))), [(op, nPlacePredType 2)])
             | otherwise = ((Con $ T.concat ["predSR: pred ",op," of ", T.pack (show i), " arguments"]), [])
 
 -- | NP: 
-properNameSR :: T.Text -> (Preterm,Signature)
+properNameSR :: T.Text -> (UDTTpreterm, Signature)
 properNameSR op = ((Lam (App (Var 0) (Con op))), [(op, entity)])
 
 -- | N: 
-commonNounSR :: T.Text -> (Preterm,Signature)
+commonNounSR :: T.Text -> (UDTTpreterm, Signature)
 commonNounSR op = ((Lam (Lam (Sigma state (Sigma (App (App (Con op) (Var 2)) (Var 0)) (App (Var 2) (Var 1)))))), [(op, nPlacePredType 1)])
 
 -- | GQ:
-generalizedQuantifierSR :: T.Text -> (Preterm,Signature)
+generalizedQuantifierSR :: T.Text -> (UDTTpreterm, Signature)
 generalizedQuantifierSR q = ((Lam (Lam (Lamvec ((App (App (Con q) (Lam (Appvec 1 (App (Var 2) (Var 0)))) ) (Lam (App (App (Var 3) (Var 0)) (Lam Top))) ))))),[(q,Pi (Pi entity Type) (Pi (Pi entity Type) Type))])
 
 -- | S\S, S/S: \p.\c.op (pc)
-modalSR :: T.Text -> (Preterm,Signature)
+modalSR :: T.Text -> (UDTTpreterm, Signature)
 modalSR op = ((Lam (Lam (App (Con op) (App (Var 1) (Var 0))))), [(op, Pi Type Type)])
 
 -- | N\N, N/N
---modifierSR :: T.Text -> (Preterm,Signature)
+--modifierSR :: T.Text -> (UDTTpreterm,Signature)
 --modifierSR op = ((Lam (Lam (Lam (App (App (Var 2) (Var 1)) (Lam (Sigma (App (Con op) (Var 0)) (App (Var 2) (Var 1)))))))), [(op, nPlacePredType 1)])
 
 -- | 
 -- >>> S\NP\(S\NP):    \p.\x.\c.op(x,\z.(pz)c)
 -- >>> S\NP\NP\(S\NP): \p.\y.\x.\c.op(x,\z.((py)z)c)
-intensionalEvent :: Int -> T.Text -> (Preterm,Signature)
+intensionalEvent :: Int -> T.Text -> (UDTTpreterm, Signature)
 intensionalEvent i op | i == 1 = ((Lam (Lam (Lam (Sigma event (Sigma (App (App (App (Con op) (Lam (App (App (Var 4) (Var 0)) (Lam Top)))) (Var 2)) (Var 0)) (App (Var 2) (Var 1))))))), [(op,sg)])
                       | i == 2 = ((Lam (Lam (Lam (Lam (App (App (Con op) (Lam (App (App (Var 4) (Var 3)) (Var 1)))) (Var 1)))))), [(op,sg)])
                       | otherwise = (Con $ T.concat ["intensionalEvent: verb ",op," of ", T.pack (show i), " arguments"],[])
   where sg = Pi (Pi entity Type) (Pi entity (Pi event Type))
 
-intensionalState :: Int -> T.Text -> (Preterm,Signature)
+intensionalState :: Int -> T.Text -> (UDTTpreterm, Signature)
 intensionalState i op | i == 1 = ((Lam (Lam (Lam (Sigma state (Sigma (App (App (App (Con op) (Lam (App (App (Var 4) (Var 0)) (Lam Top)))) (Var 2)) (Var 0)) (App (Var 2) (Var 1))))))), [(op,sg)])
                       | i == 2 = ((Lam (Lam (Lam (Lam (App (App (Con op) (Lam (App (App (Var 4) (Var 3)) (Var 1)))) (Var 1)))))), [(op,sg)])
                       | otherwise = (Con $ T.concat ["intensionalState: verb ",op," of ", T.pack (show i), " arguments"], [])
   where sg = Pi (Pi entity Type) (Pi entity (Pi state Type))
 
 -- | T/T: \p.\v.\c.pv(\e.(op e) X ce)
-mannerAdverb :: T.Text -> (Preterm,Signature)
+mannerAdverb :: T.Text -> (UDTTpreterm, Signature)
 mannerAdverb op = ((Lam (Lamvec (Lam (App (Appvec 1 (Var 2)) (Lam (Sigma (App (Con op) (Var 0)) (App (Var 3) (Var 0)))))))), [(op, Pi entity Type)])
 
 -- | N/N, N\N: \n.\x.\c. (nx (\s.(op x) × cs))
-nominalModifier :: T.Text -> (Preterm,Signature)
+nominalModifier :: T.Text -> (UDTTpreterm, Signature)
 nominalModifier op = ((Lam (Lam (Lam (App (App (Var 2) (Var 1)) (Lam (Sigma (App (Con op) (Var 0)) (App (Var 2) (Var 1)))))))), [(op, Pi state Type)])
 
 -- | S\S: \p.\c.p(\e.(op e) X ce)
-eventModifier :: T.Text -> (Preterm,Signature)
+eventModifier :: T.Text -> (UDTTpreterm, Signature)
 eventModifier op = ((Lam (Lam (App (Var 1) (Lam (Sigma (App (Con op) (Var 0)) (App (Var 2) (Var 1))))))), [(op, Pi event Type)])
 
 -- | negation operator
 -- S\S: \p.\c.not (pc)
-negOperator :: (Preterm, Signature)
+negOperator :: (UDTTpreterm, Signature)
 negOperator = ((Lam (Lam (Not (App (Var 1) (Var 0))))), [])
 
 -- | negation operator 2
 -- S\NP\(S\NP): \p.\x.\c.not ((px)c)
-negOperator2 :: (Preterm, Signature)
+negOperator2 :: (UDTTpreterm, Signature)
 negOperator2 = ((Lam (Lam (Lam (Not (App (App (Var 2) (Var 1)) (Var 0)))))), [])
 
 -- | argument case marker
 -- T/(T\NP[cm])\NP[nc]: \x.\p.px
-argumentCM :: (Preterm, Signature)
+argumentCM :: (UDTTpreterm, Signature)
 argumentCM = ((Lam (Lam (App (Var 0) (Var 1)))), [])
 
 -- | adjunct case marker
 -- S1/S1\NP[nc]: \x.\p.\c.p (\e.op(e,x) X ce)
-adjunctCM :: T.Text -> (Preterm, Signature)
+adjunctCM :: T.Text -> (UDTTpreterm, Signature)
 adjunctCM c = ((Lam (Lam (Lam (App (Var 1) (Lam (Sigma (App (App (Con c) (Var 3)) (Var 0)) (App (Var 2) (Var 1)))))))), [(c, nPlaceEventType 1)])
 
 -- | adjunct nominal modifier
 -- N/N\(T/T\NP[nc]): \p.\n.\x.\c.(nx (\s.p(\z.op(s,z)) X cs)
-adjunctNM :: T.Text -> (Preterm, Signature)
+adjunctNM :: T.Text -> (UDTTpreterm, Signature)
 adjunctNM c = ((Lam (Lam (Lam (Lam (Lamvec (App (App (Var 3) (Var 2)) (Lam (Sigma (Appvec 1 (App (Var 5) (Lam (App (App (Con c) (Var 0)) (Var 1))))) (App (Var 3) (Var 1)))))))))), [(c, nPlaceStateType 1)])
 
-andSR :: (Preterm, Signature)
+andSR :: (UDTTpreterm, Signature)
 andSR = ((Lam (Lam (Sigma (Var 1) (Var 1)))), [])
 
-orSR :: (Preterm, Signature)
+orSR :: (UDTTpreterm, Signature)
 orSR = ((Lam (Lam (Pi (Not (Var 1)) (Var 1)))), [])
 
-conjunctionSR :: T.Text -> (Preterm, Signature)
+conjunctionSR :: T.Text -> (UDTTpreterm, Signature)
 conjunctionSR c = ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (Sigma (App (Var 2) (Var 1)) ((App (App (Con c) (Var 1)) (Var 0)))))))), [(c, Pi entity (Pi entity Type))])

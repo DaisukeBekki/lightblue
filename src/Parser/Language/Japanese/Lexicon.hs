@@ -30,7 +30,10 @@ import Parser.CCG
 import qualified Parser.Language.Japanese.MyLexicon as LEX
 import Parser.Language.Japanese.Templates
 import qualified Parser.Language.Japanese.Juman.CallJuman as JU
-import DTS.UDTT
+import DTS.UDTTdeBruijn as DTS hiding (sig) --lightblue
+
+type UDTTpreterm = DTS.Preterm DTS.UDTT
+type DTTpreterm = DTS.Preterm DTS.DTT
 
 -- | Lexicon consists of a set of CCG Nodes
 type LexicalItems = [Node]
@@ -78,7 +81,7 @@ parseJumanLine (lexicalitems, (commonnouns, propernames)) jumanline =
     _ -> (lexicalitems,(commonnouns,propernames))
 
 -- | Main function 1 "jumanPos2Cat" that converts Juman entries to lexical items
-jumanPos2Cat :: T.Text -> T.Text -> T.Text -> [(Cat,(Preterm,Signature))]
+jumanPos2Cat :: T.Text -> T.Text -> T.Text -> [(Cat,(UDTTpreterm,Signature))]
 jumanPos2Cat daihyo ct caseframe 
   -- T.isPrefixOf "名詞:普通名詞"     ct  = constructCommonNoun daihyo
   -- T.isPrefixOf "名詞:人名"        ct  = constructProperName daihyo
@@ -134,16 +137,16 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "感動詞"                 ct  = [(defS [Exp] [Term], (id, []))]
   | otherwise                                = [(defS [Exp] [Term], ((Con $ T.concat [T.pack "Juman Error: ", ct]), []))]
 
---constructProperName :: T.Text -> [(Cat, (Preterm, Signature))]
+--constructProperName :: T.Text -> [(Cat, (UDTTpreterm, Signature))]
 --constructProperName daihyo = [((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])), properNameSR daihyo)]
 
-constructPredicate :: T.Text -> [FeatureValue] -> [FeatureValue] -> [(Cat, (Preterm, Signature))]
+constructPredicate :: T.Text -> [FeatureValue] -> [FeatureValue] -> [(Cat, (UDTTpreterm, Signature))]
 constructPredicate daihyo posF conjF = [(defS posF conjF `BS` NP [F[Ga]], predSR 1 daihyo)]
 
-constructCommonNoun :: T.Text -> [(Cat, (Preterm, Signature))]
+constructCommonNoun :: T.Text -> [(Cat, (UDTTpreterm, Signature))]
 constructCommonNoun daihyo = [(N, commonNounSR daihyo)]
 
-constructVerb :: T.Text -> T.Text -> [FeatureValue] -> [FeatureValue] -> [(Cat, (Preterm, Signature))]
+constructVerb :: T.Text -> T.Text -> [FeatureValue] -> [FeatureValue] -> [(Cat, (UDTTpreterm, Signature))]
 constructVerb daihyo caseframe posF conjF =
   let caseframe' = if caseframe == T.empty
                      then "ガ"
@@ -151,13 +154,13 @@ constructVerb daihyo caseframe posF conjF =
       caseframelist = T.split (=='#') caseframe' in
   [(verbCat cf posF conjF, verbSR daihyo event cf) | cf <- caseframelist]
 
-constructNominalPrefix :: T.Text -> [(Cat, (Preterm, Signature))]
+constructNominalPrefix :: T.Text -> [(Cat, (UDTTpreterm, Signature))]
 constructNominalPrefix daihyo = [(N `SL` N, nominalModifier daihyo)]
 
-constructNominalSuffix :: T.Text -> [(Cat, (Preterm, Signature))]
+constructNominalSuffix :: T.Text -> [(Cat, (UDTTpreterm, Signature))]
 constructNominalSuffix daihyo = [(N `BS` N, nominalModifier daihyo)]
 
-constructConjunction :: T.Text -> [(Cat, (Preterm, Signature))]
+constructConjunction :: T.Text -> [(Cat, (UDTTpreterm, Signature))]
 constructConjunction daihyo = 
   [
   (((T False 1 (S [F anyPos, F[Term,NTerm,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]]))
@@ -165,7 +168,7 @@ constructConjunction daihyo =
     ((Lam (Lam (Sigma (App (Var 1) (Lam Top)) ((App (App (Con daihyo) (Proj Snd $ Asp 1 (Sigma Type (Var 0)))) (Var 0)))))), [(daihyo, Pi entity (Pi entity Type))]))
     ]
 
-constructSubordinateConjunction :: T.Text -> [(Cat, (Preterm, Signature))]
+constructSubordinateConjunction :: T.Text -> [(Cat, (UDTTpreterm, Signature))]
 constructSubordinateConjunction daihyo = 
   [((modifiableS `SL` modifiableS) `BS` (S [F anyPos, F[Attr], SF 7 [P,M], SF 8 [P,M], SF 9 [P,M], F[M],F[M] ]), 
     ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (Sigma (App (Var 2) (Var 1)) (App (App (Con daihyo) (Var 1)) (Var 0))))))),
