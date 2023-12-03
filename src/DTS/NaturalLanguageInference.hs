@@ -29,13 +29,14 @@ import qualified Interface.TeX as TEX
 import qualified DTS.UDTTdeBruijn as UD
 import qualified DTS.TypeQuery as TQ
 import qualified DTS.TypeChecker as TY
+import qualified DTS.Prover.Wani.WaniBase as Wani
 
 data InferenceSetting = InferenceSetting {
   beam :: Int     -- ^ beam width
   , nbest :: Int  -- ^ n-best
   , maxDepth :: Maybe Int -- ^ max depth for prover
   , typeChecker :: TQ.TypeChecker
-  , prover :: TQ.Prover
+  , proverName :: ProverName
   } 
 
 data InferenceLabel = YES | NO | UNK deriving (Eq, Show, Read)
@@ -55,12 +56,18 @@ instance Read ProverName where
     ++ [(Diag,s) | (x,s) <- lex r, map C.toLower x == "diag"]
     ++ [(Coq,s) | (x,s) <- lex r, map C.toLower x == "coq"]
 
+getProver :: ProverName -> TQ.Prover
+getProver pn = case pn of
+  Wani -> TY.nullProver
+  Diag -> TY.nullProver
+  Coq  -> TY.nullProver
+
 -- | Checks if the premise texts entails the hypothesis text.
 -- | The specification of this function reflects a view about what are entailments between texts,
 -- | that is an interface problem between natural language semantics and logic
 checkInference :: InferenceSetting 
                    -> InferencePair 
-                   -> IO ()--InferenceResult
+                   -> IO InferenceResult
 checkInference InferenceSetting{..} InferencePair{..} = do
   -- | Parse sentences
   let sentences = hypothesis:(reverse premises)     -- | reverse the order of sentences (hypothesis first, the first premise last)
@@ -72,36 +79,28 @@ checkInference InferenceSetting{..} InferencePair{..} = do
       -- | Example: [[(nodeA1,srA1),(nodeB1,srB1),(nodeC1,srC1)],[(nodeA1,srA1),(nodeB1,srB1),(nodeC2,srC2)],...]
       nodeSRlist = map unzip chosenlist
       -- | Example: [([nodeA1,nodeB1,nodeC1],[srA1,srB1,srC1]),([nodeA1,nodeB1,nodeC2],[srA1,srB1,srC2]),...]
-  print "terminated."
-  {-
-  tripledNodes <- forM nodeSRlist (\(nds,srs) -> do
-                         let newsig = foldl L.union [] $ map CP.sig nds;
-                             typecheckedSRs = TY.sequentialTypeCheck newsig srs; -- [DTTpreterms]
-                             -- | Example: u0:srA1, u1:srB1, u2:srC1 (where A1 is the hyp.)
-                             -- | この時点で一文目はtypecheck of aspElim failed
-                             proofdiagrams = case typecheckedSRs of
-                                               [] -> []
-                                               (hype:prems) -> prover (TQ.ProofSearchSetting maxDepth (Just TQ.Intuitionistic))
-                                                                      (TQ.ProofSearchQuery newsig prems hype)
-                         return (nds,typecheckedSRs,proofdiagrams)
-                       )
-  --S.hPutStrLn S.stderr $ show tripledNodes
-  let nodeSrPrList = dropWhile (\(_,_,p) -> null p) tripledNodes;
-      (nds,srs,pds) = if null nodeSrPrList
-                        then head tripledNodes
-                        else head nodeSrPrList
-  return $ InferenceResult [] (InferencePair premises hypothesis) nds maxDepth
-  -}
+      prover = getProver proverName
+  return $ InferenceResult $ do
+    (nds,srs) <- nodeSRlist
+    let allsig = foldl L.union [] $ map CP.sig nds;
+    (hype:prems) <- choice $ TY.sequentialTypeCheck TY.uDTTtypeCheck prover allsig srs; -- [DTTpreterms]
+    -- | Example: u0:srA1, u1:srB1, u2:srC1 (where A1 is the hyp.)
+    return (nds, prover (TQ.ProofSearchSetting maxDepth (Just TQ.Intuitionistic))
+                        (TQ.ProofSearchQuery allsig prems hype))
+
+-- type ProofSearchResult = [Tree (U.Judgment U.DTT) UDTTrule]
+-- data InferenceResult = InferenceResult [([CP.Node], TQ.ProofSearchResult)] deriving (Eq)
 
 -- | (x:xs) :: [[a]], x :: [a], xs :: [[a]], y :: a, choice xs :: [[a]], ys :: [a], (y:ys) :: [a] 
 choice :: [[a]] -> [[a]]
 choice [] = [[]]
 choice (x:xs) = [(y:ys) | y <- x, ys <- choice xs]
 
-{-
 instance HTML.MathML InferenceResult where
   toMathML inferenceResult = 
     let hline = "<hr size='15' />" in
+      hline
+  {-
     T.concat [
       -- | Show premises and hypothesis
       --mapM_ T.putStr ["[", jsem_id, "]"]

@@ -1,4 +1,4 @@
-{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE DuplicateRecordFields, TypeSynonymInstances, FlexibleInstances #-}
 
 module DTS.TypeQuery (
   -- * Type system of UDTT
@@ -21,6 +21,7 @@ import Interface.TeX
 import Interface.HTML
 import Interface.Tree
 import qualified DTS.UDTTdeBruijn as U
+import qualified DTS.UDTTvarName as V
 
 data UDTTrule = Var | Con | Typ | PiF | PiI | PiE | SigmaF | SigmaI | SigmaE | DisjF | DisjI | DisjE | EnumF | EnumI | EnumE | IqF | IqI | IqE | NumF | NumI | NumE deriving (Eq, Show, Read)
 
@@ -61,6 +62,20 @@ data ProofSearchQuery = ProofSearchQuery {
 type ProofSearchResult = [Tree (U.Judgment U.DTT) UDTTrule]
 
 type Prover = ProofSearchSetting -> ProofSearchQuery -> ProofSearchResult
+
+instance MathML ProofSearchResult where
+  toMathML results =
+    let n = length results in
+    T.concat $ map (\(i,r) ->
+      T.concat [
+        "<mrow>",
+        T.pack $ show i,
+        "th result out of ",
+        T.pack $ show n,
+        "</mrow><mrow>",
+        --toMathML $ V.fromDeBruijn r,
+        "</mrow>"
+        ]) $ zip [1..] results
 
 {-
 instance MathML ProofSearchQuery where

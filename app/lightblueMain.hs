@@ -20,14 +20,16 @@ import qualified Parser.ChartParser as CP
 import qualified Parser.Language.Japanese.MyLexicon as LEX
 import qualified Interface as I
 import qualified Interface.Text as T
+import qualified Interface.HTML as I
 import qualified JSeM as J
 import qualified JSeM.XML as J
-import qualified DTS.UDTT as DTS
-import qualified DTS.NaturalLanguageInference as NLI
+import qualified DTS.UDTTdeBruijn as DTS
+import DTS.TypeChecker (uDTTtypeCheck)
+import DTS.NaturalLanguageInference (ProverName(..),InferenceSetting(..),InferencePair(..),checkInference)
 --import qualified DTS.Prover.TypeChecker as TC
 import qualified DTS.Prover.Wani.WaniBase as Wani
-import qualified DTS.Prover.Diag.TypeChecker as Diag
-import qualified DTS.Prover.Coq.DTStoProlog as D2P
+--import qualified DTS.Prover.Diag.TypeChecker as Diag
+--import qualified DTS.Prover.Coq.DTStoProlog as D2P
 
 data Options =
   Version
@@ -38,7 +40,7 @@ data Options =
 
 data Command =
   Parse ParseOutput I.Style Bool
-  | Infer NLI.ProverName
+  | Infer ProverName
   | Debug Int Int
   | Demo
   | Treebank
@@ -186,9 +188,9 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
   contents <- case filepath of
     "-" -> T.getContents
     _   -> T.readFile filepath
-  -- Main routine
+  -- | Main routine
   lightblueMainLocal commands contents
-  -- Show execution time
+  -- | Show execution time
   stop <- Time.getCurrentTime
   let time = Time.diffUTCTime stop start
   if iftime
@@ -222,29 +224,27 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
     -- | Infer
     -- |
     lightblueMainLocal (Infer proverName) contents = do
+      let handle = S.stdout;
+          inferenceSetting = InferenceSetting beamw nbest Nothing uDTTtypeCheck proverName
       case proverName of
         Wani -> S.hPutStrLn handle $ I.headerOf I.HTML
         Diag -> S.hPutStrLn handle $ I.headerOf I.HTML
         Coq -> return ()
-      let handle = S.stdout;
-          proverf = case proverName of
-           Wani -> Diag.checkEntailment beamw nbest
-           Diag -> Diag.checkEntailment beamw nbest
-           Coq -> D2P.dts2prolog beamw nbest
-      case input of --  $ ligthblue infer -i jsem -f ../JSeM_beta/JSeM_beta_150415.xml
-        SENTENCES -> do
-          let sentences = T.lines contents;
-              (premises,hypothesis) = if null sentences
-                                         then ([],T.empty)
-                                         else (init sentences, last sentences)
-          proverf premises hypothesis
-        JSEM -> do
-                --S.hPutStrLn S.stdout $ I.headerOf I.HTML
-                parsedJSeM <- J.xml2jsemData $ T.toStrict contents
-                forM_ parsedJSeM $ \j -> do
-                  mapM_ T.putStr ["JSeM [", T.fromStrict $ J.jsem_id j, "] "]
-                  proverf (map T.fromStrict $ J.premises j) $ T.fromStrict $ J.hypothesis j
-                --S.hPutStrLn S.stdout $ I.footerOf I.HTML
+      case input of
+        SENTENCES -> do -- lightblue infer -i sentence 
+          let sentences = T.lines contents 
+              inferencePair = if null sentences
+                then InferencePair [] T.empty
+                else InferencePair (init sentences) (last sentences)
+          infResult <- checkInference inferenceSetting inferencePair
+          T.hPutStrLn handle $ I.toMathML infResult
+        JSEM -> do  --  ligthblue infer -i jsem -f ../JSeM_beta/JSeM_beta_150415.xml
+          parsedJSeM <- J.xml2jsemData $ T.toStrict contents
+          forM_ parsedJSeM $ \j -> do
+            mapM_ T.putStr ["JSeM [", T.fromStrict $ J.jsem_id j, "] "]
+            let inferencePair = InferencePair (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
+            infResult <- checkInference inferenceSetting inferencePair
+            T.hPutStrLn handle $ I.toMathML infResult
       case proverName of
         Wani -> S.hPutStrLn handle $ I.footerOf I.HTML
         Diag -> S.hPutStrLn handle $ I.footerOf I.HTML
@@ -324,8 +324,9 @@ showStat = do
 test :: IO()
 test = do
   let context = [DTS.Con "hoge", DTS.Con "evt", DTS.Con "entity"]
-  T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 0) DTS.Type
-  T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 2) DTS.Type
+  T.hPutStrLn S.stderr "hoge"
+  --T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 0) DTS.Type
+  --T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 2) DTS.Type
 
 -- | lightblue demo
 -- |

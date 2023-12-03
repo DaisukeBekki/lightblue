@@ -1,5 +1,5 @@
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections, RecordWildCards #-}
+
 module DTS.Prover.Wani.Prove
 (
   settingDNE,
@@ -7,11 +7,13 @@ module DTS.Prover.Wani.Prove
   announce,
   announce',
   execute,
-  prove
+  prove,
+  prove'
 ) where
 
-import qualified DTS.DTT as DT            -- DTT
-import qualified DTS.UDTT as UD            -- DTT
+import qualified Interface.Tree as UDT
+import qualified DTS.UDTTdeBruijn as UDdB
+import qualified DTS.TypeQuery as TQ
 import qualified DTS.Prover.Wani.Arrowterm as A
 import qualified DTS.Prover.Wani.Judgement as J
 import qualified DTS.Prover.Wani.Backward as B
@@ -47,9 +49,9 @@ announce jtree = do
       T.append HTML.endMathML
        (T.pack HTML.htmlFooter4MathML)
 
-execute ::  J.TEnv -- ^ var_context ex)[(DT.Con (T.pack "prop")),(DT.Con (T.pack "set")),(DT.Con (T.pack "prop"))]
-  -> A.SUEnv -- ^ sig_context ex)[((T.pack "prop"),DT.Type),((T.pack "set"),DT.Type)] , classic
-  -> DT.Preterm -- ^ type ex) (DT.Pi (DT.Var 0) (DT.Sigma (DT.Var 0,DT.Var 3)))
+execute ::  J.TEnv -- ^ var_context ex)[(UDdB.Con (T.pack "prop")),(UDdB.Con (T.pack "set")),(UDdB.Con (T.pack "prop"))]
+  -> A.SUEnv -- ^ sig_context ex)[((T.pack "prop"),UDdB.Type),((T.pack "set"),UDdB.Type)] , classic
+  -> (UDdB.Preterm UDdB.DTT) -- ^ type ex) (UDdB.Pi (UDdB.Var 0) (UDdB.Sigma (UDdB.Var 0,UDdB.Var 3)))
   -> WB.Setting -- ^ limitations
   -> [J.Tree J.Judgement] -- ^ prooftrees
 execute a b c d= map A.aTreeTojTree  $ WB.trees (prove a b c d) 
@@ -57,7 +59,7 @@ execute a b c d= map A.aTreeTojTree  $ WB.trees (prove a b c d)
 -- | return prooftrees and some info(max depth, etc.)
 prove ::  J.TEnv
   -> A.SUEnv 
-  -> DT.Preterm 
+  -> (UDdB.Preterm UDdB.DTT) 
   -> WB.Setting
   -> WB.Result
 prove varEnv sigEnv pre_type setting = 
@@ -73,3 +75,30 @@ searchProof :: WB.DeduceRule
 searchProof a b c setting= 
   let result =  B.deduce a b c setting
   in result{WB.trees = L.nub (WB.trees result)}
+
+-- | Prover for lightblue:
+-- |   UDdB.Context = J.TEnv = [(UDdB.Preterm UDdB.DTT)]
+-- |   UDdB.Signature = A.SUEnv = [(T.Text,(UDdB.Preterm UDdB.DTT))]
+prove' :: TQ.Prover
+prove' TQ.ProofSearchSetting{..} TQ.ProofSearchQuery{..} =  -- [Tree (U.Judgment U.DTT) UDTTrule]
+  let setting = WB.Setting {
+        WB.mode = case system of
+                    Nothing -> WB.Plain
+                    Just TQ.Intuitionistic -> WB.WithEFQ
+                    Just TQ.Classical -> WB.WithDNE,
+        WB.falsum = True,
+        WB.maxdepth = case maxDepth of
+                        Just n -> n
+                        Nothing -> 9,
+        WB.maxtime = 100000,
+        WB.debug = False,
+        WB.sStatus = WB.statusDef
+        };
+      result = prove ctx sig typ setting
+  in map fromATreeToJTree $ WB.trees result
+
+fromATreeToJTree :: J.Tree A.AJudgement -> UDT.Tree (UDdB.Judgment UDdB.DTT) TQ.UDTTrule
+fromATreeToJTree _ = UDT.Tree TQ.Var (UDdB.Judgment [] [] (UDdB.Var 0) (UDdB.Var 0)) []
+
+
+

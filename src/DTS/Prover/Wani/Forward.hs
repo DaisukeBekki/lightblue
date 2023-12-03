@@ -3,7 +3,7 @@ module DTS.Prover.Wani.Forward (forwardContext) where
 
 import qualified Data.List as L 
 
-import qualified DTS.DTT as DT            -- DTT
+import qualified DTS.UDTTdeBruijn as UDdB
 import qualified DTS.Prover.Wani.Arrowterm as A
 import qualified DTS.Prover.Wani.Judgement  as J
 
@@ -17,17 +17,17 @@ eqIntroElimTerm =
   A.Arrow 
     (
       [A.ArrowEq (A.aVar 4) (A.aVar 0) (A.aVar 3),A.aVar 3,A.ArrowEq (A.aVar 2) (A.aVar 0) (A.aVar 1),A.aVar 1,A.aVar 0,A.aType]
-      -- [A.ArrowEq (A.Conclusion $ DT.Var 4) (A.Conclusion $ DT.Var 1) (A.Conclusion $ DT.Var 3),
-      -- A.ArrowEq (A.Conclusion $ DT.Var 3) (A.Conclusion $ DT.Var 1) (A.Conclusion $ DT.Var 2)]++ 
-      -- (map A.Conclusion [DT.Var 2,DT.Var 1,DT.Var 0,DT.Type])
+      -- [A.ArrowEq (A.Conclusion $ UDdB.Var 4) (A.Conclusion $ UDdB.Var 1) (A.Conclusion $ UDdB.Var 3),
+      -- A.ArrowEq (A.Conclusion $ UDdB.Var 3) (A.Conclusion $ UDdB.Var 1) (A.Conclusion $ UDdB.Var 2)]++ 
+      -- (map A.Conclusion [UDdB.Var 2,UDdB.Var 1,UDdB.Var 0,UDdB.Type])
     ) 
-    (A.ArrowEq (A.Conclusion $ DT.Var 5) (A.Conclusion $ DT.Var 3) (A.Conclusion $ DT.Var 1))
+    (A.ArrowEq (A.Conclusion $ UDdB.Var 5) (A.Conclusion $ UDdB.Var 3) (A.Conclusion $ UDdB.Var 1))
 
 eqIntro :: A.Arrowterm
 eqIntro = 
   A.Arrow 
-    (map A.Conclusion [DT.Var 0,DT.Type])
-    (A.ArrowEq (A.Conclusion $ DT.Var 1) (A.Conclusion $ DT.Var 0) (A.Conclusion $ DT.Var 0))
+    (map A.Conclusion [UDdB.Var 0,UDdB.Type])
+    (A.ArrowEq (A.Conclusion $ UDdB.Var 1) (A.Conclusion $ UDdB.Var 0) (A.Conclusion $ UDdB.Var 0))
 
 forwardContext :: A.Context -> B.Result
 forwardContext (sigCon,varCon) = 
@@ -45,18 +45,18 @@ forwardContext (sigCon,varCon) =
                     sigmaForwarded = sigmaForward f newCon
                     varForwarded =                 
                       if fIsVar then
-                          -- [J.T J.VAR (A.AJudgement  (sigCon',tail varCon') f (A.Conclusion  DT.Type)) [] | case A.betaReduce f of A.Conclusion DT.Type -> False; A.Conclusion (DT.Con _)-> False;_ ->True] ++
-                          [J.T J.VAR(A.AJudgement newCon (A.Conclusion $ DT.Var 0 ) (A.shiftIndices f 1 0)) [] ]
+                          -- [J.T J.VAR (A.AJudgement  (sigCon',tail varCon') f (A.Conclusion  UDdB.Type)) [] | case A.betaReduce f of A.Conclusion UDdB.Type -> False; A.Conclusion (UDdB.Con _)-> False;_ ->True] ++
+                          [J.T J.VAR(A.AJudgement newCon (A.Conclusion $ UDdB.Var 0 ) (A.shiftIndices f 1 0)) [] ]
                         else
                           let (sigName,sigTerm) = head sigCon' in
-                            -- [J.T J.VAR (A.AJudgement (tail sigCon',[]) sigTerm (A.Conclusion  DT.Type)) [] | sigTerm /= A.Conclusion DT.Type] ++
-                            [J.T J.CON (A.AJudgement newCon (A.Conclusion $ DT.Con sigName) (A.shiftIndices sigTerm 1 0)) [] ]
+                            -- [J.T J.VAR (A.AJudgement (tail sigCon',[]) sigTerm (A.Conclusion  UDdB.Type)) [] | sigTerm /= A.Conclusion UDdB.Type] ++
+                            [J.T J.CON (A.AJudgement newCon (A.Conclusion $ UDdB.Con sigName) (A.shiftIndices sigTerm 1 0)) [] ]
                 in  sigmaForwarded ++ varForwarded
               )
               context'
               (L.tails  context')) 
         trees =   
-          let eqIntroTree = J.T J.VAR (A.AJudgement (sigCon,varCon) (A.Conclusion $DT.Con "forwardEqIntro") eqIntro) []
+          let eqIntroTree = J.T J.VAR (A.AJudgement (sigCon,varCon) (A.Conclusion $UDdB.Con "forwardEqIntro") eqIntro) []
               sigmaForwarded = eqIntroTree :
                     map
                       (\aTree  ->
@@ -101,12 +101,12 @@ sigmaForward aType (sigCon,varCon) =
         map
         (\aTreef
           -> let
-              aTree = aTreef (A.Conclusion $DT.Var 0)
+              aTree = aTreef (A.Conclusion $UDdB.Var 0)
               (A.AJudgement con aTerm aType) = A.downSide aTree
               newJ = A.AJudgement
                       con
-                      (A.arrowSubst (A.shiftIndices aTerm 1 0) (A.Conclusion $ DT.Var 0) baseCon)
-                      (A.arrowSubst (A.shiftIndices aType 1 0) (A.Conclusion $  DT.Var 0) baseCon)
+                      (A.arrowSubst (A.shiftIndices aTerm 1 0) (A.Conclusion $ UDdB.Var 0) baseCon)
+                      (A.arrowSubst (A.shiftIndices aType 1 0) (A.Conclusion $  UDdB.Var 0) baseCon)
               in A.changeDownSide aTree newJ)
         forwarded'
   in trees
@@ -116,7 +116,7 @@ sigmaForward' originType baseTerm aType (sigEnv,varEnv) = case A.arrowNotat aTyp
   A.ArrowSigma' [h] t -> 
     let fstbase =  A.ArrowProj A.ArrowFst baseTerm
         sndbase =  A.ArrowProj A.ArrowSnd baseTerm
-        t' = A.shiftIndices (A.arrowSubst t  fstbase (A.Conclusion $ DT.Var 0)) (-1) 0
+        t' = A.shiftIndices (A.arrowSubst t  fstbase (A.Conclusion $ UDdB.Var 0)) (-1) 0
         hForward = sigmaForward' originType fstbase h (sigEnv,varEnv)
         tForward = sigmaForward' originType sndbase t' (sigEnv,varEnv)
         hTree term' = J.T J.SigE (A.AJudgement (sigEnv,varEnv) fstbase h) [J.T J.VAR(A.AJudgement (sigEnv,varEnv) term' originType ) []]
@@ -127,7 +127,7 @@ sigmaForward' originType baseTerm aType (sigEnv,varEnv) = case A.arrowNotat aTyp
         sndbase =  A.ArrowProj A.ArrowSnd baseTerm
         h:hrest = reverse hs
         t = A.ArrowSigma' (reverse hrest) tLast
-        t' =  A.shiftIndices (A.arrowSubst t  fstbase (A.Conclusion $ DT.Var 0)) (-1) 0
+        t' =  A.shiftIndices (A.arrowSubst t  fstbase (A.Conclusion $ UDdB.Var 0)) (-1) 0
         hForward = sigmaForward' originType fstbase h (sigEnv,varEnv)
         tForward = sigmaForward' originType sndbase t' (sigEnv,varEnv)
         hTree term' = J.T J.SigE (A.AJudgement (sigEnv,varEnv) fstbase h) [J.T J.VAR(A.AJudgement (sigEnv,varEnv) term' originType ) []]
@@ -136,7 +136,7 @@ sigmaForward' originType baseTerm aType (sigEnv,varEnv) = case A.arrowNotat aTyp
     let lenEnv = length env
         term1 = A.ArrowProj A.ArrowFst $ A.addApp lenEnv baseTerm
         term2 = A.addLam lenEnv $ A.ArrowProj A.ArrowSnd $ A.addApp lenEnv baseTerm
-        t' = A.shiftIndices (A.arrowSubst t (A.shiftIndices term1 lenEnv 0) (A.Conclusion $ DT.Var 0)) (-1) 0
+        t' = A.shiftIndices (A.arrowSubst t (A.shiftIndices term1 lenEnv 0) (A.Conclusion $ UDdB.Var 0)) (-1) 0
         type1 = case h of (A.Arrow henv hcon) -> A.Arrow (henv ++ env) hcon ; _ -> A.Arrow env h
         type2 = case t' of (A.Arrow tenv tcon) -> A.Arrow (tenv ++ env) tcon; _ ->A.Arrow env t'
         hForward = sigmaForward' originType (A.addLam lenEnv $  term1) type1 (sigEnv,varEnv)
@@ -152,7 +152,7 @@ sigmaForward' originType baseTerm aType (sigEnv,varEnv) = case A.arrowNotat aTyp
         term2 = A.addLam lenEnv $ A.ArrowProj A.ArrowSnd $ A.addApp lenEnv baseTerm
         h:hrest = reverse hs
         t = A.ArrowSigma' (reverse hrest) tLast
-        t' = A.shiftIndices (A.arrowSubst t (A.shiftIndices term1 lenEnv 0) (A.Conclusion $ DT.Var 0)) (-1) 0
+        t' = A.shiftIndices (A.arrowSubst t (A.shiftIndices term1 lenEnv 0) (A.Conclusion $ UDdB.Var 0)) (-1) 0
         type1 = case h of (A.Arrow henv hcon) -> A.Arrow (henv ++ env) hcon ; _ -> A.Arrow env h
         type2 = A.Arrow env t'
         hForward = sigmaForward' originType (A.addLam lenEnv $  term1) type1 (sigEnv,varEnv)
@@ -167,25 +167,25 @@ sigmaForward' originType baseTerm aType (sigEnv,varEnv) = case A.arrowNotat aTyp
 searchType :: A.Context -> B.ATerm -> Maybe B.AType
 searchType (sigCon,varCon) term =
   case term of
-    A.Conclusion (DT.Type) -> Just (A.Conclusion DT.Kind)
-    A.Conclusion (DT.Var num) -> if (num >= length varCon) then D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound1")) Nothing else Just $A.shiftIndices (varCon !! num) (num+1) 0
-    A.Conclusion (DT.Con txt) -> lookup txt sigCon
-    A.Conclusion (DT.Kind) -> Nothing
-    A.Conclusion (DT.Bot) -> Just (A.Conclusion DT.Type)
-    A.Conclusion (DT.Top) -> Just (A.Conclusion DT.Type)
+    A.Conclusion (UDdB.Type) -> Just (A.Conclusion UDdB.Kind)
+    A.Conclusion (UDdB.Var num) -> if (num >= length varCon) then D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound1")) Nothing else Just $A.shiftIndices (varCon !! num) (num+1) 0
+    A.Conclusion (UDdB.Con txt) -> lookup txt sigCon
+    A.Conclusion (UDdB.Kind) -> Nothing
+    A.Conclusion (UDdB.Bot) -> Just (A.Conclusion UDdB.Type)
+    A.Conclusion (UDdB.Top) -> Just (A.Conclusion UDdB.Type)
     A.ArrowSigma' ars ar -> case searchType (sigCon,(ars ++ varCon)) ar  of--雑
         Just t->
           case A.arrowNotat t of 
-            A.Conclusion DT.Type ->  Just (A.Conclusion DT.Type)
-            A.Conclusion DT.Kind -> Just (A.Conclusion DT.Kind)
+            A.Conclusion UDdB.Type ->  Just (A.Conclusion UDdB.Type)
+            A.Conclusion UDdB.Kind -> Just (A.Conclusion UDdB.Kind)
             t -> {--D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound2"))--} Nothing
         _ -> {--D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound3"))--} Nothing
     A.Arrow ars ar -> 
       case searchType (sigCon,(ars ++ varCon)) ar of --雑
         Just t->
           case A.arrowNotat t of 
-            A.Conclusion DT.Type ->  Just (A.Conclusion DT.Type)
-            A.Conclusion DT.Kind -> Just (A.Conclusion DT.Kind)
+            A.Conclusion UDdB.Type ->  Just (A.Conclusion UDdB.Type)
+            A.Conclusion UDdB.Kind -> Just (A.Conclusion UDdB.Kind)
             t -> {--D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound4"))--} Nothing
         _ -> {--D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound5"))--} Nothing
     A.ArrowApp ar ar' ->

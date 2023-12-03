@@ -287,6 +287,8 @@ shiftIndices preterm d i = case preterm of
   Eq a m n   -> Eq (shiftIndices a d i) (shiftIndices m d i) (shiftIndices n d i)
   Refl a m   -> Refl (shiftIndices a d i) (shiftIndices m d i)
   Idpeel m n -> Idpeel (shiftIndices m d i) (shiftIndices n d i)
+  m -> m
+  
 
 {- Computations -}
 

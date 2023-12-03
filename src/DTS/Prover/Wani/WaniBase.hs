@@ -27,7 +27,7 @@ module DTS.Prover.Wani.WaniBase (
     debugLog
 ) where
 
-import qualified DTS.DTT as DT            -- DTT
+import qualified DTS.UDTTdeBruijn as UDdB  -- UDTT
 import qualified DTS.Prover.Wani.Arrowterm as A
 import qualified DTS.Prover.Wani.Judgement  as J
 
@@ -82,7 +82,7 @@ resultDef :: Result
 resultDef = Result{trees = [],errMsg = "",rStatus = statusDef}
 
 debugLog :: A.Context -> AType -> Depth -> Setting -> T.Text -> a -> a
-debugLog con = debugLogWithTerm con (A.Conclusion $ DT.Con $T.pack "?")
+debugLog con = debugLogWithTerm con (A.Conclusion $ UDdB.Con $T.pack "?")
 
 debugLogWithTerm :: A.Context -> ATerm -> AType -> Depth -> Setting -> T.Text -> a -> a
 debugLogWithTerm con term target depth setting label answer=
