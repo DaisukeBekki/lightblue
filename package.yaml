@@ -38,6 +38,7 @@ dependencies:
   - hexpat >= 0.20
   - parsec >= 3.1.14
   - filepath >= 1.4
+  - shelly >= 1.9
 
 library:
   source-dirs: src
@@ -68,9 +69,6 @@ library:
   - DTS.TypeQuery
   - DTS.TypeChecker
   - DTS.NaturalLanguageInference
-#  - DTS.Prover.Diag.Prover
-#  - DTS.Prover.Diag.Judgement
-#  - DTS.Prover.Diag.TypeChecker
   - DTS.Prover.Wani.Judgement
   - DTS.Prover.Wani.TypeChecker
   - DTS.Prover.Wani.WaniBase
@@ -78,7 +76,7 @@ library:
   - DTS.Prover.Wani.Backward
   - DTS.Prover.Wani.Arrowterm
   - DTS.Prover.Wani.Prove
-#  - DTS.Prover.Coq.DTStoProlog
+  - DTS.Prover.Coq.DTS2Coq
 
 executables:
   lightblue:
