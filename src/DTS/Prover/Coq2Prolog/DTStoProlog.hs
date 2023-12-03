@@ -1,5 +1,4 @@
-{-# OPTIONS -Wall #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GADTs #-}
 
 {-|
 Module      : DTS.Prover.Coq.DTStoProlog
@@ -20,10 +19,13 @@ import qualified Data.Time as Time       -- time
 import qualified System.Process as S     -- process
 import qualified System.Environment as E -- base
 import qualified Control.Monad as M      -- base
-import qualified DTS.UDTT as DTS
-import qualified DTS.UDTTwithName as D
+import qualified DTS.UDTTdeBruijn as DTS
+import qualified DTS.UDTTvarName as D
 import qualified Parser.ChartParser as CP
 import qualified Interface.Text as T
+
+type UDTTpreterm = D.Preterm DTS.UDTT
+type DTTpreterm = D.Preterm DTS.DTT
 
 -- function: cname_f
 norm_cname :: T.Text -> T.Text
@@ -48,7 +50,7 @@ cname_f :: T.Text -> T.Text
 cname_f cname = T.concat ["c_", norm_cname (head $ T.split (==';') cname)]
 
 -- function: f
-f :: D.Preterm -> T.Text
+f :: UDTTpreterm -> T.Text
 f preterm = case preterm of
   D.Var v -> T.toText v
   D.Con c -> case c of
@@ -91,7 +93,7 @@ f preterm = case preterm of
 
 
 -- function: convcoq
-convcoq :: D.Preterm -> T.Text
+convcoq :: UDTTpreterm -> T.Text
 convcoq preterm = case preterm of
   D.Var v -> T.toText v
   D.Con c -> case c of
@@ -131,7 +133,7 @@ convcoq preterm = case preterm of
   --D.DRel _ _ _ _ -> "True"
 
 makeCoqSigList :: DTS.Signature -> T.Text
-makeCoqSigList siglist = T.concat (L.nub (map (\ (text, preterm) -> T.concat ["Parameter _", (cname_f text), " : ", (convcoq $ DTS.initializeIndex $ DTS.fromDeBruijn [] $ preterm), ". \n"]) siglist))
+makeCoqSigList siglist = T.concat (L.nub (map (\ (text, preterm) -> T.concat ["Parameter _", (cname_f text), " : ", (convcoq $ D.fromDeBruijn $ preterm), ". \n"]) siglist))
 
 runMyCommand :: T.Text -> IO T.Text
 runMyCommand command = do
@@ -139,7 +141,7 @@ runMyCommand command = do
   _ <- S.waitForProcess procHandle
   T.hGetContents stdout
 
-proveEntailment :: T.Text -> D.Preterm -> T.Text -> IO (Bool, [(T.Text, Time.NominalDiffTime)])
+proveEntailment :: T.Text -> UDTTpreterm -> T.Text -> IO (Bool, [(T.Text, Time.NominalDiffTime)])
 proveEntailment flag formula coqsig = do
   if flag == "e" then T.putStrLn "*** Result: Entailment"
                  else T.putStrLn "*** Result: Contradiction"
@@ -197,11 +199,11 @@ addTimesList ((t1, time1):plist1) ((t2, time2):plist2) =
 addTimesList [] (_:_) = [("error", 0)]
 addTimesList (_:_) [] = [("error", 0)]
 
-currying :: [DTS.Preterm] -> DTS.Preterm -> DTS.Preterm
+currying :: [UDTTpreterm] -> UDTTpreterm -> UDTTpreterm
 currying [] preterm = preterm
 currying (p:ps) preterm = DTS.Pi p (currying ps preterm)
 
-neg_currying :: [DTS.Preterm] -> DTS.Preterm -> DTS.Preterm
+neg_currying :: [UDTTpreterm] -> UDTTpreterm -> UDTTpreterm
 neg_currying [] preterm = DTS.Not preterm
 neg_currying (p:ps) preterm = DTS.Pi p (neg_currying ps preterm)
 
@@ -221,8 +223,8 @@ dts2prolog beamw _ premises hypothesis = do
   let (srlist, siglists) = unzip parseresults
       premisesSR = L.init $ srlist
       conclusionSR = L.last $ srlist
-      formula = DTS.initializeIndex . (DTS.fromDeBruijn []) . DTS.betaReduce $ (currying premisesSR conclusionSR)
-      neg_formula = DTS.initializeIndex . (DTS.fromDeBruijn []) . DTS.betaReduce $ (neg_currying premisesSR conclusionSR)
+      formula = D.fromDeBruijn . DTS.betaReduce $ (currying premisesSR conclusionSR)
+      neg_formula = D.fromDeBruijn . DTS.betaReduce $ (neg_currying premisesSR conclusionSR)
       coqsig = makeCoqSigList (L.concat siglists)
   parse_stop <- Time.getCurrentTime
   let parse_time = Time.diffUTCTime parse_stop parse_start
