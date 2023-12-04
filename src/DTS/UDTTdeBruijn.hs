@@ -12,6 +12,7 @@ module DTS.UDTTdeBruijn (
   -- * Terms and Types
   Selector(..)
   , Preterm(..)
+  , toText'
   -- * Conversion
   , toUDTT
   , toDTT
@@ -108,6 +109,9 @@ instance Show (Preterm a) where
 -- | translates a DTS preterm into a simple text notation.
 instance SimpleText (Preterm a) where
   toText = toText . fromDeBruijn
+
+toText' :: Bool -> (Preterm a) -> T.Text
+toText' flag = (VN.toText' flag) . fromDeBruijn
 
 -- | translates a DTS preterm into a tex source code.
 instance Typeset (Preterm a) where
