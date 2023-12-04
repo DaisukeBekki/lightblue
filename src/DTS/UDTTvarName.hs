@@ -15,6 +15,7 @@ module DTS.UDTTvarName (
   VarName(..)
   , Selector(..)
   , Preterm(..)
+  , toText'
   -- * Judgment
   , Signature
   , Context
@@ -98,40 +99,51 @@ instance Show (Preterm a) where
   show = T.unpack . toText
 
 instance SimpleText (Preterm a) where
-  toText preterm = case preterm of
+  toText preterm = toText' True preterm
+
+-- | flag=True : f(y)(x) is printed as f(x,y)
+-- | flag=False : f(y)(x) is printed as it is
+toText' :: Bool -> (Preterm a) -> T.Text
+toText' flag preterm = case preterm of
     Var vname -> toText vname
     Con cname -> cname
     Type -> "type"
     Kind -> "kind"
     Pi vname a b -> case b of
-                      Bot -> T.concat["¬", toText a]
-                      b' -> T.concat ["(", toText vname, ":", toText a, ")→ ", toText b']
-    Lam vname m -> T.concat ["λ", toText vname, ".", toText m]
+                      Bot -> T.concat["¬", toText' flag a]
+                      b' -> T.concat ["(", toText vname, ":", toText' flag a, ")→ ", toText' flag b']
+    Lam vname m -> T.concat ["λ", toText vname, ".", toText' flag m]
     App (App (Con cname) y) x ->
-      T.concat [cname, "(", toText x, ",", toText y,")"]
+      if flag
+        then T.concat [cname, "(", toText' flag x, ",", toText' flag y, ")"]
+        else T.concat [cname, "(", toText' flag y, ")(", toText' flag x, ")"]
     App (App (App (Con cname) z) y) x ->
-      T.concat [cname, "(", toText x, ",", toText y,",",toText z,")"]
+      if flag
+        then T.concat [cname, "(", toText' flag x, ",", toText' flag y, ",",toText' flag z, ")"]
+        else T.concat [cname, "(", toText' flag z, ")(", toText' flag y, ")(",toText' flag x, ")"]
     App (App (App (App (Con cname) u) z) y) x ->
-      T.concat [cname, "(", toText x, ",", toText y,",",toText z,",", toText u, ")"]
-    App m n -> T.concat [toText m, "(", toText n, ")"]
+      if flag
+        then T.concat [cname, "(", toText' flag x, ",", toText' flag y, ",",toText' flag z, ",", toText' flag u, ")"]
+        else T.concat [cname, "(", toText' flag u, ")(", toText' flag z, ")(", toText' flag y, ")(", toText' flag x, ")"]
+    App m n -> T.concat [toText' flag m, "(", toText' flag n, ")"]
     Sigma vname a b -> case b of
-                         Top -> T.concat ["(", toText a, ")"]
-                         _   -> T.concat ["(", toText vname, ":", toText a, ")× ", toText b]
-    Pair m n  -> T.concat ["(", toText m, ",", toText n, ")"]
-    Proj s m  -> T.concat ["π", toText s, "(", toText m, ")"]
-    Lamvec vname m  -> T.concat ["λ", toText vname, "+.", toText m]
-    Appvec vname m -> T.concat ["(", toText m, " ", toText vname, "+)"]
+                         Top -> T.concat ["(", toText' flag a, ")"]
+                         _   -> T.concat ["(", toText vname, ":", toText' flag a, ")× ", toText' flag b]
+    Pair m n  -> T.concat ["(", toText' flag m, ",", toText' flag n, ")"]
+    Proj s m  -> T.concat ["π", toText s, "(", toText' flag m, ")"]
+    Lamvec vname m  -> T.concat ["λ", toText vname, "+.", toText' flag m]
+    Appvec vname m -> T.concat ["(", toText' flag m, " ", toText vname, "+)"]
     Unit       -> "()"
     Top        -> "T"
     Bot        -> "⊥"
-    Asp j m    -> T.concat["@", T.pack (show j), ":", toText m]
+    Asp j m    -> T.concat["@", T.pack (show j), ":", toText' flag m]
     Nat    -> "N"
     Zero   -> "0"
-    Succ n -> T.concat ["s", toText n]
-    Natrec n e f -> T.concat ["natrec(", toText n, ",", toText e, ",", toText f, ")"]
-    Eq a m n -> T.concat [toText m, "=[", toText a, "]", toText n]
-    Refl a m -> T.concat ["refl", toText a, "(", toText m, ")"]
-    Idpeel m n -> T.concat ["idpeel(", toText m, ",", toText n, ")"]
+    Succ n -> T.concat ["s", toText' flag n]
+    Natrec n e f -> T.concat ["natrec(", toText' flag n, ",", toText' flag e, ",", toText' flag f, ")"]
+    Eq a m n -> T.concat [toText' flag m, "=[", toText' flag a, "]", toText' flag n]
+    Refl a m -> T.concat ["refl", toText' flag a, "(", toText' flag m, ")"]
+    Idpeel m n -> T.concat ["idpeel(", toText' flag m, ",", toText' flag n, ")"]
 
 -- | Each `Preterm` is translated by the `toTeX` method into a representation \"with variable names\" in a TeX source code.
 instance Typeset (Preterm a) where

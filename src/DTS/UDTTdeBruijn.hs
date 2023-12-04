@@ -692,18 +692,6 @@ fromDeBruijnContextLoop varnames (x:xs) = do
   ixs <- fromDeBruijnContextLoop (varname:varnames) xs
   return $ (varname,ix):ixs
 
-{-
--- | the internal function of the fromDeBruijnContext function
-fromDeBruijnContextLoop :: Context -> Indexed ([VN.VarName], VN.Context)
-fromDeBruijnContextLoop [] = return ([],[])
-fromDeBruijnContextLoop (x:xs) = do
-  (varnames,ixs) <- fromDeBruijnContextLoop xs
-  i <- sIndex
-  let varname = VN.VarName 's' i
-  ix <- fromDeBruijnLoop varnames x
-  return $ (varname:varnames,(varname,ix):ixs)
--}
-
 -- | translates a judgment in de Bruijn notation into one with variable names
 fromDeBruijnJudgment :: Judgment a -> VN.Judgment a
 fromDeBruijnJudgment judgment =
