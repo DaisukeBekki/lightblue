@@ -32,7 +32,7 @@ import qualified Interface.Text as T
 import qualified Interface.TeX as TEX
 import qualified Interface.HTML as HTML
 import qualified Interface.XML as X
---import qualified DTS.UDTTdeBruijn as DTS
+import qualified DTS.UDTTdeBruijn as DTS
 import qualified DTS.UDTTvarName as VN
 --import qualified DTS.Prover.Diag.Prover as Ty
 --import qualified DTS.Prover.Diag.Judgement as Ty
@@ -162,7 +162,7 @@ node2PosTags style node =
 
 printLexicalItem :: Style -> CCG.Node -> T.Text
 printLexicalItem style node = case style of
-  TEXT -> T.concat [CCG.pf node, "\t", T.toText (CCG.cat node), " \t", T.toText $ VN.fromDeBruijn $ CCG.sem node, "\t", CCG.source node, "\t[", CCG.showScore node, "]"]
+  TEXT -> T.concat [CCG.pf node, "\t", T.toText (CCG.cat node), " \t", T.toText $ DTS.fromDeBruijn $ CCG.sem node, "\t", CCG.source node, "\t[", CCG.showScore node, "]"]
   TEX  -> TEX.toTeX node
   HTML -> T.concat $ [HTML.startMathML, HTML.toMathML node, HTML.endMathML]
   XML  -> X.node2XML 0 0 True node
@@ -181,7 +181,7 @@ treebankBuilder beam sentences = do
   S.putStrLn HTML.htmlHeader4MathML
   T.putStrLn HTML.startMathML
   nodes <- mapM (CP.simpleParse beam) sentences
-  let srs = VN.fromDeBruijnList $ map (CP.sem . head) nodes
+  let srs = DTS.fromDeBruijnContext $ map (CP.sem . head) nodes
   S.putStrLn "<mtable columnalign='left'>"
   mapM_ (\(sentence,(var,term)) -> do
             T.hPutStrLn S.stderr sentence

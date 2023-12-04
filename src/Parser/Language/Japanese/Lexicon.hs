@@ -31,9 +31,9 @@ import qualified Parser.Language.Japanese.MyLexicon as LEX
 import Parser.Language.Japanese.Templates
 import qualified Parser.Language.Japanese.Juman.CallJuman as JU
 import DTS.UDTTdeBruijn as DTS hiding (sig) --lightblue
+import DTS.Labels (UDTT)
 
-type UDTTpreterm = DTS.Preterm DTS.UDTT
-type DTTpreterm = DTS.Preterm DTS.DTT
+type UDTTpreterm = DTS.Preterm UDTT
 
 -- | Lexicon consists of a set of CCG Nodes
 type LexicalItems = [Node]

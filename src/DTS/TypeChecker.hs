@@ -14,12 +14,14 @@ module DTS.TypeChecker (
   , uDTTtypeCheck
   ) where
 
-import Interface.Tree (node)
+import Interface.Tree (Tree(..),node)
 import qualified DTS.UDTTdeBruijn as U
-import DTS.TypeQuery 
+import qualified DTS.UDTTvarName as V
+import DTS.Labels (UDTT)
+import DTS.TypeQuery as TQ
 
 -- | executes type check to a list of UDTT preterms
-sequentialTypeCheck :: TypeChecker -> Prover -> U.Signature -> [U.Preterm U.UDTT] -> [U.Context]
+sequentialTypeCheck :: TypeChecker -> Prover -> U.Signature -> [U.Preterm UDTT] -> [U.Context]
 sequentialTypeCheck _ _ _ [] = []
 sequentialTypeCheck typchecker prover sig (uterm:uterms) = do
   prevContext <- sequentialTypeCheck typchecker prover sig uterms
@@ -29,12 +31,20 @@ sequentialTypeCheck typchecker prover sig (uterm:uterms) = do
 nullProver :: Prover
 nullProver ProofSearchSetting{..} ProofSearchQuery{..} = []
 
-uDTTtypeCheck :: TypeChecker -- | Prover -> TypeCheckQuery U.UDTT -> TypeCheckResult
-uDTTtypeCheck prover TypeCheckQuery{..} = [] --case trm of -- sig:Signature, ctx:Context, trm:Preterm DTT, typ:Preterm DTT
+-- | The type checker of UDTT
+-- |   Prover -> Prover -> TypeCheckQuery U.UDTT -> Maybe TypeCheckResult
+-- |   TypeCheckQuery U.UDTT = TypeCheckQuery U.Signature U.Context (U.Preterm U.UDTT) (U.Preterm U.DTT)
+-- |   TypeCheckResult = [Tree (U.Judgment U.DTT) UDTTrule] 
+uDTTtypeCheck :: TypeChecker
+uDTTtypeCheck prover TypeCheckQuery{..} = [] --case (trm,typ) of -- sig:Signature, ctx:Context, trm:Preterm DTT, typ:Preterm DTT
+--  (U.Lam M, U.Pi A B) -> do
+--    leftTree <-
+--    rightTree <- 
+--    return $ Tree TQ.runeName (U.Judgment ) [leftTree,rightTree]
 --  Var i -> if i < length ctx
 --             then 
 --             else []
 --           
 --  tree
 
---typeInfer :: 
+--uDTTtypeInfer :: TypeCheck

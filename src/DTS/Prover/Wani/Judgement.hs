@@ -37,7 +37,8 @@ module DTS.Prover.Wani.Judgement
   treeToTeX
 ) where
 
-import qualified DTS.UDTTdeBruijn as UDdB  -- UDTT
+import qualified DTS.UDTTdeBruijn as UDdB -- UDTT
+import DTS.Labels (UDTT,DTT)              -- UDTT
 import qualified Data.Text.Lazy as T      -- text
 import qualified Data.List as L           -- base
 import qualified Data.Maybe as M
@@ -60,14 +61,14 @@ type TUEnv = UDdB.Context
 -- \[
 -- \Gamma \equiv a,b,c
 -- \]
-type TEnv = [(UDdB.Preterm UDdB.DTT)]
+type TEnv = [(UDdB.Preterm DTT)]
 
 -- | Signature Environment Type for __UDTT__
 --  
 -- Newer variables come former.
 --
 --  When Signature "fuga" has value "@UD.Var 0@", Signature is notated as @(fuga,UD.Var 0)@
-type SUEnv = [(T.Text,(UDdB.Preterm UDdB.UDTT))]
+type SUEnv = [(T.Text,(UDdB.Preterm UDTT))]
 
 -- | getList : get all velues for @var@ in @env@
 getList :: 
@@ -83,10 +84,10 @@ getList ((k,v):xs) key
 
 -- | UJudgement : Judgement for __UDTT__
 data UJudgement =
-  UJudgement TUEnv (UDdB.Preterm UDdB.UDTT) (UDdB.Preterm UDdB.UDTT)
+  UJudgement TUEnv (UDdB.Preterm UDTT) (UDdB.Preterm UDTT)
     deriving (Eq, Show)
 
-toUJudgment :: UJudgement  -> UDdB.Judgment UDdB.UDTT
+toUJudgment :: UJudgement  -> UDdB.Judgment UDTT
 toUJudgment (UJudgement env preM preA) = UDdB.Judgment {UDdB.context = env, UDdB.term = preM, UDdB.typ = (M.fromMaybe UDdB.Type (UDdB.toDTT preA))}
 
 instance Typeset UJudgement where
@@ -107,10 +108,10 @@ instance MathML UJudgement where
 
 -- | Judgement : Judgement for __DTT__
 data Judgement =
-  Judgement TEnv (UDdB.Preterm UDdB.DTT) (UDdB.Preterm UDdB.DTT)
+  Judgement TEnv (UDdB.Preterm DTT) (UDdB.Preterm DTT)
     deriving (Eq, Show)
 
-toJudgment :: Judgement  -> UDdB.Judgment UDdB.UDTT
+toJudgment :: Judgement  -> UDdB.Judgment UDTT
 toJudgment (Judgement env preM preA) = 
     let preM' = UDdB.toUDTT preM in
     UDdB.Judgment {UDdB.context = env, UDdB.term = preM', UDdB.typ = preA}
@@ -374,22 +375,22 @@ treeToMathML (Error' judgement msg) =
 --}
 
 -- | get bottom type from UTree
-getTypeU :: (UTree  UJudgement) -> [(UDdB.Preterm UDdB.UDTT)]
+getTypeU :: (UTree  UJudgement) -> [(UDdB.Preterm UDTT)]
 getTypeU (UT ulabel (UJudgement env preM preA) upside) = [preA]
 getTypeU (UError' (UJudgement env preM preA) text) = [preA]
 
 -- | get bottom term from UTree
-getTermU :: (UTree  UJudgement) -> [(UDdB.Preterm UDdB.UDTT)]
+getTermU :: (UTree  UJudgement) -> [(UDdB.Preterm UDTT)]
 getTermU (UT ulabel (UJudgement env preM preA) upside) = [preM]
 getTermU (UError' (UJudgement env preM preA) text) = [preM]
 
 -- | get bottom type from Tree]
-getType :: (Tree Judgement) -> [(UDdB.Preterm UDdB.DTT)]
+getType :: (Tree Judgement) -> [(UDdB.Preterm DTT)]
 getType (T label (Judgement env preM preA) upside) =  [preA]
 getType (Error' (Judgement env preM preA) text) = [preA]
 
 -- | get bottom term from Tree
-getTerm :: (Tree Judgement) -> [(UDdB.Preterm UDdB.DTT)]
+getTerm :: (Tree Judgement) -> [(UDdB.Preterm DTT)]
 getTerm (T label (Judgement env preM preA) upside) =  [preM]
 getTerm (Error' (Judgement env preM preA) text) = [preM]
 

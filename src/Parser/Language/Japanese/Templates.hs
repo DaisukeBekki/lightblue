@@ -68,9 +68,10 @@ import qualified Data.Text.Lazy as T -- text
 import Data.Ratio
 import Parser.CCG
 import DTS.UDTTdeBruijn as DTS hiding (sig)
+import DTS.Labels (UDTT,DTT)
 
-type UDTTpreterm = DTS.Preterm DTS.UDTT
-type DTTpreterm = DTS.Preterm DTS.DTT
+type UDTTpreterm = DTS.Preterm UDTT
+type DTTpreterm = DTS.Preterm DTT
 
 {- Some Macros for defining lexical items -}
 

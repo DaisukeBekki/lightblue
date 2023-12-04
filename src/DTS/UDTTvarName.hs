@@ -1,7 +1,7 @@
 {-# LANGUAGE GADTs, StandaloneDeriving, TypeSynonymInstances, FlexibleInstances #-}
 
 {-|
-Module      : DTS.NamedUDTT
+Module      : DTS.UDTTvarName
 Copyright   : (c) Daisuke Bekki, 2023
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
@@ -15,13 +15,6 @@ module DTS.UDTTvarName (
   VarName(..)
   , Selector(..)
   , Preterm(..)
-  -- * Conversion btw. De Bruijn notation and Variable-name notation
-  --, Indexed(..)
-  --, initializeIndex
-  , fromDeBruijn
-  , toDeBruijn
-  , fromDeBruijnSignature
-  , fromDeBruijnList
   -- * Judgment
   , Signature
   , Context
@@ -32,13 +25,10 @@ module DTS.UDTTvarName (
 
 import qualified Data.Text.Lazy as T    -- text
 import qualified Data.Text.Lazy.IO as T -- text
-import qualified Data.List as L           -- base
-import qualified Control.Applicative as M -- base
-import qualified Control.Monad as M       -- base
-import Interface.Text
-import Interface.TeX
-import Interface.HTML
-import qualified DTS.UDTTdeBruijn as DB
+import Interface.Text                   --lightblue
+import Interface.TeX                    --lightblue
+import Interface.HTML                   --lightblue
+import DTS.Labels (UDTT,DTT)            --lightblue
 
 -- | A variable name consists of Char (e.g. 'x') and Int (e.g. 1), which is displayed as $x_{1}$ in TeX and $x1$ in Text.
 data VarName = VarName Char Int deriving (Eq,Show)
@@ -81,9 +71,9 @@ data Preterm a where
   Pair :: Preterm a -> Preterm a -> Preterm a             -- ^ Pair
   Proj :: Selector -> Preterm a -> Preterm a -- ^ (First and second) Projections
   -- | UDTT expansions
-  Asp :: Int -> Preterm DB.UDTT -> Preterm DB.UDTT -- ^ Underspesified types
-  Lamvec :: VarName -> Preterm DB.UDTT -> Preterm DB.UDTT   -- ^ Variable-length lambda abstraction
-  Appvec :: VarName -> Preterm DB.UDTT -> Preterm DB.UDTT   -- ^ Variable-length function application
+  Asp :: Int -> Preterm UDTT -> Preterm UDTT -- ^ Underspesified types
+  Lamvec :: VarName -> Preterm UDTT -> Preterm UDTT   -- ^ Variable-length lambda abstraction
+  Appvec :: VarName -> Preterm UDTT -> Preterm UDTT   -- ^ Variable-length function application
   -- | Enumeration Types
   Unit :: Preterm a                -- ^ The unit term (of type Top)
   Top :: Preterm a                 -- ^ The top type
@@ -224,187 +214,9 @@ instance MathML (Preterm a) where
     Refl a m -> T.concat ["<mrow><mi>refl</mi>", toMathML a, "<mfenced>", toMathML m, "</mfenced></mrow>"]
     Idpeel m n -> T.concat ["<mrow><mi>idpeel</mi><mfenced>", toMathML m, toMathML n, "</mfenced></mrow>"]
 
-{- Initializing or Re-indexing of vars -}
-
--- | Indexed monad controls indices to be attached to preterms.  Arguments correspond to:
---   u for variables for propositions
--- | x for variables for entities
--- | e for variables for eventualities
--- | indices for asp-operators
--- | indices for DReL operators
-newtype Indexed a = Indexed { indexing :: Int -> Int -> Int -> Int -> Int -> (a,Int,Int,Int,Int,Int) }
-
-instance Monad Indexed where
-  return m = Indexed (\s u x e a -> (m,s,u,x,e,a))
-  (Indexed m) >>= f = Indexed (\s u x e a -> let (m',s',u',x',e',a') = m s u x e a;
-                                                   (Indexed n) = f m';
-                                               in
-                                               n s' u' x' e' a')
-
-instance Functor Indexed where
-  fmap = M.liftM
-
-instance M.Applicative Indexed where
-  pure = return
-  (<*>) = M.ap
-
--- | A sequential number for variable names (i.e. x_1, x_2, ...) in a context
-sIndex :: Indexed Int
-sIndex = Indexed (\s u x e a -> (s,s+1,u,x,e,a))
-
-uIndex :: Indexed Int
-uIndex = Indexed (\s u x e a -> (u,s,u+1,x,e,a))
-
-xIndex :: Indexed Int
-xIndex = Indexed (\s u x e a -> (x,s,u,x+1,e,a))
-
-eIndex :: Indexed Int
-eIndex = Indexed (\s u x e a -> (e,s,u,x,e+1,a))
-
-aspIndex :: Indexed Int
-aspIndex = Indexed (\s u x e a -> (e,s,u,x,e,a+1))
-
--- | re-assigns sequential indices to all asperands that appear in a given preterm.
-initializeIndex :: Indexed a -> a
-initializeIndex (Indexed m) = let (m',_,_,_,_,_) = m 0 0 0 0 0 in m'
-
--- | translates a preterm in de Bruijn notation into a preterm with variable name.
-fromDeBruijn :: DB.Preterm a -> Preterm a
-fromDeBruijn = initializeIndex . (fromDeBruijnLoop [])
-
-fromDeBruijnLoop :: [VarName] -- ^ A context (= a list of variable names)
-                    -> DB.Preterm a  -- ^ A preterm in de Bruijn notation
-                    -> Indexed (Preterm a) -- ^ A preterm with variable names
-fromDeBruijnLoop vnames preterm = case preterm of
-  DB.Var j -> if j < length vnames
-                      then return $ Var (vnames!!j)
-                      else return $ Con $ T.concat ["error: var ",T.pack (show j), " in ", T.pack (show vnames)]
-  DB.Con cname -> return $ Con cname
-  DB.Type -> return Type
-  DB.Kind -> return Kind
-  DB.Pi a b -> do
-    vname <- variableNameFor a
-    a' <- fromDeBruijnLoop vnames a
-    b' <- fromDeBruijnLoop (vname:vnames) b
-    return $ Pi vname a' b'
-  DB.Lam m   -> do
-    i <- xIndex
-    let vname = case m of
-                  DB.Sigma _ _ -> VarName 'x' i
-                  DB.Pi _ _    -> VarName 'x' i
-                  _         -> VarName 'x' i
-    m' <- fromDeBruijnLoop (vname:vnames) m
-    return $ Lam vname m'
-  DB.App m n -> do
-    m' <- fromDeBruijnLoop vnames m
-    n' <- fromDeBruijnLoop vnames n
-    return $ App m' n'
-  DB.Not a   -> do
-    a' <- fromDeBruijnLoop vnames a
-    return $ Not a'
-  DB.Sigma a b -> do
-    vname <- variableNameFor a
-    a' <- fromDeBruijnLoop vnames a
-    b' <- fromDeBruijnLoop (vname:vnames) b
-    return $ Sigma vname a' b'
-  DB.Pair m n  -> do
-    m' <- fromDeBruijnLoop vnames m
-    n' <- fromDeBruijnLoop vnames n
-    return $ Pair m' n'
-  DB.Proj s m  -> do
-    m' <- fromDeBruijnLoop vnames m
-    return $ case s of
-               DB.Fst -> Proj Fst m'
-               DB.Snd -> Proj Snd m'
-  DB.Lamvec m  -> do
-    i <- xIndex
-    let vname = VarName 'x' i
-    m' <- fromDeBruijnLoop (vname:vnames) m
-    return $ Lamvec vname m'
-  DB.Appvec j m -> do
-    let vname = vnames!!j
-    m' <- fromDeBruijnLoop vnames m
-    return $ Appvec vname m'
-  DB.Unit    -> return Unit
-  DB.Top     -> return Top
-  DB.Bot     -> return Bot
-  DB.Asp _ m -> do
-    j' <- aspIndex
-    m' <- fromDeBruijnLoop vnames m
-    return $ Asp j' m'
-  DB.Nat    -> return Nat
-  DB.Zero   -> return Zero
-  DB.Succ n -> do
-    n' <- fromDeBruijnLoop vnames n
-    return $ Succ n'
-  DB.Natrec n e f -> do
-    n' <- fromDeBruijnLoop vnames n
-    e' <- fromDeBruijnLoop vnames e
-    f' <- fromDeBruijnLoop vnames f
-    return $ Natrec n' e' f'
-  DB.Eq a m n -> do
-    a' <- fromDeBruijnLoop vnames a
-    m' <- fromDeBruijnLoop vnames m
-    n' <- fromDeBruijnLoop vnames n
-    return $ Eq a' m' n'
-  DB.Refl a m -> do
-    a' <- fromDeBruijnLoop vnames a
-    m' <- fromDeBruijnLoop vnames m
-    return $ Refl a' m'
-  DB.Idpeel m n -> do
-    m' <- fromDeBruijnLoop vnames m
-    n' <- fromDeBruijnLoop vnames n
-    return $ Idpeel m' n'
-
-variableNameFor :: DB.Preterm a -> Indexed VarName
-variableNameFor preterm =
-  case preterm of
-    DB.Con cname | cname == "entity" -> do i <- xIndex; return $ VarName 'x' i
-              | cname == "evt"    -> do i <- eIndex; return $ VarName 'e' i
-              -- cname == "state"  -> VN.VarName 's' i
-    DB.Eq _ _ _ -> do i <- xIndex; return $ VarName 's' i
-    DB.Nat      -> do i <- xIndex; return $ VarName 'k' i
-    _        -> do i <- uIndex; return $ VarName 'u' i
-
--- | translates a preterm with variable name into a preterm in de Bruijn notation.
-toDeBruijn :: [VarName]  -- ^ A context (= a list of variable names)
-              -> Preterm a -- ^ A preterm with variable names
-              -> DB.Preterm a   -- ^ A preterm in de Bruijn notation
-toDeBruijn vnames preterm = case preterm of
-  Var vname -> case L.elemIndex vname vnames of
-                    Just i -> DB.Var i
-                    Nothing -> DB.Con "Error: vname not found in toDeBruijn Var"
-  Con cname -> DB.Con cname
-  Type -> DB.Type
-  Kind -> DB.Kind
-  Pi vname a b -> DB.Pi (toDeBruijn (vname:vnames) a) (toDeBruijn (vname:vnames) b)
-  Lam vname m -> DB.Lam (toDeBruijn (vname:vnames) m)
-  App m n -> DB.App (toDeBruijn vnames m) (toDeBruijn vnames n)
-  Not a -> DB.Not (toDeBruijn vnames a)
-  Sigma vname a b -> DB.Sigma (toDeBruijn (vname:vnames) a) (toDeBruijn (vname:vnames) b)
-  Pair m n -> DB.Pair (toDeBruijn vnames m) (toDeBruijn vnames n)
-  Proj s m -> case s of
-                   Fst -> DB.Proj DB.Fst (toDeBruijn vnames m)
-                   Snd -> DB.Proj DB.Snd (toDeBruijn vnames m)
-  Lamvec vname m -> DB.Lamvec (toDeBruijn (vname:vnames) m)
-  Appvec vname m -> case L.elemIndex vname vnames of
-                        Just i -> DB.Appvec i (toDeBruijn vnames m)
-                        Nothing -> DB.Con "Error: vname not found in toDeBruijn Appvec"
-  Unit -> DB.Unit
-  Top -> DB.Top
-  Bot -> DB.Bot
-  Asp i m -> DB.Asp i (toDeBruijn vnames m)
-  Nat -> DB.Nat
-  Zero -> DB.Zero
-  Succ n -> DB.Succ (toDeBruijn vnames n)
-  Natrec n e f -> DB.Natrec (toDeBruijn vnames n) (toDeBruijn vnames e) (toDeBruijn vnames f)
-  Eq a m n -> DB.Eq (toDeBruijn vnames a) (toDeBruijn vnames m) (toDeBruijn vnames n)
-  Refl a m -> DB.Refl (toDeBruijn vnames a) (toDeBruijn vnames m)
-  Idpeel m n -> DB.Idpeel (toDeBruijn vnames m) (toDeBruijn vnames n)
-
 {- Judgment -}
 
-type Signature = [(T.Text, Preterm DB.DTT)]
+type Signature = [(T.Text, Preterm DTT)]
 
 instance SimpleText Signature where
   toText sigs = T.concat ["[", (T.intercalate ", " $ map (\(cname,ty) -> T.concat $ [toText $ Con cname, ":", toText ty]) sigs), "]"]
@@ -413,11 +225,8 @@ instance Typeset Signature where
 instance MathML Signature where
   toMathML _ = T.empty
 
-fromDeBruijnSignature :: DB.Signature -> Signature
-fromDeBruijnSignature = map (\(cname, ty) -> (cname, fromDeBruijn ty))
-
 -- | A context is a list of pairs of a variable and a preterm.
-type Context = [(VarName, Preterm DB.DTT)]
+type Context = [(VarName, Preterm DTT)]
 
 instance SimpleText Context where
   toText = (T.intercalate ", ") . (map (\(nm,tm) -> T.concat [toText nm, ":", toText tm])) . reverse
@@ -426,29 +235,20 @@ instance Typeset Context where
 instance MathML Context where
   toMathML cont = T.concat $ ["<mfenced separators=',' open='' close=''>"] ++ (map (\(nm,tm) -> T.concat ["<mrow>", toMathML nm, "<mo>:</mo>", toMathML tm, "</mrow>"]) $ reverse cont) ++ ["</mfenced>"]
 
--- | As list of semantic representations (the first element is for the first sentence)
-fromDeBruijnList :: [DB.Preterm a] -> [(VarName, Preterm a)]
-fromDeBruijnList = initializeIndex . (fromDeBruijnListLoop [])
+-- | The data type for a judgment
+data Judgment a = Judgment {
+  sig :: Signature         -- ^ A signature
+  , context :: Context  -- ^ A context \Gamma in \Gamma \vdash M:A
+  , term :: Preterm a      -- ^ A term M in \Gamma \vdash M:A
+  , typ :: Preterm DTT     -- ^ A type A in \Gamma \vdash M:A
+  } deriving (Eq)
 
--- | the internal function of the fromDeBruijnSRlist function
-fromDeBruijnListLoop :: [VarName] -> [DB.Preterm a] -> Indexed ([(VarName, Preterm a)])
-fromDeBruijnListLoop _ [] = return []
-fromDeBruijnListLoop varnames (x:xs) = do
-  i <- sIndex
-  let varname = VarName 's' i
-  ix <- fromDeBruijnLoop varnames x
-  ixs <- fromDeBruijnListLoop (varname:varnames) xs
-  return ((varname,ix):ixs)
-
--- | the internal function of the fromDeBruijnContext function
-fromDeBruijnContextLoop :: DB.Context -> Indexed ([VarName], Context)
-fromDeBruijnContextLoop [] = return ([],[])
-fromDeBruijnContextLoop (x:xs) = do
-  (varnames,ixs) <- fromDeBruijnContextLoop xs
-  i <- sIndex
-  let varname = VarName 's' i
-  ix <- fromDeBruijnLoop varnames x
-  return $ (varname:varnames,(varname,ix):ixs)
+instance SimpleText (Judgment a) where
+  toText j = T.concat [toText $ context j, " |- ", toText $ term j, ":", toText $ typ j]
+instance Typeset (Judgment a) where
+  toTeX j = T.concat [toTeX $ context j, "{\\vdash}", toTeX $ term j, "{:}", toTeX $ typ j]
+instance MathML (Judgment a) where
+  toMathML j = T.concat ["<mrow>", toMathML $ context j, "<mo>&vdash;</mo>", toMathML $ term j, "<mo>:</mo>", toMathML $ typ j, "</mrow>"]
 
 -- | prints a context vertically.
 toVerticalMathML :: Context -> T.Text
@@ -474,39 +274,9 @@ printVerticalMathML cont = do
 --printVerticalMathML :: [Preterm] -> IO()
 --printVerticalMathML = printVerticalMathML . fromDeBruijnSRlist
 
--- | The data type for a judgment
-data Judgment a = Judgment {
-  sig :: Signature         -- ^ A signature
-  , context :: Context  -- ^ A context \Gamma in \Gamma \vdash M:A
-  , term :: Preterm a      -- ^ A term M in \Gamma \vdash M:A
-  , typ :: Preterm DB.DTT     -- ^ A type A in \Gamma \vdash M:A
-  } deriving (Eq)
-
-instance SimpleText (Judgment a) where
-  toText j = T.concat [toText $ context j, " |- ", toText $ term j, ":", toText $ typ j]
-instance Typeset (Judgment a) where
-  toTeX j = T.concat [toTeX $ context j, "{\\vdash}", toTeX $ term j, "{:}", toTeX $ typ j]
-instance MathML (Judgment a) where
-  toMathML j = T.concat ["<mrow>", toMathML $ context j, "<mo>&vdash;</mo>", toMathML $ term j, "<mo>:</mo>", toMathML $ typ j, "</mrow>"]
-
--- | translates a judgment in de Bruijn notation into one with variable names
-fromDeBruijnJudgment :: DB.Judgment a -> Judgment a
-fromDeBruijnJudgment judgment =
-  let (vcontext', vterm', vtyp')
-        = initializeIndex $ do
-                            (varnames,vcontext) <- fromDeBruijnContextLoop $ DB.context judgment
-                            vterm <- fromDeBruijnLoop varnames (DB.term judgment)
-                            vtyp <- fromDeBruijnLoop varnames (DB.typ judgment)
-                            return (vcontext, vterm, vtyp)
-  in Judgment { sig = fromDeBruijnSignature $ DB.sig judgment
-              , context = vcontext'
-              , term = vterm'
-              , typ = vtyp'
-              }
-
 {-
 -- | prints a proof search query in MathML
-printProofSearchQuery :: Context DB.DTT -> Preterm a -> T.Text
+printProofSearchQuery :: Context DTT -> Preterm a -> T.Text
 printProofSearchQuery cont ty =
   let (vcontext', vtyp')
         = initializeIndex $ do

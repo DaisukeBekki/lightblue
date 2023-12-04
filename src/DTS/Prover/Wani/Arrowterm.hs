@@ -47,8 +47,9 @@ module DTS.Prover.Wani.Arrowterm
 ) where
 
 -- import qualified DTS.DTT as DT            -- DTT
--- import qualified DTS.UDTT as UD            -- DTT
-import qualified DTS.UDTTdeBruijn as UDdB  -- UDTT
+-- import qualified DTS.UDTT as UD           -- DTT
+import qualified DTS.UDTTdeBruijn as UDdB -- UDTT
+import DTS.Labels (DTT)                   -- UDTT
 import qualified Data.Text.Lazy as T      -- text
 import qualified Data.List as L           -- base
 import qualified DTS.Prover.Wani.Judgement as J
@@ -62,7 +63,7 @@ import qualified Debug.Trace as D
 data ArrowSelector = ArrowFst | ArrowSnd deriving (Eq, Show)
 -- | Arrowterm
 data Arrowterm =
-  Conclusion (UDdB.Preterm UDdB.DTT) -- ^ 末尾の部分
+  Conclusion (UDdB.Preterm DTT) -- ^ 末尾の部分
   | ArrowSigma' AEnv Arrowterm 
   | ArrowApp Arrowterm Arrowterm -- ^ App型
   | ArrowPair Arrowterm Arrowterm -- ^ Pair型
@@ -159,7 +160,7 @@ dtNotatSelector :: ArrowSelector -> {-- DT.Selector--} UDdB.Selector
 dtNotatSelector ArrowFst = {-- DT.Fst--} UDdB.Fst
 dtNotatSelector ArrowSnd = {-- DT.Snd--} UDdB.Snd
 
-arrow2DT :: Arrowterm -> (UDdB.Preterm UDdB.DTT)
+arrow2DT :: Arrowterm -> (UDdB.Preterm DTT)
 arrow2DT (Conclusion a) = a
 arrow2DT (ArrowSigma' [] t)= arrow2DT t
 arrow2DT (ArrowSigma' (f:r) t)= arrow2DT (ArrowSigma' r (Conclusion ({-- DT.Sigma --} UDdB.Sigma (arrow2DT f)  (arrow2DT t))))
@@ -203,8 +204,8 @@ varsInaTerm' base aTerm =
     ArrowEq ar ar' ar2 -> concatMap (varsInaTerm' base) [ar,ar',ar2]  
 
 
--- | 入力された(UDdB.Preterm UDdB.DTT)をArrowTermに変換する
-dt2Arrow :: (UDdB.Preterm UDdB.DTT) -> Arrowterm
+-- | 入力された(UDdB.Preterm DTT)をArrowTermに変換する
+dt2Arrow :: (UDdB.Preterm DTT) -> Arrowterm
 dt2Arrow {-- DT.Type --} UDdB.Type = Conclusion {-- DT.Type --} UDdB.Type
 dt2Arrow ({-- DT.Var --} UDdB.Var i) = Conclusion $ {-- DT.Var --} UDdB.Var i
 dt2Arrow ({-- DT.Con --} UDdB.Con i) = Conclusion $ {-- DT.Con --} UDdB.Con i
@@ -251,10 +252,10 @@ betaReduce aterm = case aterm of
     Arrow ars ar -> Arrow (map betaReduce ars) (betaReduce ar)
     ArrowEq ar ar' ar2 ->  ArrowEq (betaReduce ar) (betaReduce ar') (betaReduce ar2)
 
---  In `fromDT2A`, I use `UDdB.toDTT` and `UDdB.toUDTT` and the term convert into `(UDdB.Preterm UDdB.DTT)` -> `(UDdB.Preterm UDdB.UDTT)` -> `(UDdB.Preterm UDdB.DTT)`.
+--  In `fromDT2A`, I use `UDdB.toDTT` and `UDdB.toUDTT` and the term convert into `(UDdB.Preterm DTT)` -> `(UDdB.Preterm UDdB.UDTT)` -> `(UDdB.Preterm DTT)`.
 --  This implementation let me using existed function, `UDdB.betaReduce`.
 --  `A.betaReduce` is used to format a term about an list
-fromDT2A :: (UDdB.Preterm UDdB.DTT) -> Arrowterm
+fromDT2A :: (UDdB.Preterm DTT) -> Arrowterm
 fromDT2A = betaReduce . arrowNotat . dt2Arrow . UDdB.betaReduce
 
 shiftIndices :: Arrowterm -> Int -> Int -> Arrowterm
@@ -263,7 +264,7 @@ shiftIndices term d i= (arrowNotat . dt2Arrow) $ UDdB.shiftIndices (arrow2DT ter
 reduce :: Arrowterm -> Arrowterm
 reduce = dt2Arrow . UDdB.betaReduce . arrow2DT
 
-type SUEnv = [(T.Text,(UDdB.Preterm UDdB.DTT))]
+type SUEnv = [(T.Text,(UDdB.Preterm DTT))]
 type AEnv = [Arrowterm]
 type SAEnv = [(T.Text,Arrowterm)]
 type Context = (SAEnv,AEnv)
@@ -331,7 +332,7 @@ dnPr = {-- DT.Pi --} UDdB.Pi {-- DT.Type --} UDdB.Type ({-- DT.Pi --} UDdB.Pi ({
 classic  :: J.TEnv
 classic = [dnPr]
 
-subst :: (UDdB.Preterm UDdB.DTT) -> (UDdB.Preterm UDdB.DTT) -> (UDdB.Preterm UDdB.DTT) -> (UDdB.Preterm UDdB.DTT)
+subst :: (UDdB.Preterm DTT) -> (UDdB.Preterm DTT) -> (UDdB.Preterm DTT) -> (UDdB.Preterm DTT)
 subst preterm l i =
   if preterm == i then
     l
@@ -347,7 +348,7 @@ subst preterm l i =
       UDdB.Eq a m n   -> {-- DT.Eq --} UDdB.Eq (subst a l i) (subst m l i) (subst n l i)
       others -> others
 
-aj :: (SUEnv,J.TEnv) -> (UDdB.Preterm UDdB.DTT) -> (UDdB.Preterm UDdB.DTT) -> AJudgement
+aj :: (SUEnv,J.TEnv) -> (UDdB.Preterm DTT) -> (UDdB.Preterm DTT) -> AJudgement
 aj (sig,vars) aterm atype =
   let hojo = dt2Arrow . UDdB.betaReduce
       arrow_env = (map (Data.Bifunctor.second hojo) sig,map hojo vars)
