@@ -21,9 +21,10 @@ import Data.Ratio
 import Parser.CCG
 import Parser.Language.Japanese.Templates
 import DTS.UDTTdeBruijn as DTS hiding (sig) --lightblue
+import DTS.Labels (UDTT,DTT)
 
-type UDTTpreterm = DTS.Preterm DTS.UDTT
-type DTTpreterm = DTS.Preterm DTS.DTT
+type UDTTpreterm = DTS.Preterm UDTT
+type DTTpreterm = DTS.Preterm DTT
 
 -- | defines a lexical entry for an empty category
 ec :: T.Text -> T.Text -> Integer -> Cat -> (UDTTpreterm, Signature) -> Node

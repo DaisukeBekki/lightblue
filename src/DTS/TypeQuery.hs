@@ -21,7 +21,8 @@ import Interface.TeX
 import Interface.HTML
 import Interface.Tree
 import qualified DTS.UDTTdeBruijn as U
-import qualified DTS.UDTTvarName as V
+import qualified DTS.UDTTvarName as VN
+import DTS.Labels (UDTT,DTT)
 
 data UDTTrule = Var | Con | Typ | PiF | PiI | PiE | SigmaF | SigmaI | SigmaE | DisjF | DisjI | DisjE | EnumF | EnumI | EnumE | IqF | IqI | IqE | NumF | NumI | NumE deriving (Eq, Show, Read)
 
@@ -31,12 +32,12 @@ data TypeCheckQuery a = TypeCheckQuery {
   sig :: U.Signature
   , ctx :: U.Context
   , trm :: U.Preterm a
-  , typ :: U.Preterm U.DTT
+  , typ :: U.Preterm DTT
   } deriving (Eq, Show)
 
-type TypeCheckResult = [Tree (U.Judgment U.DTT) UDTTrule]
+type TypeCheckResult = [Tree (U.Judgment DTT) UDTTrule]
 
-type TypeChecker = Prover -> TypeCheckQuery U.UDTT -> TypeCheckResult
+type TypeChecker = Prover -> TypeCheckQuery UDTT -> TypeCheckResult
 
 data TypeInferQuery a = TypeInferQuery {
   sig :: U.Signature
@@ -56,13 +57,14 @@ data ProofSearchSetting = ProofSearchSetting {
 data ProofSearchQuery = ProofSearchQuery {
   sig :: U.Signature
   , ctx :: U.Context
-  , typ :: U.Preterm U.DTT
+  , typ :: U.Preterm DTT
   } deriving (Eq, Show)
 
-type ProofSearchResult = [Tree (U.Judgment U.DTT) UDTTrule]
+type ProofSearchResult = [Tree (U.Judgment DTT) UDTTrule]
 
 type Prover = ProofSearchSetting -> ProofSearchQuery -> ProofSearchResult
 
+{-
 instance MathML ProofSearchResult where
   toMathML results =
     let n = length results in
@@ -73,9 +75,10 @@ instance MathML ProofSearchResult where
         "th result out of ",
         T.pack $ show n,
         "</mrow><mrow>",
-        --toMathML $ V.fromDeBruijn r,
+        toMathML $ U.fromDeBruijnJudgment r,
         "</mrow>"
         ]) $ zip [1..] results
+-}
 
 {-
 instance MathML ProofSearchQuery where

@@ -42,13 +42,14 @@ import qualified Data.Maybe as Maybe --base
 import Data.Fixed                    --base
 import Data.Ratio                    --base
 import DTS.UDTTdeBruijn as DTS hiding (sig)--lightblue
-import qualified DTS.UDTTvarName as DTSv --lightblue
+import qualified DTS.UDTTvarName as VN  --lightblue
+import DTS.Labels (UDTT)                --lightblue
 import qualified Interface.Tree as Tree --lightblue
 import Interface.Text
 import Interface.TeX
 import Interface.HTML
 
-type UDTTpreterm = DTS.Preterm DTS.UDTT
+type UDTTpreterm = DTS.Preterm UDTT
 
 -- | A node in CCG derivation tree.
 data Node = Node {
@@ -81,23 +82,23 @@ showScore node = T.pack (show ((fromRational $ score node)::Fixed E2))
 
 instance SimpleText Node where
   toText n -- @(Node _ _ _ _ sig' _ _ _) 
-    = T.concat [toTextLoop "" n, "Sig. ", toText $ DTSv.fromDeBruijnSignature $ sig n, "\n"]
+    = T.concat [toTextLoop "" n, "Sig. ", toText $ DTS.fromDeBruijnSignature $ sig n, "\n"]
     where toTextLoop indent node =
             case daughters node of 
-              [] -> T.concat [T.pack indent, toText (rs node), " ", pf node, " ", toText (cat node), " ", toText $ DTSv.fromDeBruijn $ sem node, " ", source node, " [", showScore node, "]\n"]
-              dtrs -> T.concat $ [T.pack indent, toText (rs node), " ", toText (cat node), " ", toText $ DTSv.fromDeBruijn $ sem node, " [", showScore node, "]\n"] ++ (map (\d -> toTextLoop (indent++"  ") d) dtrs)
+              [] -> T.concat [T.pack indent, toText (rs node), " ", pf node, " ", toText (cat node), " ", toText $ DTS.fromDeBruijn $ sem node, " ", source node, " [", showScore node, "]\n"]
+              dtrs -> T.concat $ [T.pack indent, toText (rs node), " ", toText (cat node), " ", toText $ DTS.fromDeBruijn $ sem node, " [", showScore node, "]\n"] ++ (map (\d -> toTextLoop (indent++"  ") d) dtrs)
 
 instance Typeset Node where
   toTeX node = -- @(Node _ _ _ _ _ _ _ _) =
     case daughters node of 
-      [] -> T.concat ["\\vvlex[", (source node), "]{", (pf node), "}{", toTeX (cat node), "}{", toTeX $ DTSv.fromDeBruijn $ sem node, "}"] --, "\\ensuremath{", (source node), "}"]
-      dtrs -> T.concat ["\\nd[", toTeX (rs node), "]{\\vvcat{", toTeX (cat node), "}{", toTeX $ DTSv.fromDeBruijn $ sem node, "}}{", T.intercalate "&" $ map toTeX dtrs, "}"] --, "\\ensuremath{", (source node), "}"]
+      [] -> T.concat ["\\vvlex[", (source node), "]{", (pf node), "}{", toTeX (cat node), "}{", toTeX $ DTS.fromDeBruijn $ sem node, "}"] --, "\\ensuremath{", (source node), "}"]
+      dtrs -> T.concat ["\\nd[", toTeX (rs node), "]{\\vvcat{", toTeX (cat node), "}{", toTeX $ DTS.fromDeBruijn $ sem node, "}}{", T.intercalate "&" $ map toTeX dtrs, "}"] --, "\\ensuremath{", (source node), "}"]
 
 instance MathML Node where
   toMathML node = -- @(Node _ _ _ _ _ _ _ _) =
     case daughters node of 
-      [] -> T.concat ["<mrow><mfrac linethickness='2px'><mtext fontsize='1.0' color='Black'>", pf node, "</mtext><mfrac linethickness='0px'><mstyle color='Red'>", toMathML $ cat node, "</mstyle><mstyle color='Black'>", toMathML $ DTSv.fromDeBruijn $ betaReduce $ sem node, "</mstyle></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", source node, "</mtext></mrow>"] 
-      dtrs -> T.concat ["<mrow><mfrac linethickness='2px'><mrow>", T.concat $ map toMathML dtrs, "</mrow><mfrac linethickness='0px'><mstyle color='Red'>", toMathML $ cat node, "</mstyle><mstyle color='Black'>", toMathML $ DTSv.fromDeBruijn $ betaReduce $ sem node, "</mstyle></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", toMathML $ rs node, "</mtext></mrow>"] 
+      [] -> T.concat ["<mrow><mfrac linethickness='2px'><mtext fontsize='1.0' color='Black'>", pf node, "</mtext><mfrac linethickness='0px'><mstyle color='Red'>", toMathML $ cat node, "</mstyle><mstyle color='Black'>", toMathML $ DTS.fromDeBruijn $ betaReduce $ sem node, "</mstyle></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", source node, "</mtext></mrow>"] 
+      dtrs -> T.concat ["<mrow><mfrac linethickness='2px'><mrow>", T.concat $ map toMathML dtrs, "</mrow><mfrac linethickness='0px'><mstyle color='Red'>", toMathML $ cat node, "</mstyle><mstyle color='Black'>", toMathML $ DTS.fromDeBruijn $ betaReduce $ sem node, "</mstyle></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", toMathML $ rs node, "</mtext></mrow>"] 
 
 -- | ゆくゆくは、Catはtype classとして再定義し、
 -- | merge : Cat -> Cat -> Cat??のようにclass関数を用意してパーザはそれのみ使う
