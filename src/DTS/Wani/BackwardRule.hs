@@ -142,7 +142,7 @@ deduce goal depth setting
       let con = conFromGoal goal
           arrowType = case typesFromGoal goal of [proofType] -> proofType ; _ -> undefined
           forwardedresult = backwardToforward goal depth setting
-          subgoalsSetLst = map 
+          subgoalsSetLst = concatMap 
             (\f -> 
               let subgoalsets = f goal depth setting
               in map (\subgoalset -> debugLogSubgoalSet subgoalset depth setting "here" subgoalset) subgoalsets
@@ -153,14 +153,12 @@ deduce goal depth setting
                 ++ [dne | arrowType /= A.Conclusion DT.Bot && WB.mode setting == WB.WithDNE]
                 ++ [efq | arrowType /= A.Conclusion DT.Bot && WB.mode setting == WB.WithEFQ]
             )
+          -- 
           subgoalsLstWithPriority = 
-            concatMap 
-            (\subgoalsSetsFromEachRules -> 
-              map 
-              (\subGoalSets -> case subGoalSets of SubGoalSet _ trees subgoals clues -> map (\subgoal -> [(trees,subgoal,clues)]) subgoals)
-              subgoalsSetsFromEachRules
-            )
+            map 
+            subGoalsFromSubGoalSet case of -> (Goal,SubstLst) 
             subgoalsSetLst
+
           backwardresult = WB.resultDef
       --     -- backwardresult= foldl
       --     --   (\rs subgoalsSetsFromEachRules -> 
