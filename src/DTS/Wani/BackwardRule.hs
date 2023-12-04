@@ -64,7 +64,7 @@ goalFromSubGoal = fst
 substLstFromSubGoal :: SubGoal -> SubstLst
 substLstFromSubGoal = snd
 
-data SubGoalSet = SubGoalSet T.Text [J.Tree A.AJudgement] [SubGoal] [(ProofType,(ProofType,SubstLst))]
+data SubGoalSet = SubGoalSet J.Label [J.Tree A.AJudgement] [SubGoal] [(ProofType,(ProofType,SubstLst))]
   deriving (Eq,Show)
 
 treeFromSubGoalSet :: SubGoalSet -> [J.Tree A.AJudgement]
@@ -120,7 +120,7 @@ piIntro goal depth setting =
             termForB = maybe Nothing (\g -> case g of (A.ArrowLam' _ term) -> Just (A.betaReduce term)) (termFromGoal goal)
             subgoals = (Goal (sigCon,as ++ varCon) termForB [b],[]):subgoalsWithTerm
             clues = []
-            subgoalsets = [SubGoalSet "piIntro" trees subgoals clues]
+            subgoalsets = [SubGoalSet J.PiI trees subgoals clues]
         in subgoalsets
     _ -> []
 
@@ -153,12 +153,8 @@ deduce goal depth setting
                 ++ [dne | arrowType /= A.Conclusion DT.Bot && WB.mode setting == WB.WithDNE]
                 ++ [efq | arrowType /= A.Conclusion DT.Bot && WB.mode setting == WB.WithEFQ]
             )
-          -- 
-          subgoalsLstWithPriority = 
-            map 
-            subGoalsFromSubGoalSet case of -> (Goal,SubstLst) 
-            subgoalsSetLst
-
+          subgoalsLstWithPriority = map subGoalsFromSubGoalSet subgoalsSetLst
+          -- ここでツリーを構成する必要がある
           backwardresult = WB.resultDef
       --     -- backwardresult= foldl
       --     --   (\rs subgoalsSetsFromEachRules -> 
