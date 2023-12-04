@@ -98,7 +98,7 @@ prove' TQ.ProofSearchSetting{..} TQ.ProofSearchQuery{..} =  -- [Tree (U.Judgment
       result = prove ctx sig typ setting
   in map fromATreeToJTree $ WB.trees result
 
-fromATreeToJTree :: J.Tree A.AJudgement -> UDT.Tree (UDdB.Judgment DTT) TQ.UDTTrule
+fromATreeToJTree :: J.Tree A.AJudgement -> UDT.Tree TQ.UDTTrule (UDdB.Judgment DTT) 
 fromATreeToJTree _ = UDT.Tree TQ.Var (UDdB.Judgment [] [] (UDdB.Var 0) (UDdB.Var 0)) []
 
 

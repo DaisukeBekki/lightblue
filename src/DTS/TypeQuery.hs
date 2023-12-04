@@ -15,6 +15,7 @@ module DTS.TypeQuery (
   , Prover
   ) where
 
+import Data.Bifunctor (second)       --base
 import qualified Data.Text.Lazy as T --text
 import Interface.Text
 import Interface.TeX
@@ -26,6 +27,13 @@ import DTS.Labels (UDTT,DTT)
 
 data UDTTrule = Var | Con | Typ | PiF | PiI | PiE | SigmaF | SigmaI | SigmaE | DisjF | DisjI | DisjE | EnumF | EnumI | EnumE | IqF | IqI | IqE | NumF | NumI | NumE deriving (Eq, Show, Read)
 
+instance SimpleText UDTTrule where
+  toText = T.pack . show
+instance Typeset UDTTrule where
+  toTeX = T.pack . show
+instance MathML UDTTrule where
+  toMathML = T.pack . show
+
 -- | Type checking in DTT
 
 data TypeCheckQuery a = TypeCheckQuery {
@@ -35,7 +43,7 @@ data TypeCheckQuery a = TypeCheckQuery {
   , typ :: U.Preterm DTT
   } deriving (Eq, Show)
 
-type TypeCheckResult = [Tree (U.Judgment DTT) UDTTrule]
+type TypeCheckResult = [Tree UDTTrule (U.Judgment DTT)]
 
 type TypeChecker = Prover -> TypeCheckQuery UDTT -> TypeCheckResult
 
@@ -60,25 +68,23 @@ data ProofSearchQuery = ProofSearchQuery {
   , typ :: U.Preterm DTT
   } deriving (Eq, Show)
 
-type ProofSearchResult = [Tree (U.Judgment DTT) UDTTrule]
+type ProofSearchResult = [Tree UDTTrule (U.Judgment DTT)]
 
 type Prover = ProofSearchSetting -> ProofSearchQuery -> ProofSearchResult
 
-{-
 instance MathML ProofSearchResult where
   toMathML results =
     let n = length results in
-    T.concat $ map (\(i,r) ->
+    T.concat $ map (\(i,diagram) ->
       T.concat [
         "<mrow>",
         T.pack $ show i,
         "th result out of ",
         T.pack $ show n,
         "</mrow><mrow>",
-        toMathML $ U.fromDeBruijnJudgment r,
+        toMathML $ second U.fromDeBruijnJudgment diagram,
         "</mrow>"
         ]) $ zip [1..] results
--}
 
 {-
 instance MathML ProofSearchQuery where
@@ -90,7 +96,7 @@ instance MathML ProofSearchQuery where
     in T.concat ["<mrow>", toMathML vcontext', "<mo>&vdash;</mo><mo>?</mo><mo>:</mo>", toMathML vtyp', "</mrow>"]
 -}
 
---data ProofSearchResult = Diagrams [Tree Judgment RuleName] deriving (Eq, Show)
+--data ProofSearchResult = Diagrams [Tree RuleName Judgment] deriving (Eq, Show)
 
 {-
 signatureChecker :: TypeChecker -> DTT.Signature -> Bool

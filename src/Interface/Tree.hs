@@ -5,6 +5,7 @@ module Interface.Tree (
   , isLeaf
   ) where
 
+import Data.Bifunctor 
 import qualified Data.Text.Lazy as T
 import Interface.Text
 import Interface.TeX
@@ -12,14 +13,18 @@ import Interface.HTML
 --import Interface.XML
 --import Interface.SVG
 
--- | Tree of a, where b is a type for rule name
-data Tree a b = Tree {
-  ruleName :: b
+-- | Tree of a, where r is a type for rule name
+data Tree r a = Tree {
+  ruleName :: r
   , node :: a
-  , daughters :: [Tree a b]
+  , daughters :: [Tree r a]
   } deriving (Eq, Show)
 
-isLeaf :: (Tree a b) -> Bool
+instance Bifunctor Tree where
+  first f (Tree rn n dtrs) = Tree (f rn) n (map (first f) dtrs)
+  second g (Tree rn n dtrs) = Tree rn (g n) (map (second g) dtrs)
+
+isLeaf :: (Tree r a) -> Bool
 isLeaf (Tree _ _ dtrs) = case dtrs of
   [] -> True
   _  -> False
@@ -29,23 +34,23 @@ isLeaf (Tree _ _ dtrs) = case dtrs of
 -- | - leafのときのみPFを表示する
 -- | - top-levelでのみsignatureを表示する
 -- | いったクセがあるので要検討  MathMLtree（メソッドはprintAsLeafを定義）のようなclassを作ろう
-instance (SimpleText a, SimpleText b) => SimpleText (Tree a b) where
+instance (SimpleText r, SimpleText a) => SimpleText (Tree r a) where
   toText = toTextLoop 0 
 
-toTextLoop :: (SimpleText a, SimpleText b) => Int -> (Tree a b) -> T.Text
+toTextLoop :: (SimpleText r, SimpleText a) => Int -> (Tree r a) -> T.Text
 toTextLoop indent Tree{..} =
   let t = [T.pack (replicate indent ' '), toText ruleName, " ", toText node, "\n"] in
   case daughters of
     [] ->   T.concat t
     dtrs -> T.concat $ t ++ (map (toTextLoop $ indent+2) dtrs)
 
-instance (MathML a, MathML b) => MathML (Tree a b) where
+instance (MathML r, MathML a) => MathML (Tree r a) where
   toMathML Tree{..} = T.concat $
     ["<mrow><mfrac linethickness='2px'><mrow>"]
     ++ (map toMathML daughters)
     ++ ["</mrow></mfrac><mtext fontsize='0.8' color='Black'>", toMathML ruleName, "</mtext></mrow>"]
 
-instance (Typeset a, Typeset b) => Typeset (Tree a b) where
+instance (Typeset r, Typeset a) => Typeset (Tree r a) where
   toTeX Tree{..} = T.concat 
     ["\\nd[", toTeX ruleName, "]{", toTeX node, "}{", T.intercalate "&" $ map toTeX daughters, "}"]
 
