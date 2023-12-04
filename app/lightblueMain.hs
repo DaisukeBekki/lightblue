@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import Options.Applicative hiding (style) --optparse-applicative
-import Data.Semigroup ((<>))              --semigroup
+--import Data.Semigroup ((<>))              --semigroup
 import Control.Monad (forM_)              --base
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
@@ -27,7 +27,7 @@ import qualified DTS.UDTTdeBruijn as DTS
 import DTS.TypeChecker (uDTTtypeCheck)
 import DTS.NaturalLanguageInference (ProverName(..),InferenceSetting(..),InferencePair(..),checkInference)
 --import qualified DTS.Prover.TypeChecker as TC
-import qualified DTS.Prover.Wani.WaniBase as Wani
+--import qualified DTS.Prover.Wani.WaniBase as Wani
 --import qualified DTS.Prover.Diag.TypeChecker as Diag
 --import qualified DTS.Prover.Coq.DTStoProlog as D2P
 
@@ -225,7 +225,7 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
     -- |
     lightblueMainLocal (Infer proverName) contents = do
       let handle = S.stdout;
-          inferenceSetting = InferenceSetting beamw nbest Nothing uDTTtypeCheck proverName
+          inferenceSetting = InferenceSetting beamw nbest Nothing Nothing uDTTtypeCheck proverName
       case proverName of
         Wani -> S.hPutStrLn handle $ I.headerOf I.HTML
         Diag -> S.hPutStrLn handle $ I.headerOf I.HTML

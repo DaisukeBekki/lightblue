@@ -59,6 +59,7 @@ data LogicSystem = Intuitionistic | Classical deriving (Eq, Show)
 
 data ProofSearchSetting = ProofSearchSetting {
   maxDepth :: Maybe Int
+  , maxTime :: Maybe Int
   , system :: Maybe LogicSystem
   } deriving (Eq, Show)
 

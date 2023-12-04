@@ -35,6 +35,7 @@ data InferenceSetting = InferenceSetting {
   beam :: Int     -- ^ beam width
   , nbest :: Int  -- ^ n-best
   , maxDepth :: Maybe Int -- ^ max depth for prover
+  , maxTime :: Maybe Int  -- ^ max time for prover
   , typeChecker :: TQ.TypeChecker
   , proverName :: ProverName
   } 
@@ -85,7 +86,7 @@ checkInference InferenceSetting{..} InferencePair{..} = do
     let allsig = foldl L.union [] $ map CP.sig nds;
     (hype:prems) <- choice $ TY.sequentialTypeCheck TY.uDTTtypeCheck prover allsig srs; -- [DTTpreterms]
     -- | Example: u0:srA1, u1:srB1, u2:srC1 (where A1 is the hyp.)
-    return (nds, prover (TQ.ProofSearchSetting maxDepth (Just TQ.Intuitionistic))
+    return (nds, prover (TQ.ProofSearchSetting maxDepth maxTime (Just TQ.Intuitionistic))
                         (TQ.ProofSearchQuery allsig prems hype))
 
 -- type ProofSearchResult = [Tree (U.Judgment U.DTT) UDTTrule]

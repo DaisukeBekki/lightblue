@@ -91,7 +91,9 @@ prove' TQ.ProofSearchSetting{..} TQ.ProofSearchQuery{..} =  -- [Tree (U.Judgment
         WB.maxdepth = case maxDepth of
                         Just n -> n
                         Nothing -> 9,
-        WB.maxtime = 100000,
+        WB.maxtime = case maxTime of
+                        Just t -> t
+                        Nothing -> 100000,
         WB.debug = False,
         WB.sStatus = WB.statusDef
         };
