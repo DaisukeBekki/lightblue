@@ -84,7 +84,7 @@ checkInference InferenceSetting{..} InferencePair{..} = do
   return $ InferenceResult $ do
     (nds,srs) <- nodeSRlist
     let allsig = foldl L.union [] $ map CP.sig nds;
-    (hype:prems) <- choice $ TY.sequentialTypeCheck TY.uDTTtypeCheck prover allsig srs; -- [DTTpreterms]
+    (hype:prems) <- choice $ TY.sequentialTypeCheck TY.typeCheck prover allsig srs; -- [DTTpreterms]
     -- | Example: u0:srA1, u1:srB1, u2:srC1 (where A1 is the hyp.)
     return (nds, prover (QT.ProofSearchSetting maxDepth maxTime (Just QT.Intuitionistic))
                         (QT.ProofSearchQuery allsig prems hype))

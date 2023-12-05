@@ -100,7 +100,7 @@ prove' QT.ProofSearchSetting{..} QT.ProofSearchQuery{..} =  -- [Tree (U.Judgment
       result = prove ctx sig typ setting
   in map fromATreeToJTree $ WB.trees result
 
-fromATreeToJTree :: J.Tree A.AJudgement -> UDT.Tree QT.UDTTrule (UDdB.Judgment DTT) 
+fromATreeToJTree :: J.Tree A.AJudgement -> UDT.Tree QT.DTTrule (UDdB.Judgment DTT) 
 fromATreeToJTree _ = UDT.Tree QT.Var (UDdB.Judgment [] [] (UDdB.Var 0) (UDdB.Var 0)) []
 
 

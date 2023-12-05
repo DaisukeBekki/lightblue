@@ -91,13 +91,13 @@ defS :: [FeatureValue] -> [FeatureValue] -> Cat
 defS p c = S [F p,F c,F[M],F[M],F[M],F[M],F[M]]
 
 entity :: DTS.Preterm a
-entity = Con "entity"
+entity = Entity
 
 event :: DTS.Preterm a
-event = Con "entity"
+event = Entity
 
 state :: DTS.Preterm a
-state = Con "entity"
+state = Entity
 
 --catS :: [FeatureValue] -> [FeatureValue] -> Feature -> Feature -> Feature -> Feature -> Feature -> Cat
 --catS pos conj pm1 pm2 pm3 pm4 pm5 = S [F pos, F conj, pm1, pm2, pm3, pm4, pm5]

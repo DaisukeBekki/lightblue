@@ -24,7 +24,7 @@ import qualified Interface.HTML as I
 import qualified JSeM as J
 import qualified JSeM.XML as J
 import qualified DTS.UDTTdeBruijn as DTS
-import DTS.TypeChecker (uDTTtypeCheck)
+import DTS.TypeChecker (typeCheck)
 import DTS.NaturalLanguageInference (ProverName(..),InferenceSetting(..),InferencePair(..),checkInference)
 --import qualified DTS.Prover.TypeChecker as TC
 --import qualified DTS.Prover.Wani.WaniBase as Wani
@@ -225,7 +225,7 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
     -- |
     lightblueMainLocal (Infer proverName) contents = do
       let handle = S.stdout;
-          inferenceSetting = InferenceSetting beamw nbest Nothing Nothing uDTTtypeCheck proverName
+          inferenceSetting = InferenceSetting beamw nbest Nothing Nothing typeCheck proverName
       case proverName of
         Wani -> S.hPutStrLn handle $ I.headerOf I.HTML
         Diag -> S.hPutStrLn handle $ I.headerOf I.HTML

@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs, StandaloneDeriving, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE GADTs, StandaloneDeriving, TypeSynonymInstances, FlexibleInstances, DeriveGeneric #-}
 
 {-|
 Copyright   : (c) Daisuke Bekki, 2023
@@ -43,10 +43,12 @@ module DTS.UDTTdeBruijn (
   , fromDeBruijnJudgment
   ) where
 
-import qualified Control.Applicative as M -- base
-import qualified Control.Monad as M       -- base
-import qualified Data.List as L           -- base
+import qualified GHC.Generics        as G --base
+import qualified Control.Applicative as M --base
+import qualified Control.Monad as M       --base
+import qualified Data.List as L           --base
 import qualified Data.Text.Lazy as T --text
+import qualified Codec.Serialise as S --serialise
 import Interface.Text                --lightblue
 import Interface.TeX                 --lightblue
 import Interface.HTML                --lightblue
@@ -87,9 +89,10 @@ data Preterm a where
   Lamvec :: Preterm UDTT -> Preterm UDTT        -- ^ Lambda abstractions of a variable vector
   Appvec :: Int -> Preterm UDTT -> Preterm UDTT -- ^ Function applications of a variable vector
   -- | Enumeration Types
+  Bot :: Preterm a                              -- ^ The bottom type
   Unit :: Preterm a                             -- ^ The unit term (of type Top)
   Top :: Preterm a                              -- ^ The top type
-  Bot :: Preterm a                              -- ^ The bottom type
+  Entity :: Preterm a                           -- ^ The entity type
   -- | Natural Number Types
   Nat :: Preterm a                              -- ^ Natural number type (Nat)
   Zero :: Preterm a                             -- ^ 0 (of type Nat)
@@ -103,6 +106,9 @@ data Preterm a where
   -- | ToDo: add First Universe
 
 deriving instance Eq a => Eq (Preterm a)
+--deriving instance G.Generic a => G.Generic (Preterm a)
+--deriving instance S.Serialise a => S.Serialise (Preterm a)
+
 instance Show (Preterm a) where
   show = T.unpack . toTextDeBruijn
 
@@ -139,9 +145,10 @@ toTextDeBruijn preterm = case preterm of
     Proj s m   -> T.concat["π", toText s, "(", toTextDeBruijn m, ")"]
     Lamvec m   -> T.concat ["λ+.", toTextDeBruijn m]
     Appvec i m -> T.concat ["(", toTextDeBruijn m, " ", T.pack (show i), "+)"]
+    Bot   -> "⊥"
     Unit  -> "()"
     Top   -> "T"
-    Bot   -> "⊥"
+    Entity -> "entity"
     Asp i m -> T.concat["@", T.pack (show i), ":", toTextDeBruijn m]
     Nat   -> "N"
     Zero  -> "0"
@@ -161,14 +168,16 @@ toUDTT preterm = case preterm of
   Type -> Type
   Kind -> Kind
   Pi a b -> Pi (toUDTT a) (toUDTT b)
+  Not a  -> Not (toUDTT a)
   Lam m  -> Lam (toUDTT m)
   App m n -> App (toUDTT m) (toUDTT n)
   Sigma a b -> Sigma (toUDTT a) (toUDTT b)
   Pair m n  -> Pair (toUDTT m) (toUDTT n)
   Proj sel m  -> Proj sel (toUDTT m)
+  Bot     -> Bot
   Unit    -> Unit
   Top     -> Top
-  Bot     -> Bot
+  Entity  -> Entity
   Nat     -> Nat
   Zero    -> Zero
   Succ n  -> Succ (toUDTT n)
@@ -212,9 +221,10 @@ toDTT preterm = case preterm of
   Asp _ _   -> Nothing
   Lamvec _  -> Nothing
   Appvec _ _ -> Nothing
+  Bot    -> return Bot
   Unit   -> return Unit
   Top    -> return Top
-  Bot    -> return Bot
+  Entity -> return Entity
   Nat    -> return Nat
   Zero   -> return Zero
   Succ n  -> do
@@ -261,9 +271,10 @@ subst preterm l i = case preterm of
   Asp j m    -> Asp j (subst m l i)
   Lamvec m   -> Lamvec (subst m (shiftIndices l 1 0) (i+1))
   Appvec j m -> Appvec j (subst m l i)
+  Bot        -> Bot
   Unit       -> Unit
   Top        -> Top
-  Bot        -> Bot
+  Entity     -> Entity
   Nat        -> Nat
   Zero       -> Zero
   Succ n     -> Succ (subst n l i)
@@ -323,9 +334,10 @@ betaReduce preterm = case preterm of
     e -> Proj s e
   Lamvec m   -> Lamvec (betaReduce m)
   Appvec i m -> Appvec i (betaReduce m)
+  Bot  -> Bot
   Unit -> Unit
   Top  -> Top
-  Bot  -> Bot
+  Entity -> Entity
   Asp i m -> Asp i (betaReduce m)
   Nat  -> Nat
   Zero -> Zero
@@ -366,9 +378,10 @@ strongBetaReduce t preterm = case preterm of
                    then Lam (strongBetaReduce (t-1) $ Lamvec (addLambda 0 m))
                    else strongBetaReduce 0 (deleteLambda 0 m)
   Appvec i m -> Appvec i (strongBetaReduce 0 m)
+  Bot  -> Bot
   Unit -> Unit
   Top  -> Top
-  Bot  -> Bot
+  Entity -> Entity
   Asp i m -> Asp i (strongBetaReduce 0 m)
   Nat  -> Nat
   Zero -> Zero
@@ -405,7 +418,7 @@ sigmaElimination preterm = case preterm of
   Eq a m n   -> Eq (sigmaElimination a) (sigmaElimination m) (sigmaElimination n)
   Refl a m   -> Refl (sigmaElimination a) (sigmaElimination m)
   Idpeel m n -> Idpeel (sigmaElimination m) (sigmaElimination n)
-  --m -> m
+  m -> m
 
 -- | adds two preterms (of type `Nat`).
 add :: Preterm a -> Preterm a -> Preterm a
@@ -567,9 +580,10 @@ fromDeBruijnLoop vnames preterm = case preterm of
     let vname = vnames!!j
     m' <- fromDeBruijnLoop vnames m
     return $ VN.Appvec vname m'
+  Bot     -> return VN.Bot
   Unit    -> return VN.Unit
   Top     -> return VN.Top
-  Bot     -> return VN.Bot
+  Entity  -> return VN.Entity
   Asp _ m -> do
     j' <- aspIndex
     m' <- fromDeBruijnLoop vnames m
@@ -632,9 +646,10 @@ toDeBruijn vnames preterm = case preterm of
   VN.Appvec vname m -> case L.elemIndex vname vnames of
                         Just i -> Appvec i (toDeBruijn vnames m)
                         Nothing -> Con "Error: vname not found in toDeBruijn Appvec"
+  VN.Bot -> Bot
   VN.Unit -> Unit
   VN.Top -> Top
-  VN.Bot -> Bot
+  VN.Entity -> Entity
   VN.Asp i m -> Asp i (toDeBruijn vnames m)
   VN.Nat -> Nat
   VN.Zero -> Zero

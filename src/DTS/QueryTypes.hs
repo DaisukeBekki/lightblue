@@ -2,11 +2,13 @@
 
 module DTS.QueryTypes (
   -- * Type system of UDTT
-  UDTTrule(..)
+  DTTrule(..)
   -- * UDTT type check
   , TypeCheckQuery(..)
   , TypeCheckResult(..)
   , TypeChecker
+  , TypeInferQuery(..)
+  , TypeInfer
   -- * DTT proof search
   , LogicSystem(..)
   , ProofSearchSetting(..)
@@ -25,13 +27,13 @@ import qualified DTS.UDTTdeBruijn as U
 import qualified DTS.UDTTvarName as VN
 import DTS.Labels (UDTT,DTT)
 
-data UDTTrule = Var | Con | Typ | PiF | PiI | PiE | SigmaF | SigmaI | SigmaE | DisjF | DisjI | DisjE | EnumF | EnumI | EnumE | IqF | IqI | IqE | NumF | NumI | NumE deriving (Eq, Show, Read)
+data DTTrule = Var | Con | TypeF | Conv | WK | PiF | PiI | PiE | SigmaF | SigmaI | SigmaE | DisjF | DisjI | DisjE | EnumF | EnumI | EnumE | IqF | IqI | IqE | NumF | NumI | NumE deriving (Eq, Show, Read)
 
-instance SimpleText UDTTrule where
+instance SimpleText DTTrule where
   toText = T.pack . show
-instance Typeset UDTTrule where
+instance Typeset DTTrule where
   toTeX = T.pack . show
-instance MathML UDTTrule where
+instance MathML DTTrule where
   toMathML = T.pack . show
 
 -- | Type checking in DTT
@@ -43,21 +45,7 @@ data TypeCheckQuery = TypeCheckQuery {
   , typ :: U.Preterm DTT
   } deriving (Eq, Show)
 
-{-
-data TypeCheckError = IndexOutOfBounds
-
-instance Show TypeCheckError where
-  show IndexOutOfBounds = "Index out of bounds"
-
-instance SimpleText TypeCheckError where
-  toText = T.pack . show
-instance Typeset TypeCheckError where
-  toTeX = T.pack . show
-instance MathML TypeCheckError where
-  toMathML = T.pack . show
--}
-
-type TypeCheckResult = [Tree UDTTrule (U.Judgment DTT)]
+type TypeCheckResult = [Tree DTTrule (U.Judgment DTT)]
 
 type TypeChecker = Prover -> TypeCheckQuery -> TypeCheckResult
 
@@ -66,6 +54,8 @@ data TypeInferQuery = TypeInferQuery {
   , ctx :: U.Context
   , trm :: U.Preterm UDTT
   } deriving (Eq, Show)
+
+type TypeInfer = Prover -> TypeInferQuery -> TypeCheckResult
 
 -- | Proof Search in DTT
 
@@ -83,7 +73,7 @@ data ProofSearchQuery = ProofSearchQuery {
   , typ :: U.Preterm DTT
   } deriving (Eq, Show)
 
-type ProofSearchResult = [Tree UDTTrule (U.Judgment DTT)]
+type ProofSearchResult = [Tree DTTrule (U.Judgment DTT)]
 
 type Prover = ProofSearchSetting -> ProofSearchQuery -> ProofSearchResult
 
@@ -100,6 +90,20 @@ instance MathML ProofSearchResult where
         toMathML $ second U.fromDeBruijnJudgment diagram,
         "</mrow>"
         ]) $ zip [1..] results
+
+{-
+data TypeCheckError = IndexOutOfBounds
+
+instance Show TypeCheckError where
+  show IndexOutOfBounds = "Index out of bounds"
+
+instance SimpleText TypeCheckError where
+  toText = T.pack . show
+instance Typeset TypeCheckError where
+  toTeX = T.pack . show
+instance MathML TypeCheckError where
+  toMathML = T.pack . show
+-}
 
 {-
 instance MathML ProofSearchQuery where

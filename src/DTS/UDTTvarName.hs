@@ -76,9 +76,10 @@ data Preterm a where
   Lamvec :: VarName -> Preterm UDTT -> Preterm UDTT   -- ^ Variable-length lambda abstraction
   Appvec :: VarName -> Preterm UDTT -> Preterm UDTT   -- ^ Variable-length function application
   -- | Enumeration Types
+  Bot :: Preterm a                 -- ^ The bottom type
   Unit :: Preterm a                -- ^ The unit term (of type Top)
   Top :: Preterm a                 -- ^ The top type
-  Bot :: Preterm a                 -- ^ The bottom type
+  Entity :: Preterm a              -- ^ The entity type
   -- | Natural Number Types
   Nat :: Preterm a                 -- ^ The natural number type (Nat)
   Zero :: Preterm a                -- ^ 0 (of type Nat)
@@ -133,9 +134,10 @@ toText' flag preterm = case preterm of
     Proj s m  -> T.concat ["π", toText s, "(", toText' flag m, ")"]
     Lamvec vname m  -> T.concat ["λ", toText vname, "+.", toText' flag m]
     Appvec vname m -> T.concat ["(", toText' flag m, " ", toText vname, "+)"]
+    Bot        -> "⊥"
     Unit       -> "()"
     Top        -> "T"
-    Bot        -> "⊥"
+    Entity     -> "entity"
     Asp j m    -> T.concat["@", T.pack (show j), ":", toText' flag m]
     Nat    -> "N"
     Zero   -> "0"
@@ -172,9 +174,10 @@ instance Typeset (Preterm a) where
     Proj s m  -> T.concat["\\pi_", toTeX s, "\\left(", toTeX m, "\\right)"]
     Lamvec vname m   -> T.concat ["\\lambda\\vec{", toTeX vname, "}.", toTeX m]
     Appvec vname m -> T.concat ["\\APP{", toTeXEmbedded m, "}{\\vec{", toTeX vname, "}}"]
+    Bot       -> "\\bot"
     Unit      -> "()"
     Top       -> "\\top"
-    Bot       -> "\\bot"
+    Entity    -> "\\Entity"
     Asp j m   -> T.concat ["@_{", T.pack (show j), "}:", toTeX m]
     Nat       -> "\\Set{N}"
     Zero      -> "0"
@@ -198,25 +201,26 @@ instance MathML (Preterm a) where
     Kind -> "<mi>kind</mi>"
     Pi vname a b -> case b of
       Bot -> T.concat["<mrow><mi>&not;</mi>", toMathML a, "</mrow>"]
-      b' -> T.concat ["<mrow><mfenced separators=':'>", toMathML vname, toMathML a, "</mfenced><mo>&rarr;</mo>", toMathML b, "</mrow>"]
+      b' -> T.concat ["<mrow><mo>(</mo>", toMathML vname, "<mo>:</mo>", toMathML a, "<mo>)</mo><mo>&rarr;</mo>", toMathML b, "</mrow>"]
     Lam vname m -> T.concat ["<mrow><mi>&lambda;</mi>", toMathML vname, "<mpadded lspace='-0.2em' width='-0.2em'><mo>.</mo></mpadded>", toMathML m, "</mrow>"]
     App (App (Con cname) y) x ->
-      T.concat ["<mrow><mtext>", cname, "</mtext><mfenced>", toMathML x, toMathML y,"</mfenced></mrow>"]
+      T.concat ["<mrow><mtext>", cname, "</mtext><mo>(</mo>", toMathML x, "<mo>,</mo>", toMathML y,"<mo>)</mo></mrow>"]
     App (App (App (Con cname) z) y) x ->
-      T.concat ["<mrow><mtext>", cname, "</mtext><mfenced>", toMathML x, toMathML y,toMathML z,"</mfenced></mrow>"]
+      T.concat ["<mrow><mtext>", cname, "</mtext><mo>(</mo>", toMathML x, "<mo>,</mo>", toMathML y, "<mo>,</mo>", toMathML z,"<mo>)</mo></mrow>"]
     App (App (App (App (Con cname) u) z) y) x ->
-      T.concat ["<mrow><mtext>", cname, "</mtext><mfenced>", toMathML x, toMathML y, toMathML z, toMathML u, "</mfenced></mrow>"]
-    App m n -> T.concat ["<mrow>", toMathML m, "<mfenced>", toMathML n, "</mfenced></mrow>"]
+      T.concat ["<mrow><mtext>", cname, "</mtext><mfenced>", toMathML x, "<mo>,</mo>", toMathML y, "<mo>,</mo>", toMathML z, "<mo>,</mo>", toMathML u, "<mo>)</mo></mrow>"]
+    App m n -> T.concat ["<mrow>", toMathML m, "<mo>(</mo>", toMathML n, "<mo>)</mo></mrow>"]
     Sigma vname a b -> case b of
                          Top -> toMathML a
-                         _   -> T.concat ["<mfenced open='[' close=']'><mtable columnalign='left'><mtr><mtd>", toMathML vname, "<mo>:</mo>", toMathML a, "</mtd></mtr><mtr><mtd><mpadded height='-0.5em'>", toMathML b, "</mpadded></mtd></mtr></mtable></mfenced>"]
+                         _   -> T.concat ["<mrow><mo>[</mo><mtable columnalign='left'><mtr><mtd>", toMathML vname, "<mo>:</mo>", toMathML a, "</mtd></mtr><mtr><mtd><mpadded height='-0.5em'>", toMathML b, "</mpadded></mtd></mtr></mtable><mo>]</mo></mrow>"]
     Pair m n  -> T.concat ["<mfenced>", toMathML m, toMathML n, "</mfenced>"]
     Proj s m  -> T.concat ["<mrow><msub><mi>&pi;</mi>", toMathML s, "</msub><mfenced>", toMathML m, "</mfenced></mrow>"]
     Lamvec vname m  -> T.concat ["<mrow><mi>&lambda;</mi><mover>", toMathML vname, "<mo>&rarr;</mo></mover><mo>.</mo>", toMathML m, "</mrow>"]
     Appvec vname m -> T.concat ["<mfenced separators=''>", toMathML m, "<mover>", toMathML vname, "<mo>&rarr;</mo></mover></mfenced>"]
+    Bot        -> "<mi>&bot;</mi>"
     Unit       -> "<mi>()</mi>"
     Top        -> "<mi>&top;</mi>"
-    Bot        -> "<mi>&bot;</mi>"
+    Entity     -> "<mi>entity</mi>"
     Asp j m    -> T.concat["<mrow><msub><mo>@</mo><mn>", T.pack (show j), "</mn></msub><mo>::</mo>", toMathML m, "</mrow>"]
     Nat    -> "<mi>N</mi>"
     Zero   -> "<mi>0</mi>"

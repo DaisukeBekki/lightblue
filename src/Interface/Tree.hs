@@ -44,13 +44,19 @@ toTextLoop indent Tree{..} =
     [] ->   T.concat t
     dtrs -> T.concat $ t ++ (map (toTextLoop $ indent+2) dtrs)
 
-instance (MathML r, MathML a) => MathML (Tree r a) where
-  toMathML Tree{..} = T.concat $
-    ["<mrow><mfrac linethickness='2px'><mrow>"]
-    ++ (map toMathML daughters)
-    ++ ["</mrow></mfrac><mtext fontsize='0.8' color='Black'>", toMathML ruleName, "</mtext></mrow>"]
-
 instance (Typeset r, Typeset a) => Typeset (Tree r a) where
   toTeX Tree{..} = T.concat 
     ["\\nd[", toTeX ruleName, "]{", toTeX node, "}{", T.intercalate "&" $ map toTeX daughters, "}"]
+
+instance (MathML r, MathML a) => MathML (Tree r a) where
+  toMathML Tree{..} = T.concat [
+    "<mrow><mstyle displaystyle='true'><mfrac linethickness='medium'><mrow>"
+    , T.intercalate "<mo>&nbsp;</mo>" $ map toMathML daughters
+    , "</mrow>"
+    , toMathML node
+    , "</mfrac></mstyle><mtext fontsize='0.4' color='Black'>("
+    , toMathML ruleName
+    , ")</mtext></mrow>"
+    ]
+
 
