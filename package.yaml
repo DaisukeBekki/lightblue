@@ -38,6 +38,8 @@ dependencies:
   - hexpat >= 0.20
   - parsec >= 3.1.14
   - filepath >= 1.4
+  - mtl >= 2.2.2
+  - serialise >= 0.2.4
 
 library:
   source-dirs: src
@@ -63,14 +65,12 @@ library:
   - Interface.HTML
   - Interface.SVG
   - Interface.Tree
+  - DTS.Labels
   - DTS.UDTTdeBruijn
   - DTS.UDTTvarName
-  - DTS.TypeQuery
+  - DTS.QueryTypes
   - DTS.TypeChecker
   - DTS.NaturalLanguageInference
-#  - DTS.Prover.Diag.Prover
-#  - DTS.Prover.Diag.Judgement
-#  - DTS.Prover.Diag.TypeChecker
   - DTS.Prover.Wani.Judgement
   - DTS.Prover.Wani.TypeChecker
   - DTS.Prover.Wani.WaniBase
@@ -78,7 +78,10 @@ library:
   - DTS.Prover.Wani.Backward
   - DTS.Prover.Wani.Arrowterm
   - DTS.Prover.Wani.Prove
-#  - DTS.Prover.Coq.DTStoProlog
+#  - DTS.Prover.Coq.DTS2Coq
+#  - DTS.Prover.Diag.Prover
+#  - DTS.Prover.Diag.Judgement
+#  - DTS.Prover.Diag.TypeChecker
 
 executables:
   lightblue:

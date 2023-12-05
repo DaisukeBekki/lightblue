@@ -14,11 +14,12 @@ module DTS.TypeChecker (
   , uDTTtypeCheck
   ) where
 
+import Control.Monad.Except (throwError)
 import Interface.Tree (Tree(..),node)
 import qualified DTS.UDTTdeBruijn as U
 import qualified DTS.UDTTvarName as V
 import DTS.Labels (UDTT)
-import DTS.TypeQuery as TQ
+import DTS.QueryTypes as TQ
 
 -- | executes type check to a list of UDTT preterms
 sequentialTypeCheck :: TypeChecker -> Prover -> U.Signature -> [U.Preterm UDTT] -> [U.Context]
@@ -37,8 +38,8 @@ nullProver ProofSearchSetting{..} ProofSearchQuery{..} = []
 -- |   TypeCheckResult = [Tree (U.Judgment U.DTT) UDTTrule] 
 uDTTtypeCheck :: TypeChecker
 uDTTtypeCheck prover TypeCheckQuery{..} = [] --case (trm,typ) of -- sig:Signature, ctx:Context, trm:Preterm DTT, typ:Preterm DTT
---  (U.Lam M, U.Pi A B) -> do
---    leftTree <-
+--  (U.Lam termM, U.Pi termA termB) -> do
+--    leftTree <- uDTTtypeCheck prover (TypeCheckQuery sig ctx (U.toUDTT termA) (U.Type))
 --    rightTree <- 
 --    return $ Tree TQ.runeName (U.Judgment ) [leftTree,rightTree]
 --  Var i -> if i < length ctx

@@ -1,6 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields, TypeSynonymInstances, FlexibleInstances #-}
 
-module DTS.TypeQuery (
+module DTS.QueryTypes (
   -- * Type system of UDTT
   UDTTrule(..)
   -- * UDTT type check
@@ -36,21 +36,35 @@ instance MathML UDTTrule where
 
 -- | Type checking in DTT
 
-data TypeCheckQuery a = TypeCheckQuery {
+data TypeCheckQuery = TypeCheckQuery {
   sig :: U.Signature
   , ctx :: U.Context
-  , trm :: U.Preterm a
+  , trm :: U.Preterm UDTT
   , typ :: U.Preterm DTT
   } deriving (Eq, Show)
 
+{-
+data TypeCheckError = IndexOutOfBounds
+
+instance Show TypeCheckError where
+  show IndexOutOfBounds = "Index out of bounds"
+
+instance SimpleText TypeCheckError where
+  toText = T.pack . show
+instance Typeset TypeCheckError where
+  toTeX = T.pack . show
+instance MathML TypeCheckError where
+  toMathML = T.pack . show
+-}
+
 type TypeCheckResult = [Tree UDTTrule (U.Judgment DTT)]
 
-type TypeChecker = Prover -> TypeCheckQuery UDTT -> TypeCheckResult
+type TypeChecker = Prover -> TypeCheckQuery -> TypeCheckResult
 
-data TypeInferQuery a = TypeInferQuery {
+data TypeInferQuery = TypeInferQuery {
   sig :: U.Signature
   , ctx :: U.Context
-  , trm :: U.Preterm a
+  , trm :: U.Preterm UDTT
   } deriving (Eq, Show)
 
 -- | Proof Search in DTT

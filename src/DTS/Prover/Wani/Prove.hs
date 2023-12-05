@@ -14,7 +14,7 @@ module DTS.Prover.Wani.Prove
 import qualified Interface.Tree as UDT
 import qualified DTS.UDTTdeBruijn as UDdB
 import DTS.Labels (DTT)
-import qualified DTS.TypeQuery as TQ
+import qualified DTS.QueryTypes as QT
 import qualified DTS.Prover.Wani.Arrowterm as A
 import qualified DTS.Prover.Wani.Judgement as J
 import qualified DTS.Prover.Wani.Backward as B
@@ -80,13 +80,13 @@ searchProof a b c setting=
 -- | Prover for lightblue:
 -- |   UDdB.Context = J.TEnv = [(UDdB.Preterm DTT)]
 -- |   UDdB.Signature = A.SUEnv = [(T.Text,(UDdB.Preterm DTT))]
-prove' :: TQ.Prover
-prove' TQ.ProofSearchSetting{..} TQ.ProofSearchQuery{..} =  -- [Tree (U.Judgment U.DTT) UDTTrule]
+prove' :: QT.Prover
+prove' QT.ProofSearchSetting{..} QT.ProofSearchQuery{..} =  -- [Tree (U.Judgment U.DTT) UDTTrule]
   let setting = WB.Setting {
         WB.mode = case system of
                     Nothing -> WB.Plain
-                    Just TQ.Intuitionistic -> WB.WithEFQ
-                    Just TQ.Classical -> WB.WithDNE,
+                    Just QT.Intuitionistic -> WB.WithEFQ
+                    Just QT.Classical -> WB.WithDNE,
         WB.falsum = True,
         WB.maxdepth = case maxDepth of
                         Just n -> n
@@ -100,8 +100,8 @@ prove' TQ.ProofSearchSetting{..} TQ.ProofSearchQuery{..} =  -- [Tree (U.Judgment
       result = prove ctx sig typ setting
   in map fromATreeToJTree $ WB.trees result
 
-fromATreeToJTree :: J.Tree A.AJudgement -> UDT.Tree TQ.UDTTrule (UDdB.Judgment DTT) 
-fromATreeToJTree _ = UDT.Tree TQ.Var (UDdB.Judgment [] [] (UDdB.Var 0) (UDdB.Var 0)) []
+fromATreeToJTree :: J.Tree A.AJudgement -> UDT.Tree QT.UDTTrule (UDdB.Judgment DTT) 
+fromATreeToJTree _ = UDT.Tree QT.Var (UDdB.Judgment [] [] (UDdB.Var 0) (UDdB.Var 0)) []
 
 
 

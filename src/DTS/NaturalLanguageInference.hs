@@ -27,7 +27,7 @@ import qualified Parser.ChartParser as CP
 import qualified Interface.HTML as HTML
 import qualified Interface.TeX as TEX
 import qualified DTS.UDTTdeBruijn as UD
-import qualified DTS.TypeQuery as TQ
+import qualified DTS.QueryTypes as QT
 import qualified DTS.TypeChecker as TY
 import qualified DTS.Prover.Wani.WaniBase as Wani
 
@@ -36,7 +36,7 @@ data InferenceSetting = InferenceSetting {
   , nbest :: Int  -- ^ n-best
   , maxDepth :: Maybe Int -- ^ max depth for prover
   , maxTime :: Maybe Int  -- ^ max time for prover
-  , typeChecker :: TQ.TypeChecker
+  , typeChecker :: QT.TypeChecker
   , proverName :: ProverName
   } 
 
@@ -47,7 +47,7 @@ data InferencePair = InferencePair {
   , hypothesis :: T.Text -- ^ a hypothesis
   } deriving (Eq, Show)
 
-data InferenceResult = InferenceResult [([CP.Node], TQ.ProofSearchResult)] deriving (Eq)
+data InferenceResult = InferenceResult [([CP.Node], QT.ProofSearchResult)] deriving (Eq)
 
 data ProverName = Wani | Diag | Coq deriving (Eq,Show)
 
@@ -57,7 +57,7 @@ instance Read ProverName where
     ++ [(Diag,s) | (x,s) <- lex r, map C.toLower x == "diag"]
     ++ [(Coq,s) | (x,s) <- lex r, map C.toLower x == "coq"]
 
-getProver :: ProverName -> TQ.Prover
+getProver :: ProverName -> QT.Prover
 getProver pn = case pn of
   Wani -> TY.nullProver
   Diag -> TY.nullProver
@@ -86,11 +86,11 @@ checkInference InferenceSetting{..} InferencePair{..} = do
     let allsig = foldl L.union [] $ map CP.sig nds;
     (hype:prems) <- choice $ TY.sequentialTypeCheck TY.uDTTtypeCheck prover allsig srs; -- [DTTpreterms]
     -- | Example: u0:srA1, u1:srB1, u2:srC1 (where A1 is the hyp.)
-    return (nds, prover (TQ.ProofSearchSetting maxDepth maxTime (Just TQ.Intuitionistic))
-                        (TQ.ProofSearchQuery allsig prems hype))
+    return (nds, prover (QT.ProofSearchSetting maxDepth maxTime (Just QT.Intuitionistic))
+                        (QT.ProofSearchQuery allsig prems hype))
 
 -- type ProofSearchResult = [Tree (U.Judgment U.DTT) UDTTrule]
--- data InferenceResult = InferenceResult [([CP.Node], TQ.ProofSearchResult)] deriving (Eq)
+-- data InferenceResult = InferenceResult [([CP.Node], QT.ProofSearchResult)] deriving (Eq)
 
 -- | (x:xs) :: [[a]], x :: [a], xs :: [[a]], y :: a, choice xs :: [[a]], ys :: [a], (y:ys) :: [a] 
 choice :: [[a]] -> [[a]]
