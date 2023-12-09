@@ -88,11 +88,15 @@ data Preterm a where
   Asp :: Int -> Preterm UDTT -> Preterm UDTT -- ^ Underspesified terms
   Lamvec :: Preterm UDTT -> Preterm UDTT        -- ^ Lambda abstractions of a variable vector
   Appvec :: Int -> Preterm UDTT -> Preterm UDTT -- ^ Function applications of a variable vector
+  -- | Disjoint Union Types
+  Disj :: Preterm a -> Preterm a -> Preterm a   -- ^ Disjoint Union types
+  Iota :: Selector -> Preterm a -> Preterm a    -- ^ (FIrst and second) Injections
+  Unpack :: Preterm a -> Preterm a -> Preterm a -> Preterm a -> Preterm a -- ^ Unpack P L M N
   -- | Enumeration Types
   Bot :: Preterm a                              -- ^ The bottom type
   Unit :: Preterm a                             -- ^ The unit term (of type Top)
   Top :: Preterm a                              -- ^ The top type
-  Entity :: Preterm a                           -- ^ The entity type
+  Entity :: Preterm a                          -- ^ The entity type
   -- | Natural Number Types
   Nat :: Preterm a                              -- ^ Natural number type (Nat)
   Zero :: Preterm a                             -- ^ 0 (of type Nat)

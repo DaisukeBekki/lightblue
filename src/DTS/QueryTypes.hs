@@ -27,14 +27,37 @@ import qualified DTS.UDTTdeBruijn as U
 import qualified DTS.UDTTvarName as VN
 import DTS.Labels (UDTT,DTT)
 
-data DTTrule = Var | Con | TypeF | Conv | WK | PiF | PiI | PiE | SigmaF | SigmaI | SigmaE | DisjF | DisjI | DisjE | EnumF | EnumI | EnumE | IqF | IqI | IqE | NumF | NumI | NumE deriving (Eq, Show, Read)
+data DTTrule = Var | Con | TypeF | Conv | WK | PiF | PiI | PiE | SigmaF | SigmaI | SigmaE | DisjF | DisjI | DisjE | EnumF | EnumI | EnumE | IqF | IqI | IqE | NatF | NatI | NatE deriving (Eq, Show, Read)
 
 instance SimpleText DTTrule where
   toText = T.pack . show
 instance Typeset DTTrule where
   toTeX = T.pack . show
 instance MathML DTTrule where
-  toMathML = T.pack . show
+  toMathML rule = T.concat [
+    "<mi>",
+    case rule of
+      PiF -> "ΠF"
+      PiI -> "ΠI"
+      PiE -> "ΠE"
+      SigmaF -> "ΣF"
+      SigmaI -> "ΣI"
+      SigmaE -> "ΣE"
+      DisjF -> "+F"
+      DisjI -> "+I"
+      DisjE -> "+E"
+      EnumF -> "{}F"
+      EnumI -> "{}I"
+      EnumE -> "{}E"
+      IqF -> "=F"
+      IqI -> "=I"
+      IqE -> "=E"
+      NatF -> "NatF"
+      NatI -> "NatI"
+      NatE -> "NatE"
+      _ -> T.pack $ show rule,
+    "</mi>"
+    ]
 
 -- | Type checking in DTT
 

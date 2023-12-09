@@ -39,7 +39,7 @@ instance SimpleText VarName where
 instance Typeset VarName where
   toTeX (VarName v i) = T.cons v $ T.concat ["_{", T.pack (show i), "}"]
 instance MathML VarName where
-  toMathML (VarName v i) = T.concat ["<msub><mi>", T.singleton v, "</mi><mn>", T.pack (show i), "</mn></msub>"]
+  toMathML (VarName v i) = T.concat ["<mstyle mathcolor='purple'><msub><mi>", T.singleton v, "</mi><mn>", T.pack (show i), "</mn></msub></mstyle>"]
 
 -- | 'Proj' 'Fst' m is the first projection of m, while 'Proj' 'Snd' m is the second projection of m.
 data Selector = Fst | Snd
@@ -75,6 +75,10 @@ data Preterm a where
   Asp :: Int -> Preterm UDTT -> Preterm UDTT -- ^ Underspesified types
   Lamvec :: VarName -> Preterm UDTT -> Preterm UDTT   -- ^ Variable-length lambda abstraction
   Appvec :: VarName -> Preterm UDTT -> Preterm UDTT   -- ^ Variable-length function application
+  -- | Disjoint Union Types
+  Disj :: Preterm a -> Preterm a -> Preterm a   -- ^ Disjoint Union types
+  Iota :: Selector -> Preterm a -> Preterm a    -- ^ (FIrst and second) Injections
+  Unpack :: Preterm a -> Preterm a -> Preterm a -> Preterm a -> Preterm a -- ^ Unpack P L M N
   -- | Enumeration Types
   Bot :: Preterm a                 -- ^ The bottom type
   Unit :: Preterm a                -- ^ The unit term (of type Top)
@@ -196,7 +200,7 @@ toTeXEmbedded preterm = case preterm of
 instance MathML (Preterm a) where
   toMathML preterm = case preterm of
     Var vname -> toMathML vname
-    Con cname -> T.concat ["<mtext>", cname, "</mtext>"]
+    Con cname -> T.concat ["<mstyle font-family='bold'><mtext>", cname, "</mtext></mstyle>"]
     Type -> "<mi>type</mi>"
     Kind -> "<mi>kind</mi>"
     Pi vname a b -> case b of
@@ -208,15 +212,15 @@ instance MathML (Preterm a) where
     App (App (App (Con cname) z) y) x ->
       T.concat ["<mrow><mtext>", cname, "</mtext><mo>(</mo>", toMathML x, "<mo>,</mo>", toMathML y, "<mo>,</mo>", toMathML z,"<mo>)</mo></mrow>"]
     App (App (App (App (Con cname) u) z) y) x ->
-      T.concat ["<mrow><mtext>", cname, "</mtext><mfenced>", toMathML x, "<mo>,</mo>", toMathML y, "<mo>,</mo>", toMathML z, "<mo>,</mo>", toMathML u, "<mo>)</mo></mrow>"]
+      T.concat ["<mrow><mtext>", cname, "</mtext><mo>(</mo>", toMathML x, "<mo>,</mo>", toMathML y, "<mo>,</mo>", toMathML z, "<mo>,</mo>", toMathML u, "<mo>)</mo></mrow>"]
     App m n -> T.concat ["<mrow>", toMathML m, "<mo>(</mo>", toMathML n, "<mo>)</mo></mrow>"]
     Sigma vname a b -> case b of
                          Top -> toMathML a
                          _   -> T.concat ["<mrow><mo>[</mo><mtable columnalign='left'><mtr><mtd>", toMathML vname, "<mo>:</mo>", toMathML a, "</mtd></mtr><mtr><mtd><mpadded height='-0.5em'>", toMathML b, "</mpadded></mtd></mtr></mtable><mo>]</mo></mrow>"]
-    Pair m n  -> T.concat ["<mfenced>", toMathML m, toMathML n, "</mfenced>"]
-    Proj s m  -> T.concat ["<mrow><msub><mi>&pi;</mi>", toMathML s, "</msub><mfenced>", toMathML m, "</mfenced></mrow>"]
+    Pair m n  -> T.concat ["<mrow><mo>(</mo>", toMathML m, "<mo>,</mo>", toMathML n, "<mo>)</mo></mrow>"]
+    Proj s m  -> T.concat ["<mrow><msub><mi>&pi;</mi>", toMathML s, "</msub><mo>(</mo>", toMathML m, "<mo>)</mo></mrow>"]
     Lamvec vname m  -> T.concat ["<mrow><mi>&lambda;</mi><mover>", toMathML vname, "<mo>&rarr;</mo></mover><mo>.</mo>", toMathML m, "</mrow>"]
-    Appvec vname m -> T.concat ["<mfenced separators=''>", toMathML m, "<mover>", toMathML vname, "<mo>&rarr;</mo></mover></mfenced>"]
+    Appvec vname m -> T.concat ["<mrow>", toMathML m, "<mover>", toMathML vname, "<mo>&rarr;</mo></mover></mrow>"]
     Bot        -> "<mi>&bot;</mi>"
     Unit       -> "<mi>()</mi>"
     Top        -> "<mi>&top;</mi>"
@@ -225,10 +229,10 @@ instance MathML (Preterm a) where
     Nat    -> "<mi>N</mi>"
     Zero   -> "<mi>0</mi>"
     Succ n -> T.concat ["<mrow><mi>s</mi>", toMathML n, "</mrow>"]
-    Natrec n e f -> T.concat ["<mrow><mi>natrec</mi><mfenced>", toMathML n, toMathML e, toMathML f, "</mfenced></mrow>"]
+    Natrec n e f -> T.concat ["<mrow><mi>natrec</mi><mo>(</mo>", toMathML n, "<mo>,</mo>", toMathML e, "<mo>,</mo>", toMathML f, "<mo>)</mo></mrow>"]
     Eq a m n -> T.concat ["<mrow>", toMathML m, "<msub><mo>=</mo>", toMathML a, "</msub>", toMathML n, "</mrow>"]
-    Refl a m -> T.concat ["<mrow><mi>refl</mi>", toMathML a, "<mfenced>", toMathML m, "</mfenced></mrow>"]
-    Idpeel m n -> T.concat ["<mrow><mi>idpeel</mi><mfenced>", toMathML m, toMathML n, "</mfenced></mrow>"]
+    Refl a m -> T.concat ["<mrow><mi>refl</mi>", toMathML a, "<mo>(</mo>", toMathML m, "<mo>)</mo></mrow>"]
+    Idpeel m n -> T.concat ["<mrow><mi>idpeel</mi><mo>(</mo>", toMathML m, "<mo>,</mo>", toMathML n, "<mo>)</mo></mrow>"]
 
 {- Judgment -}
 
@@ -249,7 +253,7 @@ instance SimpleText Context where
 instance Typeset Context where
   toTeX = (T.intercalate ",") . (map (\(nm,tm) -> T.concat [toTeX nm, ":", toTeX tm])) . reverse
 instance MathML Context where
-  toMathML cont = T.concat $ ["<mfenced separators=',' open='' close=''>"] ++ (map (\(nm,tm) -> T.concat ["<mrow>", toMathML nm, "<mo>:</mo>", toMathML tm, "</mrow>"]) $ reverse cont) ++ ["</mfenced>"]
+  toMathML = (T.intercalate "<mo>,</mo>") . (map (\(nm,tm) -> T.concat ["<mrow>", toMathML nm, "<mo>:</mo><mstyle mathcolor='blue' mathbackground='white'>", toMathML tm, "</mstyle></mrow>"])) . reverse 
 
 -- | The data type for a judgment
 data Judgment a = Judgment {
@@ -264,7 +268,7 @@ instance SimpleText (Judgment a) where
 instance Typeset (Judgment a) where
   toTeX j = T.concat [toTeX $ context j, "{\\vdash}", toTeX $ term j, "{:}", toTeX $ typ j]
 instance MathML (Judgment a) where
-  toMathML j = T.concat ["<mrow>", toMathML $ context j, "<mo>&vdash;</mo>", toMathML $ term j, "<mo>:</mo>", toMathML $ typ j, "</mrow>"]
+  toMathML j = T.concat ["<mrow>", toMathML $ context j, "<mo>&vdash;</mo>", toMathML $ term j, "<mo>:</mo><mstyle mathcolor='blue' mathbackground='white'>", toMathML $ typ j, "</mstyle></mrow>"]
 
 -- | prints a context vertically.
 toVerticalMathML :: Context -> T.Text

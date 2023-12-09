@@ -54,9 +54,9 @@ instance (MathML r, MathML a) => MathML (Tree r a) where
     , T.intercalate "<mo>&nbsp;</mo>" $ map toMathML daughters
     , "</mrow>"
     , toMathML node
-    , "</mfrac></mstyle><mtext fontsize='0.4' color='Black'>("
+    , "</mfrac></mstyle><mstyle fontsize='0.4' color='Black'>("
     , toMathML ruleName
-    , ")</mtext></mrow>"
+    , ")</mstyle></mrow>"
     ]
 
 
