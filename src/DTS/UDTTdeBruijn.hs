@@ -637,11 +637,11 @@ toDeBruijn vnames preterm = case preterm of
   VN.Con cname -> Con cname
   VN.Type -> Type
   VN.Kind -> Kind
-  VN.Pi vname a b -> Pi (toDeBruijn (vname:vnames) a) (toDeBruijn (vname:vnames) b)
+  VN.Pi vname a b -> Pi (toDeBruijn vnames a) (toDeBruijn (vname:vnames) b)
   VN.Lam vname m -> Lam (toDeBruijn (vname:vnames) m)
   VN.App m n -> App (toDeBruijn vnames m) (toDeBruijn vnames n)
   VN.Not a -> Not (toDeBruijn vnames a)
-  VN.Sigma vname a b -> Sigma (toDeBruijn (vname:vnames) a) (toDeBruijn (vname:vnames) b)
+  VN.Sigma vname a b -> Sigma (toDeBruijn vnames a) (toDeBruijn (vname:vnames) b)
   VN.Pair m n -> Pair (toDeBruijn vnames m) (toDeBruijn vnames n)
   VN.Proj s m -> case s of
                    VN.Fst -> Proj Fst (toDeBruijn vnames m)

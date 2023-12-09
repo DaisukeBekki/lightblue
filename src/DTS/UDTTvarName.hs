@@ -133,7 +133,7 @@ toText' flag preterm = case preterm of
     App m n -> T.concat [toText' flag m, "(", toText' flag n, ")"]
     Sigma vname a b -> case b of
                          Top -> T.concat ["(", toText' flag a, ")"]
-                         _   -> T.concat ["(", toText vname, ":", toText' flag a, ")× ", toText' flag b]
+                         _   -> T.concat ["(", toText vname, ":", toText' flag a, ")✕", toText' flag b]
     Pair m n  -> T.concat ["(", toText' flag m, ",", toText' flag n, ")"]
     Proj s m  -> T.concat ["π", toText s, "(", toText' flag m, ")"]
     Lamvec vname m  -> T.concat ["λ", toText vname, "+.", toText' flag m]
@@ -156,8 +156,8 @@ instance Typeset (Preterm a) where
   toTeX preterm = case preterm of
     Var vname -> toTeX vname
     Con c -> T.concat["\\pred{", T.replace "~" "\\~{}" c, "}"]
-    Type  -> "\\type{type}"
-    Kind  -> "\\type{kind}"
+    Type  -> "\\sort{type}"
+    Kind  -> "\\sort{kind}"
     Pi vname a b -> case b of
                       Bot -> T.concat["\\neg ", toTeXEmbedded a]
                       b' -> T.concat["\\dPi[", toTeX vname , "]{", toTeX a, "}{", toTeX b, "}"]

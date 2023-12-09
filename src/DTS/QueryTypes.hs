@@ -3,6 +3,9 @@
 module DTS.QueryTypes (
   -- * Type system of UDTT
   DTTrule(..)
+  -- * ListEx monad
+  , ListEx(..)
+  , exception
   -- * UDTT type check
   , TypeCheckQuery(..)
   , TypeCheckResult(..)
@@ -18,6 +21,8 @@ module DTS.QueryTypes (
   ) where
 
 import Data.Bifunctor (second)       --base
+import qualified Control.Applicative as M --base
+import qualified Control.Monad as M       --base
 import qualified Data.Text.Lazy as T --text
 import Interface.Text
 import Interface.TeX
@@ -59,6 +64,33 @@ instance MathML DTTrule where
     "</mi>"
     ]
 
+-- | ListEx Monad (List with exceptions)
+
+newtype ListEx a = ListEx { result :: ([a], T.Text)}
+
+instance Functor ListEx where
+  fmap = M.liftM
+
+instance Applicative ListEx where
+  pure = return
+  (<*>) = M.ap
+
+instance Monad ListEx where
+  return m = ListEx ([m], "")
+  ListEx (as, msg) >>= f =
+    let (bs,msgs) = unzip $ map (result . f) as
+    in ListEx (concat bs, T.intercalate "\n" (msg:msgs))
+
+instance M.MonadFail ListEx where
+  fail s = ListEx ([], T.pack s)
+
+instance M.Alternative ListEx where
+  empty = ListEx ([], "")
+  ListEx (as,msga) <|> ListEx (bs,msgb) = ListEx (as ++ bs, T.append msga msgb) 
+
+exception :: T.Text -> ListEx a
+exception msg = ListEx (M.empty, msg)
+
 -- | Type checking in DTT
 
 data TypeCheckQuery = TypeCheckQuery {
@@ -68,7 +100,7 @@ data TypeCheckQuery = TypeCheckQuery {
   , typ :: U.Preterm DTT
   } deriving (Eq, Show)
 
-type TypeCheckResult = [Tree DTTrule (U.Judgment DTT)]
+type TypeCheckResult = ListEx (Tree DTTrule (U.Judgment DTT))
 
 type TypeChecker = Prover -> TypeCheckQuery -> TypeCheckResult
 

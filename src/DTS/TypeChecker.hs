@@ -16,7 +16,7 @@ module DTS.TypeChecker (
   ) where
 
 import Data.List (lookup)    --base
-import Control.Monad (guard) --base
+import Control.Monad (guard,when) --base
 import qualified Data.Text.Lazy as T --text
 --import Control.Monad.Except (throwError)
 import Interface.Text (SimpleText(..))
@@ -31,7 +31,8 @@ sequentialTypeCheck :: QT.TypeChecker -> QT.Prover -> U.Signature -> [U.Preterm 
 sequentialTypeCheck _ _ _ [] = []
 sequentialTypeCheck typchecker prover sig (uterm:uterms) = do
   prevContext <- sequentialTypeCheck typchecker prover sig uterms
-  typeCheckResult <- typchecker prover $ QT.TypeCheckQuery sig prevContext uterm U.Type
+  let QT.ListEx (typeCheckResults, _) = typchecker prover $ QT.TypeCheckQuery sig prevContext uterm U.Type
+  typeCheckResult <- typeCheckResults
   return ((U.term $ node typeCheckResult):prevContext)
 
 -- | A skeltal prover 
@@ -42,12 +43,12 @@ nullProver _ _ = []
 typeInfer :: QT.TypeInfer
 typeInfer prover QT.TypeInferQuery{..} = case trm of -- sig:Signature, ctx:Context, trm:Preterm DTT, typ:Preterm DTT
   U.Var i -> do
-    guard $ i < length ctx
+    when (i >= length ctx) $ QT.exception $ T.concat [T.pack (show i), " is out of bound in the context: ", toText ctx]
     return $ Tree QT.Var (U.Judgment sig ctx (U.Var i) (ctx!!i)) []
   U.Con t -> do
     case lookup t sig of
       Just termA -> return $ Tree QT.Con (U.Judgment sig ctx (U.Con t) termA) []
-      Nothing -> fail $ "No constant symbol " ++ (T.unpack t)
+      Nothing -> QT.exception $ T.concat ["No constant symbol for ", t]
   U.Type -> return $ Tree QT.TypeF (U.Judgment sig ctx U.Type U.Kind) []
   U.Pi termA termB -> do
     diagramA <- typeCheck prover (QT.TypeCheckQuery sig ctx termA U.Type)
@@ -136,8 +137,8 @@ typeInfer prover QT.TypeInferQuery{..} = case trm of -- sig:Signature, ctx:Conte
         termB' = U.betaReduce $ U.subst termB termM 0
     typeCheck $ prover $ QT.TypeCheckQuery sig ctx termB' U.Type
   -}
-  -- | For debug
-  termM -> return $ Tree QT.Con (U.Judgment sig ctx (U.Con (toText termM)) U.Type) []
+  -- | type inference fails
+  termM -> QT.exception $ T.concat [toText termM, " is not an inferable term."]
 
 -- | The default type checker for UDTT
 typeCheck :: QT.TypeChecker
