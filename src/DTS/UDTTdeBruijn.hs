@@ -703,7 +703,7 @@ fromDeBruijnSignature = map (\(cname, ty) -> (cname, fromDeBruijn ty))
 
 -- | As list of semantic representations (the first element is for the first sentence)
 fromDeBruijnContext :: [Preterm a] -> [(VN.VarName, VN.Preterm a)]
-fromDeBruijnContext = initializeIndex . (fromDeBruijnContextLoop [])
+fromDeBruijnContext = reverse . initializeIndex . (fromDeBruijnContextLoop []) . reverse
 
 -- | the internal function of the fromDeBruijnSRlist function
 fromDeBruijnContextLoop :: [VN.VarName] -> [Preterm a] -> Indexed ([(VN.VarName, VN.Preterm a)])
@@ -720,11 +720,11 @@ fromDeBruijnJudgment :: Judgment a -> VN.Judgment a
 fromDeBruijnJudgment judgment =
   let (vcontext', vterm', vtyp')
         = initializeIndex $ do
-                            vcontext <- fromDeBruijnContextLoop [] $ context judgment
+                            vcontext <- fromDeBruijnContextLoop [] $ reverse $ context judgment
                             let varnames = fst $ unzip vcontext
                             vterm <- fromDeBruijnLoop varnames (term judgment)
                             vtyp <- fromDeBruijnLoop varnames (typ judgment)
-                            return (vcontext, vterm, vtyp)
+                            return (reverse vcontext, vterm, vtyp)
   in VN.Judgment { VN.sig = fromDeBruijnSignature $ sig judgment
                  , VN.context = vcontext'
                  , VN.term = vterm'

@@ -5,7 +5,7 @@ module Main where
 import Control.Monad (forM_,when)
 import Interface (Style(..),headerOf,footerOf)
 import Interface.HTML (MathML(..),startMathML,endMathML)
-import Interface.Text (SimpleText(..))
+--import Interface.Text (SimpleText(..))
 --import Interface.Tree (Tree(..))
 import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.IO as T
