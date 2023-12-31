@@ -72,7 +72,6 @@ library:
   - DTS.TypeChecker
   - DTS.NaturalLanguageInference
   - DTS.Prover.Wani.Judgement
-  - DTS.Prover.Wani.TypeChecker
   - DTS.Prover.Wani.WaniBase
   - DTS.Prover.Wani.Forward
   - DTS.Prover.Wani.Backward
@@ -106,5 +105,3 @@ tests:
     main:         testTypeChecker.hs
     ghc-options:  [-threaded, -rtsopts, -with-rtsopts=-N]
     dependencies: lightblue
-
-
