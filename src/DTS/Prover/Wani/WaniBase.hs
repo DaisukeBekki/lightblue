@@ -11,16 +11,16 @@ module DTS.Prover.Wani.WaniBase (
     ProofMode(..),
     Status(..),
     Setting(..),
-    Result(..),
+    Result'(..),
     -- * Defaults
     statusDef,
     settingDef,
-    resultDef,
+    resultDef',
     -- * Rules
-    DeduceRule,
-    TypecheckRule,
+    DeduceRule',
+    TypecheckRule',
     -- * Functions
-    mergeResult,
+    mergeResult',
     mergeStatus,
     -- ** Debug functions
     debugLogWithTerm,
@@ -29,7 +29,7 @@ module DTS.Prover.Wani.WaniBase (
 
 import qualified DTS.UDTTdeBruijn as UDdB  -- UDTT
 import qualified DTS.Prover.Wani.Arrowterm as A
-import qualified DTS.Prover.Wani.Judgement  as J
+import qualified Interface.Tree as UDT
 
 import qualified Data.Text.Lazy as T 
 import qualified Data.List as L 
@@ -38,8 +38,9 @@ import qualified Debug.Trace as D
 type ATerm = A.Arrowterm
 type AType = A.Arrowterm
 type Depth = Int
-type DeduceRule = A.Context -> AType -> Depth -> Setting -> Result
-type TypecheckRule = A.Context -> ATerm -> AType -> Depth -> Setting -> Result
+
+type DeduceRule' = A.SAEnv -> A.AEnv -> AType -> Depth -> Setting -> Result'
+type TypecheckRule' = A.SAEnv -> A.AEnv -> ATerm -> AType -> Depth -> Setting -> Result'
 
 data ProofMode = Plain | WithDNE | WithEFQ deriving (Show,Eq)
 
@@ -58,15 +59,14 @@ data Setting = Setting
    debug :: Bool,
    sStatus :: Status} deriving (Show,Eq)
 
-data Result = Result 
-  {trees :: [J.Tree A.AJudgement],
-   errMsg :: T.Text,
-   rStatus :: Status} deriving (Show,Eq)
+data Result' = Result'
+  {trees' :: [UDT.Tree A.Arrowrule A.AJudgment],
+   errMsg' :: T.Text,
+   rStatus' :: Status} deriving (Show,Eq)
 
--- | When there are multiple proofs for one hypothesis, wani should manage them by merging results.
-mergeResult :: Result -> Result -> Result
-mergeResult rs1 rs2 =
-  Result{trees = (trees rs1) ++ (trees rs2),errMsg =  (T.append (errMsg rs1)  (errMsg rs2)),rStatus = mergeStatus (rStatus rs1) (rStatus rs2)}
+mergeResult' :: Result' -> Result' -> Result'
+mergeResult' rs1 rs2 =
+  Result'{trees' = (trees' rs1) ++ (trees' rs2),errMsg' =  (T.append (errMsg' rs1)  (errMsg' rs2)),rStatus' = mergeStatus (rStatus' rs1) (rStatus' rs2)}
 
 mergeStatus :: Status -> Status -> Status
 mergeStatus st1 st2 =
@@ -78,18 +78,18 @@ statusDef = Status{failedlst=[],usedMaxDepth = 0,deduceNgLst=[],allProof = False
 settingDef :: Setting
 settingDef = Setting{mode = Plain,falsum = True,maxdepth = 9,maxtime = 100000,debug = False,sStatus = statusDef}
 
-resultDef :: Result
-resultDef = Result{trees = [],errMsg = "",rStatus = statusDef}
+resultDef' :: Result'
+resultDef' = Result'{trees' = [],errMsg' = "",rStatus' = statusDef}
 
 debugLog :: A.Context -> AType -> Depth -> Setting -> T.Text -> a -> a
 debugLog con = debugLogWithTerm con (A.Conclusion $ UDdB.Con $T.pack "?")
 
 debugLogWithTerm :: A.Context -> ATerm -> AType -> Depth -> Setting -> T.Text -> a -> a
-debugLogWithTerm con term target depth setting label answer=
+debugLogWithTerm (sig,var) term target depth setting label answer=
   if debug setting
     then
       D.trace
-        ((if allProof (sStatus setting) then "all " else "")++  L.replicate (2*depth) ' ' ++ show depth ++ " " ++ T.unpack label ++ " " ++ show (A.AJudgement con term target)++ " ")
+        ((if allProof (sStatus setting) then "all " else "")++  L.replicate (2*depth) ' ' ++ show depth ++ " " ++ T.unpack label ++ " " ++ show (A.AJudgment sig var term target)++ " ")
         answer
     else answer
 

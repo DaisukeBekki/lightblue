@@ -71,7 +71,6 @@ library:
   - DTS.QueryTypes
   - DTS.TypeChecker
   - DTS.NaturalLanguageInference
-  - DTS.Prover.Wani.Judgement
   - DTS.Prover.Wani.WaniBase
   - DTS.Prover.Wani.Forward
   - DTS.Prover.Wani.Backward

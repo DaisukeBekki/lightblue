@@ -1,11 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
-module DTS.Prover.Wani.Forward (forwardContext) where
+module DTS.Prover.Wani.Forward (forwardContext2) where
 
 import qualified Data.List as L 
 
 import qualified DTS.UDTTdeBruijn as UDdB
 import qualified DTS.Prover.Wani.Arrowterm as A
-import qualified DTS.Prover.Wani.Judgement  as J
+import qualified Interface.Tree as UDT
+import qualified DTS.QueryTypes as QT
 
 import qualified DTS.Prover.Wani.WaniBase as B 
 
@@ -29,146 +30,11 @@ eqIntro =
     (map A.Conclusion [UDdB.Var 0,UDdB.Type])
     (A.ArrowEq (A.Conclusion $ UDdB.Var 1) (A.Conclusion $ UDdB.Var 0) (A.Conclusion $ UDdB.Var 0))
 
-forwardContext :: A.Context -> B.Result
-forwardContext (sigCon,varCon) = 
-    let (sigNames,sigTerms) = unzip sigCon
-        context' = varCon ++ sigTerms
-        varsigmaForwarded =
-          (concat$
-            zipWith
-              (\f fr ->
-                let varLen =  length fr - length sigNames
-                    fIsVar = varLen > 0
-                    (varCon',sigTerms') = splitAt varLen fr
-                    sigCon' = reverse $ zip (reverse sigNames) (reverse sigTerms')
-                    newCon = (sigCon',varCon')
-                    sigmaForwarded = sigmaForward f newCon
-                    varForwarded =                 
-                      if fIsVar then
-                          -- [J.T J.VAR (A.AJudgement  (sigCon',tail varCon') f (A.Conclusion  UDdB.Type)) [] | case A.betaReduce f of A.Conclusion UDdB.Type -> False; A.Conclusion (UDdB.Con _)-> False;_ ->True] ++
-                          [J.T J.VAR(A.AJudgement newCon (A.Conclusion $ UDdB.Var 0 ) (A.shiftIndices f 1 0)) [] ]
-                        else
-                          let (sigName,sigTerm) = head sigCon' in
-                            -- [J.T J.VAR (A.AJudgement (tail sigCon',[]) sigTerm (A.Conclusion  UDdB.Type)) [] | sigTerm /= A.Conclusion UDdB.Type] ++
-                            [J.T J.CON (A.AJudgement newCon (A.Conclusion $ UDdB.Con sigName) (A.shiftIndices sigTerm 1 0)) [] ]
-                in  sigmaForwarded ++ varForwarded
-              )
-              context'
-              (L.tails  context')) 
-        trees =   
-          let eqIntroTree = J.T J.VAR (A.AJudgement (sigCon,varCon) (A.Conclusion $UDdB.Con "forwardEqIntro") eqIntro) []
-              sigmaForwarded = eqIntroTree :
-                    map
-                      (\aTree  ->
-                        case aTree of
-                          J.T label (A.AJudgement env aTerm aType) upSides -> --assert label `elem` [J.Var,J.Con]
-                            let d = (length sigCon + length varCon) - (length (fst env ) + length (snd env ) )
-                                downSide' = A.AJudgement (sigCon,varCon) (A.betaReduce $A.shiftIndices aTerm d 0) (A.shiftIndices aType d 0)
-                                upSides' = 
-                                  map 
-                                    (\upside -> 
-                                      case upside of 
-                                        J.T upLabel (A.AJudgement _ upATerm upAType) [] ->
-                                          J.T upLabel (A.AJudgement (sigCon,varCon) (A.betaReduce $ A.shiftIndices upATerm d 0) (A.shiftIndices upAType (d + 1) 0)) []
-                                        _ -> upside
-                                    )
-                                    upSides
-                            in
-                              J.T label downSide' upSides'
-                          _ -> aTree
-                      )
-                      varsigmaForwarded
-          in  (eqForwards sigmaForwarded)  ++ sigmaForwarded
-    in --D.trace (show trees) 
-        B.resultDef{B.trees = trees}
-
-eqForwards :: [J.Tree A.AJudgement] -> [J.Tree A.AJudgement]
-eqForwards =  concatMap eqForward
-
-eqForward :: J.Tree A.AJudgement -> [J.Tree A.AJudgement]
-eqForward tree = 
-  case A.downSide tree of 
-    A.AJudgement aContext aTerm aType ->
-      let eqForwardedTypes = filter (\at -> case at of A.Arrow (_:_) _ -> True; _ -> False) $snd $forEq aContext aType
-          eqForwardedTerm = A.ArrowApp (A.aCon "eqElim") (aTerm)
-      in map (\eqForwardedType -> J.T J.EqE (A.AJudgement aContext eqForwardedTerm eqForwardedType) [tree]) eqForwardedTypes
-
-sigmaForward :: B.AType -> A.Context -> [J.Tree A.AJudgement]
-sigmaForward aType (sigCon,varCon) = 
-  let baseCon = A.genFreeCon aType "base"
-      forwarded' = sigmaForward' aType baseCon aType (sigCon,varCon)
-      trees = 
-        map
-        (\aTreef
-          -> let
-              aTree = aTreef (A.Conclusion $UDdB.Var 0)
-              (A.AJudgement con aTerm aType) = A.downSide aTree
-              newJ = A.AJudgement
-                      con
-                      (A.arrowSubst (A.shiftIndices aTerm 1 0) (A.Conclusion $ UDdB.Var 0) baseCon)
-                      (A.arrowSubst (A.shiftIndices aType 1 0) (A.Conclusion $  UDdB.Var 0) baseCon)
-              in A.changeDownSide aTree newJ)
-        forwarded'
-  in trees
-
-sigmaForward' :: A.Arrowterm -> B.AType -> B.AType -> A.Context -> [A.Arrowterm -> J.Tree A.AJudgement]
-sigmaForward' originType baseTerm aType (sigEnv,varEnv) = case A.arrowNotat aType of
-  A.ArrowSigma' [h] t -> 
-    let fstbase =  A.ArrowProj A.ArrowFst baseTerm
-        sndbase =  A.ArrowProj A.ArrowSnd baseTerm
-        t' = A.shiftIndices (A.arrowSubst t  fstbase (A.Conclusion $ UDdB.Var 0)) (-1) 0
-        hForward = sigmaForward' originType fstbase h (sigEnv,varEnv)
-        tForward = sigmaForward' originType sndbase t' (sigEnv,varEnv)
-        hTree term' = J.T J.SigE (A.AJudgement (sigEnv,varEnv) fstbase h) [J.T J.VAR(A.AJudgement (sigEnv,varEnv) term' originType ) []]
-        tTree term'=  J.T J.SigE (A.AJudgement (sigEnv,varEnv) sndbase t') [J.T J.VAR(A.AJudgement (sigEnv,varEnv) term' originType ) []]
-    in (if null tForward then [tTree] else tForward) ++ (if null hForward  then [hTree] else hForward)
-  A.ArrowSigma' hs tLast -> 
-    let fstbase =  A.ArrowProj A.ArrowFst baseTerm
-        sndbase =  A.ArrowProj A.ArrowSnd baseTerm
-        h:hrest = reverse hs
-        t = A.ArrowSigma' (reverse hrest) tLast
-        t' =  A.shiftIndices (A.arrowSubst t  fstbase (A.Conclusion $ UDdB.Var 0)) (-1) 0
-        hForward = sigmaForward' originType fstbase h (sigEnv,varEnv)
-        tForward = sigmaForward' originType sndbase t' (sigEnv,varEnv)
-        hTree term' = J.T J.SigE (A.AJudgement (sigEnv,varEnv) fstbase h) [J.T J.VAR(A.AJudgement (sigEnv,varEnv) term' originType ) []]
-    in tForward ++ (if null hForward  then [hTree] else hForward)
-  A.Arrow env (A.ArrowSigma' [h] t) -> 
-    let lenEnv = length env
-        term1 = A.ArrowProj A.ArrowFst $ A.addApp lenEnv baseTerm
-        term2 = A.addLam lenEnv $ A.ArrowProj A.ArrowSnd $ A.addApp lenEnv baseTerm
-        t' = A.shiftIndices (A.arrowSubst t (A.shiftIndices term1 lenEnv 0) (A.Conclusion $ UDdB.Var 0)) (-1) 0
-        type1 = case h of (A.Arrow henv hcon) -> A.Arrow (henv ++ env) hcon ; _ -> A.Arrow env h
-        type2 = case t' of (A.Arrow tenv tcon) -> A.Arrow (tenv ++ env) tcon; _ ->A.Arrow env t'
-        hForward = sigmaForward' originType (A.addLam lenEnv $  term1) type1 (sigEnv,varEnv)
-        tForward = sigmaForward' originType term2 type2 (sigEnv,varEnv)
-        tTree term'= J.T J.SigE (A.AJudgement (sigEnv,varEnv) term2 type2) [J.T J.VAR(A.AJudgement (sigEnv,varEnv) term' $ A.Arrow env originType) []]
-        hTree term'= J.T J.SigE (A.AJudgement (sigEnv,varEnv) (A.addLam lenEnv $  term1) type1) [J.T J.VAR(A.AJudgement (sigEnv,varEnv) term' $ A.Arrow env originType) []]
-        result = (if null tForward  then [tTree] else tForward) ++ (if null hForward  then [hTree] else hForward)
-    in
-      result
-  A.Arrow env (A.ArrowSigma' hs tLast) -> 
-    let lenEnv = length env
-        term1 = A.ArrowProj A.ArrowFst $ A.addApp lenEnv baseTerm
-        term2 = A.addLam lenEnv $ A.ArrowProj A.ArrowSnd $ A.addApp lenEnv baseTerm
-        h:hrest = reverse hs
-        t = A.ArrowSigma' (reverse hrest) tLast
-        t' = A.shiftIndices (A.arrowSubst t (A.shiftIndices term1 lenEnv 0) (A.Conclusion $ UDdB.Var 0)) (-1) 0
-        type1 = case h of (A.Arrow henv hcon) -> A.Arrow (henv ++ env) hcon ; _ -> A.Arrow env h
-        type2 = A.Arrow env t'
-        hForward = sigmaForward' originType (A.addLam lenEnv $  term1) type1 (sigEnv,varEnv)
-        tForward = sigmaForward' originType term2 type2 (sigEnv,varEnv)
-        hTree term'= J.T J.SigE (A.AJudgement (sigEnv,varEnv) (A.addLam lenEnv $  term1) type1) [J.T J.VAR(A.AJudgement (sigEnv,varEnv) term' $ A.Arrow env originType ) []]
-        result = tForward ++ (if null hForward  then [hTree] else hForward)
-    in
-      result
-  _ ->  []
-
-
 searchType :: A.Context -> B.ATerm -> Maybe B.AType
 searchType (sigCon,varCon) term =
   case term of
     A.Conclusion (UDdB.Type) -> Just (A.Conclusion UDdB.Kind)
-    A.Conclusion (UDdB.Var num) -> if (num >= length varCon) then D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound1")) Nothing else Just $A.shiftIndices (varCon !! num) (num+1) 0
+    A.Conclusion (UDdB.Var num) -> if (num >= length varCon) then D.trace (show $ A.AJudgment sigCon varCon term (A.aCon "notFound1")) Nothing else Just $A.shiftIndices (varCon !! num) (num+1) 0
     A.Conclusion (UDdB.Con txt) -> lookup txt sigCon
     A.Conclusion (UDdB.Kind) -> Nothing
     A.Conclusion (UDdB.Bot) -> Just (A.Conclusion UDdB.Type)
@@ -295,3 +161,135 @@ forEq context term =
                     )
                   arEqTypes)
     Nothing -> ([],[])
+
+forwardContext2 :: A.SAEnv -> A.AEnv -> B.Result'
+forwardContext2 sig var = 
+    let (sigNames,sigTerms) = unzip sig
+        context' = var ++ sigTerms
+        varsigmaForwarded =
+          (concat$
+            zipWith
+              (\f fr ->
+                let varLen =  length fr - length sigNames
+                    fIsVar = varLen > 0
+                    (varCon',sigTerms') = splitAt varLen fr
+                    sigCon' = reverse $ zip (reverse sigNames) (reverse sigTerms')
+                    sigmaForwarded = sigmaForward2 f sigCon' varCon'
+                    varForwarded =                 
+                      if fIsVar then
+        --                   -- [J.T J.VAR (A.AJudgement  (sigCon',tail varCon') f (A.Conclusion  UDdB.Type)) [] | case A.betaReduce f of A.Conclusion UDdB.Type -> False; A.Conclusion (UDdB.Con _)-> False;_ ->True] ++
+                          [UDT.Tree QT.Var (A.AJudgment sigCon' varCon' (A.Conclusion $ UDdB.Var 0 ) (A.shiftIndices f 1 0)) [] ]
+                        else 
+                          let (sigName,sigTerm) = head sigCon' in
+        --                     -- [J.T J.VAR (A.AJudgement (tail sigCon',[]) sigTerm (A.Conclusion  UDdB.Type)) [] | sigTerm /= A.Conclusion UDdB.Type] ++
+                            [UDT.Tree QT.Con (A.AJudgment sigCon' varCon' (A.Conclusion $ UDdB.Con sigName) (A.shiftIndices sigTerm 1 0)) [] ]
+                in  sigmaForwarded ++ varForwarded
+              )
+              context'
+              (L.tails  context')) 
+        trees =   
+          let eqIntroTree = UDT.Tree QT.Var (A.AJudgment sig var (A.Conclusion $UDdB.Con "forwardEqIntro") eqIntro) []
+              sigmaForwarded = eqIntroTree :
+                    map
+                      (\aTree  ->
+                        case aTree of
+                          UDT.Tree label (A.AJudgment sig_a var_a aTerm aType) upSides -> --assert label `elem` [J.Var,J.Con]
+                            let d = (length sig + length var) - (length sig_a + length var_a)
+                                downSide' = A.AJudgment sig var (A.betaReduce $A.shiftIndices aTerm d 0) (A.shiftIndices aType d 0)
+                                upSides' = 
+                                  map 
+                                    (\upside -> 
+                                      case upside of 
+                                        UDT.Tree upLabel (A.AJudgment _ _ upATerm upAType) [] ->
+                                          UDT.Tree upLabel (A.AJudgment sig var (A.betaReduce $ A.shiftIndices upATerm d 0) (A.shiftIndices upAType (d + 1) 0)) []
+                                        _ -> upside
+                                    )
+                                    upSides
+                            in UDT.Tree label downSide' upSides'
+                          _ -> aTree
+                      )
+                      varsigmaForwarded
+          in (eqForwards2' sigmaForwarded)  ++ sigmaForwarded
+    in B.resultDef'{B.trees' = trees}
+
+
+eqForwards2' :: [UDT.Tree A.Arrowrule A.AJudgment] -> [UDT.Tree A.Arrowrule A.AJudgment]
+eqForwards2' =  concatMap eqForward2
+
+eqForward2 :: UDT.Tree A.Arrowrule A.AJudgment -> [UDT.Tree A.Arrowrule A.AJudgment]
+eqForward2 tree =
+  case A.downSide' tree of 
+    A.AJudgment sig var aTerm aType ->
+      let eqForwardedTypes = filter (\at -> case at of A.Arrow (_:_) _ -> True; _ -> False) $snd $forEq (sig,var) aType
+          eqForwardedTerm = A.ArrowApp (A.aCon "eqElim") (aTerm)
+      in map (\eqForwardedType -> UDT.Tree QT.IqE (A.AJudgment sig var eqForwardedTerm eqForwardedType) [tree]) eqForwardedTypes
+
+sigmaForward2 :: B.AType -> A.SAEnv -> A.AEnv -> [UDT.Tree A.Arrowrule A.AJudgment]
+sigmaForward2 aType sig var =
+  let baseCon = A.genFreeCon aType "base"
+      forwarded' = sigmaForward2' aType baseCon aType sig var
+      trees = 
+        map
+        (\aTreef
+          -> let
+              aTree = aTreef (A.Conclusion $UDdB.Var 0)
+              (A.AJudgment sig var aTerm aType) = A.downSide' aTree
+              newJ = A.AJudgment
+                      sig var
+                      (A.arrowSubst (A.shiftIndices aTerm 1 0) (A.Conclusion $ UDdB.Var 0) baseCon)
+                      (A.arrowSubst (A.shiftIndices aType 1 0) (A.Conclusion $  UDdB.Var 0) baseCon)
+              in A.changeDownSide' aTree newJ)
+        forwarded'
+  in trees
+
+sigmaForward2' :: A.Arrowterm -> B.AType -> B.AType -> A.SAEnv -> A.AEnv -> [A.Arrowterm -> UDT.Tree A.Arrowrule A.AJudgment]
+sigmaForward2' originType baseTerm aType sig var = case A.arrowNotat aType of 
+  A.ArrowSigma' [h] t ->
+    let fstbase =  A.ArrowProj A.ArrowFst baseTerm
+        sndbase =  A.ArrowProj A.ArrowSnd baseTerm
+        t' = A.shiftIndices (A.arrowSubst t  fstbase (A.Conclusion $ UDdB.Var 0)) (-1) 0
+        hForward = sigmaForward2' originType fstbase h sig var
+        tForward = sigmaForward2' originType sndbase t' sig var
+        hTree term' = UDT.Tree QT.SigmaE (A.AJudgment sig var fstbase h) [UDT.Tree QT.Var (A.AJudgment sig var term' originType ) []]
+        tTree term'=  UDT.Tree QT.SigmaE (A.AJudgment sig var sndbase t') [UDT.Tree QT.Var (A.AJudgment sig var term' originType ) []]
+    in (if null tForward then [tTree] else tForward) ++ (if null hForward  then [hTree] else hForward)
+  A.ArrowSigma' hs tLast ->
+    let fstbase =  A.ArrowProj A.ArrowFst baseTerm
+        sndbase =  A.ArrowProj A.ArrowSnd baseTerm
+        h:hrest = reverse hs
+        t = A.ArrowSigma' (reverse hrest) tLast
+        t' =  A.shiftIndices (A.arrowSubst t  fstbase (A.Conclusion $ UDdB.Var 0)) (-1) 0
+        hForward = sigmaForward2' originType fstbase h sig var
+        tForward = sigmaForward2' originType sndbase t' sig var
+        hTree term' = UDT.Tree QT.SigmaE (A.AJudgment sig var fstbase h) [UDT.Tree QT.Var (A.AJudgment sig var term' originType ) []]
+    in tForward ++ (if null hForward  then [hTree] else hForward)
+  A.Arrow env (A.ArrowSigma' [h] t) ->
+    let lenEnv = length env
+        term1 = A.ArrowProj A.ArrowFst $ A.addApp lenEnv baseTerm
+        term2 = A.addLam lenEnv $ A.ArrowProj A.ArrowSnd $ A.addApp lenEnv baseTerm
+        t' = A.shiftIndices (A.arrowSubst t (A.shiftIndices term1 lenEnv 0) (A.Conclusion $ UDdB.Var 0)) (-1) 0
+        type1 = case h of (A.Arrow henv hcon) -> A.Arrow (henv ++ env) hcon ; _ -> A.Arrow env h
+        type2 = case t' of (A.Arrow tenv tcon) -> A.Arrow (tenv ++ env) tcon; _ ->A.Arrow env t'
+        hForward = sigmaForward2' originType (A.addLam lenEnv $  term1) type1 sig var
+        tForward = sigmaForward2' originType term2 type2 sig var
+        tTree term'= UDT.Tree QT.SigmaE (A.AJudgment sig var term2 type2) [UDT.Tree QT.Var (A.AJudgment sig var term' $ A.Arrow env originType) []]
+        hTree term'= UDT.Tree QT.SigmaE (A.AJudgment sig var (A.addLam lenEnv $  term1) type1) [UDT.Tree QT.Var (A.AJudgment sig var term' $ A.Arrow env originType) []]
+        result = (if null tForward  then [tTree] else tForward) ++ (if null hForward  then [hTree] else hForward)
+    in
+      result
+  A.Arrow env (A.ArrowSigma' hs tLast) -> 
+    let lenEnv = length env
+        term1 = A.ArrowProj A.ArrowFst $ A.addApp lenEnv baseTerm
+        term2 = A.addLam lenEnv $ A.ArrowProj A.ArrowSnd $ A.addApp lenEnv baseTerm
+        h:hrest = reverse hs
+        t = A.ArrowSigma' (reverse hrest) tLast
+        t' = A.shiftIndices (A.arrowSubst t (A.shiftIndices term1 lenEnv 0) (A.Conclusion $ UDdB.Var 0)) (-1) 0
+        type1 = case h of (A.Arrow henv hcon) -> A.Arrow (henv ++ env) hcon ; _ -> A.Arrow env h
+        type2 = A.Arrow env t'
+        hForward = sigmaForward2' originType (A.addLam lenEnv $  term1) type1 sig var
+        tForward = sigmaForward2' originType term2 type2 sig var
+        hTree term'= UDT.Tree QT.SigmaE (A.AJudgment sig var (A.addLam lenEnv $  term1) type1) [UDT.Tree QT.Var (A.AJudgment sig var term' $ A.Arrow env originType ) []]
+        result = tForward ++ (if null hForward  then [hTree] else hForward)
+    in
+      result
+  _ ->  []
