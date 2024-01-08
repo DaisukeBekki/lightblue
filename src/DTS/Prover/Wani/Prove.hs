@@ -47,7 +47,7 @@ hojo varEnv sigEnv pre_type setting =
 
 searchProof' :: WB.DeduceRule'
 searchProof' a b c d setting= 
-  let result =  B.deduce' a b c d setting
+  let result =  B.deduce a b c d setting
   in result{WB.trees' = L.nub (WB.trees' result)}
 
 -- | Prover for lightblue:

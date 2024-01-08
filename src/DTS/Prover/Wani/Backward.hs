@@ -1,8 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module DTS.Prover.Wani.Backward (
-    -- deduce,
-    deduce'
+    deduce
 ) where
 
 import qualified DTS.UDTTdeBruijn as UDdB
@@ -76,8 +75,8 @@ nestdne (con1,aType1) (con2,aType2) =
   else False
 
 -- | Execute proof search.
-deduce' :: B.DeduceRule'
-deduce' sig var arrowType depth setting 
+deduce :: B.DeduceRule'
+deduce sig var arrowType depth setting 
   | depth > B.maxdepth setting =
       B.resultDef'{B.errMsg' = "depth @ deduce",B.rStatus' = B.mergeStatus (B.sStatus setting) B.statusDef{B.usedMaxDepth = depth}} -- Set `B.rStatus` to update the maximum depth used.
   | any (\(con',aType')->A.contextLen (sig,var) == (A.contextLen con')&&A.sameCon (sig,var) con'&& A.sameTerm ((sig,var),arrowType) (con',aType')) (B.deduceNgLst (B.sStatus setting)) = 
@@ -182,7 +181,7 @@ piIntro' :: B.DeduceRule'
 piIntro' sig var aType depth setting = 
   case aType of
     A.Arrow a b -> 
-      let bTrees = deduce' sig (a ++ var) b (depth+1) setting{B.sStatus = (B.sStatus setting)}
+      let bTrees = deduce sig (a ++ var) b (depth+1) setting{B.sStatus = (B.sStatus setting)}
           typeChecked = 
             foldl 
             (\r dtTerm -> 
@@ -295,7 +294,7 @@ deduceEnv'  sEnv vEnv  (num,aJudgment) depth setting=
                           deducedLsts' =  filter (\dLst -> not $ null dLst) $
                             map 
                               (\((dLst,aType'),clueLst) -> 
-                                let deduced = deduce' sEnv vEnv aType' (depth + 1) setting{B.sStatus = (B.rStatus' (head dLst)){B.allProof = True && (length as')>0}};
+                                let deduced = deduce sEnv vEnv aType' (depth + 1) setting{B.sStatus = (B.rStatus' (head dLst)){B.allProof = True && (length as')>0}};
                                 in
                                   if null (B.trees' deduced) then [] else (if null clueLst then deduced{B.trees' =[head $ B.trees' deduced]} else deduced){B.rStatus' = (B.rStatus' deduced){B.allProof = B.allProof $B.sStatus setting}}:dLst)
                               deducedLstaTypeAndClues
@@ -311,7 +310,7 @@ deduceEnv'  sEnv vEnv  (num,aJudgment) depth setting=
               init$
               foldl 
               (\(r:rs) (f:e) -> 
-                  deduce' sEnv (e++vEnv) f (depth+1) setting{B.sStatus = (B.rStatus' r)}:(r:rs)
+                  deduce sEnv (e++vEnv) f (depth+1) setting{B.sStatus = (B.rStatus' r)}:(r:rs)
               )
               [B.resultDef'{B.rStatus' = (B.sStatus setting){B.allProof = True}}]
               deduceTargetAndCons
@@ -444,7 +443,7 @@ dne' sig var aType depth setting
     let typeChecked = B.debugLog (sig,var) aType depth setting "dneが使えるか確認" (typecheck' sig var aType A.aType depth setting) in 
     if null (B.trees' typeChecked) then B.debugLog (sig,var) aType depth setting "dneハズレ1"  typeChecked 
       else 
-        let deduced = deduce' sig var 
+        let deduced = deduce sig var 
               (A.Arrow [A.Arrow [aType] (A.Conclusion UDdB.Bot)] (A.Conclusion UDdB.Bot)) (depth + 1) 
               setting{B.sStatus = (B.rStatus' typeChecked)}
             trees = 
@@ -609,7 +608,7 @@ sigmaIntro' sig var aType depth setting =
                     deducedLsts' =  filter (\dLst -> not $ null dLst) $
                       map 
                         (\((dLst,aType'),clueLst) ->
-                          let deduced = deduce' sig var aType' (depth + 1) setting{B.sStatus = (B.rStatus' (head dLst)){B.allProof = (length as')>0}};
+                          let deduced = deduce sig var aType' (depth + 1) setting{B.sStatus = (B.rStatus' (head dLst)){B.allProof = (length as')>0}};
                           in
                             if null (B.trees' deduced) then [] else (if null clueLst then deduced{B.trees' =[head $ B.trees' deduced]} else deduced){B.rStatus' = (B.rStatus' deduced){B.allProof = B.allProof $B.sStatus setting}}:dLst
                         )
