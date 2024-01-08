@@ -11,7 +11,7 @@ module DTS.Prover.Wani.WaniBase (
     ProofMode(..),
     Status(..),
     Setting(..),
-    Result'(..),
+    Result(..),
     -- * Defaults
     statusDef,
     settingDef,
@@ -39,8 +39,8 @@ type ATerm = A.Arrowterm
 type AType = A.Arrowterm
 type Depth = Int
 
-type DeduceRule = A.SAEnv -> A.AEnv -> AType -> Depth -> Setting -> Result'
-type TypecheckRule = A.SAEnv -> A.AEnv -> ATerm -> AType -> Depth -> Setting -> Result'
+type DeduceRule = A.SAEnv -> A.AEnv -> AType -> Depth -> Setting -> Result
+type TypecheckRule = A.SAEnv -> A.AEnv -> ATerm -> AType -> Depth -> Setting -> Result
 
 data ProofMode = Plain | WithDNE | WithEFQ deriving (Show,Eq)
 
@@ -59,14 +59,14 @@ data Setting = Setting
    debug :: Bool,
    sStatus :: Status} deriving (Show,Eq)
 
-data Result' = Result'
-  {trees' :: [UDT.Tree A.Arrowrule A.AJudgment],
-   errMsg' :: T.Text,
-   rStatus' :: Status} deriving (Show,Eq)
+data Result = Result
+  {trees :: [UDT.Tree A.Arrowrule A.AJudgment],
+   errMsg :: T.Text,
+   rStatus :: Status} deriving (Show,Eq)
 
-mergeResult :: Result' -> Result' -> Result'
+mergeResult :: Result -> Result -> Result
 mergeResult rs1 rs2 =
-  Result'{trees' = (trees' rs1) ++ (trees' rs2),errMsg' =  (T.append (errMsg' rs1)  (errMsg' rs2)),rStatus' = mergeStatus (rStatus' rs1) (rStatus' rs2)}
+  Result{trees = (trees rs1) ++ (trees rs2),errMsg =  (T.append (errMsg rs1)  (errMsg rs2)),rStatus = mergeStatus (rStatus rs1) (rStatus rs2)}
 
 mergeStatus :: Status -> Status -> Status
 mergeStatus st1 st2 =
@@ -78,8 +78,8 @@ statusDef = Status{failedlst=[],usedMaxDepth = 0,deduceNgLst=[],allProof = False
 settingDef :: Setting
 settingDef = Setting{mode = Plain,falsum = True,maxdepth = 9,maxtime = 100000,debug = False,sStatus = statusDef}
 
-resultDef :: Result'
-resultDef = Result'{trees' = [],errMsg' = "",rStatus' = statusDef}
+resultDef :: Result
+resultDef = Result{trees = [],errMsg = "",rStatus = statusDef}
 
 debugLog :: A.Context -> AType -> Depth -> Setting -> T.Text -> a -> a
 debugLog con = debugLogWithTerm con (A.Conclusion $ UDdB.Con $T.pack "?")

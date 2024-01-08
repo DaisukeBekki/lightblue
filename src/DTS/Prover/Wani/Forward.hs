@@ -162,7 +162,7 @@ forEq context term =
                   arEqTypes)
     Nothing -> ([],[])
 
-forwardContext :: A.SAEnv -> A.AEnv -> B.Result'
+forwardContext :: A.SAEnv -> A.AEnv -> B.Result
 forwardContext sig var = 
     let (sigNames,sigTerms) = unzip sig
         context' = var ++ sigTerms
@@ -210,7 +210,7 @@ forwardContext sig var =
                       )
                       varsigmaForwarded
           in (eqForwards2' sigmaForwarded)  ++ sigmaForwarded
-    in B.resultDef{B.trees' = trees}
+    in B.resultDef{B.trees = trees}
 
 
 eqForwards2' :: [UDT.Tree A.Arrowrule A.AJudgment] -> [UDT.Tree A.Arrowrule A.AJudgment]
