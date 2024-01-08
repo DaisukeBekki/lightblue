@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module DTS.Prover.Wani.Forward (forwardContext2) where
+module DTS.Prover.Wani.Forward (forwardContext) where
 
 import qualified Data.List as L 
 
@@ -162,8 +162,8 @@ forEq context term =
                   arEqTypes)
     Nothing -> ([],[])
 
-forwardContext2 :: A.SAEnv -> A.AEnv -> B.Result'
-forwardContext2 sig var = 
+forwardContext :: A.SAEnv -> A.AEnv -> B.Result'
+forwardContext sig var = 
     let (sigNames,sigTerms) = unzip sig
         context' = var ++ sigTerms
         varsigmaForwarded =

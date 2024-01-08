@@ -151,7 +151,7 @@ typecheck' sig var arrowTerm arrowType depth setting
 -- | This function refers to the results of forward inference using sigmaElim and eqElim and returns a list of proof trees with matching type parts.
 membership' :: B.DeduceRule'
 membership' sig var aType depth setting = 
-  let forwardResult = F.forwardContext2 sig var
+  let forwardResult = F.forwardContext sig var
       forwardTrees = B.trees' forwardResult
       matchLst =  L.nub $
         filter 
@@ -349,7 +349,7 @@ deduceEnvs' sig var aJudgments depth setting=
 piElim' :: B.DeduceRule'
 piElim' sig var aType depth setting
   | otherwise = 
-      let forwarded = F.forwardContext2 sig var
+      let forwarded = F.forwardContext sig var
           dAndaTrees = arrowConclusionBs' (map A.downSide' $B.trees' forwarded) aType
           asResults =  deduceEnvs' sig var dAndaTrees depth setting{B.sStatus = (B.sStatus setting)}
           result =
