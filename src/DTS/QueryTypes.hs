@@ -32,6 +32,7 @@ import qualified DTS.UDTTdeBruijn as U
 import qualified DTS.UDTTvarName as VN
 import DTS.Labels (UDTT,DTT)
 
+-- BOTF?
 data DTTrule = Var | Con | TypeF | Conv | WK | PiF | PiI | PiE | SigmaF | SigmaI | SigmaE | DisjF | DisjI | DisjE | EnumF | EnumI | EnumE | IqF | IqI | IqE | NatF | NatI | NatE deriving (Eq, Show, Read)
 
 instance SimpleText DTTrule where
