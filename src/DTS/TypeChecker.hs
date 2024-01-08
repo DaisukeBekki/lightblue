@@ -16,24 +16,25 @@ module DTS.TypeChecker (
   ) where
 
 import Data.List (lookup)    --base
-import Control.Monad (guard,when) --base
+import Control.Applicative (empty)   --base
+import Control.Monad (guard,when)    --base
 import qualified Data.Text.Lazy as T --text
 --import Control.Monad.Except (throwError)
 import Interface.Text (SimpleText(..))
 import Interface.Tree (Tree(..),node)
 import qualified DTS.UDTTdeBruijn as U
 import qualified DTS.UDTTvarName as V
-import DTS.Labels (UDTT)
+import DTS.Labels (UDTT,DTT)
 import qualified DTS.QueryTypes as QT
 
 -- | executes type check to a list of UDTT preterms
-sequentialTypeCheck :: QT.TypeChecker -> QT.Prover -> U.Signature -> [U.Preterm UDTT] -> [U.Context]
-sequentialTypeCheck _ _ _ [] = []
+-- | returns as many possible DTT context
+sequentialTypeCheck :: QT.TypeChecker -> QT.Prover -> U.Signature -> [U.Preterm UDTT] -> QT.ListEx [U.Preterm DTT]
+sequentialTypeCheck _ _ _ [] = empty
 sequentialTypeCheck typchecker prover sig (uterm:uterms) = do
   prevContext <- sequentialTypeCheck typchecker prover sig uterms
-  let QT.ListEx (typeCheckResults, _) = typchecker prover $ QT.TypeCheckQuery sig prevContext uterm U.Type
-  typeCheckResult <- typeCheckResults
-  return ((U.term $ node typeCheckResult):prevContext)
+  typeCheckTree <- typchecker prover $ QT.TypeCheckQuery sig prevContext uterm U.Type
+  return $ (U.term $ node typeCheckTree):prevContext
 
 -- | A skeltal prover 
 nullProver :: QT.Prover

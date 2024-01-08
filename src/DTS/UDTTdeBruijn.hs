@@ -31,8 +31,9 @@ module DTS.UDTTdeBruijn (
   , replaceLambda
   -- * Conversion btw. De Bruijn notation and Variable-name notation
   --, Indexed(..)
-  --, initializeIndex
+  , initializeIndex
   , fromDeBruijn
+  , fromDeBruijnLoop -- exportしない方向に
   , toDeBruijn
   -- * Judgment
   , Signature
@@ -40,6 +41,7 @@ module DTS.UDTTdeBruijn (
   , Judgment(..)
   , fromDeBruijnSignature
   , fromDeBruijnContext
+  , fromDeBruijnContextLoop -- exportしない方向に
   , fromDeBruijnJudgment
   ) where
 
@@ -668,6 +670,16 @@ toDeBruijn vnames preterm = case preterm of
 -- | A type of an element of a type signature, that is, a list of pairs of a preterm and a type.
 -- ex. [entity:type, state:type, event:type, student:entity->type]
 type Signature = [(T.Text, Preterm DTT)]
+
+instance SimpleText Signature where
+  toText = toText . fromDeBruijnSignature
+
+instance Typeset Signature where
+  toTeX = toTeX . fromDeBruijnSignature
+
+instance MathML Signature where
+  toMathML = toMathML . fromDeBruijnSignature
+
 
 -- | A context is a list of preterms
 type Context = [Preterm DTT]

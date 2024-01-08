@@ -26,10 +26,12 @@ import qualified Data.List as L           --base
 import qualified Parser.ChartParser as CP
 import qualified Interface.HTML as HTML
 import qualified Interface.TeX as TEX
+import qualified Interface.Tree as I
+import DTS.Labels (UDTT,DTT)
 import qualified DTS.UDTTdeBruijn as UD
 import qualified DTS.QueryTypes as QT
 import qualified DTS.TypeChecker as TY
-import qualified DTS.Prover.Wani.WaniBase as Wani
+import qualified DTS.Prover.Wani.Prove as Wani
 
 data InferenceSetting = InferenceSetting {
   beam :: Int     -- ^ beam width
@@ -47,7 +49,7 @@ data InferencePair = InferencePair {
   , hypothesis :: T.Text -- ^ a hypothesis
   } deriving (Eq, Show)
 
-data InferenceResult = InferenceResult [([CP.Node], QT.ProofSearchResult)] deriving (Eq)
+data InferenceResult = InferenceResult (QT.ListEx (InferencePair, [CP.Node], [UD.Preterm UDTT], UD.Signature, [I.Tree QT.DTTrule (UD.Judgment DTT)]))--, QT.ProofSearchQuery, QT.ProofSearchResult)) 
 
 data ProverName = Wani | Diag | Coq deriving (Eq,Show)
 
@@ -59,7 +61,7 @@ instance Read ProverName where
 
 getProver :: ProverName -> QT.Prover
 getProver pn = case pn of
-  Wani -> TY.nullProver
+  Wani -> Wani.prove'
   Diag -> TY.nullProver
   Coq  -> TY.nullProver
 
@@ -69,9 +71,9 @@ getProver pn = case pn of
 checkInference :: InferenceSetting 
                    -> InferencePair 
                    -> IO InferenceResult
-checkInference InferenceSetting{..} InferencePair{..} = do
+checkInference InferenceSetting{..} infPair = do
   -- | Parse sentences
-  let sentences = hypothesis:(reverse premises)     -- | reverse the order of sentences (hypothesis first, the first premise last)
+  let sentences = (hypothesis infPair):(reverse $ premises infPair)     -- | reverse the order of sentences (hypothesis first, the first premise last)
   nodeslist <- mapM (CP.simpleParse beam) sentences -- | [[CCG.Node]] parse sentences
   let pairslist = map ((map (\node -> (node, UD.betaReduce $ UD.sigmaElimination $ CP.sem node))).(take nbest)) nodeslist
       -- | Example: [[(nodeA1,srA1),(nodeA2,srA2)],[(nodeB1,srB1),(nodeB2,srB2)],[(nodeC1,srC1),(nodeC2,srC2)]]
@@ -82,12 +84,16 @@ checkInference InferenceSetting{..} InferencePair{..} = do
       -- | Example: [([nodeA1,nodeB1,nodeC1],[srA1,srB1,srC1]),([nodeA1,nodeB1,nodeC2],[srA1,srB1,srC2]),...]
       prover = getProver proverName
   return $ InferenceResult $ do
-    (nds,srs) <- nodeSRlist
-    let allsig = foldl L.union [] $ map CP.sig nds;
-    (hype:prems) <- choice $ TY.sequentialTypeCheck TY.typeCheck prover allsig srs; -- [DTTpreterms]
+    (ccgnds,srs) <- QT.ListEx (nodeSRlist, "")
+    let allsigs = foldl L.union [] $ map CP.sig ccgnds;
+    typeCheckTrees <- mapM (\sr -> typeChecker prover $ QT.TypeCheckQuery allsigs [] sr UD.Type) $ drop 1 srs
+    return (infPair, ccgnds, srs, allsigs, typeCheckTrees)
+    {-
+    (hype:prems) <- TY.sequentialTypeCheck TY.typeCheck prover allsigs srs; -- [DTTpreterms]
+    let query = QT.ProofSearchQuery allsig prems hype
     -- | Example: u0:srA1, u1:srB1, u2:srC1 (where A1 is the hyp.)
-    return (nds, prover (QT.ProofSearchSetting maxDepth maxTime (Just QT.Intuitionistic))
-                        (QT.ProofSearchQuery allsig prems hype))
+    return (infPair, ccgnds, query, prover (QT.ProofSearchSetting maxDepth maxTime (Just QT.Intuitionistic)) query)
+    -}
 
 -- type ProofSearchResult = [Tree (U.Judgment U.DTT) UDTTrule]
 -- data InferenceResult = InferenceResult [([CP.Node], QT.ProofSearchResult)] deriving (Eq)
@@ -98,9 +104,25 @@ choice [] = [[]]
 choice (x:xs) = [(y:ys) | y <- x, ys <- choice xs]
 
 instance HTML.MathML InferenceResult where
-  toMathML inferenceResult = 
-    let hline = "<hr size='15' />" in
-      hline
+  toMathML (InferenceResult (QT.ListEx (results,errMsg))) =
+    T.concat $ (flip map) results $ \(infPairs,ccgNodes,srs,allsigs,checkedSrs) -> --,proofSearchQuery,proofSearchResults) ->
+      let wrapMathML = \x -> T.concat [HTML.startMathML, HTML.toMathML x, HTML.endMathML] in
+      T.concat [
+        T.intercalate ", " (premises infPairs)
+        , "==>"
+        , (hypothesis infPairs)
+        , "<hr />"
+        , errMsg
+        , "<hr />"
+        --, T.concat $ map wrapMathML ccgNodes 
+        --, "<hr />"
+        , T.concat $ map wrapMathML srs 
+        , "<hr />"
+        , HTML.toMathML allsigs
+        , "<hr />"
+        --, T.concat $ map wrapMathML checkedSrs 
+        ]
+
   {-
     T.concat [
       -- | Show premises and hypothesis

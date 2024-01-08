@@ -35,7 +35,7 @@ data Options =
   Version
   | Stat
   | Test
-  | Options Command ParseInput FilePath Int Int Bool
+  | Options Command ParseInput FilePath Int Int Int Bool
     deriving (Show, Eq)
 
 data Command =
@@ -96,7 +96,7 @@ optionParser =
                  (progDesc "Local options: [-o|--output tree|postag|numeration] [-s|--style html|text|tex|xml] [--typecheck] (The default values: -o tree -s html)" ))
       <> command "infer"
            (info inferOptionParser
-                 (progDesc "Local options: [-p|--prover dts|coq] (The default values: -p dts)" ))
+                 (progDesc "Local options: [-p|--prover wani|coq|diag] [--nsample n] (The default values: -p wani --nsample 0)" ))
       <> command "debug"
            (info debugOptionParser
                  (progDesc "shows all the parsing results between the two pivots. Local options: INT INT (No default values)" ))
@@ -140,6 +140,13 @@ optionParser =
       <> showDefault
       <> value 24
       <> metavar "INT" )
+    <*> option auto
+      ( long "nsample"
+      <> metavar "text|tex|xml|html"
+      <> help "How many data to process: 0 means all data"
+      <> showDefault
+      <> value 0
+      <> metavar "INT" )  
     <*> switch 
       ( long "time"
       <> help "Show the execution time in stderr" )
@@ -183,7 +190,7 @@ lightblueMain :: Options -> IO()
 lightblueMain Version = showVersion
 lightblueMain Stat = showStat
 lightblueMain Test = test
-lightblueMain (Options commands input filepath nbest beamw iftime) = do
+lightblueMain (Options commands input filepath nbest beamw nsample iftime) = do
   start <- Time.getCurrentTime
   contents <- case filepath of
     "-" -> T.getContents
@@ -206,7 +213,10 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
                      SENTENCES -> return $ T.lines contents
                      JSEM -> do
                              parsedJSeM <- J.xml2jsemData $ T.toStrict contents
-                             return $ concat $ map (\j -> (map T.fromStrict $ J.premises j) ++ [T.fromStrict $ J.hypothesis j]) parsedJSeM
+                             let parsedJSeM' = if nsample == 0
+                                                 then parsedJSeM
+                                                 else take nsample parsedJSeM
+                             return $ concat $ map (\j -> (map T.fromStrict $ J.premises j) ++ [T.fromStrict $ J.hypothesis j]) parsedJSeM'
       S.hPutStrLn handle $ I.headerOf style
       mapM_
         (\(sid,sentence) -> do
@@ -240,9 +250,14 @@ lightblueMain (Options commands input filepath nbest beamw iftime) = do
           T.hPutStrLn handle $ I.toMathML infResult
         JSEM -> do  --  ligthblue infer -i jsem -f ../JSeM_beta/JSeM_beta_150415.xml
           parsedJSeM <- J.xml2jsemData $ T.toStrict contents
-          forM_ parsedJSeM $ \j -> do
+          let parsedJSeM' = if nsample == 0
+                               then parsedJSeM
+                               else take nsample parsedJSeM
+          forM_ parsedJSeM' $ \j -> do
             mapM_ T.putStr ["JSeM [", T.fromStrict $ J.jsem_id j, "] "]
             let inferencePair = InferencePair (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
+            --mapM_ (T.putStrLn . T.fromStrict) $ J.premises j
+            --T.putStrLn $ T.fromStrict $ J.hypothesis j
             infResult <- checkInference inferenceSetting inferencePair
             T.hPutStrLn handle $ I.toMathML infResult
       case proverName of

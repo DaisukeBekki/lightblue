@@ -1,4 +1,4 @@
-{-# LANGUAGE DuplicateRecordFields, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE DuplicateRecordFields, TypeSynonymInstances, FlexibleInstances, RecordWildCards #-}
 
 module DTS.QueryTypes (
   -- * Type system of UDTT
@@ -88,6 +88,9 @@ instance M.Alternative ListEx where
   empty = ListEx ([], "")
   ListEx (as,msga) <|> ListEx (bs,msgb) = ListEx (as ++ bs, T.append msga msgb) 
 
+--instance M.Traversal ListEx where
+--  traverse = 
+
 exception :: T.Text -> ListEx a
 exception msg = ListEx (M.empty, msg)
 
@@ -131,6 +134,16 @@ data ProofSearchQuery = ProofSearchQuery {
 type ProofSearchResult = [Tree DTTrule (U.Judgment DTT)]
 
 type Prover = ProofSearchSetting -> ProofSearchQuery -> ProofSearchResult
+
+instance MathML ProofSearchQuery where
+  toMathML ProofSearchQuery{..} =
+    let (vcontext', vtyp') = U.initializeIndex $ do
+                             vcontext <- U.fromDeBruijnContextLoop [] $ reverse ctx
+                             let varnames = fst $ unzip vcontext
+                             vtyp <- U.fromDeBruijnLoop varnames typ
+                             return (reverse vcontext, vtyp)
+        sig' = U.fromDeBruijnSignature sig
+    in T.concat ["<mrow>", toMathML vcontext', "<mo>&vdash;</mo><mo>?</mo><mo>:</mo><mstyle mathcolor='blue' mathbackground='white'>", toMathML vtyp', "</mstyle></mrow>"]
 
 instance MathML ProofSearchResult where
   toMathML results =

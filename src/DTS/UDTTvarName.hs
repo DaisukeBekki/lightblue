@@ -241,9 +241,9 @@ type Signature = [(T.Text, Preterm DTT)]
 instance SimpleText Signature where
   toText sigs = T.concat ["[", (T.intercalate ", " $ map (\(cname,ty) -> T.concat $ [toText $ Con cname, ":", toText ty]) sigs), "]"]
 instance Typeset Signature where
-  toTeX _ = T.empty
+  toTeX = (T.intercalate ",") . (map (\(nm,tm) -> T.concat [nm, ":", toTeX tm])) 
 instance MathML Signature where
-  toMathML _ = T.empty
+  toMathML = (T.intercalate "<mo>,</mo>") . (map (\(nm,tm) -> T.concat ["<mrow><mtext>", nm, "</mtext><mo>:</mo><mstyle mathcolor='blue' mathbackground='white'>", toMathML tm, "</mstyle></mrow>"])) 
 
 -- | A context is a list of pairs of a variable and a preterm.
 type Context = [(VarName, Preterm DTT)]
