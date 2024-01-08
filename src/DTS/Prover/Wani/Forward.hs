@@ -210,7 +210,7 @@ forwardContext sig var =
                       )
                       varsigmaForwarded
           in (eqForwards2' sigmaForwarded)  ++ sigmaForwarded
-    in B.resultDef'{B.trees' = trees}
+    in B.resultDef{B.trees' = trees}
 
 
 eqForwards2' :: [UDT.Tree A.Arrowrule A.AJudgment] -> [UDT.Tree A.Arrowrule A.AJudgment]

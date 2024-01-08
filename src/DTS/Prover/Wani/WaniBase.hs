@@ -15,7 +15,7 @@ module DTS.Prover.Wani.WaniBase (
     -- * Defaults
     statusDef,
     settingDef,
-    resultDef',
+    resultDef,
     -- * Rules
     DeduceRule',
     TypecheckRule',
@@ -78,8 +78,8 @@ statusDef = Status{failedlst=[],usedMaxDepth = 0,deduceNgLst=[],allProof = False
 settingDef :: Setting
 settingDef = Setting{mode = Plain,falsum = True,maxdepth = 9,maxtime = 100000,debug = False,sStatus = statusDef}
 
-resultDef' :: Result'
-resultDef' = Result'{trees' = [],errMsg' = "",rStatus' = statusDef}
+resultDef :: Result'
+resultDef = Result'{trees' = [],errMsg' = "",rStatus' = statusDef}
 
 debugLog :: A.Context -> AType -> Depth -> Setting -> T.Text -> a -> a
 debugLog con = debugLogWithTerm con (A.Conclusion $ UDdB.Con $T.pack "?")
