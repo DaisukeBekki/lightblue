@@ -20,7 +20,7 @@ module DTS.Prover.Wani.WaniBase (
     DeduceRule,
     TypecheckRule,
     -- * Functions
-    mergeResult',
+    mergeResult,
     mergeStatus,
     -- ** Debug functions
     debugLogWithTerm,
@@ -64,8 +64,8 @@ data Result' = Result'
    errMsg' :: T.Text,
    rStatus' :: Status} deriving (Show,Eq)
 
-mergeResult' :: Result' -> Result' -> Result'
-mergeResult' rs1 rs2 =
+mergeResult :: Result' -> Result' -> Result'
+mergeResult rs1 rs2 =
   Result'{trees' = (trees' rs1) ++ (trees' rs2),errMsg' =  (T.append (errMsg' rs1)  (errMsg' rs2)),rStatus' = mergeStatus (rStatus' rs1) (rStatus' rs2)}
 
 mergeStatus :: Status -> Status -> Status

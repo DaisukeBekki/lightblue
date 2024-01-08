@@ -93,7 +93,7 @@ deduce sig var arrowType depth setting
                 if (B.allProof (B.sStatus setting)) || (null (B.trees' rs)) 
                 then 
                   let result = f sig var (A.arrowNotat arrowType) depth setting{B.sStatus = B.rStatus' rs}
-                  in B.mergeResult' rs result -- `B.mergeResult'` updates the status of a newly executed proof search
+                  in B.mergeResult rs result -- `B.mergeResult` updates the status of a newly executed proof search
                 else rs)
 
               (B.resultDef{
