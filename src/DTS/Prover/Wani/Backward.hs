@@ -116,7 +116,7 @@ deduce sig var arrowType depth setting
               (if B.debug setting then D.trace (L.replicate (2*depth) ' ' ++  show depth ++ " deduced:  " ++ show (map A.downSide' (B.trees' result))) else id) result
 
 -- | Execute typecheck
-typecheck' :: B.TypecheckRule'
+typecheck' :: B.TypecheckRule
 typecheck' sig var arrowTerm arrowType depth setting
   | depth > B.maxdepth setting = B.resultDef{B.errMsg' = "depth @ typecheck",B.rStatus' = B.mergeStatus (B.sStatus setting) B.statusDef{B.usedMaxDepth = depth}}
   | any (\(con',aTerm',aType')->A.sameCon (sig,var) con'&& A.sameTerm ((sig,var),arrowTerm) (con',aTerm') && A.sameTerm ((sig,var),arrowType) (con',aType')) (B.failedlst (B.sStatus setting)) = B.debugLogWithTerm (sig,var) arrowTerm arrowType depth setting "Failed in the past."  (B.resultDef{B.rStatus' = B.mergeStatus (B.sStatus setting) B.statusDef{B.usedMaxDepth = depth}})
@@ -458,7 +458,7 @@ dne' sig var aType depth setting
 efq' :: B.DeduceRule
 efq' sig var aType depth setting = undefined
 
-piForm' :: B.TypecheckRule'
+piForm' :: B.TypecheckRule
 piForm' sig var aTerm aType depth setting
   -- | aType `notElem` [A.aType,A.Conclusion UDdB.Kind] = B.debugLogWithTerm con aTerm aType depth setting "piFormハズレ1" B.resultDef{B.rStatus = B.sStatus setting}
   | otherwise = case A.arrowNotat aTerm of 
@@ -501,7 +501,7 @@ piForm' sig var aTerm aType depth setting
 -- +------------------------+ span rows. | f(n) = \sum_{i=1}   |
 -- | body row 4             |            | \]                  |
 -- +------------------------+------------+---------------------+
-sigmaForm' :: B.TypecheckRule'
+sigmaForm' :: B.TypecheckRule
 sigmaForm' sig var aTerm aType depth setting
   | aType `notElem` [A.aType,A.Conclusion UDdB.Kind] = B.debugLogWithTerm (sig,var) aTerm aType depth setting "sigmaFormハズレ1" B.resultDef{B.rStatus' = B.sStatus setting}
   | otherwise = case A.arrowNotat aTerm of 
@@ -534,7 +534,7 @@ sigmaForm' sig var aTerm aType depth setting
       in B.debugLogWithTerm (sig,var) (A.ArrowSigma' as b) aType  depth setting "sigmaForm2" result        
     _ -> B.debugLogWithTerm (sig,var) aTerm aType depth setting "sigmaでない@sigmaFormハズレ" B.resultDef{B.rStatus' = B.sStatus setting}
 
-eqForm' :: B.TypecheckRule'
+eqForm' :: B.TypecheckRule
 eqForm' sig var aTerm aType depth setting
   | aType `notElem` [A.aType,A.Conclusion UDdB.Kind] = B.debugLogWithTerm (sig,var) aTerm aType depth setting "eqFormハズレ1" B.resultDef{B.rStatus' = B.sStatus setting}
   | otherwise = case A.arrowNotat aTerm of 
