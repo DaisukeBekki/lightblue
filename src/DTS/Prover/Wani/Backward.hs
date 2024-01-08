@@ -75,7 +75,7 @@ nestdne (con1,aType1) (con2,aType2) =
   else False
 
 -- | Execute proof search.
-deduce :: B.DeduceRule'
+deduce :: B.DeduceRule
 deduce sig var arrowType depth setting 
   | depth > B.maxdepth setting =
       B.resultDef{B.errMsg' = "depth @ deduce",B.rStatus' = B.mergeStatus (B.sStatus setting) B.statusDef{B.usedMaxDepth = depth}} -- Set `B.rStatus` to update the maximum depth used.
@@ -149,7 +149,7 @@ typecheck' sig var arrowTerm arrowType depth setting
         (if B.debug setting then D.trace (L.replicate (2*depth) ' ' ++  show depth ++ " termFound :  " ++ show (map A.downSide' $L.nub $ B.trees' result)) else id) result{B.rStatus' = status}{B.trees' = L.nub $B.trees' result}
 
 -- | This function refers to the results of forward inference using sigmaElim and eqElim and returns a list of proof trees with matching type parts.
-membership' :: B.DeduceRule'
+membership' :: B.DeduceRule
 membership' sig var aType depth setting = 
   let forwardResult = F.forwardContext sig var
       forwardTrees = B.trees' forwardResult
@@ -164,7 +164,7 @@ membership' sig var aType depth setting =
             $ forwardTrees  
   in B.debugLog (sig,var) aType depth setting "membership" (forwardResult{B.trees' = matchLst,B.rStatus' = B.sStatus setting})
 
-piIntro' :: B.DeduceRule' 
+piIntro' :: B.DeduceRule 
 -- | piIntro
 -- +------------------------+----------------------------------+
 -- | input                  | \[ \Gamma \vdash ? : A -> B  \]  |
@@ -346,7 +346,7 @@ deduceEnvs' sig var aJudgments depth setting=
 -- +------------------------+----------------------------------------------------------------------------+
 -- | asResults              | checking...                             |
 -- +------------------------+----------------------------------------------------------------------------+
-piElim' :: B.DeduceRule'
+piElim' :: B.DeduceRule
 piElim' sig var aType depth setting
   | otherwise = 
       let forwarded = F.forwardContext sig var
@@ -434,7 +434,7 @@ piElimTypeCheckApp' sig var (A.ArrowApp f x) argLst b1 depth setting =
   _ -> B.debugLogWithTerm (sig,var) (A.ArrowApp f x) b1 depth setting "piElimtypecheckApp 引数を受け取る型でない" B.resultDef{B.rStatus' = B.sStatus setting}
 piElimTypeCheckApp' sig var aTerm _ b1 depth setting = B.debugLogWithTerm (sig,var) aTerm b1 depth setting "piElimtypecheckApp / No functin application in term" B.resultDef{B.rStatus' = B.sStatus setting}
 
-dne' :: B.DeduceRule'
+dne' :: B.DeduceRule
 dne' sig var aType depth setting
   | aType==A.aType =B.debugLog (sig,var) aType depth setting "dneハズレ2"  B.resultDef{B.rStatus' = B.sStatus setting}
   | case aType of (A.Arrow [A.Arrow _ (A.Conclusion UDdB.Bot)] (A.Conclusion UDdB.Bot)) -> True ; _ -> False=  
@@ -455,7 +455,7 @@ dne' sig var aType depth setting
             status = deducedStatus{B.deduceNgLst = tail $B.deduceNgLst deducedStatus}
         in  deduced{B.trees' = trees,B.rStatus' = status}
 
-efq' :: B.DeduceRule'
+efq' :: B.DeduceRule
 efq' sig var aType depth setting = undefined
 
 piForm' :: B.TypecheckRule'
@@ -564,7 +564,7 @@ eqForm' sig var aTerm aType depth setting
       in B.debugLogWithTerm (sig,var) aTerm aType depth setting "eqForm1" result
     _ -> B.debugLogWithTerm (sig,var) aTerm aType depth setting "eqFormハズレ" B.resultDef{B.rStatus' = B.sStatus setting}
 
-sigmaIntro' :: B.DeduceRule' 
+sigmaIntro' :: B.DeduceRule 
 sigmaIntro' sig var aType depth setting = 
   case A.arrowNotat aType of 
   A.ArrowSigma' as b1 -> 

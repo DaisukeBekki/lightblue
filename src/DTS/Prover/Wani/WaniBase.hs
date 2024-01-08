@@ -17,7 +17,7 @@ module DTS.Prover.Wani.WaniBase (
     settingDef,
     resultDef,
     -- * Rules
-    DeduceRule',
+    DeduceRule,
     TypecheckRule',
     -- * Functions
     mergeResult',
@@ -39,7 +39,7 @@ type ATerm = A.Arrowterm
 type AType = A.Arrowterm
 type Depth = Int
 
-type DeduceRule' = A.SAEnv -> A.AEnv -> AType -> Depth -> Setting -> Result'
+type DeduceRule = A.SAEnv -> A.AEnv -> AType -> Depth -> Setting -> Result'
 type TypecheckRule' = A.SAEnv -> A.AEnv -> ATerm -> AType -> Depth -> Setting -> Result'
 
 data ProofMode = Plain | WithDNE | WithEFQ deriving (Show,Eq)

@@ -45,7 +45,7 @@ hojo varEnv sigEnv pre_type setting =
       result = searchProof' sigEnv' varEnv' arrowType 1 setting
   in WB.debugLog (sigEnv',varEnv') arrowType 0 setting "goal" result
 
-searchProof' :: WB.DeduceRule'
+searchProof' :: WB.DeduceRule
 searchProof' a b c d setting= 
   let result =  B.deduce a b c d setting
   in result{WB.trees' = L.nub (WB.trees' result)}
