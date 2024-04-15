@@ -12,7 +12,8 @@ The lexicon for functional lexical items in Japanese.
 -}
 module Parser.Language.Japanese.MyLexicon (
   emptyCategories,
-  myLexicon
+  myLexicon,
+  verblex
   ) where
 
 import Prelude hiding (id)
