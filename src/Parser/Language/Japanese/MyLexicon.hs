@@ -688,7 +688,7 @@ myLexicon = concat $ [
   verblex ["悔やまれ","くやまれ"] "new" [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] "悔やまれる/くやまれる" "ト" state,
   verblex ["見られ","みられ"] "new" [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] "見られる/みられる" "ガニ" state,
   verblex ["見え","みえ"] "new" [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] "見える/みえる" "ガニ" state,
-  verblex ["聞こえ","きこえ"] "new" [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] "見える/みえる" "ガニ" state,
+  verblex ["聞こえ","きこえ"] "new" [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] "聞こえる/みえる" "ガニ" state,
   -- 以下、「可能」はstateを導入すべきか。
   mylex ["れ"] "(660a)" ((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP [F[Ga]]) `BS` (defS [V1,VK] [VoR] `BS` NP [F[Ga]]))
         ((Lam (Lam (Lam (App (App (Con "＃可能") (Lam (App (App (Var 3) (Var 0)) (Var 1)))) (Var 1))))),[("＃可能",(Pi (Pi entity Type) (Pi entity Type)))]),
