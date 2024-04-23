@@ -6,6 +6,7 @@ module DTS.QueryTypes (
   -- * ListEx monad
   , ListEx(..)
   , exception
+  , record
   -- * UDTT type check
   , TypeCheckQuery(..)
   , TypeCheckResult(..)
@@ -67,33 +68,44 @@ instance MathML DTTrule where
 
 -- | ListEx Monad (List with exceptions)
 
-newtype ListEx a = ListEx { result :: ([a], T.Text)}
+newtype ListEx a = ListEx { result :: [(a, T.Text)] }
+
+instance (Show a) => Show (ListEx a) where
+  show ex = show $ result ex 
 
 instance Functor ListEx where
-  fmap = M.liftM
+  fmap f m1 = do -- M.liftM
+              x1 <- m1
+              return $ f x1
 
 instance Applicative ListEx where
   pure = return
-  (<*>) = M.ap
+  (<*>) m1 m2 = do -- M.ap
+                x1 <- m1
+                x2 <- m2
+                return $ x1 x2
 
 instance Monad ListEx where
-  return m = ListEx ([m], "")
-  ListEx (as, msg) >>= f =
-    let (bs,msgs) = unzip $ map (result . f) as
-    in ListEx (concat bs, T.intercalate "\n" (msg:msgs))
+  return m = ListEx [(m,"")]
+  ListEx xs >>= f = ListEx $ do
+      (a,msg) <- xs
+      map (\(b,msg') -> (b,T.append msg msg')) $ result $ f a -- [(b, msg)]
 
 instance M.MonadFail ListEx where
-  fail s = ListEx ([], T.pack s)
+  fail s = ListEx []
 
 instance M.Alternative ListEx where
-  empty = ListEx ([], "")
-  ListEx (as,msga) <|> ListEx (bs,msgb) = ListEx (as ++ bs, T.append msga msgb) 
+  empty = ListEx []
+  ListEx as <|> ListEx bs = ListEx (as ++ bs)
 
 --instance M.Traversal ListEx where
 --  traverse = 
 
 exception :: T.Text -> ListEx a
-exception msg = ListEx (M.empty, msg)
+exception msg = ListEx [((),msg)]
+
+record :: T.Text -> ListEx ()
+record msg = ListEx [(unit,msg)]
 
 -- | Type checking in DTT
 
@@ -104,9 +116,12 @@ data TypeCheckQuery = TypeCheckQuery {
   , typ :: U.Preterm DTT
   } deriving (Eq, Show)
 
-type TypeCheckResult = ListEx (Tree DTTrule (U.Judgment DTT))
+instance SimpleText TypeCheckQuery where
+  toText (TypeCheckQuery _ ctx trm typ) = T.concat [toText ctx, " |- ", toText trm, " : ", toText typ]
 
-type TypeChecker = Prover -> TypeCheckQuery -> TypeCheckResult
+type TypeCheckResult = Tree DTTrule (U.Judgment DTT)
+
+type TypeChecker = Prover -> TypeCheckQuery -> ListEx TypeCheckResult
 
 data TypeInferQuery = TypeInferQuery {
   sig :: U.Signature
@@ -114,7 +129,10 @@ data TypeInferQuery = TypeInferQuery {
   , trm :: U.Preterm UDTT
   } deriving (Eq, Show)
 
-type TypeInfer = Prover -> TypeInferQuery -> TypeCheckResult
+instance SimpleText TypeInferQuery where
+  toText (TypeInferQuery _ ctx trm) = T.concat [toText ctx, " |- ", toText trm, " : ?"]
+
+type TypeInfer = Prover -> TypeInferQuery -> ListEx TypeCheckResult
 
 -- | Proof Search in DTT
 
@@ -137,7 +155,7 @@ type ProofSearchResult = [Tree DTTrule (U.Judgment DTT)]
 type Prover = ProofSearchSetting -> ProofSearchQuery -> ProofSearchResult
 
 instance MathML ProofSearchQuery where
-  toMathML ProofSearchQuery{..} =
+  toMathML ProofSearchQuery{..} = 
     let (vcontext', vtyp') = U.initializeIndex $ do
                              vcontext <- U.fromDeBruijnContextLoop [] $ reverse ctx
                              let varnames = fst $ unzip vcontext
