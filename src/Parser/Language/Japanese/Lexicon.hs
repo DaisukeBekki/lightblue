@@ -17,7 +17,8 @@ module Parser.Language.Japanese.Lexicon (
   lookupLexicon,
   setupLexicon,
   LEX.emptyCategories,
-  LEX.myLexicon
+  LEX.myLexicon,
+  jumanPos2Cat
   ) where
 
 import Prelude hiding (id)
