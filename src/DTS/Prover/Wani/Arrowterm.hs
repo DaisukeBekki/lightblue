@@ -37,6 +37,7 @@ module DTS.Prover.Wani.Arrowterm
   isFreeCon,
   canBeSame,
   addLam,
+  rmLam,
   addApp,
   thereIsVar,
   varsInaTerm,
@@ -60,6 +61,7 @@ data Arrowterm =
   Conclusion (UDdB.Preterm DTT) -- ^ 末尾の部分
   | ArrowSigma' AEnv Arrowterm 
   | ArrowApp Arrowterm Arrowterm -- ^ App型
+  -- | ArrowApp' Arrowterm [Arrowterm] -- ^ App型
   | ArrowPair Arrowterm Arrowterm -- ^ Pair型
   | ArrowProj ArrowSelector Arrowterm -- ^ Proj型
   | ArrowLam Arrowterm -- ^ Lam型
@@ -68,7 +70,7 @@ data Arrowterm =
   deriving (Eq)
 -- | DTT.Preterm型に変換して得たテキストを加工している
 instance Show Arrowterm where
-  show term  = prestr2arrowstr ((filter (/= ' ') . show . arrow2DT) term) term
+  show term  = show $ arrow2DT term -- prestr2arrowstr ((filter (/= ' ') . show . arrow2DT) term) term
 
 allReplace :: T.Text -> [(T.Text,T.Text)] -> T.Text
 allReplace base=foldr (\(from,to) str' -> T.replace from to str') base
@@ -396,6 +398,11 @@ addApp num base = addApp (num - 1) $ ArrowApp (shiftIndices base 1 0) (Conclusio
 addLam :: Int -> Arrowterm -> Arrowterm
 addLam 0 term = term
 addLam num term = ArrowLam $ addLam (num - 1) term
+
+rmLam :: Int -> Arrowterm -> Arrowterm
+rmLam 0 term = term
+rmLam num (ArrowLam a) = rmLam (num-1) a
+rmLam num notLam = undefined
 
 sameCon :: Context -> Context -> Bool
 sameCon (sigCon1,varCon1) (sigCon2,varCon2) = 

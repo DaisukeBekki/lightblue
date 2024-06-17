@@ -203,7 +203,7 @@ piIntro' sig var aType depth setting =
 
 
 arrowConclusionBs' :: [A.AJudgment] -> A.Arrowterm -> [(Int,UDT.Tree A.Arrowrule A.AJudgment)]
--- | arrowConclusionBs (Would the input be appropriate? Why this function uses not [J.Tree A.AJudgement] but [A.AJudgement]?)
+-- | arrowConclusionBs 
 -- +------------------------+--------------------------------------------------------------+
 -- | input                  | \[ \Gamma \vdash a : A -> B, \Gamma \vdash a : A -> C \], B  |
 -- +========================+==============================================================+
@@ -460,7 +460,7 @@ efq' sig var aType depth setting = undefined
 
 piForm' :: B.TypecheckRule
 piForm' sig var aTerm aType depth setting
-  -- | aType `notElem` [A.aType,A.Conclusion UDdB.Kind] = B.debugLogWithTerm con aTerm aType depth setting "piFormハズレ1" B.resultDef{B.rStatus = B.sStatus setting}
+  --  aType `notElem` [A.aType,A.Conclusion UDdB.Kind] = B.debugLogWithTerm con aTerm aType depth setting "piFormハズレ1" B.resultDef{B.rStatus = B.sStatus setting}
   | otherwise = case A.arrowNotat aTerm of 
     A.Arrow as b ->
       let a = last as
