@@ -39,7 +39,7 @@ instance (SimpleText r, SimpleText a) => SimpleText (Tree r a) where
 
 toTextLoop :: (SimpleText r, SimpleText a) => Int -> (Tree r a) -> T.Text
 toTextLoop indent Tree{..} =
-  let t = [T.pack (replicate indent ' '), toText ruleName, " ", toText node, "\n"] in
+  let t = [T.pack (replicate indent ' '), "(", toText ruleName, ") ", toText node, "\n"] in
   case daughters of
     [] ->   T.concat t
     dtrs -> T.concat $ t ++ (map (toTextLoop $ indent+2) dtrs)

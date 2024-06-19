@@ -19,6 +19,7 @@ import qualified DTS.QueryTypes as QT
 import qualified Data.Text.Lazy as T 
 import qualified Data.List as L 
 import qualified Debug.Trace as D
+import qualified ListT as ListT
 
 import qualified Interface.HTML as HTML
 import qualified Data.Bifunctor
@@ -52,7 +53,7 @@ searchProof' a b c d setting=
 
 -- | Prover for lightblue:
 prove' :: QT.Prover
-prove' QT.ProofSearchSetting{..} QT.ProofSearchQuery{..} =  -- [Tree (U.Judgment U.DTT) UDTTrule]
+prove' QT.ProofSearchSetting{..} QT.ProofSearchQuery{..} =  -- LiftT IO (Tree (U.Judgment U.DTT) UDTTrule)
   let setting = WB.Setting {
         WB.mode = case system of
                     Nothing -> WB.Plain
@@ -69,4 +70,4 @@ prove' QT.ProofSearchSetting{..} QT.ProofSearchQuery{..} =  -- [Tree (U.Judgment
         WB.sStatus = WB.statusDef
         };
       result = hojo ctx sig typ setting
-  in map A.aTreeTojTree' $ WB.trees result
+  in ListT.fromFoldable $ map A.aTreeTojTree' $ WB.trees result

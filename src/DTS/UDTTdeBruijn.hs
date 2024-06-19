@@ -87,7 +87,7 @@ data Preterm a where
   Pair :: Preterm a -> Preterm a -> Preterm a   -- ^ Pairs
   Proj :: Selector -> Preterm a -> Preterm a    -- ^ (First and second) Projections
   -- | UDTT expansions
-  Asp :: Int -> Preterm UDTT -> Preterm UDTT -- ^ Underspesified terms
+  Asp :: Int -> Preterm UDTT -> Preterm UDTT    -- ^ Underspesified terms
   Lamvec :: Preterm UDTT -> Preterm UDTT        -- ^ Lambda abstractions of a variable vector
   Appvec :: Int -> Preterm UDTT -> Preterm UDTT -- ^ Function applications of a variable vector
   -- | Disjoint Union Types

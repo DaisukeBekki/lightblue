@@ -4,6 +4,7 @@
 import Options.Applicative hiding (style) --optparse-applicative
 --import Data.Semigroup ((<>))              --semigroup
 import Control.Monad (forM_)              --base
+import ListT (toList)                     --list-t
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
 --import qualified Data.Text as StrictT     --text
@@ -24,7 +25,8 @@ import qualified Interface.HTML as I
 import qualified JSeM as J
 import qualified JSeM.XML as J
 import qualified DTS.UDTTdeBruijn as DTS
-import DTS.TypeChecker (typeCheck)
+import DTS.TypeChecker (typeCheck,typeInfer,nullProver)
+import DTS.QueryTypes (TypeCheckQuery(..),TypeInferQuery(..))
 import DTS.NaturalLanguageInference (ProverName(..),InferenceSetting(..),InferencePair(..),checkInference)
 --import qualified DTS.Prover.TypeChecker as TC
 --import qualified DTS.Prover.Wani.WaniBase as Wani
@@ -247,7 +249,7 @@ lightblueMain (Options commands input filepath nbest beamw nsample iftime) = do
                 then InferencePair [] T.empty
                 else InferencePair (init sentences) (last sentences)
           infResult <- checkInference inferenceSetting inferencePair
-          T.hPutStrLn handle $ I.toMathML infResult
+          T.hPutStrLn handle $ "infResult shall be shown here" -- I.toMathML infResult
         JSEM -> do  --  ligthblue infer -i jsem -f ../JSeM_beta/JSeM_beta_150415.xml
           parsedJSeM <- J.xml2jsemData $ T.toStrict contents
           let parsedJSeM' = if nsample == 0
@@ -259,7 +261,7 @@ lightblueMain (Options commands input filepath nbest beamw nsample iftime) = do
             --mapM_ (T.putStrLn . T.fromStrict) $ J.premises j
             --T.putStrLn $ T.fromStrict $ J.hypothesis j
             infResult <- checkInference inferenceSetting inferencePair
-            T.hPutStrLn handle $ I.toMathML infResult
+            T.hPutStrLn handle $ "infResult shall be shown here" --I.toMathML infResult
       case proverName of
         Wani -> S.hPutStrLn handle $ I.footerOf I.HTML
         Diag -> S.hPutStrLn handle $ I.footerOf I.HTML
@@ -338,8 +340,13 @@ showStat = do
 -- | 
 test :: IO()
 test = do
-  let context = [DTS.Con "hoge", DTS.Con "evt", DTS.Con "entity"]
-  T.hPutStrLn S.stderr "hoge"
+  let signature = [("entity", DTS.Type), ("evt",DTS.Type), ("f", DTS.Pi (DTS.Con "entity") DTS.Type)]
+      context = [(DTS.Con "entity")]
+      termA = DTS.Sigma (DTS.Con "entity") (DTS.App (DTS.Con "f") (DTS.Var 0))
+      -- typeA = DTS.Kind
+      tcq = TypeInferQuery signature context termA 
+  typeCheckResults <- toList $ typeInfer nullProver tcq
+  T.putStrLn $ T.toText $ head typeCheckResults
   --T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 0) DTS.Type
   --T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 2) DTS.Type
 

@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards, GADTs #-}
 
 {-|
 Copyright   : (c) Daisuke Bekki, 2023
@@ -17,7 +17,9 @@ module DTS.TypeChecker (
 
 import Data.List (lookup)    --base
 import Control.Applicative (empty)   --base
-import Control.Monad (guard,when)    --base
+import Control.Monad (guard,when,sequence)    --base
+import Control.Monad.State (lift)  
+import ListT (ListT(..),fromFoldable) --list-t
 import qualified Data.Text.Lazy as T --text
 import qualified Data.Text.Lazy.IO as T --text
 --import Control.Monad.Except (throwError)
@@ -30,21 +32,21 @@ import qualified DTS.QueryTypes as QT
 
 -- | executes type check to a list of UDTT preterms
 -- | returns as many possible DTT context
-sequentialTypeCheck :: QT.TypeChecker -> QT.Prover -> U.Signature -> [U.Preterm UDTT] -> QT.ListEx [U.Preterm DTT]
+sequentialTypeCheck :: QT.TypeChecker -> QT.Prover -> U.Signature -> [U.Preterm UDTT] -> ListT IO [U.Preterm DTT]
 sequentialTypeCheck _ _ _ [] = empty
-sequentialTypeCheck typchecker prover sig (uterm:uterms) = do
-  prevContext <- sequentialTypeCheck typchecker prover sig uterms
-  typeCheckTree <- typchecker prover $ QT.TypeCheckQuery sig prevContext uterm U.Type
+sequentialTypeCheck typchecker prover sig (uterm:uterms) = do 
+  prevContext <- sequentialTypeCheck typchecker prover sig uterms -- | ListT IO Preterm
+  typeCheckTree <- typchecker prover $ QT.TypeCheckQuery sig prevContext uterm U.Type -- | ListT IO Tree
   return $ (U.term $ node typeCheckTree):prevContext
 
 -- | A skeltal prover 
 nullProver :: QT.Prover
-nullProver _ _ = []
+nullProver _ _ = fromFoldable []
 
 -- | The default type inference for UDTT
-typeInfer :: QT.TypeInfer -- | QT.Prover -> QT.TypeInferQuery -> IO [QT.TypeCheckResult]
+typeInfer :: QT.TypeInfer -- | QT.Prover -> QT.TypeInferQuery -> ListT IO QT.TypeCheckResult
 typeInfer prover tiq@QT.TypeInferQuery{..} = do
-  QT.record $ toText tiq
+  lift $ T.putStrLn $ toText tiq
   case trm of -- sig:Signature, ctx:Context, trm:Preterm DTT, typ:Preterm DTT
     U.Var i -> do
       when (i >= length ctx) $ fail $ T.unpack $ T.concat [T.pack (show i), " is out of bound in the context: ", toText ctx]
@@ -55,7 +57,7 @@ typeInfer prover tiq@QT.TypeInferQuery{..} = do
         Nothing -> fail $ T.unpack $ T.concat ["No constant symbol for ", t]
     U.Type -> return $ Tree QT.TypeF (U.Judgment sig ctx U.Type U.Kind) []
     U.Pi termA termB -> do
-      diagramA <- typeCheck prover (QT.TypeCheckQuery sig ctx termA U.Type)
+      diagramA <- typeCheck prover (QT.TypeCheckQuery sig ctx termA U.Type)  -- | diagramAs :: [Tree]
       let termA' = U.term $ node diagramA
       diagramB <- typeCheck prover (QT.TypeCheckQuery sig (termA':ctx) termB U.Type)
       let termB' = U.term $ node diagramB
@@ -131,21 +133,25 @@ typeInfer prover tiq@QT.TypeInferQuery{..} = do
       let termN' = U.term $ node diagramN
       return $ Tree QT.NatI (U.Judgment sig ctx (U.Succ termN') U.Nat) [diagramN]
     --U.Natrec
+    {-
     U.Asp termA termB -> do
-      diagramA <- typeCheck $ prover $ QT.TypeCheckQuery sig ctx termA U.Type
+      diagramA <- typeCheck prover $ QT.TypeCheckQuery sig ctx termA U.Type
       let termA' = U.term $ node diagramA
-      diagramQ <- prover (QT.ProofSearchSetting Nothing Nothing QT.Intuitionistic)
-                         (QT.ProofSearchQuery sig ctx termA')
-      let termM = U.term $ node diagramQ
+          pss = QT.ProofSearchSetting Nothing Nothing (Just QT.Intuitionistic)
+          psq = QT.ProofSearchQuery sig ctx termA'
+      diagramQ <- prover pss psq
+      lift $ T.putStrLn $ toText psq
+      let termM = U.toUDTT $ U.term $ node diagramQ
           termB' = U.betaReduce $ U.subst termB termM 0
-      typeCheck $ prover $ QT.TypeCheckQuery sig ctx termB' U.Type
+      typeCheck prover $ QT.TypeCheckQuery sig ctx termB' U.Type
+    -}
     -- | type inference fails
     termM -> fail $ T.unpack $ T.concat [toText termM, " is not an inferable term."]
 
 -- | The default type checker for UDTT
-typeCheck :: QT.TypeChecker -- | Prover -> QT.TypeCheckQuery -> IO [QT.TypeCheckResult]
+typeCheck :: QT.TypeChecker -- | Prover -> QT.TypeCheckQuery -> ListT IO TypeCheckResult
 typeCheck prover tcq@QT.TypeCheckQuery{..} = do
-  QT.record $ toText tcq
+  lift $ T.putStrLn $ toText tcq
   case (trm,typ) of -- sig:Signature, ctx:Context, trm:Preterm DTT, typ:Preterm DTT
     (U.Lam termM, U.Pi termA termB) -> do
       diagramA <- typeCheck prover $ QT.TypeCheckQuery sig ctx (U.toUDTT termA) U.Type
@@ -177,3 +183,4 @@ typeCheck prover tcq@QT.TypeCheckQuery{..} = do
       let termA' = U.typ $ node diagramM
       guard $ termA' == typ
       return diagramM
+

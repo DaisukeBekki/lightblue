@@ -49,7 +49,7 @@ data InferencePair = InferencePair {
   , hypothesis :: T.Text -- ^ a hypothesis
   } deriving (Eq, Show)
 
-data InferenceResult = InferenceResult (QT.ListEx (InferencePair, [CP.Node], [UD.Preterm UDTT], UD.Signature, [I.Tree QT.DTTrule (UD.Judgment DTT)]))--, QT.ProofSearchQuery, QT.ProofSearchResult)) 
+data InferenceResult = InferenceResult (InferencePair, [CP.Node], [UD.Preterm UDTT], UD.Signature, [I.Tree QT.DTTrule (UD.Judgment DTT)]) --, QT.ProofSearchQuery, QT.ProofSearchResult)) 
 
 data ProverName = Wani | Diag | Coq deriving (Eq,Show)
 
@@ -72,6 +72,8 @@ checkInference :: InferenceSetting
                    -> InferencePair 
                    -> IO InferenceResult
 checkInference InferenceSetting{..} infPair = do
+  return $ InferenceResult ((InferencePair [] T.empty), [], [], [], [])
+{-
   -- | Parse sentences
   let sentences = (hypothesis infPair):(reverse $ premises infPair)     -- | reverse the order of sentences (hypothesis first, the first premise last)
   nodeslist <- mapM (CP.simpleParse beam) sentences -- | [[CCG.Node]] parse sentences
@@ -94,6 +96,7 @@ checkInference InferenceSetting{..} infPair = do
     -- | Example: u0:srA1, u1:srB1, u2:srC1 (where A1 is the hyp.)
     return (infPair, ccgnds, query, prover (QT.ProofSearchSetting maxDepth maxTime (Just QT.Intuitionistic)) query)
     -}
+-}
 
 -- type ProofSearchResult = [Tree (U.Judgment U.DTT) UDTTrule]
 -- data InferenceResult = InferenceResult [([CP.Node], QT.ProofSearchResult)] deriving (Eq)
@@ -103,6 +106,7 @@ choice :: [[a]] -> [[a]]
 choice [] = [[]]
 choice (x:xs) = [(y:ys) | y <- x, ys <- choice xs]
 
+{-
 instance HTML.MathML InferenceResult where
   toMathML (InferenceResult (QT.ListEx (results,errMsg))) =
     T.concat $ (flip map) results $ \(infPairs,ccgNodes,srs,allsigs,checkedSrs) -> --,proofSearchQuery,proofSearchResults) ->
@@ -122,6 +126,7 @@ instance HTML.MathML InferenceResult where
         , "<hr />"
         --, T.concat $ map wrapMathML checkedSrs 
         ]
+-}
 
   {-
     T.concat [

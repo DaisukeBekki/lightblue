@@ -4,9 +4,9 @@ module DTS.QueryTypes (
   -- * Type system of UDTT
   DTTrule(..)
   -- * ListEx monad
-  , ListEx(..)
-  , exception
-  , record
+  --, ListEx(..)
+  --, exception
+  --, record
   -- * UDTT type check
   , TypeCheckQuery(..)
   , TypeCheckResult(..)
@@ -24,6 +24,7 @@ module DTS.QueryTypes (
 import Data.Bifunctor (second)       --base
 import qualified Control.Applicative as M --base
 import qualified Control.Monad as M       --base
+import ListT (ListT)                      --list-t
 import qualified Data.Text.Lazy as T --text
 import Interface.Text
 import Interface.TeX
@@ -66,6 +67,7 @@ instance MathML DTTrule where
     "</mi>"
     ]
 
+{-
 -- | ListEx Monad (List with exceptions)
 
 newtype ListEx a = ListEx { result :: [(a, T.Text)] }
@@ -106,6 +108,7 @@ exception msg = ListEx [((),msg)]
 
 record :: T.Text -> ListEx ()
 record msg = ListEx [(unit,msg)]
+-}
 
 -- | Type checking in DTT
 
@@ -121,7 +124,7 @@ instance SimpleText TypeCheckQuery where
 
 type TypeCheckResult = Tree DTTrule (U.Judgment DTT)
 
-type TypeChecker = Prover -> TypeCheckQuery -> ListEx TypeCheckResult
+type TypeChecker = Prover -> TypeCheckQuery -> ListT IO TypeCheckResult
 
 data TypeInferQuery = TypeInferQuery {
   sig :: U.Signature
@@ -132,7 +135,7 @@ data TypeInferQuery = TypeInferQuery {
 instance SimpleText TypeInferQuery where
   toText (TypeInferQuery _ ctx trm) = T.concat [toText ctx, " |- ", toText trm, " : ?"]
 
-type TypeInfer = Prover -> TypeInferQuery -> ListEx TypeCheckResult
+type TypeInfer = Prover -> TypeInferQuery -> ListT IO TypeCheckResult
 
 -- | Proof Search in DTT
 
@@ -150,9 +153,9 @@ data ProofSearchQuery = ProofSearchQuery {
   , typ :: U.Preterm DTT
   } deriving (Eq, Show)
 
-type ProofSearchResult = [Tree DTTrule (U.Judgment DTT)]
+type ProofSearchResult = Tree DTTrule (U.Judgment DTT)
 
-type Prover = ProofSearchSetting -> ProofSearchQuery -> ProofSearchResult
+type Prover = ProofSearchSetting -> ProofSearchQuery -> ListT IO ProofSearchResult
 
 instance MathML ProofSearchQuery where
   toMathML ProofSearchQuery{..} = 
@@ -164,6 +167,7 @@ instance MathML ProofSearchQuery where
         sig' = U.fromDeBruijnSignature sig
     in T.concat ["<mrow>", toMathML vcontext', "<mo>&vdash;</mo><mo>?</mo><mo>:</mo><mstyle mathcolor='blue' mathbackground='white'>", toMathML vtyp', "</mstyle></mrow>"]
 
+{-
 instance MathML ProofSearchResult where
   toMathML results =
     let n = length results in
@@ -177,6 +181,7 @@ instance MathML ProofSearchResult where
         toMathML $ second U.fromDeBruijnJudgment diagram,
         "</mrow>"
         ]) $ zip [1..] results
+-}
 
 {-
 data TypeCheckError = IndexOutOfBounds

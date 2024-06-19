@@ -40,6 +40,7 @@ dependencies:
   - filepath >= 1.4
   - mtl >= 2.2.2
   - serialise >= 0.2.4
+  - list-t >= 1.0.0.0
 
 library:
   source-dirs: src
