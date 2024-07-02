@@ -690,88 +690,74 @@ membership goal =
 
 piElim goal =
   case acceptableType QT.PiE goal False [(A.Conclusion UDdB.Kind)] of
-    (Nothing,message) -> ([],message)
+    (Nothing,message) -> -- point1 : typeMisMatch
+      ([],message)
     (Just arrowType,_) -> 
       let (sig,var) = conFromGoal goal
           maybeTerm = termFromGoal goal
-          justTerms = let -- [b,a,f] for (f(a))(b)
+          termsInProofTerm = let -- [b,a,f] for (f(a))(b)
             maybeTermsInAppTerm appTerm =
                 case appTerm of 
                   A.ArrowApp f t ->
                     t : (maybeTermsInAppTerm f)
                   f -> [f]
             in maybe [] maybeTermsInAppTerm maybeTerm
-      in if length justTerms == 1 
+          termIsNotAppType = (length termsInProofTerm == 1) -- When termsInProofTerm is a list with one element, the term is not appType
+          isDeduce = null termsInProofTerm
+          (env',b') = case arrowType of A.Arrow env b -> (env,b) ; _ -> ([],arrowType)
+      in if termIsNotAppType -- point2 : termMisMatch
         then ([],exitMessage (TermMisMatch maybeTerm) QT.PiE)
         else
           let
             argNumAndFunctions = -- return [(the num of args,functionTree) pair]
               let forwarded = F.forwardContext sig var
-                  argNumAndFunction functionTree r = -- return Maybe (the num of args,functionTree) pair "the num of args" is the num `function` need to gain `r`
+                  argNumAndFunction functionTree = -- return Maybe (the num of args,functionTree) pair "the num of args" is the num `function` need to gain `r`
                     let canBeFunctionJudgment = A.downSide' functionTree
                         canBeFunctionTerm = A.termfromAJudgment canBeFunctionJudgment
                     in
                       case A.typefromAJudgment canBeFunctionJudgment of
                         A.Arrow env b -> 
-                          case r of
-                            A.Arrow env' b' -> 
-                              let d = length env - length env'
-                              in 
-                                if d >= 0
-                                    &&
-                                    A.canBeSame (length env) b (A.shiftIndices b' d 0)
-                                    &&
-                                    ( null justTerms
-                                      ||
-                                    (((length justTerms) == (d+1)) && canBeFunctionTerm == last justTerms)
-                                    )
-                                    &&
-                                    all (\((s,num),t) -> A.canBeSame (num + d) s t) 
-                                      (zip (zip (take (length env') env) [0..]) (map (\c' -> A.shiftIndices c' d 0) env'))
-                                then M.Just (d,functionTree) 
-                                else M.Nothing
-                            b' -> 
-                              if 
-                                A.canBeSame (length env) b (A.shiftIndices b' (length env) 0) 
-                                &&
-                                (
-                                null justTerms
-                                  ||
-                                (((length justTerms) == (1 + (length env))) && canBeFunctionTerm == last justTerms)
-                                )
-                              then M.Just (length env,functionTree) 
-                              else M.Nothing
+                          let d = (length env) - (length env')
+                          in 
+                            if  -- checkif deduce or Typecheck
+                              ( isDeduce
+                                || -- if typecheck, we have to use only function specified in the term
+                              (((length termsInProofTerm) == (d+1)) && canBeFunctionTerm == last termsInProofTerm)
+                              )
+                              && -- If target is Arrow type such as A->B, we can use only functions with more arguments than arrowType such as C->A->B which has 2 args.
+                              d >= 0
+                              && -- exclude A -> C for proofsearch about B
+                              A.canBeSame d (A.betaReduce $ A.arrowNotat $ A.Arrow (take (length env') env) b) (A.betaReduce $ A.arrowNotat $ A.shiftIndices (A.Arrow env' b') d 0)
+                            then M.Just (d,functionTree) 
+                            else M.Nothing
                         _ -> M.Nothing
               in
-                M.mapMaybe 
-                  (\forwardedTree -> argNumAndFunction forwardedTree arrowType) 
-                  (WB.trees forwarded)
+                M.mapMaybe argNumAndFunction (WB.trees forwarded)
             subgoalsetForFunctions =
               let subgoalsetForFunction (argNum,functionTree) = 
                     let functionJudgment = A.downSide' functionTree
-                        dSide = 
+                        dSide =
                           let
-                            arrowTerm = A.betaReduce $ foldl A.ArrowApp (A.termfromAJudgment functionJudgment) $ reverse $ if null justTerms then map A.aVar  [(-argNum)..(-1)] else init justTerms
+                            arrowTerm = A.betaReduce $ foldl A.ArrowApp (A.termfromAJudgment functionJudgment) $ reverse $ if isDeduce then map A.aVar  [(-argNum)..(-1)] else init termsInProofTerm
                           in A.AJudgment sig var arrowTerm arrowType
-                        unformattedFunctionType = -- format the function ; if the (function,result) is ([a,b]->c,b->c), the term will be ([a]->([b]->c))
-                          case A.typefromAJudgment functionJudgment of
-                            A.Arrow formerLst latter ->
-                              let notArgFormerNum = length formerLst - argNum
+                        subgoals =
+                          let
+                            A.Arrow args result = -- format the function ; if the (function,result) is ([a,b]->c,b->c), the term will be ([a]->([b]->c))
+                              let A.Arrow formerLst latter = A.typefromAJudgment functionJudgment
+                                  notArgFormerNum = length formerLst - argNum
                               in A.Arrow (drop notArgFormerNum formerLst) (A.arrowNotat $ A.Arrow (take notArgFormerNum formerLst) latter)  
-                        parentLsts = -- ex : [(4,[1,3]),(3,[1,3]),(2,[]),(1,[0,1]),(0,[])] for [ y0:entity, y1:var 1(var 0),y2:entity ->type,y3:var3(var 1)] => var 1(var 3) 
-                          case unformattedFunctionType of A.Arrow args result -> reverse $ zipWith (\term num -> (num,A.varsInaTerm term)) (reverse (result:args)) [0..]
-                        subgoalForArg idInLstFromOld = 
-                          case unformattedFunctionType of
-                            A.Arrow args result ->
+                            parentLsts = -- ex : [(4,[1,3]),(3,[1,3]),(2,[]),(1,[0,1]),(0,[])] for [ y0:entity, y1:var 1(var 0),y2:entity ->type,y3:var3(var 1)] => var 1(var 3) 
+                              reverse $ zipWith (\term num -> (num,A.varsInaTerm term)) (reverse (result:args)) [0..]
+                            subgoalForArg idInLstFromOld = 
                               let targetArg = A.shiftIndices ((reverse args) !! idInLstFromOld) (-idInLstFromOld) 0
-                                  goal = Goal sig var (if null justTerms then M.Nothing else (M.Just $ (reverse $ init justTerms) !! idInLstFromOld)) [targetArg]
+                                  goal = Goal sig var (if isDeduce then M.Nothing else (M.Just $ (reverse $ init termsInProofTerm) !! idInLstFromOld)) [targetArg]
                                   substLst = 
                                     M.maybe [] (\parentIds -> map (\refNum -> SubstSet [] (convertToSubstableTerm (A.aVar refNum,idInLstFromOld) 0) ) (filter (< idInLstFromOld) $ L.sort parentIds)) (lookup idInLstFromOld parentLsts)
-                                  clueWithResult = case head parentLsts of (resultIdFromOld,parentLst) -> if any (==resultIdFromOld-idInLstFromOld-1) parentLst then M.Just (convertToSubstableTerm (result,resultIdFromOld) idInLstFromOld,arrowType) else M.Nothing
+                                  clueWithResult = let (resultIdFromOld,parentLst) = head parentLsts in if any (==resultIdFromOld-idInLstFromOld-1) parentLst then M.Just (convertToSubstableTerm (result,resultIdFromOld) idInLstFromOld,arrowType) else M.Nothing
                                   clueWithArg =  -- y0-clueAboutArg | [(var 0 (var -1),var -2=-1+0-1)] / y1-clueAboutArg | [(var 1 (var -1),var -3=-1+1-3)]
-                                      M.mapMaybe (\(argIdFromOld,parentLst) -> if any (==argIdFromOld-idInLstFromOld-1) parentLst && ( argIdFromOld < argNum ) then M.Just (convertToSubstableTerm ((reverse args) !! argIdFromOld,argIdFromOld) idInLstFromOld,A.aVar (-1+idInLstFromOld-argIdFromOld)) else M.Nothing) parentLsts
-                              in SubGoal goal substLst (clueWithArg,clueWithResult)
-                        subgoals = {-- D.trace ("parentLst for " ++ (show unformattedFunctionType) ++ " is " ++ (show parentLsts)) $--}  map subgoalForArg [0..(argNum-1)] 
+                                    M.mapMaybe (\(argIdFromOld,parentLst) -> if any (==argIdFromOld-idInLstFromOld-1) parentLst && ( argIdFromOld < argNum ) then M.Just (convertToSubstableTerm ((reverse args) !! argIdFromOld,argIdFromOld) idInLstFromOld,A.aVar (-1+idInLstFromOld-argIdFromOld)) else M.Nothing) parentLsts
+                                in SubGoal goal substLst (clueWithArg,clueWithResult)
+                          in map subgoalForArg [0..(argNum-1)] 
                     in SubGoalSet QT.PiE (M.Just functionTree) subgoals dSide
               in map subgoalsetForFunction argNumAndFunctions
       in (subgoalsetForFunctions,"")
