@@ -421,7 +421,7 @@ piForm :: Rule
 -- |          |                +-------------+----------+-----------------------------------------------------------------------------------------+
 -- |          |                | subgoal2    | goal     | \( \Gamma , A1 \vdash \text{Nothing } : [man (var (0))]\)                               |
 -- |          |                |             +----------+-----------------------------------------------------------------------------------------+
--- |          |                |             | substLst | \( [([],var(-1))] \)                                                                     |
+-- |          |                |             | substLst | \( [([],var(-1))] \)                                                                    |
 -- |          |                |             +----------+-----------------------------------------------------------------------------------------+
 -- |          |                |             | clue     | \( ([  ] ,\text{Nothing})\)                                                             |
 -- |          |                +-------------+----------+-----------------------------------------------------------------------------------------+
@@ -455,7 +455,7 @@ piForm :: Rule
 -- |          |                +-------------+----------+-----------------------------------------------------------------------------------------+
 -- |          |                | subgoal2    | goal     | \( \Gamma, A1 \vdash \text{Just} h2: [man(var 0)]\)                                     |
 -- |          |                |             +----------+-----------------------------------------------------------------------------------------+
--- |          |                |             | substLst | \( [([],var(-1))] \)                                                                     |
+-- |          |                |             | substLst | \( [([],var(-1))] \)                                                                    |
 -- |          |                |             +----------+-----------------------------------------------------------------------------------------+
 -- |          |                |             | clue     | \( ([  ] ,\text{Nothing})\)                                                             |
 -- |          |                +-------------+----------+-----------------------------------------------------------------------------------------+
@@ -496,7 +496,7 @@ sigmaIntro :: Rule
 -- |          |                +-----------+--------+---------------------------------------------------------------------------------------------+
 -- |          |                | subgoal2  | goal   | \( \Gamma , A1 \vdash \text{Just} man(var (0)) :  [ type , kind ]  \)                       |
 -- |          |                |           +--------+---------------------------------------------------------------------------------------------+
--- |          |                |           |substLst| \( [([],var(-1))] \)                                                                         |
+-- |          |                |           |substLst| \( [([],var(-1))] \)                                                                        |
 -- |          |                |           +--------+---------------------------------------------------------------------------------------------+
 -- |          |                |           | clue   | \( ([],\text{Nothing}) \)                                                                   |
 -- |          |                +-----------+--------+---------------------------------------------------------------------------------------------+
@@ -681,13 +681,6 @@ membership goal =
               trees
       in (subgoalsets,"")
 
-
-{--
-  in B.debugLog (sig,var) aType depth setting "membership" (forwardResult{B.trees = matchLst,B.rStatus = B.sStatus setting})
-
-
---}
-
 piElim goal =
   case acceptableType QT.PiE goal False [(A.Conclusion UDdB.Kind)] of
     (Nothing,message) -> -- point1 : typeMisMatch
@@ -738,7 +731,7 @@ piElim goal =
                     let functionJudgment = A.downSide' functionTree
                         dSide =
                           let
-                            arrowTerm = A.betaReduce $ foldl A.ArrowApp (A.termfromAJudgment functionJudgment) $ reverse $ if isDeduce then map A.aVar  [(-argNum)..(-1)] else init termsInProofTerm
+                            arrowTerm = M.maybe (A.betaReduce $ foldl A.ArrowApp (A.termfromAJudgment functionJudgment) (reverse $ map A.aVar [(-argNum)..(-1)])) id maybeTerm
                           in A.AJudgment sig var arrowTerm arrowType
                         subgoals =
                           let
@@ -761,7 +754,6 @@ piElim goal =
                     in SubGoalSet QT.PiE (M.Just functionTree) subgoals dSide
               in map subgoalsetForFunction argNumAndFunctions
       in (subgoalsetForFunctions,"")
-
 
 piIntro goal =
   case acceptableType QT.PiI goal False [] of
@@ -787,7 +779,50 @@ piIntro goal =
 
 piForm goal = undefined
 
-sigmaIntro goal = undefined
+sigmaIntro goal = 
+  case acceptableType QT.SigmaI goal False [] of
+    (Nothing,message) -> -- point1 : typeMisMatch
+      ([],message)
+    (Just (A.ArrowSigma' for lat),_) -> 
+      let (sig,var) = conFromGoal goal
+          maybeTerm = termFromGoal goal
+          termsInProofTerm = let -- [a,b,c] for (a,(b,c))
+            maybeTermsInPairTerm pairTerm =
+                case pairTerm of 
+                  A.ArrowPair f t ->
+                    f : (maybeTermsInPairTerm t)
+                  f -> [f]
+            in maybe [] maybeTermsInPairTerm maybeTerm
+          termIsNotPairType = (length termsInProofTerm == 1) -- When termsInProofTerm is a list with one element, the term is not appType
+          isDeduce = null termsInProofTerm
+      in if termIsNotPairType -- point2 : termMisMatch
+        then ([],exitMessage (TermMisMatch maybeTerm) QT.SigmaI)
+        else
+          let subgoalset =  let 
+                dSide = let
+                  memNum = length $ lat:for
+                  arrowTerm = maybe (foldr A.ArrowPair (A.aVar (- memNum)) (map A.aVar (reverse $ [(-(memNum-1))..(-1)]))) id maybeTerm
+                  in A.AJudgment sig var arrowTerm (A.ArrowSigma' for lat)
+                subgoals =
+                  let parentLsts = -- ex : [(4,[1,3]),(3,[1,3]),(2,[]),(1,[0,1]),(0,[])] for [ y0:entity, y1:var 1(var 0),y2:entity ->type,y3:var3(var 1),var 1(var 3)] 
+                          reverse $ zipWith (\term num -> (num,A.varsInaTerm term)) (reverse (lat:for)) [0..]
+                      subgoalForMem idInLstFromOld = let
+                          targetMem = A.shiftIndices ((reverse $ lat:for) !! idInLstFromOld) (-idInLstFromOld) 0
+                          goal = Goal sig var (if isDeduce then M.Nothing else M.Just$ termsInProofTerm !! idInLstFromOld) [targetMem]
+                          substLst = M.maybe [] (\parentIds -> map (\refNum -> SubstSet [] (convertToSubstableTerm (A.aVar refNum,idInLstFromOld) 0) ) (filter (< idInLstFromOld) $ L.sort parentIds)) (lookup idInLstFromOld parentLsts)
+                          clues = --
+                            M.mapMaybe 
+                              (\(argIdFromOld,parentLst) -> 
+                                if any (==argIdFromOld-idInLstFromOld-1) parentLst 
+                                  then M.Just (convertToSubstableTerm ((reverse (lat:for)) !! argIdFromOld,argIdFromOld) idInLstFromOld,A.aVar (-1+idInLstFromOld-argIdFromOld)) 
+                                  else M.Nothing)
+                              parentLsts
+                        in SubGoal goal substLst (clues,M.Nothing)
+                  in map subgoalForMem [0..(length for)]
+                in SubGoalSet QT.SigmaI M.Nothing subgoals dSide
+            in ([subgoalset],"")
+    (Just a,message) -> -- point3 : typeMisMatch
+      ([],exitMessage (TypeMisMatch a) QT.SigmaI)
 
 sigmaForm goal = undefined
 
