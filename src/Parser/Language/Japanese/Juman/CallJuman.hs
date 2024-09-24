@@ -12,15 +12,17 @@ A module for compound nouns in Japanese.
 -}
 module Parser.Language.Japanese.Juman.CallJuman (
   -- jumanCompoundNouns,
-  kwjaCompoundNouns
+  kwjaCompoundNouns,
   ) where
 
 import Prelude as P
 import qualified Data.Text.Lazy as T                 --text
 import qualified Data.Text.Lazy.IO as T              --text
 import qualified System.Process as S                 --process
+import qualified Shelly as S            -- shelly
 import Parser.CCG
 import qualified Parser.Language.Japanese.Templates as TPL
+import Debug.Trace
 
 
 -- | Main function: jumaCompoundNouns
@@ -63,10 +65,10 @@ callJuman sentence = do
 -- | Call KWJA as an external process and returns a list of juman pos-tags
 callKWJA :: T.Text -> IO([JumanCompNoun])
 callKWJA sentence = do
-  (_, stdout, _, _) <- S.runInteractiveCommand $ T.unpack $ T.concat ["kwja --text ", sentence]
-  t <- T.hGetContents stdout
-  putStrLn $ T.unpack t
-  return $ findCompNouns [] $ getJumanPairs $ excludeSpecialPrefixes $ T.lines t 
+  t <- S.shelly $ S.silently $ S.escaping False $ S.cmd $ S.fromText $ T.toStrict $ T.concat ["kwja --text ", sentence]
+  let jumanPairs = getJumanPairs $ excludeSpecialPrefixes $ T.lines (T.fromStrict t)
+  return $ findCompNouns [] jumanPairs
+  -- return $ findCompNouns [] $ getJumanPairs $ excludeSpecialPrefixes $ T.lines t 
   where 
     -- (表層,品詞,品詞細分,（動詞なら）活用形)の4つ組を取得
     getJumanPairs :: [T.Text] -> [JumanPair]
@@ -75,7 +77,7 @@ callKWJA sentence = do
     -- EOSまでの行を取得し、@+*から始まる行を除外する
     excludeSpecialPrefixes :: [T.Text] -> [T.Text]
     excludeSpecialPrefixes text = 
-      filter (\x -> not (isPrefixOfAny ["@","*","+"] x)) $ P.takeWhile (/= "EOS") text
+      filter (\x -> not (isPrefixOfAny ["@","*","+","#"] x)) $ P.takeWhile (/= "EOS") text 
 
 -- | Check if the given text is a prefix of any of the given prefixes
 isPrefixOfAny :: [T.Text] -> T.Text -> Bool
