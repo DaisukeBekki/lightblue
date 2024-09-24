@@ -50,7 +50,8 @@ setupLexicon sentence = do
   --  2. Setting up private lexicon
   let mylexiconFiltered = filter (\l -> T.isInfixOf (pf l) sentence) LEX.myLexicon
   --  3. Setting up compound nouns (returned from an execution of JUMAN)
-  jumanCN <- JU.jumanCompoundNouns (T.replace "―" "、" sentence)
+  -- jumanCN <- JU.jumanCompoundNouns (T.replace "―" "、" sentence)
+  jumanCN <- JU.kwjaCompoundNouns sentence
   --  4. Accumulating common nons and proper names entries
   let commonnouns = map (\(hyoki, (daihyo,score')) -> lexicalitem hyoki "(CN)" score' N (commonNounSR daihyo)) $ M.toList cn
   let propernames = map (\(hyoki, (daihyo,score')) -> lexicalitem hyoki "(PN)" score' ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) (properNameSR daihyo)) $ M.toList pn
