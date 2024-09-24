@@ -65,6 +65,7 @@ callKWJA :: T.Text -> IO([JumanCompNoun])
 callKWJA sentence = do
   (_, stdout, _, _) <- S.runInteractiveCommand $ T.unpack $ T.concat ["kwja --text ", sentence]
   t <- T.hGetContents stdout
+  putStrLn $ T.unpack t
   return $ findCompNouns [] $ getJumanPairs $ excludeSpecialPrefixes $ T.lines t 
   where 
     -- (表層,品詞,品詞細分,（動詞なら）活用形)の4つ組を取得
