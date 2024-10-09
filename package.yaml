@@ -37,6 +37,7 @@ dependencies:
   - hexpat >= 0.20
   - parsec >= 3.1.14
   - filepath >= 1.4
+  - shelly >= 1.8.1
 
 library:
   source-dirs: src
@@ -94,4 +95,3 @@ tests:
     main:         testJumanDicSettings.hs
     ghc-options:  [-threaded, -rtsopts, -with-rtsopts=-N]
     dependencies: lightblue
-
