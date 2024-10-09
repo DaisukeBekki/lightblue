@@ -17,10 +17,15 @@ $ brew install haskell-stack
 ```
 See https://docs/haskellstack.org/en/stable/README/#how-to-install for details.
 
-### Prerequisite 2: JUMAN++
+### Prerequisite 2: KWJA
 The followint tools must be installed before executing *lightblue*.
 
-[JUMAN (a User-Extensible Morphological Analyzer for Japanese)](http://nlp.ist.i.kyoto-u.ac.jp/EN/index.php?JUMAN) (>= version 7.0)
+- [KWJA (Japanese text analyzer)](https://github.com/ku-nlp/kwja)
+
+<!-- ### Prerequisite 2: JUMAN++ -->
+<!-- The followint tools must be installed before executing *lightblue*.
+
+[JUMAN (a User-Extensible Morphological Analyzer for Japanese)](http://nlp.ist.i.kyoto-u.ac.jp/EN/index.php?JUMAN) (>= version 7.0) -->
 
 [//]: # (1. blas and lapack )
 [//]: # (`sudo apt-get install libblas-dev liblapack-dev` )
