@@ -1,5 +1,5 @@
 name:         lightblue
-version:      0.2.3
+version:      0.3.0
 description:  Please see the README on GitHub at <https://github.com/DaisukeBekki/lightblue#README.md>
 homepage:     https://github.com/DaisukeBekki/lightblue
 category:     CCG Parser, Dependent Type Prover
@@ -66,9 +66,12 @@ library:
   - Interface.HTML
   - Interface.SVG
   - Interface.Tree
-  - DTS.Labels
+  - DTS.Index
+  - DTS.GeneralTypeQuery
   - DTS.UDTTdeBruijn
-  - DTS.UDTTvarName
+  - DTS.UDTTwithName
+  - DTS.DTTdeBruijn
+  - DTS.DTTwithName
   - DTS.QueryTypes
   - DTS.TypeChecker
   - DTS.NaturalLanguageInference

@@ -43,8 +43,7 @@ module DTS.Prover.Wani.Arrowterm
   betaReduce
 ) where
 
-import qualified DTS.UDTTdeBruijn as UDdB -- UDTT
-import DTS.Labels (DTT)                   -- UDTT
+import qualified DTS.DTTdeBruijn as DdB   -- DTT
 import qualified Data.Text.Lazy as T      -- text
 import qualified Data.List as L           -- base
 import Interface.Text ( SimpleText(..) )
@@ -57,7 +56,7 @@ import qualified DTS.QueryTypes as QT
 data ArrowSelector = ArrowFst | ArrowSnd deriving (Eq, Show)
 -- | Arrowterm
 data Arrowterm =
-  Conclusion (UDdB.Preterm DTT) -- ^ 末尾の部分
+  Conclusion DdB.Preterm -- ^ 末尾の部分
   | ArrowSigma' AEnv Arrowterm 
   | ArrowApp Arrowterm Arrowterm -- ^ App型
   | ArrowPair Arrowterm Arrowterm -- ^ Pair型
@@ -138,37 +137,37 @@ treatParentheses str l r=
   map snd $ filter (\((a,_),_)-> a /= 0) $ foldr (\ch (((num,cnt),(pl,st)) : lst) -> let num' = if ch == l then num - 1 else if ch ==  r then  num + 1 else num; in if (num == num' || (num > 0 &&num' >0)) then ((num',cnt+1),(pl,ch:st)):lst else ((num',cnt + 1),(length str - cnt,[])):((num,cnt),(pl,st)):lst) [((0,0),(0," "))] str
 
 aVar :: Int -> Arrowterm
-aVar num = Conclusion (UDdB.Var num)
+aVar num = Conclusion (DdB.Var num)
 
 aCon :: T.Text -> Arrowterm
-aCon txt =  Conclusion (UDdB.Con txt)
+aCon txt =  Conclusion (DdB.Con txt)
 
 aType :: Arrowterm
-aType = Conclusion UDdB.Type
+aType = Conclusion DdB.Type
 
-dtToArrowSelector :: UDdB.Selector -> ArrowSelector
-dtToArrowSelector UDdB.Fst = ArrowFst
-dtToArrowSelector UDdB.Snd = ArrowSnd
+dtToArrowSelector :: DdB.Selector -> ArrowSelector
+dtToArrowSelector DdB.Fst = ArrowFst
+dtToArrowSelector DdB.Snd = ArrowSnd
 
-dtNotatSelector :: ArrowSelector -> UDdB.Selector
-dtNotatSelector ArrowFst = UDdB.Fst
-dtNotatSelector ArrowSnd = UDdB.Snd
+dtNotatSelector :: ArrowSelector -> DdB.Selector
+dtNotatSelector ArrowFst = DdB.Fst
+dtNotatSelector ArrowSnd = DdB.Snd
 
-arrow2DT :: Arrowterm -> (UDdB.Preterm DTT)
+arrow2DT :: Arrowterm -> (DdB.Preterm)
 arrow2DT (Conclusion a) = a
 arrow2DT (ArrowSigma' [] t)= arrow2DT t
-arrow2DT (ArrowSigma' (f:r) t)= arrow2DT (ArrowSigma' r (Conclusion (UDdB.Sigma (arrow2DT f)  (arrow2DT t))))
-arrow2DT (ArrowPair h t)= UDdB.Pair (arrow2DT h) (arrow2DT t)
-arrow2DT (ArrowApp a b) = UDdB.App (arrow2DT a) (arrow2DT b)
-arrow2DT (ArrowProj s p) = UDdB.Proj (dtNotatSelector s) (arrow2DT p)
-arrow2DT (ArrowLam p) = UDdB.Lam (arrow2DT p)
+arrow2DT (ArrowSigma' (f:r) t)= arrow2DT (ArrowSigma' r (Conclusion (DdB.Sigma (arrow2DT f)  (arrow2DT t))))
+arrow2DT (ArrowPair h t)= DdB.Pair (arrow2DT h) (arrow2DT t)
+arrow2DT (ArrowApp a b) = DdB.App (arrow2DT a) (arrow2DT b)
+arrow2DT (ArrowProj s p) = DdB.Proj (dtNotatSelector s) (arrow2DT p)
+arrow2DT (ArrowLam p) = DdB.Lam (arrow2DT p)
 arrow2DT (Arrow [] t) = arrow2DT t
-arrow2DT (Arrow (f:r) t) = arrow2DT (Arrow r (Conclusion (UDdB.Pi (arrow2DT f)  (arrow2DT t))))
-arrow2DT (ArrowEq a b t) = UDdB.Eq (arrow2DT a) (arrow2DT b) (arrow2DT t)
+arrow2DT (Arrow (f:r) t) = arrow2DT (Arrow r (Conclusion (DdB.Pi (arrow2DT f)  (arrow2DT t))))
+arrow2DT (ArrowEq a b t) = DdB.Eq (arrow2DT a) (arrow2DT b) (arrow2DT t)
 
 thereIsVar :: Int -> Arrowterm -> Bool 
 thereIsVar num aTerm= case aTerm of
-  Conclusion pr -> pr == UDdB.Var num
+  Conclusion pr -> pr == DdB.Var num
   ArrowSigma' ars ar -> 
     let arsLen = length ars
     in or $ zipWith (\num' a ->  thereIsVar (num + arsLen - num') a) [0..] (ar:ars)
@@ -187,7 +186,7 @@ varsInaTerm aTerm = L.nub $ varsInaTerm' 0 $arrowNotat aTerm
 varsInaTerm' :: Int ->Arrowterm ->  [Int]
 varsInaTerm' base aTerm = 
   case aTerm of
-    Conclusion (UDdB.Var num) -> [num-base]
+    Conclusion (DdB.Var num) -> [num-base]
     Conclusion _ -> []
     ArrowSigma' ars ar -> concatMap (\(num,a) -> (varsInaTerm' (base+num) a)) (zip [0..] $reverse $ ar:ars)
     ArrowApp ar ar' -> concatMap (varsInaTerm' base) [ar,ar'] 
@@ -198,29 +197,29 @@ varsInaTerm' base aTerm =
     ArrowEq ar ar' ar2 -> concatMap (varsInaTerm' base) [ar,ar',ar2]  
 
 
--- | 入力された(UDdB.Preterm DTT)をArrowTermに変換する
-dt2Arrow :: (UDdB.Preterm DTT) -> Arrowterm
-dt2Arrow UDdB.Type = Conclusion UDdB.Type
-dt2Arrow (UDdB.Var i) = Conclusion $ UDdB.Var i
-dt2Arrow (UDdB.Con i) = Conclusion $ UDdB.Con i
-dt2Arrow (UDdB.Not i) =Arrow [dt2Arrow i] $Conclusion UDdB.Bot
-dt2Arrow (UDdB.Pi h t) =
+-- | 入力された(DdB.Preterm)をArrowTermに変換する
+dt2Arrow :: DdB.Preterm -> Arrowterm
+dt2Arrow DdB.Type = Conclusion DdB.Type
+dt2Arrow (DdB.Var i) = Conclusion $ DdB.Var i
+dt2Arrow (DdB.Con i) = Conclusion $ DdB.Con i
+dt2Arrow (DdB.Not i) =Arrow [dt2Arrow i] $Conclusion DdB.Bot
+dt2Arrow (DdB.Pi h t) =
   case dt2Arrow t of
     Arrow env t' -> Arrow (env ++ [dt2Arrow h]) t'
     t' -> Arrow [dt2Arrow h] t'
-dt2Arrow (UDdB.Sigma h t) =
+dt2Arrow (DdB.Sigma h t) =
   case dt2Arrow t of
     ArrowSigma' env t' -> ArrowSigma' (env ++ [dt2Arrow h]) t'
     t' -> ArrowSigma' [dt2Arrow h] t'
-dt2Arrow (UDdB.App a b) =
+dt2Arrow (DdB.App a b) =
   ArrowApp (dt2Arrow a) (dt2Arrow b)
-dt2Arrow (UDdB.Pair a b) =
+dt2Arrow (DdB.Pair a b) =
   ArrowPair (dt2Arrow a) (dt2Arrow b)
-dt2Arrow (UDdB.Proj selector p) =
+dt2Arrow (DdB.Proj selector p) =
   ArrowProj (dtToArrowSelector selector) (dt2Arrow p)
-dt2Arrow (UDdB.Lam p) =
+dt2Arrow (DdB.Lam p) =
   ArrowLam (dt2Arrow p)
-dt2Arrow (UDdB.Eq a b t) =
+dt2Arrow (DdB.Eq a b t) =
   ArrowEq (dt2Arrow a) (dt2Arrow b) (dt2Arrow t)
 dt2Arrow dt= Conclusion dt
 
@@ -236,7 +235,7 @@ betaReduce aterm = case aterm of
     Conclusion t -> Conclusion t
     ArrowSigma' ars ar -> ArrowSigma' (map betaReduce ars) (betaReduce ar)
     ArrowApp ar ar' -> case betaReduce ar of 
-      ArrowLam a -> betaReduce $ shiftIndices (arrowSubst a (shiftIndices ar' 1 0) (Conclusion $UDdB.Var 0)) (-1) 0
+      ArrowLam a -> betaReduce $ shiftIndices (arrowSubst a (shiftIndices ar' 1 0) (Conclusion $DdB.Var 0)) (-1) 0
       e -> ArrowApp e (betaReduce ar')
     ArrowPair ar ar' -> ArrowPair (betaReduce ar) (betaReduce ar')
     ArrowProj as ar ->  case betaReduce ar of
@@ -246,19 +245,19 @@ betaReduce aterm = case aterm of
     Arrow ars ar -> Arrow (map betaReduce ars) (betaReduce ar)
     ArrowEq ar ar' ar2 ->  ArrowEq (betaReduce ar) (betaReduce ar') (betaReduce ar2)
 
---  In `fromDT2A`, I use `UDdB.toDTT` and `UDdB.toUDTT` and the term convert into `(UDdB.Preterm DTT)` -> `(UDdB.Preterm UDdB.UDTT)` -> `(UDdB.Preterm DTT)`.
---  This implementation let me using existed function, `UDdB.betaReduce`.
+--  In `fromDT2A`, I use `DdB.toDTT` and `DdB.toUDTT` and the term convert into `(DdB.Preterm)` -> `(DdB.Preterm DdB.UDTT)` -> `(DdB.Preterm)`.
+--  This implementation let me using existed function, `DdB.betaReduce`.
 --  `A.betaReduce` is used to format a term about an list
-fromDT2A :: (UDdB.Preterm DTT) -> Arrowterm
-fromDT2A = betaReduce . arrowNotat . dt2Arrow . UDdB.betaReduce
+fromDT2A :: DdB.Preterm -> Arrowterm
+fromDT2A = betaReduce . arrowNotat . dt2Arrow . DdB.betaReduce
 
 shiftIndices :: Arrowterm -> Int -> Int -> Arrowterm
-shiftIndices term d i= (arrowNotat . dt2Arrow) $ UDdB.shiftIndices (arrow2DT term) d i
+shiftIndices term d i= (arrowNotat . dt2Arrow) $ DdB.shiftIndices (arrow2DT term) d i
 
 reduce :: Arrowterm -> Arrowterm
-reduce = dt2Arrow . UDdB.betaReduce . arrow2DT
+reduce = dt2Arrow . DdB.betaReduce . arrow2DT
 
-type SUEnv = [(T.Text,(UDdB.Preterm DTT))]
+type SUEnv = [(T.Text, DdB.Preterm)]
 type AEnv = [Arrowterm]
 type SAEnv = [(T.Text,Arrowterm)]
 type Context = (SAEnv,AEnv)
@@ -268,7 +267,7 @@ contextLen (sigCon,varCon) = length sigCon + length varCon
 
 {--
 instance SimpleText SAEnv where
-  toText sigs = toText (map (Data.Bifunctor.second (UDdB.toUDTT . arrow2DT)) sigs)
+  toText sigs = toText (map (Data.Bifunctor.second (DdB.toUDTT . arrow2DT)) sigs)
 --}
 
 instance SimpleText SAEnv where
@@ -282,11 +281,11 @@ data AJudgment =
   Arrowterm -- ^ type
     deriving (Eq,Show)
 
-a2dtJudgment :: AJudgment -> UDdB.Judgment DTT
-a2dtJudgment (AJudgment con env aterm atype) = UDdB.Judgment (map (\(a,b)->(a,arrow2DT b)) con) (map arrow2DT env) (arrow2DT aterm) (arrow2DT atype)
+a2dtJudgment :: AJudgment -> DdB.Judgment
+a2dtJudgment (AJudgment con env aterm atype) = DdB.Judgment (map (\(a,b)->(a,arrow2DT b)) con) (map arrow2DT env) (arrow2DT aterm) (arrow2DT atype)
 
-dt2aJudgment :: UDdB.Judgment DTT -> AJudgment
-dt2aJudgment (UDdB.Judgment con env dtterm dttype) = AJudgment (map (\(a,b) -> (a, dt2Arrow b)) con) (map dt2Arrow env) (dt2Arrow dtterm) (dt2Arrow dttype)
+dt2aJudgment :: DdB.Judgment -> AJudgment
+dt2aJudgment (DdB.Judgment con env dtterm dttype) = AJudgment (map (\(a,b) -> (a, dt2Arrow b)) con) (map dt2Arrow env) (dt2Arrow dtterm) (dt2Arrow dttype)
 
 typefromAJudgment :: AJudgment -> Arrowterm
 typefromAJudgment ( AJudgment con env aterm atype) = atype
@@ -297,22 +296,22 @@ termfromAJudgment ( AJudgment con env aterm atype) = aterm
 envfromAJudgment :: AJudgment -> Context
 envfromAJudgment ( AJudgment con env aterm atype) = (con,env)
 
-dnPr = UDdB.Pi UDdB.Type (UDdB.Pi (UDdB.Pi (UDdB.Pi (UDdB.Var 0) UDdB.Bot) UDdB.Bot) (UDdB.Var 1))
+dnPr = DdB.Pi DdB.Type (DdB.Pi (DdB.Pi (DdB.Pi (DdB.Var 0) DdB.Bot) DdB.Bot) (DdB.Var 1))
 
-subst :: (UDdB.Preterm DTT) -> (UDdB.Preterm DTT) -> (UDdB.Preterm DTT) -> (UDdB.Preterm DTT)
+subst :: DdB.Preterm -> DdB.Preterm -> DdB.Preterm -> DdB.Preterm 
 subst preterm l i =
   if preterm == i then
     l
   else
     case preterm of
-      UDdB.Pi a b -> UDdB.Pi (subst a l i) (subst b (UDdB.shiftIndices l 1 0)  (UDdB.shiftIndices i 1 0))
-      UDdB.Not m -> UDdB.Not (subst m l i)
-      UDdB.Lam m -> UDdB.Lam (subst m (UDdB.shiftIndices l 1 0) (UDdB.shiftIndices i 1 0))
-      UDdB.App m n    -> UDdB.App (subst m l i) (subst n l i)
-      UDdB.Sigma a b  -> UDdB.Sigma (subst a l i) (subst b (UDdB.shiftIndices l 1 0) (UDdB.shiftIndices i 1 0))
-      UDdB.Pair m n   -> UDdB.Pair (subst m l i) (subst n l i)
-      UDdB.Proj s m   -> UDdB.Proj s (subst m l i)
-      UDdB.Eq a m n   -> UDdB.Eq (subst a l i) (subst m l i) (subst n l i)
+      DdB.Pi a b -> DdB.Pi (subst a l i) (subst b (DdB.shiftIndices l 1 0)  (DdB.shiftIndices i 1 0))
+      DdB.Not m -> DdB.Not (subst m l i)
+      DdB.Lam m -> DdB.Lam (subst m (DdB.shiftIndices l 1 0) (DdB.shiftIndices i 1 0))
+      DdB.App m n    -> DdB.App (subst m l i) (subst n l i)
+      DdB.Sigma a b  -> DdB.Sigma (subst a l i) (subst b (DdB.shiftIndices l 1 0) (DdB.shiftIndices i 1 0))
+      DdB.Pair m n   -> DdB.Pair (subst m l i) (subst n l i)
+      DdB.Proj s m   -> DdB.Proj s (subst m l i)
+      DdB.Eq a m n   -> DdB.Eq (subst a l i) (subst m l i) (subst n l i)
       others -> others
 
 arrowSubst :: Arrowterm -- ^ origin
@@ -330,10 +329,10 @@ downSide' (UDT.Tree label node daughters) = node
 changeDownSide' :: UDT.Tree Arrowrule AJudgment -> AJudgment -> UDT.Tree Arrowrule AJudgment
 changeDownSide' (UDT.Tree label node daughters) newnode = UDT.Tree label newnode daughters
 
-aTreeTojTree' :: UDT.Tree Arrowrule AJudgment -> UDT.Tree QT.DTTrule (UDdB.Judgment DTT)
+aTreeTojTree' :: UDT.Tree Arrowrule AJudgment -> UDT.Tree QT.DTTrule DdB.Judgment
 aTreeTojTree' (UDT.Tree label node daughters)= UDT.Tree label (a2dtJudgment node) (map aTreeTojTree' daughters)
 
-jTreeToaTree' :: UDT.Tree QT.DTTrule (UDdB.Judgment DTT) -> UDT.Tree Arrowrule AJudgment
+jTreeToaTree' :: UDT.Tree QT.DTTrule DdB.Judgment -> UDT.Tree Arrowrule AJudgment
 jTreeToaTree' (UDT.Tree label node daughters)=UDT.Tree label (dt2aJudgment node) (map jTreeToaTree' daughters)
 
 -- | generate free constraint from given word
@@ -341,35 +340,35 @@ genFreeCon ::  Arrowterm -- ^ term
   -> String -- ^ "hoge"
   ->  Arrowterm
 genFreeCon term hoge =
-  if isFreeCon term ( Conclusion $ UDdB.Con $ T.pack hoge)
+  if isFreeCon term ( Conclusion $ DdB.Con $ T.pack hoge)
     then
-       Conclusion $ UDdB.Con $ T.pack hoge
+       Conclusion $ DdB.Con $ T.pack hoge
     else
       genFreeCon term $hoge++hoge
 
--- | whether UDdB.Con "hoge" is free or not
+-- | whether DdB.Con "hoge" is free or not
 isFreeCon ::  Arrowterm  -- ^ term
-  ->  Arrowterm  -- ^ UDdB.Con "hoge"
+  ->  Arrowterm  -- ^ DdB.Con "hoge"
   -> Bool
 isFreeCon term con=
   let term' =  arrowSubst term con con
-      term'' =  arrowSubst term ( Conclusion $ UDdB.Var 0) con
+      term'' =  arrowSubst term ( Conclusion $ DdB.Var 0) con
   in term' == term''
 
 --形だけ比較
 canBeSame :: Int ->   Arrowterm ->   Arrowterm -> Bool
-canBeSame _ (  Conclusion UDdB.Top) (  Conclusion UDdB.Top) = True
-canBeSame _ (  Conclusion UDdB.Bot) (  Conclusion UDdB.Bot) = True
-canBeSame _ (  Conclusion UDdB.Type) (  Conclusion UDdB.Type) = True
-canBeSame lim (  Conclusion (UDdB.Var anum)) (  Conclusion (UDdB.Var anum')) =
+canBeSame _ (  Conclusion DdB.Top) (  Conclusion DdB.Top) = True
+canBeSame _ (  Conclusion DdB.Bot) (  Conclusion DdB.Bot) = True
+canBeSame _ (  Conclusion DdB.Type) (  Conclusion DdB.Type) = True
+canBeSame lim (  Conclusion (DdB.Var anum)) (  Conclusion (DdB.Var anum')) =
   anum == anum' || anum <= lim
-canBeSame _ (Conclusion (UDdB.Con t)) (Conclusion (UDdB.Con t')) = t == t'
-canBeSame lim (  Conclusion (UDdB.Var anum)) a = 
+canBeSame _ (Conclusion (DdB.Con t)) (Conclusion (DdB.Con t')) = t == t'
+canBeSame lim (  Conclusion (DdB.Var anum)) a = 
   case a of 
     ArrowEq _ _ _ -> False
     _ -> True
   -- anum <= lim
-canBeSame lim a (  Conclusion (UDdB.Var anum))  = 
+canBeSame lim a (  Conclusion (DdB.Var anum))  = 
   case a of 
     ArrowEq _ _ _ -> False
     _ -> True
@@ -391,7 +390,7 @@ canBeSame lim other other' = False
 
 addApp ::Int -> Arrowterm -> Arrowterm
 addApp 0 base = base
-addApp num base = addApp (num - 1) $ ArrowApp (shiftIndices base 1 0) (Conclusion $ {-- DT.Var --} UDdB.Var 0)
+addApp num base = addApp (num - 1) $ ArrowApp (shiftIndices base 1 0) (Conclusion $ {-- DT.Var --} DdB.Var 0)
 
 addLam :: Int -> Arrowterm -> Arrowterm
 addLam 0 term = term

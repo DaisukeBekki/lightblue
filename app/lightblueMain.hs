@@ -24,9 +24,9 @@ import qualified Interface.Text as T
 import qualified Interface.HTML as I
 import qualified JSeM as J
 import qualified JSeM.XML as J
-import qualified DTS.UDTTdeBruijn as DTS
+import qualified DTS.UDTTdeBruijn as UDTT
+import qualified DTS.DTTdeBruijn as DTT
 import DTS.TypeChecker (typeCheck,typeInfer,nullProver)
-import DTS.QueryTypes (TypeCheckQuery(..),TypeInferQuery(..))
 import DTS.NaturalLanguageInference (ProverName(..),InferenceSetting(..),InferencePair(..),checkInference)
 --import qualified DTS.Prover.TypeChecker as TC
 --import qualified DTS.Prover.Wani.WaniBase as Wani
@@ -45,7 +45,7 @@ data Command =
   | Infer ProverName
   | Debug Int Int
   | Demo
-  | Treebank
+  -- | Treebank
   | JSeMParser
     deriving (Show, Eq)
 
@@ -105,9 +105,9 @@ optionParser =
       <> command "demo"
            (info (pure Demo)
                  (progDesc "sequentially shows parsing results of a given corpus. No local options." ))
-      <> command "treebank"
-           (info (pure Treebank)
-                 (progDesc "print a semantic treebank build from a given corpus. No local options" ))
+      -- <> command "treebank"
+      --      (info (pure Treebank)
+      --            (progDesc "print a semantic treebank build from a given corpus. No local options" ))
       <> command "jsemparser"
            (info (pure JSeMParser)
                  (progDesc "parse a jsem file. No local options" ))
@@ -158,7 +158,7 @@ inferOptionParser = Infer
   <$> option auto
     ( long "prover"
       <> short 'p'
-      <> metavar "Wani|Diag|Coq"
+      <> metavar "Wani|Null"
       <> showDefault
       <> value Wani
       <> help "Choose prover" )
@@ -240,8 +240,7 @@ lightblueMain (Options commands input filepath nbest beamw nsample iftime) = do
           inferenceSetting = InferenceSetting beamw nbest Nothing Nothing typeCheck proverName
       case proverName of
         Wani -> S.hPutStrLn handle $ I.headerOf I.HTML
-        Diag -> S.hPutStrLn handle $ I.headerOf I.HTML
-        Coq -> return ()
+        Null -> return ()
       case input of
         SENTENCES -> do -- lightblue infer -i sentence 
           let sentences = T.lines contents 
@@ -293,11 +292,11 @@ lightblueMain (Options commands input filepath nbest beamw nsample iftime) = do
     -- |
     lightblueMainLocal Demo contents = do
       processCorpus beamw $ T.lines contents
-    --
-    -- | Treebank Builder
-    --
-    lightblueMainLocal Treebank contents = do
-      I.treebankBuilder beamw $ T.lines contents
+    -- --
+    -- -- | Treebank Builder
+    -- --
+    -- lightblueMainLocal Treebank contents = do
+    --   I.treebankBuilder beamw $ T.lines contents
     --
     -- | JSeM Parser
     -- 
@@ -340,11 +339,11 @@ showStat = do
 -- | 
 test :: IO()
 test = do
-  let signature = [("entity", DTS.Type), ("evt",DTS.Type), ("f", DTS.Pi (DTS.Con "entity") DTS.Type)]
-      context = [(DTS.Con "entity")]
-      termA = DTS.Sigma (DTS.Con "entity") (DTS.App (DTS.Con "f") (DTS.Var 0))
+  let signature = [("entity", DTT.Type), ("evt",DTT.Type), ("f", DTT.Pi (DTT.Con "entity") DTT.Type)]
+      context = [(DTT.Con "dog")]
+      termA = UDTT.Sigma (UDTT.Con "entity") (UDTT.App (UDTT.Con "f") (UDTT.Var 0))
       -- typeA = DTS.Kind
-      tcq = TypeInferQuery signature context termA 
+      tcq = UDTT.TypeInferQuery signature context termA 
   typeCheckResults <- toList $ typeInfer nullProver tcq
   T.putStrLn $ T.toText $ head typeCheckResults
   --T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 0) DTS.Type

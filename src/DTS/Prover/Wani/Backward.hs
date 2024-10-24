@@ -4,7 +4,7 @@ module DTS.Prover.Wani.Backward (
     deduce
 ) where
 
-import qualified DTS.UDTTdeBruijn as UDdB
+import qualified DTS.DTTdeBruijn as DdB
 import qualified DTS.Prover.Wani.Arrowterm as A -- Aterm
 import qualified DTS.Prover.Wani.Forward as F  --Forward Inference
 import qualified Interface.Tree as UDT
@@ -68,9 +68,9 @@ nestdne (con1,aType1) (con2,aType2) =
   if A.contextLen con1 == (A.contextLen con2)+1
   then 
     case (aType2,con1,con2) of
-      (A.Arrow [aType] (A.Conclusion UDdB.Bot),(sEnv1,vEnv1),(sEnv2,vEnv2)) ->  
+      (A.Arrow [aType] (A.Conclusion DdB.Bot),(sEnv1,vEnv1),(sEnv2,vEnv2)) ->  
           (A.sameTerm (con1,aType1) (con2,aType)) && 
-            (con1 == (sEnv2,(A.Arrow [aType] (A.Conclusion UDdB.Bot)):vEnv2))
+            (con1 == (sEnv2,(A.Arrow [aType] (A.Conclusion DdB.Bot)):vEnv2))
       _ -> False
   else False
 
@@ -83,9 +83,9 @@ deduce sig var arrowType depth setting
       B.debugLog (sig,var) arrowType depth setting "Avoid endless loops."  (B.resultDef{B.rStatus = B.mergeStatus (B.sStatus setting) B.statusDef{B.usedMaxDepth = depth}})
   | otherwise = 
     case arrowType of
-      A.Conclusion UDdB.Kind -> -- The only term for `kind` is `type`.
+      A.Conclusion DdB.Kind -> -- The only term for `kind` is `type`.
         B.resultDef{
-          B.trees = [UDT.Tree QT.Var (A.AJudgment sig var (A.aType) (A.Conclusion UDdB.Kind)) []],
+          B.trees = [UDT.Tree QT.Var (A.AJudgment sig var (A.aType) (A.Conclusion DdB.Kind)) []],
           B.rStatus = B.mergeStatus (B.sStatus setting) B.statusDef{B.usedMaxDepth = depth}}
       _ -> 
         let result' = foldl -- If certain conditions are met, the proof may be rounded up without moving on to the next proof search.
@@ -104,8 +104,8 @@ deduce sig var arrowType depth setting
                       -- Currently, `arrowType` proof search is performed under environment `con`, and to prevent infinite loops, it is set to round up when `arrowType` proof search is needed under environment `con`(★).
               ( -- The stronger the rule, the later the timing of application is turned back. For example, `dne` can be used for any term, thus turning the execution later. This setting takes effect in combination with the rounding up of proof search using `B.allProof`.
                 [membership',piIntro',sigmaIntro',piElim'] 
-                  ++ [dne' | arrowType /= A.Conclusion UDdB.Bot && B.mode setting == B.WithDNE]
-                  ++ [efq' | arrowType /= A.Conclusion UDdB.Bot && B.mode setting == B.WithEFQ]
+                  ++ [dne' | arrowType /= A.Conclusion DdB.Bot && B.mode setting == B.WithDNE]
+                  ++ [efq' | arrowType /= A.Conclusion DdB.Bot && B.mode setting == B.WithEFQ]
               )
             result = result'{B.rStatus = (B.rStatus result'){B.deduceNgLst = B.deduceNgLst$B.sStatus setting}}{B.trees = L.nub$B.trees result'} -- excludes duplicate proof trees, and restore deduceNgList to its original state from ★ state
         in 
@@ -120,9 +120,9 @@ typecheck' :: B.TypecheckRule
 typecheck' sig var arrowTerm arrowType depth setting
   | depth > B.maxdepth setting = B.resultDef{B.errMsg = "depth @ typecheck",B.rStatus = B.mergeStatus (B.sStatus setting) B.statusDef{B.usedMaxDepth = depth}}
   | any (\(con',aTerm',aType')->A.sameCon (sig,var) con'&& A.sameTerm ((sig,var),arrowTerm) (con',aTerm') && A.sameTerm ((sig,var),arrowType) (con',aType')) (B.failedlst (B.sStatus setting)) = B.debugLogWithTerm (sig,var) arrowTerm arrowType depth setting "Failed in the past."  (B.resultDef{B.rStatus = B.mergeStatus (B.sStatus setting) B.statusDef{B.usedMaxDepth = depth}})
-  | B.falsum setting && arrowTerm == A.Conclusion UDdB.Bot && arrowType == A.aType = B.resultDef{B.trees = [UDT.Tree QT.Var (A.AJudgment sig var arrowTerm arrowType) []],B.rStatus = B.mergeStatus (B.sStatus setting) B.statusDef{B.usedMaxDepth = depth}} -- if `B.falsum` is true, the type for `false` is `type`.
-  | arrowTerm == A.Conclusion UDdB.Kind = B.debugLogWithTerm (sig,var) arrowTerm arrowType depth setting "kind cannot be a term."  B.resultDef{B.rStatus = B.mergeStatus (B.sStatus setting) B.statusDef{B.usedMaxDepth = depth}}
-  | arrowType == A.Conclusion UDdB.Kind = if arrowTerm == A.aType then B.resultDef{B.trees = [UDT.Tree QT.Con (A.AJudgment sig var arrowTerm arrowType) []],B.rStatus = B.mergeStatus (B.sStatus setting) B.statusDef{B.usedMaxDepth = depth}} else B.resultDef{B.rStatus = B.mergeStatus (B.sStatus setting) B.statusDef{B.usedMaxDepth = depth}}
+  | B.falsum setting && arrowTerm == A.Conclusion DdB.Bot && arrowType == A.aType = B.resultDef{B.trees = [UDT.Tree QT.Var (A.AJudgment sig var arrowTerm arrowType) []],B.rStatus = B.mergeStatus (B.sStatus setting) B.statusDef{B.usedMaxDepth = depth}} -- if `B.falsum` is true, the type for `false` is `type`.
+  | arrowTerm == A.Conclusion DdB.Kind = B.debugLogWithTerm (sig,var) arrowTerm arrowType depth setting "kind cannot be a term."  B.resultDef{B.rStatus = B.mergeStatus (B.sStatus setting) B.statusDef{B.usedMaxDepth = depth}}
+  | arrowType == A.Conclusion DdB.Kind = if arrowTerm == A.aType then B.resultDef{B.trees = [UDT.Tree QT.Con (A.AJudgment sig var arrowTerm arrowType) []],B.rStatus = B.mergeStatus (B.sStatus setting) B.statusDef{B.usedMaxDepth = depth}} else B.resultDef{B.rStatus = B.mergeStatus (B.sStatus setting) B.statusDef{B.usedMaxDepth = depth}}
   | otherwise = B.debugLogWithTerm (sig,var) arrowTerm arrowType depth setting "typeCheck" $
       let arrowType' = A.arrowNotat arrowType
           formResult = 
@@ -139,8 +139,8 @@ typecheck' sig var arrowTerm arrowType depth setting
             piElimResult
             (
               [membership',piIntro',sigmaIntro'] 
-                ++ [dne' | arrowType /= A.Conclusion UDdB.Bot && B.mode setting == B.WithDNE] 
-                ++ [efq' | arrowType /= A.Conclusion UDdB.Bot && B.mode setting == B.WithEFQ]
+                ++ [dne' | arrowType /= A.Conclusion DdB.Bot && B.mode setting == B.WithDNE] 
+                ++ [efq' | arrowType /= A.Conclusion DdB.Bot && B.mode setting == B.WithEFQ]
             )
           resultStatus = B.rStatus result
           failedlst = if null (B.trees result) then ((sig,var),arrowTerm,arrowType):(B.failedlst resultStatus) else B.failedlst resultStatus
@@ -189,7 +189,7 @@ piIntro' sig var aType depth setting =
               in newR{B.trees = B.trees newR ++ B.trees r}
             )
              B.resultDef{B.rStatus = B.sStatus setting} 
-             [UDdB.Type,UDdB.Kind]
+             [DdB.Type,DdB.Kind]
           tbTreePairs = zip (concatMap (replicate (length (B.trees bTrees))) (B.trees typeChecked)) (cycle $B.trees bTrees)
           piABTrees = map 
             (\(tTree,bTree) -> 
@@ -382,7 +382,7 @@ piElim' sig var aType depth setting
 piElimTypeCheckApp'  :: A.SAEnv -> A.AEnv -> A.Arrowterm -> [A.Arrowterm] -> A.Arrowterm -> Int -> B.Setting -> B.Result
 piElimTypeCheckApp' sig var (A.ArrowApp f x) argLst b1 depth setting = 
   case  A.arrowNotat f of
-  A.Conclusion (UDdB.Var fn) -> 
+  A.Conclusion (DdB.Var fn) -> 
     let fType = A.shiftIndices (var !! fn) (fn+1) 0 in case fType of
       A.Arrow lst b ->
         let d = length lst - length (x:argLst) in 
@@ -399,7 +399,7 @@ piElimTypeCheckApp' sig var (A.ArrowApp f x) argLst b1 depth setting =
                   result = typeChecked{B.trees = [UDT.Tree QT.PiE downside [ftree,head xTree]| not (null xTree)],B.rStatus = (B.sStatus setting)} --xについての木ができたらなんでもいいから一個だけにしてる
               in B.debugLogWithTerm (sig,var) (A.ArrowApp f x) (rType) depth setting "piElimtypecheck1"  result
       c -> B.debugLogWithTerm (sig,var) c b1 depth setting "piElimtypecheck / this function is not of pi-type" B.resultDef{B.rStatus = B.sStatus setting}
-  A.Conclusion (UDdB.Con txt) ->
+  A.Conclusion (DdB.Con txt) ->
     let fType = lookup txt sig in case fType of
       Just (A.Arrow lst b) ->
         let d = length lst - length (x:argLst) in 
@@ -437,14 +437,14 @@ piElimTypeCheckApp' sig var aTerm _ b1 depth setting = B.debugLogWithTerm (sig,v
 dne' :: B.DeduceRule
 dne' sig var aType depth setting
   | aType==A.aType =B.debugLog (sig,var) aType depth setting "dneハズレ2"  B.resultDef{B.rStatus = B.sStatus setting}
-  | case aType of (A.Arrow [A.Arrow _ (A.Conclusion UDdB.Bot)] (A.Conclusion UDdB.Bot)) -> True ; _ -> False=  
+  | case aType of (A.Arrow [A.Arrow _ (A.Conclusion DdB.Bot)] (A.Conclusion DdB.Bot)) -> True ; _ -> False=  
     B.debugLog (sig,var) aType depth setting "dne2重"  B.resultDef{B.rStatus = B.sStatus setting}
   | otherwise = 
     let typeChecked = B.debugLog (sig,var) aType depth setting "dneが使えるか確認" (typecheck' sig var aType A.aType depth setting) in 
     if null (B.trees typeChecked) then B.debugLog (sig,var) aType depth setting "dneハズレ1"  typeChecked 
       else 
         let deduced = deduce sig var 
-              (A.Arrow [A.Arrow [aType] (A.Conclusion UDdB.Bot)] (A.Conclusion UDdB.Bot)) (depth + 1) 
+              (A.Arrow [A.Arrow [aType] (A.Conclusion DdB.Bot)] (A.Conclusion DdB.Bot)) (depth + 1) 
               setting{B.sStatus = (B.rStatus typeChecked)}
             trees = 
               map 
@@ -460,7 +460,7 @@ efq' sig var aType depth setting = undefined
 
 piForm' :: B.TypecheckRule
 piForm' sig var aTerm aType depth setting
-  -- | aType `notElem` [A.aType,A.Conclusion UDdB.Kind] = B.debugLogWithTerm con aTerm aType depth setting "piFormハズレ1" B.resultDef{B.rStatus = B.sStatus setting}
+  -- | aType `notElem` [A.aType,A.Conclusion DdB.Kind] = B.debugLogWithTerm con aTerm aType depth setting "piFormハズレ1" B.resultDef{B.rStatus = B.sStatus setting}
   | otherwise = case A.arrowNotat aTerm of 
     A.Arrow as b ->
       let a = last as
@@ -471,7 +471,7 @@ piForm' sig var aTerm aType depth setting
               in newR{B.trees = B.trees newR ++ B.trees r}
             )
              B.resultDef{B.rStatus = B.sStatus setting} 
-             [UDdB.Type,UDdB.Kind]
+             [DdB.Type,DdB.Kind]
           result = 
             if null (B.trees aTypeChecked) then  B.resultDef{B.rStatus = B.sStatus setting}
               else 
@@ -503,14 +503,14 @@ piForm' sig var aTerm aType depth setting
 -- +------------------------+------------+---------------------+
 sigmaForm' :: B.TypecheckRule
 sigmaForm' sig var aTerm aType depth setting
-  | aType `notElem` [A.aType,A.Conclusion UDdB.Kind] = B.debugLogWithTerm (sig,var) aTerm aType depth setting "sigmaFormハズレ1" B.resultDef{B.rStatus = B.sStatus setting}
+  | aType `notElem` [A.aType,A.Conclusion DdB.Kind] = B.debugLogWithTerm (sig,var) aTerm aType depth setting "sigmaFormハズレ1" B.resultDef{B.rStatus = B.sStatus setting}
   | otherwise = case A.arrowNotat aTerm of 
     A.ArrowSigma' as b ->
       let a = last as
           aTypeChecked = 
             foldl 
             (\r dtTerm -> 
-              if a == A.aType && dtTerm == UDdB.Type
+              if a == A.aType && dtTerm == DdB.Type
                 then
                   r
                 else
@@ -518,7 +518,7 @@ sigmaForm' sig var aTerm aType depth setting
                   in newR{B.trees = B.trees newR ++ B.trees r}
             )
              B.resultDef{B.rStatus = B.sStatus setting} 
-             [UDdB.Type,UDdB.Kind]
+             [DdB.Type,DdB.Kind]
           result = 
             if null (B.trees aTypeChecked) then  B.resultDef{B.rStatus = B.sStatus setting}
               else 
@@ -536,7 +536,7 @@ sigmaForm' sig var aTerm aType depth setting
 
 eqForm' :: B.TypecheckRule
 eqForm' sig var aTerm aType depth setting
-  | aType `notElem` [A.aType,A.Conclusion UDdB.Kind] = B.debugLogWithTerm (sig,var) aTerm aType depth setting "eqFormハズレ1" B.resultDef{B.rStatus = B.sStatus setting}
+  | aType `notElem` [A.aType,A.Conclusion DdB.Kind] = B.debugLogWithTerm (sig,var) aTerm aType depth setting "eqFormハズレ1" B.resultDef{B.rStatus = B.sStatus setting}
   | otherwise = case A.arrowNotat aTerm of 
     A.ArrowEq t a b -> 
       let tTypeChecked = typecheck' sig var t A.aType depth setting 
@@ -592,7 +592,7 @@ sigmaIntro' sig var aType depth setting =
                                 let (dLst,aType') = 
                                       foldr 
                                         (\(beforeVarNum,afterResult) (deducedLst',t) -> --D.trace ("beforeVarNum : " ++ (show beforeVarNum) ++ " t : " ++ show (A.varsInaTerm t) ++ " 代入内容 : "++show (A.shiftIndices (A.termfromAJudgement $ A.downSide $head $B.trees afterResult) (argId) 0) ++ " 代入先 "　++ (show $ beforeVarNum)　
-                                             -- ++ " 結果 : " ++ (show $ A.arrowSubst t (A.Conclusion $ UDdB.Con "here"{-A.termfromAJudgement $ A.downSide $head $B.trees afterResult-}) (A.aVar ( beforeVarNum {-- argId-})))
+                                             -- ++ " 結果 : " ++ (show $ A.arrowSubst t (A.Conclusion $ DdB.Con "here"{-A.termfromAJudgement $ A.downSide $head $B.trees afterResult-}) (A.aVar ( beforeVarNum {-- argId-})))
                                             --)
                                           ((take beforeVarNum deducedLst') ++ (afterResult:(drop (beforeVarNum + 1) deducedLst')), 
                                             A.betaReduce $ A.arrowSubst t (A.shiftIndices (A.termfromAJudgment $ A.downSide' $head $B.trees afterResult) (argId) 0) (A.aVar (beforeVarNum)))

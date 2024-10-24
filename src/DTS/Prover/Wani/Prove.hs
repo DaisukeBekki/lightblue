@@ -7,8 +7,7 @@ module DTS.Prover.Wani.Prove
 ) where
 
 import qualified Interface.Tree as UDT
-import qualified DTS.UDTTdeBruijn as UDdB
-import DTS.Labels (DTT)
+import qualified DTS.DTTdeBruijn as DdB
 import qualified DTS.QueryTypes as QT
 import qualified DTS.Prover.Wani.Arrowterm as A
 import qualified DTS.Prover.Wani.Backward as B
@@ -24,7 +23,7 @@ import qualified ListT as ListT
 import qualified Interface.HTML as HTML
 import qualified Data.Bifunctor
 
-display :: UDT.Tree QT.DTTrule (UDdB.Judgment DTT) -> IO T.Text
+display :: UDT.Tree QT.DTTrule DdB.Judgment -> IO T.Text
 display jtree  = do
   return 
     $ T.append (T.pack HTML.htmlHeader4MathML) $
@@ -34,9 +33,9 @@ display jtree  = do
        (T.pack HTML.htmlFooter4MathML)
 
 -- | return prooftrees and some info(max depth, etc.)
-hojo ::  UDdB.Context
-  -> UDdB.Signature
-  -> (UDdB.Preterm DTT) 
+hojo ::  DdB.Context
+  -> DdB.Signature
+  -> DdB.Preterm
   -> WB.Setting
   -> WB.Result
 hojo varEnv sigEnv pre_type setting = 
@@ -53,9 +52,9 @@ searchProof' a b c d setting=
 
 -- | Prover for lightblue:
 prove' :: QT.Prover
-prove' QT.ProofSearchSetting{..} QT.ProofSearchQuery{..} =  -- LiftT IO (Tree (U.Judgment U.DTT) UDTTrule)
+prove' QT.ProofSearchSetting{..} (DdB.ProofSearchQuery sig ctx typ) =  -- LiftT IO (Tree (U.Judgment U.DTT) UDTTrule)
   let setting = WB.Setting {
-        WB.mode = case system of
+        WB.mode = case logicSystem of
                     Nothing -> WB.Plain
                     Just QT.Intuitionistic -> WB.WithEFQ
                     Just QT.Classical -> WB.WithDNE,

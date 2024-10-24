@@ -9,7 +9,7 @@ Stability   : beta
 Implementation of Underspecified Dependent Type Theory (Bekki forthcoming).
 -}
 
-module DTS.UDTTdeBruijn (
+module DTS.DTTdeBruijn (
   -- * Terms and Types
   Selector(..)
   , Preterm(..)
@@ -22,19 +22,13 @@ module DTS.UDTTdeBruijn (
   , sigmaElimination
   , add
   , multiply
-  -- * Variable Vectors
-  , addLambda
-  , deleteLambda
-  , replaceLambda
-  -- * Conversion btw. UDTT and DTT
-  , toUDTT
-  , toDTT
   -- * Judgment
-  -- , Signature
-  -- , Context
+  , Signature
+  , Context
   , Judgment(..)
   , TypeCheckQuery(..)
   , TypeInferQuery(..)
+  , ProofSearchQuery(..)
   ) where
 
 import qualified GHC.Generics        as G --base
@@ -43,8 +37,7 @@ import qualified Codec.Serialise as S --serialise
 import Interface.Text                 --lightblue
 import Interface.TeX                  --lightblue
 import Interface.HTML                 --lightblue
-import qualified DTS.DTTdeBruijn  as DTTdB  --lightblue
--- import qualified DTS.UDTTwithName as UDTTwN --lightblue
+import DTS.GeneralTypeQuery           --lightblue
 
 -- | 'Proj' 'Fst' m is the first projection of m, while 'Proj' 'Snd' m is the second projection of m.
 data Selector = Fst | Snd deriving (Eq, Show)
@@ -56,12 +49,12 @@ instance SimpleText Selector where
 
 -- instance Typeset Selector where
 --   toTeX = toText
-
+-- 
 -- instance MathML Selector where
 --   toMathML Fst = "<mn>1</mn>"  -- `Proj` `Fst` m is the first projection of m
 --   toMathML Snd = "<mn>2</mn>" -- `Proj` `Snd` m is the second projection of m
 
--- | Preterms of Underspecified Dependent Type Theory (UDTT).
+-- | Preterms of Dependent Type Theory (DTT).
 data Preterm = 
   -- | Basic Preterms
   Var Int                       -- ^ Variables
@@ -95,10 +88,6 @@ data Preterm =
   | Eq Preterm Preterm Preterm   -- ^ Intensional equality types
   | Refl Preterm Preterm         -- ^ refl
   | Idpeel Preterm Preterm       -- ^ idpeel
-  -- | UDTT extensions
-  | Asp Preterm                 -- ^ Underspesified terms
-  | Lamvec Preterm              -- ^ Lambda abstractions of a variable vector
-  | Appvec Int Preterm          -- ^ Function applications of a variable vector
   -- | ToDo: add First Universe
   deriving (Eq, G.Generic)
 
@@ -113,16 +102,16 @@ instance SimpleText Preterm where
     Type    -> "type"
     Kind    -> "kind"
     Pi a b  -> case b of
-                 Bot -> T.concat ["¬", toText a]
-                 b' -> T.concat ["(Π ", toText a, ")", toText b']
-    Lam m   -> T.concat ["λ.", toText m]
-    App m n -> T.concat ["(", toText m, " ", toText n, ")"]
-    Not m   -> T.concat ["¬", toText m]
-    Sigma a b  -> T.concat ["(Σ ", toText a, ")", toText b]
-    Pair m n   -> T.concat ["(", toText m, ",", toText n, ")"]
-    Proj s m   -> T.concat ["π", toText s, "(", toText m, ")"]
-    Disj a b -> T.concat [toText a, " + ", toText b] 
-    Iota s m -> T.concat ["ι", toText s, "(", toText m, ")"]
+                 Bot -> T.concat["¬", toText a]
+                 b' -> T.concat["(Π ", toText a, ")", toText b']
+    Lam m   -> T.concat["λ.", toText m]
+    App m n -> T.concat["(", toText m, " ", toText n, ")"]
+    Not m   -> T.concat["¬", toText m]
+    Sigma a b  -> T.concat["(Σ ", toText a, ")", toText b]
+    Pair m n   -> T.concat["(", toText m, ",", toText n, ")"]
+    Proj s m   -> T.concat["π", toText s, "(", toText m, ")"]
+    Disj a b -> T.concat[toText a, " + ", toText b] 
+    Iota s m -> T.concat["ι", toText s, "(", toText m, ")"]
     Unpack p l m n -> T.concat ["unpack(", toText p, ",", toText l, ",", toText m, ",", toText n, ")"]
     Bot   -> "⊥"
     Unit  -> "()"
@@ -135,9 +124,6 @@ instance SimpleText Preterm where
     Eq a m n -> T.concat [toText m, "=[", toText a, "]", toText n]
     Refl a m -> T.concat ["refl", toText a, "(", toText m, ")"]
     Idpeel m n -> T.concat ["idpeel(", toText m, ",", toText n, ")"]
-    Asp m -> T.concat["@", toText m]
-    Lamvec m   -> T.concat ["λ+.", toText m]
-    Appvec i m -> T.concat ["(", toText m, " ", T.pack (show i), "+)"]
 
 -- | translates a DTS preterm into a tex source code.
 instance Typeset Preterm where
@@ -180,9 +166,6 @@ subst preterm l i = case preterm of
   Eq a m n   -> Eq (subst a l i) (subst m l i) (subst n l i)
   Refl a m   -> Refl (subst a l i) (subst m l i)
   Idpeel m n -> Idpeel (subst m l i) (subst n l i)
-  Asp m      -> Asp (subst m l i)
-  Lamvec m   -> Lamvec (subst m (shiftIndices l 1 0) (i+1))
-  Appvec j m -> Appvec j (subst m l i)
 
 -- | shiftIndices m d i
 -- add d to all the indices that is greater than or equal to i within m (=d-place shift)
@@ -206,11 +189,6 @@ shiftIndices preterm d i = case preterm of
   Eq a m n   -> Eq (shiftIndices a d i) (shiftIndices m d i) (shiftIndices n d i)
   Refl a m   -> Refl (shiftIndices a d i) (shiftIndices m d i)
   Idpeel m n -> Idpeel (shiftIndices m d i) (shiftIndices n d i)
-  Asp m    -> Asp (shiftIndices m d i)
-  Lamvec m   -> Lamvec (shiftIndices m d (i+1))
-  Appvec j m -> if j >= i
-                   then Appvec (j+d) (shiftIndices m d i)
-                   else Appvec j (shiftIndices m d i)
   m -> m
   
 
@@ -258,9 +236,6 @@ betaReduce preterm = case preterm of
   Idpeel m n -> case betaReduce m of
                   Refl _ m' -> betaReduce $ (App n m')
                   m' -> Idpeel m' (betaReduce n)
-  Asp m -> Asp (betaReduce m)
-  Lamvec m   -> Lamvec (betaReduce m)
-  Appvec i m -> Appvec i (betaReduce m)
 
 -- | strong Beta reduction
 strongBetaReduce :: Int -> Preterm -> Preterm
@@ -306,11 +281,6 @@ strongBetaReduce t preterm = case preterm of
   Idpeel m n -> case strongBetaReduce 0 m of
                   Refl _ m' -> strongBetaReduce 0 (App n m')
                   m' -> Idpeel m' (strongBetaReduce 0 n)
-  Asp m -> Asp (strongBetaReduce 0 m)
-  Lamvec m   -> if t > 0
-                   then Lam (strongBetaReduce (t-1) $ Lamvec (addLambda 0 m))
-                   else strongBetaReduce 0 (deleteLambda 0 m)
-  Appvec i m -> Appvec i (strongBetaReduce 0 m)
 
 -- | eliminates nested Sigma constructions from a given preterm
 sigmaElimination :: Preterm -> Preterm
@@ -334,9 +304,6 @@ sigmaElimination preterm = case preterm of
   Eq a m n   -> Eq (sigmaElimination a) (sigmaElimination m) (sigmaElimination n)
   Refl a m   -> Refl (sigmaElimination a) (sigmaElimination m)
   Idpeel m n -> Idpeel (sigmaElimination m) (sigmaElimination n)
-  Asp m      -> Asp (sigmaElimination m)
-  Lamvec m   -> Lamvec (sigmaElimination m)
-  Appvec j m -> Appvec j (sigmaElimination m)
   m -> m
 
 -- | adds two preterms (of type `Nat`).
@@ -347,198 +314,78 @@ add m n = Natrec m n (Lam (Lam (Succ (Var 0))))
 multiply :: Preterm -> Preterm -> Preterm
 multiply m n = Natrec m Zero (Lam (Lam (add n (Var 0))))
 
-{- Variable Vectors -}
-
--- | addLambda i preterm: the first subroutine for 'transvec' function,
--- which takes an index and a preterm, transforms the latter in a way that the Var/Appvec with an index j that is equal or greater than i
--- Ex.
--- addLambda 1 (Appvec 0 m) = Appvec 1 (addLambda 1 m)
--- addLambda 0 (Appvec 0 m) = Appvec 0 (App () (Var 1))
-addLambda :: Int -> Preterm -> Preterm
-addLambda i preterm = case preterm of
-  Var j | j > i     -> Var (j+1)
-        | j < i     -> Var j
-        | otherwise -> Con $ T.concat [" Error in addLambda: var ", T.pack (show j)]
-  Pi a b     -> Pi (addLambda i a) (addLambda (i+1) b)
-  Lam m      -> Lam (addLambda (i+1) m)
-  App m n    -> App (addLambda i m) (addLambda i n)
-  Not a      -> Not (addLambda i a)
-  Sigma a b  -> Sigma (addLambda i a) (addLambda (i+1) b)
-  Pair m n   -> Pair (addLambda i m) (addLambda i n)
-  Proj s m   -> Proj s (addLambda i m)
-  Disj a b   -> Disj (addLambda i a) (addLambda i b)
-  Iota s m   -> Iota s (addLambda i m)
-  Unpack p l m n -> Unpack (addLambda i p) (addLambda i l) (addLambda i m) (addLambda i n)
-  Succ n     -> Succ (addLambda i n)
-  Natrec n e f -> Natrec (addLambda i n) (addLambda i e) (addLambda i f)
-  Eq a m n   -> Eq (addLambda i a) (addLambda i m) (addLambda i n)
-  Refl m n   -> Refl (addLambda i m) (addLambda i n)
-  Idpeel m n -> Idpeel (addLambda i m) (addLambda i n)
-  Asp m      -> Asp (addLambda i m)
-  Lamvec m   -> Lamvec (addLambda (i+1) m)
-  Appvec j m | j > i     -> Appvec (j+1) (addLambda i m)
-             | j < i     -> Appvec j (addLambda i m)
-             | otherwise -> Appvec j (App (addLambda i m) (Var (j+1)))
-  m -> m -- identity function for 0-ary constructors
-
--- | deleteLambda i preterm: the second subroutine for 'transvec' function,
--- which takes an index i and a preterm p, transforms the latter in a way that the i-th variable vector within p is deleted.
-deleteLambda :: Int -> Preterm -> Preterm 
-deleteLambda i preterm = case preterm of
-  Var j | j > i     -> Var (j-1)
-        | j < i     -> Var j
-        | otherwise -> Con $ T.concat ["Error in deleteLambda: var ", T.pack (show j)]
-  Pi a b     -> Pi (deleteLambda i a) (deleteLambda (i+1) b)
-  Lam m      -> Lam (deleteLambda (i+1) m)
-  App m n    -> App (deleteLambda i m) (deleteLambda i n)
-  Not a      -> Not (deleteLambda i a)
-  Sigma a b  -> Sigma (deleteLambda i a) (deleteLambda (i+1) b)
-  Pair m n   -> Pair (deleteLambda i m) (deleteLambda i n)
-  Proj s m   -> Proj s (deleteLambda i m)
-  Disj a b   -> Disj (deleteLambda i a) (deleteLambda i b)
-  Iota s m   -> Iota s (deleteLambda i m)
-  Unpack p l m n -> Unpack (deleteLambda i p) (deleteLambda i l) (deleteLambda i m) (deleteLambda i n)
-  Succ n     -> Succ (deleteLambda i n)
-  Natrec n e f -> Natrec (deleteLambda i n) (deleteLambda i e) (deleteLambda i f) 
-  Eq a m n   -> Eq (deleteLambda i a) (deleteLambda i m) (deleteLambda i n)
-  Refl m n   -> Refl (deleteLambda i m) (deleteLambda i n)
-  Idpeel m n -> Idpeel (deleteLambda i m) (deleteLambda i n)
-  Asp m      -> Asp (deleteLambda i m)
-  Lamvec m   -> Lamvec (deleteLambda (i+1) m)
-  Appvec j m | j > i     -> Appvec (j-1) (deleteLambda i m)
-             | j < i     -> Appvec j (deleteLambda i m)
-             | otherwise -> deleteLambda i m
-  m -> m -- identity function for 0-ary constructors
-
--- | replaceLambda i preterm: the third subroutine for 'transvec' function,
--- which takes an index i and a preterm p, transforms the latter in a way that the i-th variable vector within p is replaced by a single variable.
-replaceLambda :: Int -> Preterm -> Preterm 
-replaceLambda i preterm = deleteLambda i (addLambda i preterm)
-
-{- Conversion between UDTT and DTT -}
-
--- | from DTT to UDTT
-toUDTT :: DTTdB.Preterm -> Preterm
-toUDTT preterm = case preterm of
-  DTTdB.Var i -> Var i
-  DTTdB.Con t -> Con t
-  DTTdB.Type -> Type
-  DTTdB.Kind -> Kind
-  DTTdB.Pi a b -> Pi (toUDTT a) (toUDTT b)
-  DTTdB.Not a  -> Not (toUDTT a)
-  DTTdB.Lam m  -> Lam (toUDTT m)
-  DTTdB.App m n -> App (toUDTT m) (toUDTT n)
-  DTTdB.Sigma a b -> Sigma (toUDTT a) (toUDTT b)
-  DTTdB.Pair m n  -> Pair (toUDTT m) (toUDTT n)
-  DTTdB.Proj sel m  -> Proj (case sel of DTTdB.Fst -> Fst; DTTdB.Snd -> Snd) (toUDTT m)
-  DTTdB.Disj a b -> Disj (toUDTT a) (toUDTT b)
-  DTTdB.Iota sel m  -> Iota (case sel of DTTdB.Fst -> Fst; DTTdB.Snd -> Snd) (toUDTT m)
-  DTTdB.Unpack p l m n -> Unpack (toUDTT p) (toUDTT l) (toUDTT m) (toUDTT n)
-  DTTdB.Bot     -> Bot
-  DTTdB.Unit    -> Unit
-  DTTdB.Top     -> Top
-  DTTdB.Entity  -> Entity
-  DTTdB.Nat     -> Nat
-  DTTdB.Zero    -> Zero
-  DTTdB.Succ n  -> Succ (toUDTT n)
-  DTTdB.Natrec e f n -> Natrec (toUDTT e) (toUDTT f) (toUDTT n)
-  DTTdB.Eq a m n     -> Eq (toUDTT a) (toUDTT m) (toUDTT n)
-  DTTdB.Refl a m     -> Refl (toUDTT a) (toUDTT m)
-  DTTdB.Idpeel m n   -> Idpeel (toUDTT m) (toUDTT n)
-
--- | from UDTT to DTT
-toDTT :: Preterm -> Maybe DTTdB.Preterm
-toDTT preterm = case preterm of
-  Var i -> return $ DTTdB.Var i
-  Con t -> return $ DTTdB.Con t
-  Type  -> return DTTdB.Type
-  Kind  -> return DTTdB.Kind
-  Pi a b -> do
-            a' <- toDTT a
-            b' <- toDTT b
-            return $ DTTdB.Pi a' b'
-  Lam m  -> do
-            m' <- toDTT m
-            return $ DTTdB.Lam m'
-  App m n -> do
-             m' <- toDTT m
-             n' <- toDTT n
-             return $ DTTdB.App m' n'
-  Not m  -> do
-            m' <- toDTT m
-            return $ DTTdB.Pi m' DTTdB.Bot
-  Sigma a b -> do
-               a' <- toDTT a
-               b' <- toDTT b
-               return $ DTTdB.Sigma a' b'
-  Pair m n  -> do
-               m' <- toDTT m
-               n' <- toDTT n
-               return $ DTTdB.Pair m' n'
-  Proj sel m  -> do
-                 m' <- toDTT m
-                 return $ DTTdB.Proj (case sel of Fst -> DTTdB.Fst; Snd -> DTTdB.Snd) m'
-  Disj a b -> do
-              a' <- toDTT a
-              b' <- toDTT b
-              return $ DTTdB.Disj a' b'
-  Iota sel m -> do
-                m' <- toDTT m
-                return $ DTTdB.Iota (case sel of Fst -> DTTdB.Fst; Snd -> DTTdB.Snd) m'
-  Unpack p l m n -> do
-                    p' <- toDTT p
-                    l' <- toDTT l
-                    m' <- toDTT m
-                    n' <- toDTT n
-                    return $ DTTdB.Unpack p' l' m' n'
-  Bot    -> return DTTdB.Bot
-  Unit   -> return DTTdB.Unit
-  Top    -> return DTTdB.Top
-  Entity -> return DTTdB.Entity
-  Nat    -> return DTTdB.Nat
-  Zero   -> return DTTdB.Zero
-  Succ n  -> do
-             n' <- toDTT n
-             return $ DTTdB.Succ n'
-  Natrec e f n -> do
-                  e' <- toDTT e
-                  f' <- toDTT f
-                  n' <- toDTT n
-                  return $ DTTdB.Natrec e' f' n'
-  Eq a m n     -> do
-                  a' <- toDTT a
-                  m' <- toDTT m
-                  n' <- toDTT n
-                  return $ DTTdB.Eq a' m' n'
-  Refl a m     -> do
-                  a' <- toDTT a
-                  m' <- toDTT m
-                  return $ DTTdB.Refl a' m'
-  Idpeel m n   -> do
-                  m' <- toDTT m
-                  n' <- toDTT n
-                  return $ DTTdB.Idpeel m' n'
-  Asp _   -> Nothing
-  Lamvec _  -> Nothing
-  Appvec _ _ -> Nothing
-
--- {- Judgment of UDTT in de Bruijn notation -}
+{- Judgment of DTT in de Bruijn notation -}
 
 -- | A type of an element of a type signature, that is, a list of pairs of a preterm and a type.
 -- ex. [entity:type, state:type, event:type, student:entity->type]
+type Signature = [(T.Text, Preterm)]
+
+instance SimpleText Signature where
+  toText = (T.intercalate ", ") . (map (\(nm,tm) -> T.concat [nm, ":", toText tm])) . reverse
+instance Typeset Signature where
+  toTeX = (T.intercalate ",") . (map (\(nm,tm) -> T.concat [nm, ":", toTeX tm])) . reverse
+instance MathML Signature where
+  toMathML = (T.intercalate "<mo>,<mo>") . (map (\(nm,tm) -> T.concat ["<mrow><mo>", nm, "</mo><mo>:</mo>", toMathML tm, "</mrow>"])) . reverse
+
+-- | A context is a list of preterms
+type Context = [Preterm]
+
+instance SimpleText Context where
+  toText = (T.intercalate ", ") . (map toText) . reverse
+instance Typeset Context where
+  toTeX = (T.intercalate ",") . (map toTeX) . reverse
+instance MathML Context where
+  toMathML = (T.intercalate "<mo>,</mo>") . (map toMathML). reverse
 
 -- | The data type for a judgment
 data Judgment = Judgment {
-  signtr :: DTTdB.Signature  -- ^ A signature
-  , contxt :: DTTdB.Context  -- ^ A context \Gamma in \Gamma \vdash M:A
+  signtr :: Signature  -- ^ A signature
+  , contxt :: Context  -- ^ A context \Gamma in \Gamma \vdash M:A
   , trm :: Preterm     -- ^ A term M in \Gamma \vdash M:A
-  , typ :: DTTdB.Preterm     -- ^ A type A in \Gamma \vdash M:A
+  , typ :: Preterm     -- ^ A type A in \Gamma \vdash M:A
   } deriving (Eq)
+
+embedJudgment :: Judgment -> GeneralTypeQuery Signature Context Preterm Preterm
+embedJudgment (Judgment sig cxt trm typ) = GeneralTypeQuery sig cxt (Term trm) (Term typ)
+
+instance Show Judgment where
+  show = T.unpack . toText
+instance SimpleText Judgment where
+  toText = toText . embedJudgment
+instance Typeset Judgment where
+  toTeX = toTeX . embedJudgment
+instance MathML Judgment where
+  toMathML = toMathML . embedJudgment
 
 type TypeCheckQuery = Judgment
 
-data TypeInferQuery = TypeInferQuery DTTdB.Signature DTTdB.Context Preterm deriving (Eq)
+embedTypeCheckQuery :: TypeCheckQuery -> GeneralTypeQuery Signature Context Preterm Preterm 
+embedTypeCheckQuery = embedJudgment
 
+data TypeInferQuery = TypeInferQuery Signature Context Preterm deriving (Eq)
 
+embedTypeInferQuery :: TypeInferQuery -> GeneralTypeQuery Signature Context Preterm Preterm 
+embedTypeInferQuery (TypeInferQuery sig cxt trm) = GeneralTypeQuery sig cxt (Term trm) Question
 
+instance Show TypeInferQuery where
+  show = T.unpack . toText
+instance SimpleText TypeInferQuery where
+  toText = toText . embedTypeInferQuery
+instance Typeset TypeInferQuery where
+  toTeX = toTeX . embedTypeInferQuery
+instance MathML TypeInferQuery where
+  toMathML = toMathML . embedTypeInferQuery
 
+data ProofSearchQuery = ProofSearchQuery Signature Context Preterm deriving (Eq)
+
+embedProofSearchQuery :: ProofSearchQuery -> GeneralTypeQuery Signature Context Preterm Preterm
+embedProofSearchQuery (ProofSearchQuery sig cxt typ) = GeneralTypeQuery sig cxt Question (Term typ)
+
+instance Show ProofSearchQuery where
+  show = T.unpack . toText
+instance SimpleText ProofSearchQuery where
+  toText = toText . embedProofSearchQuery
+instance Typeset ProofSearchQuery where
+  toTeX = toTeX . embedProofSearchQuery
+instance MathML ProofSearchQuery where
+  toMathML = toMathML . embedProofSearchQuery

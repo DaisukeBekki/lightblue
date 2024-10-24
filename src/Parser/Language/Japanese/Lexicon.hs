@@ -30,10 +30,11 @@ import Parser.CCG
 import qualified Parser.Language.Japanese.MyLexicon as LEX
 import Parser.Language.Japanese.Templates
 import qualified Parser.Language.Japanese.Juman.CallJuman as JU
-import DTS.UDTTdeBruijn as DTS hiding (sig) --lightblue
-import DTS.Labels (UDTT)
+import DTS.UDTTdeBruijn as UDTT hiding (sig) --lightblue
+import qualified DTS.DTTdeBruijn as DTT      --lightblue
 
-type UDTTpreterm = DTS.Preterm UDTT
+type UDTTpreterm = UDTT.Preterm
+type Signature = DTT.Signature
 
 -- | Lexicon consists of a set of CCG Nodes
 type LexicalItems = [Node]
@@ -165,12 +166,12 @@ constructConjunction daihyo =
   [
   (((T False 1 (S [F anyPos, F[Term,NTerm,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]]))
     `SL` (T False 1 (S [F anyPos, F[Term,NTerm,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]]))), 
-    ((Lam (Lam (Sigma (App (Var 1) (Lam Top)) ((App (App (Con daihyo) (Proj Snd $ Asp 1 (Sigma Type (Var 0)))) (Var 0)))))), [(daihyo, Pi entity (Pi entity Type))]))
+    ((Lam (Lam (Sigma (App (Var 1) (Lam Top)) ((App (App (Con daihyo) (Proj Snd $ Asp (Sigma Type (Var 0)))) (Var 0)))))), [(daihyo, DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]))
     ]
 
 constructSubordinateConjunction :: T.Text -> [(Cat, (UDTTpreterm, Signature))]
 constructSubordinateConjunction daihyo = 
   [((modifiableS `SL` modifiableS) `BS` (S [F anyPos, F[Attr], SF 7 [P,M], SF 8 [P,M], SF 9 [P,M], F[M],F[M] ]), 
     ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (Sigma (App (Var 2) (Var 1)) (App (App (Con daihyo) (Var 1)) (Var 0))))))),
-     [(daihyo, Pi entity (Pi entity Type))]))
+     [(daihyo, DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]))
   ]

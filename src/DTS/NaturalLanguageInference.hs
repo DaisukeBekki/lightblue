@@ -27,8 +27,8 @@ import qualified Parser.ChartParser as CP
 import qualified Interface.HTML as HTML
 import qualified Interface.TeX as TEX
 import qualified Interface.Tree as I
-import DTS.Labels (UDTT,DTT)
-import qualified DTS.UDTTdeBruijn as UD
+import qualified DTS.UDTTdeBruijn as UDTT
+import qualified DTS.DTTdeBruijn as DTT
 import qualified DTS.QueryTypes as QT
 import qualified DTS.TypeChecker as TY
 import qualified DTS.Prover.Wani.Prove as Wani
@@ -49,9 +49,9 @@ data InferencePair = InferencePair {
   , hypothesis :: T.Text -- ^ a hypothesis
   } deriving (Eq, Show)
 
-data InferenceResult = InferenceResult (InferencePair, [CP.Node], [UD.Preterm UDTT], UD.Signature, [I.Tree QT.DTTrule (UD.Judgment DTT)]) --, QT.ProofSearchQuery, QT.ProofSearchResult)) 
+data InferenceResult = InferenceResult (InferencePair, [CP.Node], [UDTT.Preterm], DTT.Signature, [I.Tree QT.DTTrule DTT.Judgment]) --, QT.ProofSearchQuery, QT.ProofSearchResult)) 
 
-data ProverName = Wani | Diag | Coq deriving (Eq,Show)
+data ProverName = Wani | Null deriving (Eq,Show)
 
 instance Read ProverName where
   readsPrec _ r =
@@ -62,8 +62,7 @@ instance Read ProverName where
 getProver :: ProverName -> QT.Prover
 getProver pn = case pn of
   Wani -> Wani.prove'
-  Diag -> TY.nullProver
-  Coq  -> TY.nullProver
+  Null -> TY.nullProver
 
 -- | Checks if the premise texts entails the hypothesis text.
 -- | The specification of this function reflects a view about what are entailments between texts,
@@ -77,7 +76,7 @@ checkInference InferenceSetting{..} infPair = do
   -- | Parse sentences
   let sentences = (hypothesis infPair):(reverse $ premises infPair)     -- | reverse the order of sentences (hypothesis first, the first premise last)
   nodeslist <- mapM (CP.simpleParse beam) sentences -- | [[CCG.Node]] parse sentences
-  let pairslist = map ((map (\node -> (node, UD.betaReduce $ UD.sigmaElimination $ CP.sem node))).(take nbest)) nodeslist
+  let pairslist = map ((map (\node -> (node, UDTT.betaReduce $ UDTT.sigmaElimination $ CP.sem node))).(take nbest)) nodeslist
       -- | Example: [[(nodeA1,srA1),(nodeA2,srA2)],[(nodeB1,srB1),(nodeB2,srB2)],[(nodeC1,srC1),(nodeC2,srC2)]]
       -- |          where sentences = A,B,C (where A is the hypothesis), nbest = 2_
       chosenlist = choice pairslist
@@ -88,7 +87,7 @@ checkInference InferenceSetting{..} infPair = do
   return $ InferenceResult $ do
     (ccgnds,srs) <- QT.ListEx (nodeSRlist, "")
     let allsigs = foldl L.union [] $ map CP.sig ccgnds;
-    typeCheckTrees <- mapM (\sr -> typeChecker prover $ QT.TypeCheckQuery allsigs [] sr UD.Type) $ drop 1 srs
+    typeCheckTrees <- mapM (\sr -> typeChecker prover $ QT.TypeCheckQuery allsigs [] sr UDTT.Type) $ drop 1 srs
     return (infPair, ccgnds, srs, allsigs, typeCheckTrees)
     {-
     (hype:prems) <- TY.sequentialTypeCheck TY.typeCheck prover allsigs srs; -- [DTTpreterms]
@@ -145,7 +144,7 @@ instance HTML.MathML InferenceResult where
           then T.concat [
              "No proof diagrams for: "
              , HTML.startMathML
-             --, UD.printProofSearchQuery (tail srs) (head srs)
+             --, UDTT.printProofSearchQuery (tail srs) (head srs)
              , HTML.endMathML
              ]
           else T.concat [
