@@ -263,8 +263,7 @@ lightblueMain (Options commands input filepath nbest beamw nsample iftime) = do
             T.hPutStrLn handle $ "infResult shall be shown here" --I.toMathML infResult
       case proverName of
         Wani -> S.hPutStrLn handle $ I.footerOf I.HTML
-        Diag -> S.hPutStrLn handle $ I.footerOf I.HTML
-        Coq -> return ()
+        Null -> return ()
     -- |
     -- | Debug
     -- |

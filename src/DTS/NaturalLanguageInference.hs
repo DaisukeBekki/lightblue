@@ -56,8 +56,9 @@ data ProverName = Wani | Null deriving (Eq,Show)
 instance Read ProverName where
   readsPrec _ r =
     [(Wani,s) | (x,s) <- lex r, map C.toLower x == "wani"]
-    ++ [(Diag,s) | (x,s) <- lex r, map C.toLower x == "diag"]
-    ++ [(Coq,s) | (x,s) <- lex r, map C.toLower x == "coq"]
+    ++ [(Null,s) | (x,s) <- lex r, map C.toLower x == "null"]
+    -- ++ [(Diag,s) | (x,s) <- lex r, map C.toLower x == "diag"]
+    -- ++ [(Coq,s) | (x,s) <- lex r, map C.toLower x == "coq"]
 
 getProver :: ProverName -> QT.Prover
 getProver pn = case pn of
