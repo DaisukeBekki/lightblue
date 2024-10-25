@@ -496,6 +496,7 @@ myLexicon = concat $ [
   mylex ["あ"] "(381)" (defS [V5ARU] [Stem] `BS` defS verb [TeForm]) (eventModifier "＃テアル"),
   mylex ["あ"] "(381)" (defS [V5ARU] [Stem] `BS` defS adjective [Cont]) (eventModifier "＃テアル"),
   mylex ["あ"] "(381)" (defS [V5ARU] [Stem] `BS` defS [Nda] [TeForm]) (id,[]),
+  mylex ["お"] "(381*)" (defS [V5k] [Stem] `BS` defS verb [TeForm]) (eventModifier "＃テオク"),
   mylex ["な"] "(383)" ((S [F[ANAS],F[Stem],F[M],F[M],F[P],F[M],F[M]] `BS` NP [F[Ga]]) `BS` (defS adjective [Cont]) `BS` NP [F[Ga]]) negOperator2,
   mylex ["な"] "(383)" ((S [F[ANAS],F[Stem],F[M],F[M],F[P],F[M],F[M]] `BS` NP [F[Ga]]) `BS` (defS [Nda] [TeForm] `BS` NP [F[Ga]])) negOperator2,
   mylex ["な"] "(384)" ((defS [V5r] [Stem] `BS` NP [F[Ga]]) `BS` (defS adjective [Cont] `BS` NP [F[Ga]])) (intensionalEvent 1 "成る/なる"),
@@ -693,7 +694,7 @@ myLexicon = concat $ [
   verblex ["悔やまれ","くやまれ"] "new" [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] "悔やまれる/くやまれる" "ト" state,
   verblex ["見られ","みられ"] "new" [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] "見られる/みられる" "ガニ" state,
   verblex ["見え","みえ"] "new" [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] "見える/みえる" "ガニ" state,
-  verblex ["聞こえ","きこえ"] "new" [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] "見える/みえる" "ガニ" state,
+  verblex ["聞こえ","きこえ"] "new" [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] "聞こえる/きこえる" "ガニ" state,
   -- 以下、「可能」はstateを導入すべきか。
   mylex ["れ"] "(660a)" ((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP [F[Ga]]) `BS` (defS [V1,VK] [VoR] `BS` NP [F[Ga]]))
         ((Lam (Lam (Lam (App (App (Con "＃可能") (Lam (App (App (Var 3) (Var 0)) (Var 1)))) (Var 1))))),[("＃可能",(DTT.Pi (DTT.Pi DTT.Entity DTT.Type) (DTT.Pi DTT.Entity DTT.Type)))]),
@@ -922,5 +923,7 @@ myLexicon = concat $ [
   mylex ["時には"] "PB12-86" (defS [Nemp] [NStem] `BS` NP[F[Ga]]) (commonNounSR "時には/ときには"), -- 「時に」は副詞エントリがあるが意味が異なる
   mylex ["真っ暗闇"] "PB12-86" N (commonNounSR "真っ暗闇/まっくらやみ"), -- 「真っ」は接頭語のエントリ有り？
   -- PN
-  mylex ["☎"] "PN" (NP [F[Nc]]) (properNameSR "電話番号")
+  mylex ["☎"] "PN" (NP [F[Nc]]) (properNameSR "電話番号"),
+  -- ABCbank
+  mylex ["ところ"] "(ABC)" (defS [Nda,Nni,Nemp] [NStem] `BS` S [F anyPos,F[Attr],F[P,M],F[M],F[P,M],F[M],F[M]]) (modalSR "＃トコロ")
   ]
