@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards, GADTs #-}
+{-# LANGUAGE RecordWildCards #-}
 
 {-|
 Copyright   : (c) Daisuke Bekki, 2023
@@ -12,7 +12,7 @@ module DTS.TypeChecker (
   typeInfer
   , typeCheck
   , nullProver
-  , sequentialTypeCheck
+  --, sequentialTypeCheck
   ) where
 
 import Data.List (lookup)    --base
@@ -20,9 +20,9 @@ import Control.Applicative (empty)   --base
 import Control.Monad (guard,when,sequence)    --base
 import Control.Monad.State (lift)  
 import ListT (ListT(..),fromFoldable) --list-t
+import qualified System.IO as S           --base
 import qualified Data.Text.Lazy as T --text
 import qualified Data.Text.Lazy.IO as T --text
---import Control.Monad.Except (throwError)
 import Interface.Text (SimpleText(..))
 import Interface.Tree (Tree(..),node)
 import qualified DTS.DTTdeBruijn as DTTdB
@@ -30,10 +30,14 @@ import qualified DTS.UDTTdeBruijn as UDTTdB
 import qualified DTS.UDTTwithName as UDTTwN
 import qualified DTS.QueryTypes as QT
 
+-- | A skeltal prover 
+nullProver :: QT.Prover
+nullProver _ _ = fromFoldable []
+
 -- | The default type inference for UDTT
 typeInfer :: QT.TypeInfer -- | QT.Prover -> UDTTdB.TypeInferQuery -> ListT IO QT.TypeCheckResult
 typeInfer prover tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
-  lift $ T.putStrLn $ toText $ UDTTwN.fromDeBruijnTypeInferQuery tiq
+  lift $ T.hPutStrLn S.stderr $ toText $ UDTTwN.fromDeBruijnTypeInferQuery tiq
   case trm of -- sig:Signature, ctx:Context, trm:Preterm DTT, typ:Preterm DTT
     UDTTdB.Var i -> do
       when (i >= length ctx) $ fail $ T.unpack $ T.concat [T.pack (show i), " is out of bound in the context: ", toText ctx]
@@ -138,7 +142,7 @@ typeInfer prover tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
 -- | The default type checker for UDTT
 typeCheck :: QT.TypeChecker -- | Prover -> UDTTdB.Judgment -> ListT IO TypeCheckResult
 typeCheck prover tcq@(UDTTdB.Judgment sig ctx trm typ) = do
-  lift $ T.putStrLn $ toText $ UDTTwN.fromDeBruijnJudgment tcq
+  lift $ T.hPutStrLn S.stderr $ toText $ UDTTwN.fromDeBruijnJudgment tcq
   case (trm,typ) of -- sig:Signature, ctx:Context, trm:Preterm DTT, typ:Preterm DTT
     (UDTTdB.Lam termM, DTTdB.Pi termA termB) -> do
       diagramA <- typeCheck prover $ UDTTdB.Judgment sig ctx (UDTTdB.toUDTT termA) DTTdB.Type
@@ -171,15 +175,11 @@ typeCheck prover tcq@(UDTTdB.Judgment sig ctx trm typ) = do
       guard $ termA' == typ
       return diagramM
 
--- | A skeltal prover 
-nullProver :: QT.Prover
-nullProver _ _ = fromFoldable []
-
 -- | executes type check to a list of UDTT preterms
 -- | returns as many possible DTT context
-sequentialTypeCheck :: QT.TypeChecker -> QT.Prover -> DTTdB.Signature -> [UDTTdB.Preterm] -> ListT IO [DTTdB.Preterm]
-sequentialTypeCheck _ _ _ [] = empty
-sequentialTypeCheck typchecker prover sig (uterm:uterms) = do 
-  prevContext <- sequentialTypeCheck typchecker prover sig uterms -- | ListT IO Preterm
-  typeCheckTree <- typchecker prover $ UDTTdB.Judgment sig prevContext uterm DTTdB.Type -- | ListT IO Tree
-  return $ (DTTdB.trm $ node typeCheckTree):prevContext
+-- sequentialTypeCheck :: QT.TypeChecker -> QT.Prover -> DTTdB.Signature -> [UDTTdB.Preterm] -> ListT IO [DTTdB.Preterm]
+-- sequentialTypeCheck _ _ _ [] = empty
+-- sequentialTypeCheck typchecker prover sig (uterm:uterms) = do 
+--   prevContext <- sequentialTypeCheck typchecker prover sig uterms -- | ListT IO Preterm
+--   typeCheckTree <- typchecker prover $ UDTTdB.Judgment sig prevContext uterm DTTdB.Type -- | ListT IO Tree
+--   return $ (DTTdB.trm $ node typeCheckTree):prevContext

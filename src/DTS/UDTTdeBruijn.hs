@@ -43,6 +43,7 @@ import qualified Codec.Serialise as S --serialise
 import Interface.Text                 --lightblue
 import Interface.TeX                  --lightblue
 import Interface.HTML                 --lightblue
+import DTS.GeneralTypeQuery           --lightblue
 import qualified DTS.DTTdeBruijn  as DTTdB  --lightblue
 -- import qualified DTS.UDTTwithName as UDTTwN --lightblue
 
@@ -535,9 +536,36 @@ data Judgment = Judgment {
   , typ :: DTTdB.Preterm     -- ^ A type A in \Gamma \vdash M:A
   } deriving (Eq)
 
+embedJudgment :: Judgment -> GeneralTypeQuery DTTdB.Signature DTTdB.Context Preterm DTTdB.Preterm
+embedJudgment (Judgment sig cxt trm typ) = GeneralTypeQuery sig cxt (Term trm) (Term typ)
+
+instance Show Judgment where
+  show = T.unpack . toText
+instance SimpleText Judgment where
+  toText = toText . embedJudgment
+instance Typeset Judgment where
+  toTeX = toTeX . embedJudgment
+instance MathML Judgment where
+  toMathML = toMathML . embedJudgment
+
 type TypeCheckQuery = Judgment
 
+embedTypeCheckQuery :: TypeCheckQuery -> GeneralTypeQuery DTTdB.Signature DTTdB.Context Preterm DTTdB.Preterm 
+embedTypeCheckQuery = embedJudgment
+
 data TypeInferQuery = TypeInferQuery DTTdB.Signature DTTdB.Context Preterm deriving (Eq)
+
+embedTypeInferQuery :: TypeInferQuery -> GeneralTypeQuery DTTdB.Signature DTTdB.Context Preterm DTTdB.Preterm 
+embedTypeInferQuery (TypeInferQuery sig cxt trm) = GeneralTypeQuery sig cxt (Term trm) Question
+
+instance Show TypeInferQuery where
+  show = T.unpack . toText
+instance SimpleText TypeInferQuery where
+  toText = toText . embedTypeInferQuery
+instance Typeset TypeInferQuery where
+  toTeX = toTeX . embedTypeInferQuery
+instance MathML TypeInferQuery where
+  toMathML = toMathML . embedTypeInferQuery
 
 
 

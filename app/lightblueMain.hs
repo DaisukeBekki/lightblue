@@ -19,6 +19,7 @@ import qualified Data.Map as M            --container
 import qualified Data.Time as Time        --time
 import qualified Parser.ChartParser as CP
 import qualified Parser.Language.Japanese.MyLexicon as LEX
+import Parser.Language (LangOptions(..),jpOptions)
 import qualified Interface as I
 import qualified Interface.Text as T
 import qualified Interface.HTML as I
@@ -98,7 +99,7 @@ optionParser =
                  (progDesc "Local options: [-o|--output tree|postag|numeration] [-s|--style html|text|tex|xml] [--typecheck] (The default values: -o tree -s html)" ))
       <> command "infer"
            (info inferOptionParser
-                 (progDesc "Local options: [-p|--prover wani|coq|diag] [--nsample n] (The default values: -p wani --nsample 0)" ))
+                 (progDesc "Local options: [-p|--prover wani|null] [--nsample n] (The default values: -p wani --nsample 0)" ))
       <> command "debug"
            (info debugOptionParser
                  (progDesc "shows all the parsing results between the two pivots. Local options: INT INT (No default values)" ))
@@ -238,17 +239,14 @@ lightblueMain (Options commands input filepath nbest beamw nsample iftime) = do
     lightblueMainLocal (Infer proverName) contents = do
       let handle = S.stdout;
           inferenceSetting = InferenceSetting beamw nbest Nothing Nothing typeCheck proverName
-      case proverName of
-        Wani -> S.hPutStrLn handle $ I.headerOf I.HTML
-        Null -> return ()
+      S.hPutStrLn handle $ I.headerOf I.HTML
       case input of
         SENTENCES -> do -- lightblue infer -i sentence 
           let sentences = T.lines contents 
               inferencePair = if null sentences
                 then InferencePair [] T.empty
                 else InferencePair (init sentences) (last sentences)
-          infResult <- checkInference inferenceSetting inferencePair
-          T.hPutStrLn handle $ "infResult shall be shown here" -- I.toMathML infResult
+          checkInference inferenceSetting inferencePair
         JSEM -> do  --  ligthblue infer -i jsem -f ../JSeM_beta/JSeM_beta_150415.xml
           parsedJSeM <- J.xml2jsemData $ T.toStrict contents
           let parsedJSeM' = if nsample == 0
@@ -259,11 +257,8 @@ lightblueMain (Options commands input filepath nbest beamw nsample iftime) = do
             let inferencePair = InferencePair (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
             --mapM_ (T.putStrLn . T.fromStrict) $ J.premises j
             --T.putStrLn $ T.fromStrict $ J.hypothesis j
-            infResult <- checkInference inferenceSetting inferencePair
-            T.hPutStrLn handle $ "infResult shall be shown here" --I.toMathML infResult
-      case proverName of
-        Wani -> S.hPutStrLn handle $ I.footerOf I.HTML
-        Null -> return ()
+            checkInference inferenceSetting inferencePair
+      S.hPutStrLn handle $ I.footerOf I.HTML
     -- |
     -- | Debug
     -- |
@@ -276,7 +271,7 @@ lightblueMain (Options commands input filepath nbest beamw nsample iftime) = do
       mapM_
         --(\(sid,sentence) -> do
         (\(_,sentence) -> do
-          chart <- CP.parse beamw True (\_ _ -> id) sentence
+          chart <- CP.parse (CP.ParseSetting jpOptions beamw True Nothing Nothing) sentence
           --let filterednodes = concat $ map snd $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
           --I.printNodes S.stdout I.HTML sid sentence False filterednodes
           mapM_ (\((x,y),node) -> do
@@ -386,7 +381,7 @@ parseSentence beam score sentence = do
   (i,j,k,total) <- score
   S.putStr $ "[" ++ show (total+1) ++ "] "
   T.putStrLn sentence
-  chart <- CP.parse beam True (\_ _ -> id) sentence
+  chart <- CP.parse (CP.ParseSetting jpOptions beam True Nothing Nothing) sentence
   case CP.extractParseResult beam chart of
     CP.Full nodes -> 
        do

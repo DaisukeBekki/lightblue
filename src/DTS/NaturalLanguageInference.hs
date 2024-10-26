@@ -18,17 +18,24 @@ module DTS.NaturalLanguageInference (
   , checkInference
   ) where
 
-import Control.Monad (forM)               --base
+import Control.Monad (liftM,forM,join)          --base
+import Control.Monad.State (lift)         --mtl
 import qualified Data.Char as C           --base
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.List as L           --base
-import qualified Parser.ChartParser as CP
-import qualified Interface.HTML as HTML
-import qualified Interface.TeX as TEX
-import qualified Interface.Tree as I
+import ListT (ListT(..),fromFoldable,toList,cons)      --list-t
+import qualified Parser.ChartParser as CCG
+import Interface 
+import Interface.Text
+import Interface.HTML
+import Interface.TeX
+import Interface.Tree as Tree
+import Parser.Language (LangOptions(..),jpOptions)
 import qualified DTS.UDTTdeBruijn as UDTT
+import qualified DTS.UDTTwithName as UDTTwN
 import qualified DTS.DTTdeBruijn as DTT
+import qualified DTS.DTTwithName as DTTwN
 import qualified DTS.QueryTypes as QT
 import qualified DTS.TypeChecker as TY
 import qualified DTS.Prover.Wani.Prove as Wani
@@ -49,7 +56,7 @@ data InferencePair = InferencePair {
   , hypothesis :: T.Text -- ^ a hypothesis
   } deriving (Eq, Show)
 
-data InferenceResult = InferenceResult (InferencePair, [CP.Node], [UDTT.Preterm], DTT.Signature, [I.Tree QT.DTTrule DTT.Judgment]) --, QT.ProofSearchQuery, QT.ProofSearchResult)) 
+data InferenceResult = InferenceResult (InferencePair, [CCG.Node], [UDTT.Preterm], DTT.Signature, [Tree QT.DTTrule DTT.Judgment]) --, QT.ProofSearchQuery, QT.ProofSearchResult)) 
 
 data ProverName = Wani | Null deriving (Eq,Show)
 
@@ -65,19 +72,71 @@ getProver pn = case pn of
   Wani -> Wani.prove'
   Null -> TY.nullProver
 
+data SequentialParseResult = SequentialParseResult {
+  parseTree :: CCG.Node
+  , typeCheckQuery :: UDTT.TypeCheckQuery
+  , subsequentTypeCheck :: ListT IO SequentialTypeCheckResult
+  } 
+  
+data SequentialTypeCheckResult = SequentialTypeCheckResult {
+  typeCheckDiagram :: QT.DTTProofDiagram
+  , subsequentParse :: ListT IO SequentialParseResult
+  } 
+
+-- | Parse sequential texts, and check their semantic felicity condition.
+sequentialParse :: CCG.ParseSetting -> DTT.Signature -> DTT.Context -> [T.Text] -> ListT IO SequentialParseResult
+sequentialParse _ _ _ [] = mempty
+sequentialParse ps@CCG.ParseSetting{..} signtr contxt (text:texts) = do
+  -- :: IO [CCG.node] =lift=> ListT IO [CCG.node] =fmap(foldable)=> ListT IO (ListT IO CCG.Node) =join=> ListT IO CCG.Node
+  node <- join $ fmap fromFoldable $ lift $ CCG.simpleParse beamWidth text 
+  let signtr' = L.nub $ (CCG.sig node) ++ signtr
+  let tcQuery = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
+  tcDiagram <- TY.typeCheck (getProver Wani) tcQuery
+  let contxt' = (DTT.trm $ Tree.node tcDiagram):contxt
+  return $ SequentialParseResult node tcQuery $ do
+             return $ SequentialTypeCheckResult tcDiagram $ sequentialParse ps signtr' contxt' texts
+
+-- | Flatten SequentialParseResults
+enumerateSequentialParseResult :: ListT IO SequentialParseResult -> ListT IO (ListT IO (CCG.Node, UDTT.TypeCheckQuery, QT.DTTProofDiagram))
+enumerateSequentialParseResult parseResults = do
+  pr <- parseResults
+  tcr <- subsequentTypeCheck pr
+  spr <- enumerateSequentialParseResult $ subsequentParse tcr
+  return $ cons (parseTree pr, typeCheckQuery pr, typeCheckDiagram tcr) spr
+
+flatten :: ListT IO (ListT IO a) -> IO [[a]]
+-- | ListT m (ListT m a) => m [ListT m a] => m [m [a]] => m (m [[a]])
+flatten = join . liftM (sequence . map toList) . toList
+
+printTriple :: (CCG.Node, UDTT.TypeCheckQuery, QT.DTTProofDiagram) -> IO ()
+printTriple (node, tcQuery, diagram) = T.putStrLn $ T.concat [
+    startMathML
+    , toMathML node
+    , T.pack $ interimOf HTML ""
+    , toMathML $ UDTTwN.fromDeBruijnJudgment tcQuery
+    , T.pack $ interimOf HTML ""
+    , toMathML $ diagram
+    , endMathML
+    ]
+
 -- | Checks if the premise texts entails the hypothesis text.
 -- | The specification of this function reflects a view about what are entailments between texts,
 -- | that is an interface problem between natural language semantics and logic
 checkInference :: InferenceSetting 
                    -> InferencePair 
-                   -> IO InferenceResult
+                   -> IO ()
 checkInference InferenceSetting{..} infPair = do
-  return $ InferenceResult ((InferencePair [] T.empty), [], [], [], [])
+  -- | Parse sentences
+  let sentences = reverse $ (hypothesis infPair):(reverse $ premises infPair) 
+      parseResult = sequentialParse CCG.defaultParseSetting [] [] sentences 
+  results <- flatten $ enumerateSequentialParseResult parseResult
+  mapM_ printTriple $ head results
+
 {-
   -- | Parse sentences
   let sentences = (hypothesis infPair):(reverse $ premises infPair)     -- | reverse the order of sentences (hypothesis first, the first premise last)
-  nodeslist <- mapM (CP.simpleParse beam) sentences -- | [[CCG.Node]] parse sentences
-  let pairslist = map ((map (\node -> (node, UDTT.betaReduce $ UDTT.sigmaElimination $ CP.sem node))).(take nbest)) nodeslist
+  nodeslist <- mapM (CCG.simpleParse beam) sentences -- | [[CCG.Node]] parse sentences
+  let pairslist = map ((map (\node -> (node, UDTT.betaReduce $ UDTT.sigmaElimination $ CCG.sem node))).(take nbest)) nodeslist
       -- | Example: [[(nodeA1,srA1),(nodeA2,srA2)],[(nodeB1,srB1),(nodeB2,srB2)],[(nodeC1,srC1),(nodeC2,srC2)]]
       -- |          where sentences = A,B,C (where A is the hypothesis), nbest = 2_
       chosenlist = choice pairslist
@@ -87,7 +146,7 @@ checkInference InferenceSetting{..} infPair = do
       prover = getProver proverName
   return $ InferenceResult $ do
     (ccgnds,srs) <- QT.ListEx (nodeSRlist, "")
-    let allsigs = foldl L.union [] $ map CP.sig ccgnds;
+    let allsigs = foldl L.union [] $ map CCG.sig ccgnds;
     typeCheckTrees <- mapM (\sr -> typeChecker prover $ QT.TypeCheckQuery allsigs [] sr UDTT.Type) $ drop 1 srs
     return (infPair, ccgnds, srs, allsigs, typeCheckTrees)
     {-
@@ -99,7 +158,7 @@ checkInference InferenceSetting{..} infPair = do
 -}
 
 -- type ProofSearchResult = [Tree (U.Judgment U.DTT) UDTTrule]
--- data InferenceResult = InferenceResult [([CP.Node], QT.ProofSearchResult)] deriving (Eq)
+-- data InferenceResult = InferenceResult [([CCG.Node], QT.ProofSearchResult)] deriving (Eq)
 
 -- | (x:xs) :: [[a]], x :: [a], xs :: [[a]], y :: a, choice xs :: [[a]], ys :: [a], (y:ys) :: [a] 
 choice :: [[a]] -> [[a]]

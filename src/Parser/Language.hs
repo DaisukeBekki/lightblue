@@ -8,9 +8,10 @@ Stability   : beta
 Language settings
 -}
 module Parser.Language (
-  Language(..),
-  LangOptions(..),
-  jpOptions
+  Language(..)
+  , LangOptions(..)
+  , jpOptions
+  , enOptions
   ) where
 
 import qualified Data.Text.Lazy as T    --text
@@ -23,7 +24,7 @@ data Language = Japanese | English deriving (Eq,Show,Read)
 data LangOptions = LangOptions {
   name :: Language
   , existDelimiter :: Bool
-  , meaninglessSymbols :: T.Text
+  , symbolsToIgnore :: T.Text
   , punctuations :: T.Text
   } deriving (Eq,Show)
 
@@ -31,15 +32,15 @@ jpOptions :: LangOptions
 jpOptions = LangOptions {
   name = Japanese
   , existDelimiter = False
-  , meaninglessSymbols = "！？!?…「」◎○●▲△▼▽■□◆◇★☆※†‡."
-  , punctuations = "，,-―?／＼"
+  , symbolsToIgnore = "！？!?…「」◎○●▲△▼▽■□◆◇★☆※†‡."
+  , punctuations = "，,-――?／＼"
   } 
 
 enOptions :: LangOptions
 enOptions = LangOptions {
   name = English
   , existDelimiter = True
-  , meaninglessSymbols = ""
+  , symbolsToIgnore = ""
   , punctuations = ","
   }
 
