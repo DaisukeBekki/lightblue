@@ -15,6 +15,14 @@ module DTS.NaturalLanguageInference (
   , InferencePair(..)
   , InferenceResult(..)
   , ProverName(..)
+  , getProver
+  , SentenceAndParseTrees(..)
+  , ParseTreesAndFelicityCheck(..)
+  , FelicityCheckAndMore(..)
+  , MoreSentencesOrInference(..)
+  , InferenceAndResults(..)
+  , singleParseWithTypeCheck
+  , sequentialParseWithTypeCheck
   , checkInference
   ) where
 
@@ -73,29 +81,43 @@ getProver pn = case pn of
   Null -> TY.nullProver
 
 {-- Data structure for sequential parsing and the inference --} 
-data SentenceAndParseResults = SentenceAndParseResults T.Text (ListT IO ParseTreesAndFelicityCheck) -- ^ A next sentence and its parse results
-data ParseTreesAndFelicityCheck = ParseTreesAndFelicityCheck CCG.Node UDTT.TypeCheckQuery (ListT IO TypeCheckDiagramAndMore) -- ^ A parse result, type check query for its felicity condition, and its results
-data TypeCheckDiagramAndMore = TypeCheckDiagramAndMore QT.DTTProofDiagram MoreSentenceOrProof -- ^ A type check diagram and the next sentence if this is not the last sentence, or an inference query otherwise.
-data MoreSentenceOrProof = MoreSentence SentenceAndParseResults | AndProof InferenceAndResults | NoSentenceToParse 
+data SentenceAndParseTrees = SentenceAndParseResults T.Text (ListT IO ParseTreesAndFelicityCheck) -- ^ A next sentence and its parse results
+data ParseTreesAndFelicityCheck = ParseTreesAndFelicityCheck CCG.Node UDTT.TypeCheckQuery (ListT IO FelicityCheckAndMore) -- ^ A parse result, type check query for its felicity condition, and its results
+data FelicityCheckAndMore = FelicityCheckAndMore QT.DTTProofDiagram MoreSentencesOrInference -- ^ A type check diagram and the next sentence if this is not the last sentence, or an inference query otherwise.
+data MoreSentencesOrInference = MoreSentences SentenceAndParseTrees | AndInference InferenceAndResults | NoSentence 
 data InferenceAndResults = InferenceAndResults DTT.ProofSearchQuery (ListT IO QT.DTTProofDiagram) -- ^ A proof search query for the inference and its results.
 
+-- | Parse single text, and check its semantic felicity condition.
+singleParseWithTypeCheck :: CCG.ParseSetting -> DTT.Signature -> DTT.Context -> T.Text -> SentenceAndParseTrees
+singleParseWithTypeCheck CCG.ParseSetting{..} signtr contxt text = 
+  SentenceAndParseResults text $ do
+    -- :: IO [CCG.node] =lift=> ListT IO [CCG.node] =fmap(foldable)=> ListT IO (ListT IO CCG.Node) =join=> ListT IO CCG.Node
+    node <- join $ fmap fromFoldable $ lift $ CCG.simpleParse beamWidth text 
+    let signtr' = L.nub $ (CCG.sig node) ++ signtr
+    let tcQuery = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
+    tcDiagram <- TY.typeCheck (getProver Wani) tcQuery
+    return $ ParseTreesAndFelicityCheck node tcQuery $ do
+               return $ FelicityCheckAndMore tcDiagram NoSentence
+
 -- | Parse sequential texts, and check their semantic felicity condition.
-sequentialParse :: CCG.ParseSetting -> DTT.Signature -> DTT.Context -> [T.Text] -> MoreSentenceOrProof
-sequentialParse _ _ [] [] = NoSentenceToParse
-sequentialParse _ signtr (typ:contxt) [] = 
+sequentialParseWithTypeCheck :: CCG.ParseSetting -> DTT.Signature -> DTT.Context -> [T.Text] -> MoreSentencesOrInference
+sequentialParseWithTypeCheck _ _ [] [] = NoSentence
+sequentialParseWithTypeCheck _ signtr (typ:contxt) [] = 
   let psq = DTT.ProofSearchQuery signtr contxt typ 
       pss = QT.ProofSearchSetting Nothing Nothing (Just QT.Intuitionistic)
-  in AndProof $ InferenceAndResults psq $ (getProver Wani) pss psq
-sequentialParse ps@CCG.ParseSetting{..} signtr contxt (text:texts) = 
-  MoreSentence $ SentenceAndParseResults text $ do
-    -- :: IO [CCG.node] =lift=> ListT IO [CCG.node] =fmap(foldable)=> ListT IO (ListT IO CCG.Node) =join=> ListT IO CCG.Node
+  in AndInference $ InferenceAndResults psq $ (getProver Wani) pss psq
+sequentialParseWithTypeCheck ps@CCG.ParseSetting{..} signtr contxt (text:texts) = 
+  MoreSentences $ SentenceAndParseResults text $ do
+    -- | IO [CCG.node] =lift=>           ListT IO [CCG.node] 
+    -- |               =fmap(foldable)=> ListT IO (ListT IO CCG.Node)
+    -- |               =join=>           ListT IO CCG.Node
     node <- join $ fmap fromFoldable $ lift $ CCG.simpleParse beamWidth text 
     let signtr' = L.nub $ (CCG.sig node) ++ signtr
     let tcQuery = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
     tcDiagram <- TY.typeCheck (getProver Wani) tcQuery
     let contxt' = (DTT.trm $ Tree.node tcDiagram):contxt
     return $ ParseTreesAndFelicityCheck node tcQuery $ do
-              return $ TypeCheckDiagramAndMore tcDiagram $ sequentialParse ps signtr' contxt' texts
+               return $ FelicityCheckAndMore tcDiagram $ sequentialParseWithTypeCheck ps signtr' contxt' texts
 
 -- | Flatten SequentialParseResults
 -- enumerateSequentialParseResult :: SentenceAndParseResult -> ListT IO (ListT IO (CCG.Node, UDTT.TypeCheckQuery, QT.DTTProofDiagram))
@@ -129,7 +151,7 @@ checkInference :: InferenceSetting
 checkInference InferenceSetting{..} infPair = do
   -- | Parse sentences
   let sentences = reverse $ (hypothesis infPair):(reverse $ premises infPair) 
-      parseResult = sequentialParse CCG.defaultParseSetting [("dummy",DTT.Entity)] [] sentences 
+      parseResult = sequentialParseWithTypeCheck CCG.defaultParseSetting [("dummy",DTT.Entity)] [] sentences 
   -- results <- flatten $ enumerateSequentialParseResult parseResult
   -- mapM_ printTriple $ head results
   print "ToDo: print and analyze results of sequential parse"
@@ -163,9 +185,9 @@ checkInference InferenceSetting{..} infPair = do
 -- data InferenceResult = InferenceResult [([CCG.Node], QT.ProofSearchResult)] deriving (Eq)
 
 -- | (x:xs) :: [[a]], x :: [a], xs :: [[a]], y :: a, choice xs :: [[a]], ys :: [a], (y:ys) :: [a] 
-choice :: [[a]] -> [[a]]
-choice [] = [[]]
-choice (x:xs) = [(y:ys) | y <- x, ys <- choice xs]
+-- choice :: [[a]] -> [[a]]
+-- choice [] = [[]]
+-- choice (x:xs) = [(y:ys) | y <- x, ys <- choice xs]
 
 {-
 instance HTML.MathML InferenceResult where
