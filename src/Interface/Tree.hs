@@ -59,4 +59,7 @@ instance (MathML r, MathML a) => MathML (Tree r a) where
     , ")</mstyle></mrow>"
     ]
 
+instance Functor (Tree r) where
+  fmap f (Tree ruleName node daughters) =
+    Tree ruleName (f node) (map (fmap f) daughters)
 

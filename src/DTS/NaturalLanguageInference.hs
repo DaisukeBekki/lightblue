@@ -115,7 +115,7 @@ printTriple (node, tcQuery, diagram) = T.putStrLn $ T.concat [
     , T.pack $ interimOf HTML ""
     , toMathML $ UDTTwN.fromDeBruijnJudgment tcQuery
     , T.pack $ interimOf HTML ""
-    , toMathML $ diagram
+    , toMathML $ fmap DTTwN.fromDeBruijnJudgment diagram
     , endMathML
     ]
 
