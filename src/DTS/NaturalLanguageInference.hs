@@ -72,37 +72,38 @@ getProver pn = case pn of
   Wani -> Wani.prove'
   Null -> TY.nullProver
 
-data SequentialParseResult = SequentialParseResult {
-  parseTree :: CCG.Node
-  , typeCheckQuery :: UDTT.TypeCheckQuery
-  , subsequentTypeCheck :: ListT IO SequentialTypeCheckResult
-  } 
-  
-data SequentialTypeCheckResult = SequentialTypeCheckResult {
-  typeCheckDiagram :: QT.DTTProofDiagram
-  , subsequentParse :: ListT IO SequentialParseResult
-  } 
+{-- Data structure for sequential parsing and the inference --} 
+data SentenceAndParseResults = SentenceAndParseResults T.Text (ListT IO ParseTreesAndFelicityCheck) -- ^ A next sentence and its parse results
+data ParseTreesAndFelicityCheck = ParseTreesAndFelicityCheck CCG.Node UDTT.TypeCheckQuery (ListT IO TypeCheckDiagramAndMore) -- ^ A parse result, type check query for its felicity condition, and its results
+data TypeCheckDiagramAndMore = TypeCheckDiagramAndMore QT.DTTProofDiagram MoreSentenceOrProof -- ^ A type check diagram and the next sentence if this is not the last sentence, or an inference query otherwise.
+data MoreSentenceOrProof = MoreSentence SentenceAndParseResults | AndProof InferenceAndResults | NoSentenceToParse 
+data InferenceAndResults = InferenceAndResults DTT.ProofSearchQuery (ListT IO QT.DTTProofDiagram) -- ^ A proof search query for the inference and its results.
 
 -- | Parse sequential texts, and check their semantic felicity condition.
-sequentialParse :: CCG.ParseSetting -> DTT.Signature -> DTT.Context -> [T.Text] -> ListT IO SequentialParseResult
-sequentialParse _ _ _ [] = mempty
-sequentialParse ps@CCG.ParseSetting{..} signtr contxt (text:texts) = do
-  -- :: IO [CCG.node] =lift=> ListT IO [CCG.node] =fmap(foldable)=> ListT IO (ListT IO CCG.Node) =join=> ListT IO CCG.Node
-  node <- join $ fmap fromFoldable $ lift $ CCG.simpleParse beamWidth text 
-  let signtr' = L.nub $ (CCG.sig node) ++ signtr
-  let tcQuery = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
-  tcDiagram <- TY.typeCheck (getProver Wani) tcQuery
-  let contxt' = (DTT.trm $ Tree.node tcDiagram):contxt
-  return $ SequentialParseResult node tcQuery $ do
-             return $ SequentialTypeCheckResult tcDiagram $ sequentialParse ps signtr' contxt' texts
+sequentialParse :: CCG.ParseSetting -> DTT.Signature -> DTT.Context -> [T.Text] -> MoreSentenceOrProof
+sequentialParse _ _ [] [] = NoSentenceToParse
+sequentialParse _ signtr (typ:contxt) [] = 
+  let psq = DTT.ProofSearchQuery signtr contxt typ 
+      pss = QT.ProofSearchSetting Nothing Nothing (Just QT.Intuitionistic)
+  in AndProof $ InferenceAndResults psq $ (getProver Wani) pss psq
+sequentialParse ps@CCG.ParseSetting{..} signtr contxt (text:texts) = 
+  MoreSentence $ SentenceAndParseResults text $ do
+    -- :: IO [CCG.node] =lift=> ListT IO [CCG.node] =fmap(foldable)=> ListT IO (ListT IO CCG.Node) =join=> ListT IO CCG.Node
+    node <- join $ fmap fromFoldable $ lift $ CCG.simpleParse beamWidth text 
+    let signtr' = L.nub $ (CCG.sig node) ++ signtr
+    let tcQuery = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
+    tcDiagram <- TY.typeCheck (getProver Wani) tcQuery
+    let contxt' = (DTT.trm $ Tree.node tcDiagram):contxt
+    return $ ParseTreesAndFelicityCheck node tcQuery $ do
+              return $ TypeCheckDiagramAndMore tcDiagram $ sequentialParse ps signtr' contxt' texts
 
 -- | Flatten SequentialParseResults
-enumerateSequentialParseResult :: ListT IO SequentialParseResult -> ListT IO (ListT IO (CCG.Node, UDTT.TypeCheckQuery, QT.DTTProofDiagram))
-enumerateSequentialParseResult parseResults = do
-  pr <- parseResults
-  tcr <- subsequentTypeCheck pr
-  spr <- enumerateSequentialParseResult $ subsequentParse tcr
-  return $ cons (parseTree pr, typeCheckQuery pr, typeCheckDiagram tcr) spr
+-- enumerateSequentialParseResult :: SentenceAndParseResult -> ListT IO (ListT IO (CCG.Node, UDTT.TypeCheckQuery, QT.DTTProofDiagram))
+-- enumerateSequentialParseResult parseResults = do
+--   pr <- parseResults
+--   tcr <- subsequentTypeCheck pr
+--   spr <- enumerateSequentialParseResult $ subsequentParse tcr
+--   return $ cons (parseTree pr, typeCheckQuery pr, typeCheckDiagram tcr) spr
 
 flatten :: ListT IO (ListT IO a) -> IO [[a]]
 -- | ListT m (ListT m a) => m [ListT m a] => m [m [a]] => m (m [[a]])
@@ -129,8 +130,9 @@ checkInference InferenceSetting{..} infPair = do
   -- | Parse sentences
   let sentences = reverse $ (hypothesis infPair):(reverse $ premises infPair) 
       parseResult = sequentialParse CCG.defaultParseSetting [("dummy",DTT.Entity)] [] sentences 
-  results <- flatten $ enumerateSequentialParseResult parseResult
-  mapM_ printTriple $ head results
+  -- results <- flatten $ enumerateSequentialParseResult parseResult
+  -- mapM_ printTriple $ head results
+  print "ToDo: print and analyze results of sequential parse"
 
 {-
   -- | Parse sentences
