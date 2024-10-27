@@ -116,26 +116,32 @@ typeInfer prover tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
       diagramM <- typeCheck prover $ UDTTdB.Judgment sig ctx termM termA'
       let termM' = DTTdB.trm $ node diagramM
       return $ Tree QT.IqI (DTTdB.Judgment sig ctx (DTTdB.Refl termA' termM') (DTTdB.Eq termA' termM' termM')) [diagramA, diagramM]
-    --UDTTdB.Idpeel
+    --ToDo: add UDTTdB.Idpeel
     UDTTdB.Nat -> return $ Tree QT.NatF (DTTdB.Judgment sig ctx DTTdB.Nat DTTdB.Type) []
     UDTTdB.Zero -> return $ Tree QT.NatI (DTTdB.Judgment sig ctx DTTdB.Zero DTTdB.Nat) []
     UDTTdB.Succ termN -> do
       diagramN <- typeCheck prover $ UDTTdB.Judgment sig ctx termN DTTdB.Nat
       let termN' = DTTdB.trm $ node diagramN
       return $ Tree QT.NatI (DTTdB.Judgment sig ctx (DTTdB.Succ termN') DTTdB.Nat) [diagramN]
-    --UDTTdB.Natrec
-    {-
-    UDTTdB.Asp termA termB -> do
-      diagramA <- typeCheck prover $ UDTTdB.Judgment sig ctx termA UDTTdB.Type
-      let termA' = UDTTdB.trm $ node diagramA
+    --ToDo: add UDTTdB.Natrec
+    UDTTdB.Asp termA -> do  -- | Underspecified term
+      diagramA <- typeCheck prover $ UDTTdB.Judgment sig ctx termA DTTdB.Type
+      let termA' = DTTdB.trm $ node diagramA
           pss = QT.ProofSearchSetting Nothing Nothing (Just QT.Intuitionistic)
-          psq = QT.ProofSearchQuery sig ctx termA'
+          psq = DTTdB.ProofSearchQuery sig ctx termA'
       diagramQ <- prover pss psq
-      lift $ T.putStrLn $ toText psq
-      let termM = UDTTdB.toUDTT $ UDTTdB.trm $ node diagramQ
-          termB' = UDTTdB.betaReduce $ UDTTdB.subst termB termM 0
-      typeCheck prover $ UDTTdB.Judgment sig ctx termB' UDTTdB.Type
-    -}
+      lift $ T.putStrLn $ T.concat ["Proof search launched: ", toText psq]
+      return diagramQ
+    -- UDTTdB.Asp termA termB -> do  -- | Underspecified type 
+    --   diagramA <- typeCheck prover $ UDTTdB.Judgment sig ctx termA UDTTdB.Type
+    --   let termA' = UDTTdB.trm $ node diagramA
+    --       pss = QT.ProofSearchSetting Nothing Nothing (Just QT.Intuitionistic)
+    --       psq = QT.ProofSearchQuery sig ctx termA'
+    --   diagramQ <- prover pss psq
+    --   lift $ T.putStrLn $ toText psq
+    --   let termM = UDTTdB.toUDTT $ UDTTdB.trm $ node diagramQ
+    --       termB' = UDTTdB.betaReduce $ UDTTdB.subst termB termM 0
+    --   typeCheck prover $ UDTTdB.Judgment sig ctx termB' UDTTdB.Type
     -- | type inference fails
     termM -> fail $ T.unpack $ T.concat [toText termM, " is not an inferable term."]
 

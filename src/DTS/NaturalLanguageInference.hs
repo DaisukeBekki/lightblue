@@ -128,7 +128,7 @@ checkInference :: InferenceSetting
 checkInference InferenceSetting{..} infPair = do
   -- | Parse sentences
   let sentences = reverse $ (hypothesis infPair):(reverse $ premises infPair) 
-      parseResult = sequentialParse CCG.defaultParseSetting [] [] sentences 
+      parseResult = sequentialParse CCG.defaultParseSetting [("dummy",DTT.Entity)] [] sentences 
   results <- flatten $ enumerateSequentialParseResult parseResult
   mapM_ printTriple $ head results
 

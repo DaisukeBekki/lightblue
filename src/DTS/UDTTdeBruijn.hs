@@ -33,6 +33,7 @@ module DTS.UDTTdeBruijn (
   -- , Signature
   -- , Context
   , Judgment(..)
+  , toUDTTJudgment
   , TypeCheckQuery(..)
   , TypeInferQuery(..)
   ) where
@@ -548,6 +549,9 @@ instance Typeset Judgment where
   toTeX = toTeX . embedJudgment
 instance MathML Judgment where
   toMathML = toMathML . embedJudgment
+
+toUDTTJudgment :: DTTdB.Judgment -> Judgment
+toUDTTJudgment (DTTdB.Judgment signtr contxt dttTerm typ) = Judgment signtr contxt (toUDTT dttTerm) typ
 
 type TypeCheckQuery = Judgment
 
