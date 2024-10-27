@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances, DeriveGeneric, DeriveAnyClass #-}
 
 {-|
 Copyright   : (c) Daisuke Bekki, 2024
@@ -33,7 +33,8 @@ module DTS.DTTdeBruijn (
 
 import qualified GHC.Generics        as G --base
 import qualified Data.Text.Lazy as T  --text
-import qualified Codec.Serialise as S --serialise
+import Data.Store (Store(..))         --store
+--import qualified Codec.Serialise as S --serialise
 import Interface.Text                 --lightblue
 import Interface.TeX                  --lightblue
 import Interface.HTML                 --lightblue

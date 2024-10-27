@@ -42,6 +42,7 @@ import qualified GHC.Generics        as G --base
 import qualified Data.List as L           --base
 import qualified Data.Text.Lazy as T    -- text
 import qualified Data.Text.Lazy.IO as T -- text
+import Data.Store (Store(..))           --store
 import Interface.Text
 import Interface.TeX
 import Interface.HTML
