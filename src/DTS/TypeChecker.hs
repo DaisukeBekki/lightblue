@@ -130,7 +130,7 @@ typeInfer prover tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
           pss = QT.ProofSearchSetting Nothing Nothing (Just QT.Intuitionistic)
           psq = DTTdB.ProofSearchQuery sig ctx termA'
       diagramQ <- prover pss psq
-      lift $ T.putStrLn $ T.concat ["Proof search launched: ", toText psq]
+      --lift $ T.putStrLn $ T.concat ["Proof search launched: ", toText psq]
       return diagramQ
     -- UDTTdB.Asp termA termB -> do  -- | Underspecified type 
     --   diagramA <- typeCheck prover $ UDTTdB.Judgment sig ctx termA UDTTdB.Type

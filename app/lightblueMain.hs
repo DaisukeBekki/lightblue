@@ -226,7 +226,7 @@ lightblueMain (Options commands input filepath nbest beamW nsample iftime) = do
         (\(sid,sentence) -> do
           let parseResult = NLI.singleParseWithTypeCheck parseSetting [("dummy",DTT.Entity)] [] sentence
           case output of
-            TREE       -> NLI.printParseResults handle style sid ifTypeCheck parseResult
+            TREE       -> NLI.printSentenceAndParseTrees handle style parseResult
             NUMERATION -> I.printNumeration handle style sentence
             POSTAG     -> do
                           let (NLI.SentenceAndParseTrees _ parseTrees) = parseResult
@@ -235,7 +235,7 @@ lightblueMain (Options commands input filepath nbest beamW nsample iftime) = do
                           I.posTagger handle style $ take nbest nodes
           --let len = length nodes;
           S.hPutStrLn handle $ I.interimOf style $ "" --"[" ++ show (min (length nbestnodes) len) ++ " parse result(s) shown out of " ++ show len ++ " for s" ++ (show $ sid) ++ "]"
-          ) $ zip ([0..]::[Int]) sentences
+          ) $ zip ([1..]::[Int]) sentences
       S.hPutStr handle $ I.footerOf style
     -- |
     -- | Infer

@@ -24,17 +24,18 @@ module DTS.NaturalLanguageInference (
   , singleParseWithTypeCheck
   , sequentialParseWithTypeCheck
   , checkInference
-  , printParseResults
+  , printSentenceAndParseTrees
+  , printMoreSentenceOrInference
   ) where
 
-import Control.Monad (forM,forM_,liftM,join) --base
+import Control.Monad (forM_,join) --base
 import Control.Monad.State (lift)         --mtl
 import qualified System.IO as S           --base
 import qualified Data.Char as C           --base
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.List as L           --base
-import ListT (ListT(..),fromFoldable,toList,cons)      --list-t
+import ListT (ListT(..),fromFoldable,toList) --list-t
 import qualified Parser.ChartParser as CCG
 import qualified Parser.CCG as CCG
 import Interface 
@@ -42,7 +43,7 @@ import Interface.Text
 import Interface.HTML as HTML
 import Interface.TeX
 import Interface.Tree as Tree
-import Parser.Language (LangOptions(..),jpOptions)
+--import Parser.Language (LangOptions(..),jpOptions)
 import qualified DTS.UDTTdeBruijn as UDTT
 import qualified DTS.UDTTwithName as UDTTwN
 import qualified DTS.DTTdeBruijn as DTT
@@ -121,6 +122,54 @@ sequentialParseWithTypeCheck parseSetting signtr contxt (text:texts) =
     return $ ParseTreesAndFelicityCheck node tcQuery $ do
                return $ FelicityCheckAndMore tcDiagram $ sequentialParseWithTypeCheck parseSetting signtr' contxt' texts
 
+-- | Checks if the premise texts entails the hypothesis text.
+-- | The specification of this function reflects a view about what are entailments between texts,
+-- | that is an interface problem between natural language semantics and logic
+checkInference :: InferenceSetting 
+                   -> InferencePair 
+                   -> IO ()
+checkInference InferenceSetting{..} infPair = do
+  -- | Parse sentences
+  let sentences = reverse $ (hypothesis infPair):(reverse $ premises infPair) 
+      parseResult = sequentialParseWithTypeCheck CCG.defaultParseSetting [("dummy",DTT.Entity)] [] sentences 
+  printMoreSentenceOrInference S.stdout HTML parseResult
+  -- | ToDo: analyze results of sequential parse"
+
+-- | prints a CCG node (=i-th parsing result for a given sentence) in a specified style (=HTML|text|XML|TeX)
+printSentenceAndParseTrees :: S.Handle -> Style -> SentenceAndParseTrees -> IO ()
+printSentenceAndParseTrees h style (SentenceAndParseTrees sentence parseTrees) = do
+    S.hPutStrLn h $ interimOf style ""
+    T.hPutStrLn h sentence
+    parseTrees' <- toList parseTrees 
+    -- | [ParseTreesAndFelicityCheck CCG.Node UDTT.TypeCheckQuery (ListT IO FelicityCheckAndMore) ]
+    forM_ (zip parseTrees' ([1..]::[Int])) $ \((ParseTreesAndFelicityCheck node tcQuery tcResults),ith) -> do
+      T.hPutStrLn h $ T.concat ["[parse ", T.pack $ show ith, ": score=", CCG.showScore node, "] ", CCG.pf node]
+      T.hPutStrLn h $ printer style node
+      S.hPutStrLn h $ interimOf style ""
+      T.hPutStrLn h $ printer style $ UDTTwN.fromDeBruijnJudgment tcQuery
+      tcResults' <- toList tcResults
+      forM_ (zip tcResults' ([1..]::[Int])) $ \((FelicityCheckAndMore tcDiagram moreResult),jth) -> do
+        T.hPutStrLn h $ T.concat ["[type check diagram ", T.pack $ show jth, "]"]
+        T.hPutStrLn h $ printer style $ fmap DTTwN.fromDeBruijnJudgment tcDiagram
+        printMoreSentenceOrInference h style moreResult
+
+printMoreSentenceOrInference :: S.Handle -> Style -> MoreSentencesOrInference -> IO ()
+printMoreSentenceOrInference h style (MoreSentences s) = printSentenceAndParseTrees h style s
+printMoreSentenceOrInference h style (AndInference (InferenceAndResults psq proofDiagrams)) = do
+  S.hPutStrLn h $ interimOf style ""
+  T.hPutStrLn h $ printer style $ DTTwN.fromDeBruijnProofSearchQuery psq
+  proofDiagrams' <- toList proofDiagrams
+  forM_ (zip proofDiagrams' ([1..]::[Int])) $ \(proofDiagram,kth) -> do
+    T.hPutStrLn h $ T.concat ["[proof diagram ", T.pack $ show kth, "]"]
+    T.hPutStrLn h $ printer style $ fmap DTTwN.fromDeBruijnJudgment proofDiagram
+printMoreSentenceOrInference h style NoSentence = S.hPutStr h $ interimOf style "No more sentence" 
+
+printer :: (SimpleText a, Typeset a, MathML a) => Style -> a -> T.Text
+printer TEXT = toText
+printer TEX  = toTeX
+printer HTML = \obj -> T.concat [HTML.startMathML, toMathML obj, HTML.endMathML]
+printer _    = toText
+
 -- | Flatten SequentialParseResults
 -- enumerateSequentialParseResult :: SentenceAndParseResult -> ListT IO (ListT IO (CCG.Node, UDTT.TypeCheckQuery, QT.DTTProofDiagram))
 -- enumerateSequentialParseResult parseResults = do
@@ -132,78 +181,6 @@ sequentialParseWithTypeCheck parseSetting signtr contxt (text:texts) =
 -- flatten :: ListT IO (ListT IO a) -> IO [[a]]
 -- -- | ListT m (ListT m a) => m [ListT m a] => m [m [a]] => m (m [[a]])
 -- flatten = join . liftM (sequence . map toList) . toList
-
-printTriple :: (CCG.Node, UDTT.TypeCheckQuery, QT.DTTProofDiagram) -> IO ()
-printTriple (node, tcQuery, diagram) = T.putStrLn $ T.concat [
-    startMathML
-    , toMathML node
-    , T.pack $ interimOf HTML ""
-    , toMathML $ UDTTwN.fromDeBruijnJudgment tcQuery
-    , T.pack $ interimOf HTML ""
-    , toMathML $ fmap DTTwN.fromDeBruijnJudgment diagram
-    , endMathML
-    ]
-
--- | Checks if the premise texts entails the hypothesis text.
--- | The specification of this function reflects a view about what are entailments between texts,
--- | that is an interface problem between natural language semantics and logic
-checkInference :: InferenceSetting 
-                   -> InferencePair 
-                   -> IO ()
-checkInference InferenceSetting{..} infPair = do
-  -- | Parse sentences
-  let sentences = reverse $ (hypothesis infPair):(reverse $ premises infPair) 
-      parseResult = sequentialParseWithTypeCheck CCG.defaultParseSetting [("dummy",DTT.Entity)] [] sentences 
-  -- results <- flatten $ enumerateSequentialParseResult parseResult
-  -- mapM_ printTriple $ head results
-  print "ToDo: print and analyze results of sequential parse"
-
--- | prints a CCG node (=i-th parsing result for a sid-th sentence) in a specified style (=HTML|text|XML|TeX)
-printParseResults :: S.Handle -> Style -> Int -> Bool -> SentenceAndParseTrees -> IO ()
-printParseResults handle _ sid ifTypeCheck (SentenceAndParseTrees sentence parseTrees) = do
-  S.hPutStr handle $ "<p>[s" ++ (show sid) ++ "] "
-  T.hPutStr handle sentence
-  S.hPutStr handle "</p>"
-  parseTrees' <- toList parseTrees 
-  -- | [ParseTreesAndFelicityCheck CCG.Node UDTT.TypeCheckQuery (ListT IO FelicityCheckAndMore) ]
-  forM_ (zip parseTrees' ([0..]::[Int])) $ \((ParseTreesAndFelicityCheck node tcQuery tcResults),ith) -> do
-          S.hPutStr handle $ "<p>[parse " ++ show ith ++ ": score="
-          T.hPutStr handle $ CCG.showScore node 
-          S.hPutStr handle "] "
-          T.hPutStr handle $ CCG.pf node
-          S.hPutStr handle "</p>"
-          mapM_ (T.hPutStr handle) [HTML.startMathML, HTML.toMathML node, HTML.endMathML]
-          mapM_ (T.hPutStr handle) [
-            HTML.startMathML
-            , toMathML $ UDTTwN.fromDeBruijnJudgment tcQuery
-            , HTML.endMathML
-            ]
-          tcResults' <- toList tcResults
-          forM_ tcResults' $ \(FelicityCheckAndMore tcDiagram moreResult) -> do
-            S.hPutStr handle $ interimOf HTML ""
-            mapM_ (T.hPutStr handle) [
-              HTML.startMathML
-              , toMathML $ fmap DTTwN.fromDeBruijnJudgment tcDiagram
-              , HTML.endMathML
-              ]
-            case moreResult of
-              MoreSentences sentenceAndParseTrees -> do
-                printParseResults handle HTML sid ifTypeCheck sentenceAndParseTrees
-              AndInference (InferenceAndResults psq proofDiagrams) -> do
-                mapM_ (T.hPutStr handle) [
-                  HTML.startMathML
-                  , toMathML $ DTTwN.fromDeBruijnProofSearchQuery psq
-                  , HTML.endMathML
-                  ]
-                proofDiagrams' <- toList proofDiagrams
-                forM_ proofDiagrams' $ \proofDiagram -> do
-                  S.hPutStr handle $ interimOf HTML ""
-                  mapM_ (T.hPutStr handle) [
-                    HTML.startMathML
-                    , toMathML $ fmap DTTwN.fromDeBruijnJudgment proofDiagram
-                    , HTML.endMathML
-                    ]
-              NoSentence -> S.hPutStr handle $ interimOf HTML "No more sentence" 
 
 {-
   -- | Parse sentences
