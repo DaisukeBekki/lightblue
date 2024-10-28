@@ -24,13 +24,11 @@ import Parser.CCG
 import qualified Parser.Language.Japanese.Templates as TPL
 import Debug.Trace
 
-
 -- | Main function: jumaCompoundNouns
 -- |   given a sentence, returns a list of compound nouns
 jumanCompoundNouns :: T.Text -> IO([Node])
 jumanCompoundNouns sentence = do
   fmap jumanNouns2nodes $ callJuman sentence
-
 
   -- | Main function: kwjaCompoundNouns
 -- |   given a sentence, returns a list of compound nouns
