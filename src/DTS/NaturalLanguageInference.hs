@@ -24,19 +24,22 @@ module DTS.NaturalLanguageInference (
   , singleParseWithTypeCheck
   , sequentialParseWithTypeCheck
   , checkInference
+  , printParseResults
   ) where
 
-import Control.Monad (liftM,forM,join)          --base
+import Control.Monad (forM,forM_,liftM,join) --base
 import Control.Monad.State (lift)         --mtl
+import qualified System.IO as S           --base
 import qualified Data.Char as C           --base
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.List as L           --base
 import ListT (ListT(..),fromFoldable,toList,cons)      --list-t
 import qualified Parser.ChartParser as CCG
+import qualified Parser.CCG as CCG
 import Interface 
 import Interface.Text
-import Interface.HTML
+import Interface.HTML as HTML
 import Interface.TeX
 import Interface.Tree as Tree
 import Parser.Language (LangOptions(..),jpOptions)
@@ -81,7 +84,7 @@ getProver pn = case pn of
   Null -> TY.nullProver
 
 {-- Data structure for sequential parsing and the inference --} 
-data SentenceAndParseTrees = SentenceAndParseResults T.Text (ListT IO ParseTreesAndFelicityCheck) -- ^ A next sentence and its parse results
+data SentenceAndParseTrees = SentenceAndParseTrees T.Text (ListT IO ParseTreesAndFelicityCheck) -- ^ A next sentence and its parse results
 data ParseTreesAndFelicityCheck = ParseTreesAndFelicityCheck CCG.Node UDTT.TypeCheckQuery (ListT IO FelicityCheckAndMore) -- ^ A parse result, type check query for its felicity condition, and its results
 data FelicityCheckAndMore = FelicityCheckAndMore QT.DTTProofDiagram MoreSentencesOrInference -- ^ A type check diagram and the next sentence if this is not the last sentence, or an inference query otherwise.
 data MoreSentencesOrInference = MoreSentences SentenceAndParseTrees | AndInference InferenceAndResults | NoSentence 
@@ -89,12 +92,14 @@ data InferenceAndResults = InferenceAndResults DTT.ProofSearchQuery (ListT IO QT
 
 -- | Parse single text, and check its semantic felicity condition.
 singleParseWithTypeCheck :: CCG.ParseSetting -> DTT.Signature -> DTT.Context -> T.Text -> SentenceAndParseTrees
-singleParseWithTypeCheck CCG.ParseSetting{..} signtr contxt text = 
-  SentenceAndParseResults text $ do
-    -- :: IO [CCG.node] =lift=> ListT IO [CCG.node] =fmap(foldable)=> ListT IO (ListT IO CCG.Node) =join=> ListT IO CCG.Node
-    node <- join $ fmap fromFoldable $ lift $ CCG.simpleParse beamWidth text 
+singleParseWithTypeCheck parseSetting signtr contxt text = 
+  SentenceAndParseTrees text $ do
+    -- | IO [CCG.node] =lift=>           ListT IO [CCG.node] 
+    -- |               =fmap(foldable)=> ListT IO (ListT IO CCG.Node)
+    -- |               =join=>           ListT IO CCG.Node
+    node <- join $ fmap fromFoldable $ lift $ CCG.simpleParse parseSetting text 
     let signtr' = L.nub $ (CCG.sig node) ++ signtr
-    let tcQuery = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
+        tcQuery = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
     tcDiagram <- TY.typeCheck (getProver Wani) tcQuery
     return $ ParseTreesAndFelicityCheck node tcQuery $ do
                return $ FelicityCheckAndMore tcDiagram NoSentence
@@ -106,18 +111,15 @@ sequentialParseWithTypeCheck _ signtr (typ:contxt) [] =
   let psq = DTT.ProofSearchQuery signtr contxt typ 
       pss = QT.ProofSearchSetting Nothing Nothing (Just QT.Intuitionistic)
   in AndInference $ InferenceAndResults psq $ (getProver Wani) pss psq
-sequentialParseWithTypeCheck ps@CCG.ParseSetting{..} signtr contxt (text:texts) = 
-  MoreSentences $ SentenceAndParseResults text $ do
-    -- | IO [CCG.node] =lift=>           ListT IO [CCG.node] 
-    -- |               =fmap(foldable)=> ListT IO (ListT IO CCG.Node)
-    -- |               =join=>           ListT IO CCG.Node
-    node <- join $ fmap fromFoldable $ lift $ CCG.simpleParse beamWidth text 
+sequentialParseWithTypeCheck parseSetting signtr contxt (text:texts) = 
+  MoreSentences $ SentenceAndParseTrees text $ do
+    node <- join $ fmap fromFoldable $ lift $ CCG.simpleParse parseSetting text 
     let signtr' = L.nub $ (CCG.sig node) ++ signtr
-    let tcQuery = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
+        tcQuery = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
     tcDiagram <- TY.typeCheck (getProver Wani) tcQuery
     let contxt' = (DTT.trm $ Tree.node tcDiagram):contxt
     return $ ParseTreesAndFelicityCheck node tcQuery $ do
-               return $ FelicityCheckAndMore tcDiagram $ sequentialParseWithTypeCheck ps signtr' contxt' texts
+               return $ FelicityCheckAndMore tcDiagram $ sequentialParseWithTypeCheck parseSetting signtr' contxt' texts
 
 -- | Flatten SequentialParseResults
 -- enumerateSequentialParseResult :: SentenceAndParseResult -> ListT IO (ListT IO (CCG.Node, UDTT.TypeCheckQuery, QT.DTTProofDiagram))
@@ -127,9 +129,9 @@ sequentialParseWithTypeCheck ps@CCG.ParseSetting{..} signtr contxt (text:texts) 
 --   spr <- enumerateSequentialParseResult $ subsequentParse tcr
 --   return $ cons (parseTree pr, typeCheckQuery pr, typeCheckDiagram tcr) spr
 
-flatten :: ListT IO (ListT IO a) -> IO [[a]]
--- | ListT m (ListT m a) => m [ListT m a] => m [m [a]] => m (m [[a]])
-flatten = join . liftM (sequence . map toList) . toList
+-- flatten :: ListT IO (ListT IO a) -> IO [[a]]
+-- -- | ListT m (ListT m a) => m [ListT m a] => m [m [a]] => m (m [[a]])
+-- flatten = join . liftM (sequence . map toList) . toList
 
 printTriple :: (CCG.Node, UDTT.TypeCheckQuery, QT.DTTProofDiagram) -> IO ()
 printTriple (node, tcQuery, diagram) = T.putStrLn $ T.concat [
@@ -155,6 +157,53 @@ checkInference InferenceSetting{..} infPair = do
   -- results <- flatten $ enumerateSequentialParseResult parseResult
   -- mapM_ printTriple $ head results
   print "ToDo: print and analyze results of sequential parse"
+
+-- | prints a CCG node (=i-th parsing result for a sid-th sentence) in a specified style (=HTML|text|XML|TeX)
+printParseResults :: S.Handle -> Style -> Int -> Bool -> SentenceAndParseTrees -> IO ()
+printParseResults handle _ sid ifTypeCheck (SentenceAndParseTrees sentence parseTrees) = do
+  S.hPutStr handle $ "<p>[s" ++ (show sid) ++ "] "
+  T.hPutStr handle sentence
+  S.hPutStr handle "</p>"
+  parseTrees' <- toList parseTrees 
+  -- | [ParseTreesAndFelicityCheck CCG.Node UDTT.TypeCheckQuery (ListT IO FelicityCheckAndMore) ]
+  forM_ (zip parseTrees' ([0..]::[Int])) $ \((ParseTreesAndFelicityCheck node tcQuery tcResults),ith) -> do
+          S.hPutStr handle $ "<p>[parse " ++ show ith ++ ": score="
+          T.hPutStr handle $ CCG.showScore node 
+          S.hPutStr handle "] "
+          T.hPutStr handle $ CCG.pf node
+          S.hPutStr handle "</p>"
+          mapM_ (T.hPutStr handle) [HTML.startMathML, HTML.toMathML node, HTML.endMathML]
+          mapM_ (T.hPutStr handle) [
+            HTML.startMathML
+            , toMathML $ UDTTwN.fromDeBruijnJudgment tcQuery
+            , HTML.endMathML
+            ]
+          tcResults' <- toList tcResults
+          forM_ tcResults' $ \(FelicityCheckAndMore tcDiagram moreResult) -> do
+            S.hPutStr handle $ interimOf HTML ""
+            mapM_ (T.hPutStr handle) [
+              HTML.startMathML
+              , toMathML $ fmap DTTwN.fromDeBruijnJudgment tcDiagram
+              , HTML.endMathML
+              ]
+            case moreResult of
+              MoreSentences sentenceAndParseTrees -> do
+                printParseResults handle HTML sid ifTypeCheck sentenceAndParseTrees
+              AndInference (InferenceAndResults psq proofDiagrams) -> do
+                mapM_ (T.hPutStr handle) [
+                  HTML.startMathML
+                  , toMathML $ DTTwN.fromDeBruijnProofSearchQuery psq
+                  , HTML.endMathML
+                  ]
+                proofDiagrams' <- toList proofDiagrams
+                forM_ proofDiagrams' $ \proofDiagram -> do
+                  S.hPutStr handle $ interimOf HTML ""
+                  mapM_ (T.hPutStr handle) [
+                    HTML.startMathML
+                    , toMathML $ fmap DTTwN.fromDeBruijnJudgment proofDiagram
+                    , HTML.endMathML
+                    ]
+              NoSentence -> S.hPutStr handle $ interimOf HTML "No more sentence" 
 
 {-
   -- | Parse sentences

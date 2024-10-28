@@ -28,7 +28,7 @@ import qualified JSeM.XML as J
 import qualified DTS.UDTTdeBruijn as UDTT
 import qualified DTS.DTTdeBruijn as DTT
 import DTS.TypeChecker (typeCheck,typeInfer,nullProver)
-import DTS.NaturalLanguageInference (ProverName(..),InferenceSetting(..),InferencePair(..),checkInference)
+import qualified DTS.NaturalLanguageInference as NLI
 --import qualified DTS.Prover.TypeChecker as TC
 --import qualified DTS.Prover.Wani.WaniBase as Wani
 --import qualified DTS.Prover.Diag.TypeChecker as Diag
@@ -43,7 +43,7 @@ data Options =
 
 data Command =
   Parse ParseOutput I.Style Bool
-  | Infer ProverName
+  | Infer NLI.ProverName
   | Debug Int Int
   | Demo
   -- | Treebank
@@ -161,7 +161,7 @@ inferOptionParser = Infer
       <> short 'p'
       <> metavar "Wani|Null"
       <> showDefault
-      <> value Wani
+      <> value NLI.Wani
       <> help "Choose prover" )
 
 debugOptionParser :: Parser Command
@@ -193,7 +193,7 @@ lightblueMain :: Options -> IO()
 lightblueMain Version = showVersion
 lightblueMain Stat = showStat
 lightblueMain Test = test
-lightblueMain (Options commands input filepath nbest beamw nsample iftime) = do
+lightblueMain (Options commands input filepath nbest beamW nsample iftime) = do
   start <- Time.getCurrentTime
   contents <- case filepath of
     "-" -> T.getContents
@@ -210,7 +210,7 @@ lightblueMain (Options commands input filepath nbest beamw nsample iftime) = do
     -- |
     -- | Parse
     -- |
-    lightblueMainLocal (Parse output style iftypecheck) contents = do
+    lightblueMainLocal (Parse output style ifTypeCheck) contents = do
       let handle = S.stdout;
       sentences <- case input of 
                      SENTENCES -> return $ T.lines contents
@@ -220,17 +220,21 @@ lightblueMain (Options commands input filepath nbest beamw nsample iftime) = do
                                                  then parsedJSeM
                                                  else take nsample parsedJSeM
                              return $ concat $ map (\j -> (map T.fromStrict $ J.premises j) ++ [T.fromStrict $ J.hypothesis j]) parsedJSeM'
+      let parseSetting = CP.ParseSetting jpOptions beamW True Nothing Nothing
       S.hPutStrLn handle $ I.headerOf style
       mapM_
         (\(sid,sentence) -> do
-          nodes <- CP.simpleParse beamw sentence
-          let nbestnodes = take nbest nodes;
-              len = length nodes;
+          let parseResult = NLI.singleParseWithTypeCheck parseSetting [("dummy",DTT.Entity)] [] sentence
           case output of
-            TREE       -> I.printNodes      handle style sid sentence iftypecheck nbestnodes
-            POSTAG     -> I.posTagger       handle style nbestnodes
+            TREE       -> NLI.printParseResults handle style sid ifTypeCheck parseResult
             NUMERATION -> I.printNumeration handle style sentence
-          S.hPutStrLn handle $ I.interimOf style $ "[" ++ show (min (length nbestnodes) len) ++ " parse result(s) shown out of " ++ show len ++ " for s" ++ (show $ sid) ++ "]"
+            POSTAG     -> do
+                          let (NLI.SentenceAndParseTrees _ parseTrees) = parseResult
+                          parseTrees' <- toList parseTrees 
+                          let nodes = map (\(NLI.ParseTreesAndFelicityCheck n _ _) -> n) parseTrees'
+                          I.posTagger handle style $ take nbest nodes
+          --let len = length nodes;
+          S.hPutStrLn handle $ I.interimOf style $ "" --"[" ++ show (min (length nbestnodes) len) ++ " parse result(s) shown out of " ++ show len ++ " for s" ++ (show $ sid) ++ "]"
           ) $ zip ([0..]::[Int]) sentences
       S.hPutStr handle $ I.footerOf style
     -- |
@@ -238,15 +242,15 @@ lightblueMain (Options commands input filepath nbest beamw nsample iftime) = do
     -- |
     lightblueMainLocal (Infer proverName) contents = do
       let handle = S.stdout;
-          inferenceSetting = InferenceSetting beamw nbest Nothing Nothing typeCheck proverName
+          inferenceSetting = NLI.InferenceSetting beamW nbest Nothing Nothing typeCheck proverName
       S.hPutStrLn handle $ I.headerOf I.HTML
       case input of
         SENTENCES -> do -- lightblue infer -i sentence 
           let sentences = T.lines contents 
               inferencePair = if null sentences
-                then InferencePair [] T.empty
-                else InferencePair (init sentences) (last sentences)
-          checkInference inferenceSetting inferencePair
+                then NLI.InferencePair [] T.empty
+                else NLI.InferencePair (init sentences) (last sentences)
+          NLI.checkInference inferenceSetting inferencePair
         JSEM -> do  --  ligthblue infer -i jsem -f ../JSeM_beta/JSeM_beta_150415.xml
           parsedJSeM <- J.xml2jsemData $ T.toStrict contents
           let parsedJSeM' = if nsample == 0
@@ -254,10 +258,10 @@ lightblueMain (Options commands input filepath nbest beamw nsample iftime) = do
                                else take nsample parsedJSeM
           forM_ parsedJSeM' $ \j -> do
             mapM_ T.putStr ["JSeM [", T.fromStrict $ J.jsem_id j, "] "]
-            let inferencePair = InferencePair (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
+            let inferencePair = NLI.InferencePair (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
             --mapM_ (T.putStrLn . T.fromStrict) $ J.premises j
             --T.putStrLn $ T.fromStrict $ J.hypothesis j
-            checkInference inferenceSetting inferencePair
+            NLI.checkInference inferenceSetting inferencePair
       S.hPutStrLn handle $ I.footerOf I.HTML
     -- |
     -- | Debug
@@ -271,7 +275,7 @@ lightblueMain (Options commands input filepath nbest beamw nsample iftime) = do
       mapM_
         --(\(sid,sentence) -> do
         (\(_,sentence) -> do
-          chart <- CP.parse (CP.ParseSetting jpOptions beamw True Nothing Nothing) sentence
+          chart <- CP.parse (CP.ParseSetting jpOptions beamW True Nothing Nothing) sentence
           --let filterednodes = concat $ map snd $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
           --I.printNodes S.stdout I.HTML sid sentence False filterednodes
           mapM_ (\((x,y),node) -> do
@@ -285,7 +289,7 @@ lightblueMain (Options commands input filepath nbest beamw nsample iftime) = do
     -- | Demo (sequential parsing of a given corpus)
     -- |
     lightblueMainLocal Demo contents = do
-      processCorpus beamw $ T.lines contents
+      processCorpus beamW $ T.lines contents
     -- --
     -- -- | Treebank Builder
     -- --
@@ -346,9 +350,9 @@ test = do
 -- | lightblue demo
 -- |
 processCorpus :: Int -> [T.Text] -> IO()
-processCorpus beam contents = do
+processCorpus beamW contents = do
     start <- Time.getCurrentTime
-    (i,j,k,total) <- L.foldl' (parseSentence beam) (return (0,0,0,0)) $ filter isSentence contents
+    (i,j,k,total) <- L.foldl' (parseSentence beamW) (return (0,0,0,0)) $ filter isSentence contents
     stop <- Time.getCurrentTime
     let totaltime = Time.diffUTCTime stop start
     mapM_ (S.hPutStr S.stdout) [

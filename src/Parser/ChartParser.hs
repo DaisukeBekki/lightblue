@@ -72,13 +72,13 @@ parse ParseSetting{..} sentence
                                    sentenceToParse
       return chart
 
-simpleParse :: Int -- ^ beam width
+simpleParse :: ParseSetting 
            -> T.Text -- ^ an input text
            -> IO [CCG.Node]
-simpleParse beamW sentence = do 
-  let parseSetting = defaultParseSetting {beamWidth = beamW}
-  chart <- parse parseSetting sentence
-  return $ case extractParseResult beamW chart of
+simpleParse ps@ParseSetting{..} sentence = do 
+  --let parseSetting = defaultParseSetting {beamWidth = beamW}
+  chart <- parse ps sentence
+  return $ case extractParseResult beamWidth chart of
              Full nodes -> nodes
              Partial nodes -> nodes
              Failed -> []
