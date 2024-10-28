@@ -101,7 +101,8 @@ singleParseWithTypeCheck parseSetting signtr contxt text =
     node <- join $ fmap fromFoldable $ lift $ CCG.simpleParse parseSetting text 
     let signtr' = L.nub $ (CCG.sig node) ++ signtr
         tcQuery = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
-    tcDiagram <- TY.typeCheck (getProver Wani) tcQuery
+        pss = QT.ProofSearchSetting Nothing Nothing (Just QT.Intuitionistic)
+    tcDiagram <- TY.typeCheck (getProver Wani) pss tcQuery
     return $ ParseTreesAndFelicityCheck node tcQuery $ do
                return $ FelicityCheckAndMore tcDiagram NoSentence
 
@@ -117,13 +118,14 @@ sequentialParseWithTypeCheck parseSetting signtr contxt (text:texts) =
     node <- join $ fmap fromFoldable $ lift $ CCG.simpleParse parseSetting text 
     let signtr' = L.nub $ (CCG.sig node) ++ signtr
         tcQuery = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
-    tcDiagram <- TY.typeCheck (getProver Wani) tcQuery
+        pss = QT.ProofSearchSetting Nothing Nothing (Just QT.Intuitionistic)
+    tcDiagram <- TY.typeCheck (getProver Wani) pss tcQuery
     let contxt' = (DTT.trm $ Tree.node tcDiagram):contxt
     return $ ParseTreesAndFelicityCheck node tcQuery $ do
                return $ FelicityCheckAndMore tcDiagram $ sequentialParseWithTypeCheck parseSetting signtr' contxt' texts
 
 -- | Checks if the premise texts entails the hypothesis text.
--- | The specification of this function reflects a view about what are entailments between texts,
+-- | The specification of this function reflects a view about what are entailments between texts,          
 -- | that is an interface problem between natural language semantics and logic
 checkInference :: InferenceSetting 
                    -> InferencePair 

@@ -28,6 +28,7 @@ import qualified JSeM.XML as J
 import qualified DTS.UDTTdeBruijn as UDTT
 import qualified DTS.DTTdeBruijn as DTT
 import DTS.TypeChecker (typeCheck,typeInfer,nullProver)
+import qualified DTS.QueryTypes as QT
 import qualified DTS.NaturalLanguageInference as NLI
 --import qualified DTS.Prover.TypeChecker as TC
 --import qualified DTS.Prover.Wani.WaniBase as Wani
@@ -342,7 +343,8 @@ test = do
       termA = UDTT.Sigma (UDTT.Con "entity") (UDTT.App (UDTT.Con "f") (UDTT.Var 0))
       -- typeA = DTS.Kind
       tcq = UDTT.TypeInferQuery signature context termA 
-  typeCheckResults <- toList $ typeInfer nullProver tcq
+      pss = QT.ProofSearchSetting Nothing Nothing (Just QT.Intuitionistic)
+  typeCheckResults <- toList $ typeInfer nullProver pss tcq
   T.putStrLn $ T.toText $ head typeCheckResults
   --T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 0) DTS.Type
   --T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 2) DTS.Type

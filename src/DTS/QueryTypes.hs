@@ -67,9 +67,9 @@ instance MathML DTTrule where
 
 type DTTProofDiagram = Tree DTTrule (DTTdB.Judgment)
 
-type TypeChecker = Prover -> UDTTdB.TypeCheckQuery -> ListT IO DTTProofDiagram
+type TypeChecker = Prover -> ProofSearchSetting -> UDTTdB.TypeCheckQuery -> ListT IO DTTProofDiagram
 
-type TypeInfer = Prover -> UDTTdB.TypeInferQuery -> ListT IO DTTProofDiagram
+type TypeInfer = Prover -> ProofSearchSetting -> UDTTdB.TypeInferQuery -> ListT IO DTTProofDiagram
 
 data LogicSystem = Intuitionistic | Classical deriving (Eq, Show)
 
