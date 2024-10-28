@@ -44,8 +44,8 @@ lookupLexicon :: T.Text -> LexicalItems -> [Node]
 lookupLexicon word lexicon = filter (\l -> (pf l) == word) lexicon
 
 -- | This function takes a sentence and returns a numeration needed to parse that sentence, i.e., a union of 
-setupLexicon :: T.Text -> IO(LexicalItems)
-setupLexicon sentence = do
+setupLexicon :: JU.MorphAnalyzerName -> T.Text -> IO(LexicalItems)
+setupLexicon morphaName sentence = do
   --  1. Setting up lexical items provided by JUMAN++
   lightbluepath <- E.getEnv "LIGHTBLUE"
   jumandic <- T.readFile $ lightbluepath ++ "src/Parser/Language/Japanese/Juman/Juman.dic"
@@ -55,7 +55,7 @@ setupLexicon sentence = do
   let mylexiconFiltered = filter (\l -> T.isInfixOf (pf l) sentence) LEX.myLexicon
   --  3. Setting up compound nouns (returned from an execution of JUMAN)
   -- jumanCN <- JU.jumanCompoundNouns (T.replace "―" "、" sentence)
-  jumanCN <- JU.kwjaCompoundNouns (T.replace "―" "、" sentence)
+  jumanCN <- JU.compoundNouns morphaName sentence
   --  4. Accumulating common nons and proper names entries
   let commonnouns = map (\(hyoki, (daihyo,score')) -> lexicalitem hyoki "(CN)" score' N (commonNounSR daihyo)) $ M.toList cn
   let propernames = map (\(hyoki, (daihyo,score')) -> lexicalitem hyoki "(PN)" score' ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) (properNameSR daihyo)) $ M.toList pn

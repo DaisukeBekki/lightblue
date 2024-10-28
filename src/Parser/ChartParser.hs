@@ -33,6 +33,7 @@ import qualified Data.Text.Lazy as T   --text
 import qualified Data.Map as M         --container
 import qualified Parser.CCG as CCG --(Node, unaryRules, binaryRules, trinaryRules, isCONJ, cat, SimpleText)
 import Parser.Language (LangOptions(..),jpOptions)
+import qualified Parser.Language.Japanese.Juman.CallJuman as Juman
 import qualified Parser.Language.Japanese.Lexicon as L (LexicalItems, lookupLexicon, setupLexicon, emptyCategories)
 import qualified Parser.Language.Japanese.Templates as LT
 
@@ -41,6 +42,7 @@ import qualified Parser.Language.Japanese.Templates as LT
 -- | The type for CYK-charts.
 data ParseSetting = ParseSetting {
   langOptions :: LangOptions  -- ^ Language options
+  , morphaName :: Juman.MorphAnalyzerName -- ^ Morphological analyzer
   , beamWidth :: Int          -- ^ The beam width
   --, nBest :: Int              -- ^ take n-best results from all parsing results
   , ifPurify :: Bool          -- ^ If True, apply purifyText to the input text before parsing
@@ -49,7 +51,7 @@ data ParseSetting = ParseSetting {
   } 
 
 defaultParseSetting :: ParseSetting
-defaultParseSetting = ParseSetting jpOptions 32 True Nothing Nothing
+defaultParseSetting = ParseSetting jpOptions Juman.KWJA 32 True Nothing Nothing
 
 type Chart = M.Map (Int,Int) [CCG.Node]
 
@@ -66,7 +68,7 @@ parse ParseSetting{..} sentence
           nodeFilter = case ifFilterNode of
                          Just filter -> filter
                          Nothing -> (\_ _ -> id)
-      lexicon <- L.setupLexicon sentenceToParse
+      lexicon <- L.setupLexicon morphaName sentenceToParse
       let (chart,_,_,_) = T.foldl' (chartAccumulator ifDebug beamWidth lexicon nodeFilter) 
                                    (M.empty,[0],0,T.empty)
                                    sentenceToParse
@@ -91,7 +93,7 @@ simpleParse' :: Maybe (Int,Int)   -- ^ Debug mode: If Just (i,j), dump parse res
             -> T.Text -- ^ an input text
             -> IO([CCG.Node],Chart)
 simpleParse' ifDebug beamW ifPurify filterNodes sentence = do
-  chart <- parse (ParseSetting jpOptions beamW ifPurify ifDebug (Just filterNodes)) sentence
+  chart <- parse (ParseSetting jpOptions Juman.KWJA beamW ifPurify ifDebug (Just filterNodes)) sentence
   case extractParseResult beamW chart of
     Full nodes -> return (nodes,chart)
     Partial nodes -> return (nodes,chart)

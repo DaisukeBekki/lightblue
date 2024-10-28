@@ -19,6 +19,7 @@ import qualified Data.Map as M            --container
 import qualified Data.Time as Time        --time
 import qualified Parser.ChartParser as CP
 import qualified Parser.Language.Japanese.MyLexicon as LEX
+import qualified Parser.Language.Japanese.Juman.CallJuman as Juman
 import Parser.Language (LangOptions(..),jpOptions)
 import qualified Interface as I
 import qualified Interface.Text as T
@@ -39,7 +40,7 @@ data Options =
   Version
   | Stat
   | Test
-  | Options Command ParseInput FilePath Int Int Int Bool
+  | Options Command ParseInput FilePath Juman.MorphAnalyzerName Int Int Int Bool
     deriving (Show, Eq)
 
 data Command =
@@ -66,6 +67,7 @@ instance Read ParseOutput where
     [(TREE,s) | (x,s) <- lex r, map C.toLower x == "tree"]
     ++ [(POSTAG,s) | (x,s) <- lex r, map C.toLower x == "postag"]
     ++ [(NUMERATION,s) | (x,s) <- lex r, map C.toLower x == "numeration"]
+
 
 -- | Main function.  Check README.md for the usage.
 main :: IO()
@@ -130,6 +132,12 @@ optionParser =
       <> help "Reads input texts from FILEPATH (Specify '-' to use stdin)"
       <> showDefault
       <> value "-" )
+    <*> option auto
+      ( long "ma"
+        <> short 'm' 
+        <> metavar "juman|kwja"
+        <> value Juman.KWJA
+        <> help "Specify morphological analyzer (default: KWJA)" )
     <*> option auto 
       ( long "nbest"
       <> short 'n'
@@ -194,7 +202,7 @@ lightblueMain :: Options -> IO()
 lightblueMain Version = showVersion
 lightblueMain Stat = showStat
 lightblueMain Test = test
-lightblueMain (Options commands input filepath nbest beamW nsample iftime) = do
+lightblueMain (Options commands input filepath morphaName nbest beamW nsample iftime) = do
   start <- Time.getCurrentTime
   contents <- case filepath of
     "-" -> T.getContents
@@ -221,14 +229,14 @@ lightblueMain (Options commands input filepath nbest beamW nsample iftime) = do
                                                  then parsedJSeM
                                                  else take nsample parsedJSeM
                              return $ concat $ map (\j -> (map T.fromStrict $ J.premises j) ++ [T.fromStrict $ J.hypothesis j]) parsedJSeM'
-      let parseSetting = CP.ParseSetting jpOptions beamW True Nothing Nothing
+      let parseSetting = CP.ParseSetting jpOptions morphaName beamW True Nothing Nothing
       S.hPutStrLn handle $ I.headerOf style
       mapM_
         (\(sid,sentence) -> do
           let parseResult = NLI.singleParseWithTypeCheck parseSetting [("dummy",DTT.Entity)] [] sentence
           case output of
             TREE       -> NLI.printSentenceAndParseTrees handle style parseResult
-            NUMERATION -> I.printNumeration handle style sentence
+            NUMERATION -> I.printNumeration handle style morphaName sentence
             POSTAG     -> do
                           let (NLI.SentenceAndParseTrees _ parseTrees) = parseResult
                           parseTrees' <- toList parseTrees 
@@ -243,7 +251,8 @@ lightblueMain (Options commands input filepath nbest beamW nsample iftime) = do
     -- |
     lightblueMainLocal (Infer proverName) contents = do
       let handle = S.stdout;
-          inferenceSetting = NLI.InferenceSetting beamW nbest Nothing Nothing typeCheck proverName
+          parseSetting = CP.ParseSetting jpOptions morphaName beamW True Nothing Nothing
+          inferenceSetting = NLI.InferenceSetting beamW nbest Nothing Nothing parseSetting typeCheck proverName
       S.hPutStrLn handle $ I.headerOf I.HTML
       case input of
         SENTENCES -> do -- lightblue infer -i sentence 
@@ -276,7 +285,7 @@ lightblueMain (Options commands input filepath nbest beamW nsample iftime) = do
       mapM_
         --(\(sid,sentence) -> do
         (\(_,sentence) -> do
-          chart <- CP.parse (CP.ParseSetting jpOptions beamW True Nothing Nothing) sentence
+          chart <- CP.parse (CP.ParseSetting jpOptions morphaName beamW True Nothing Nothing) sentence
           --let filterednodes = concat $ map snd $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
           --I.printNodes S.stdout I.HTML sid sentence False filterednodes
           mapM_ (\((x,y),node) -> do
@@ -290,7 +299,7 @@ lightblueMain (Options commands input filepath nbest beamW nsample iftime) = do
     -- | Demo (sequential parsing of a given corpus)
     -- |
     lightblueMainLocal Demo contents = do
-      processCorpus beamW $ T.lines contents
+      processCorpus morphaName beamW $ T.lines contents
     -- --
     -- -- | Treebank Builder
     -- --
@@ -351,10 +360,10 @@ test = do
 
 -- | lightblue demo
 -- |
-processCorpus :: Int -> [T.Text] -> IO()
-processCorpus beamW contents = do
+processCorpus :: Juman.MorphAnalyzerName -> Int -> [T.Text] -> IO()
+processCorpus morphaName beamW contents = do
     start <- Time.getCurrentTime
-    (i,j,k,total) <- L.foldl' (parseSentence beamW) (return (0,0,0,0)) $ filter isSentence contents
+    (i,j,k,total) <- L.foldl' (parseSentence morphaName beamW) (return (0,0,0,0)) $ filter isSentence contents
     stop <- Time.getCurrentTime
     let totaltime = Time.diffUTCTime stop start
     mapM_ (S.hPutStr S.stdout) [
@@ -379,15 +388,16 @@ processCorpus beamW contents = do
       ]
     where isSentence t = not (T.null t || "（" `T.isSuffixOf` t)
 
-parseSentence :: Int                    -- ^ beam width
+parseSentence :: Juman.MorphAnalyzerName
+                 -> Int                    -- ^ beam width
                  -> IO(Int,Int,Int,Int) -- ^ (The number of fully succeeded, partially succeeded, failed, and total parses)
                  -> T.Text           -- ^ A next sentence to parse
                  -> IO(Int,Int,Int,Int)
-parseSentence beam score sentence = do
+parseSentence morphaName beam score sentence = do
   (i,j,k,total) <- score
   S.putStr $ "[" ++ show (total+1) ++ "] "
   T.putStrLn sentence
-  chart <- CP.parse (CP.ParseSetting jpOptions beam True Nothing Nothing) sentence
+  chart <- CP.parse (CP.ParseSetting jpOptions morphaName beam True Nothing Nothing) sentence
   case CP.extractParseResult beam chart of
     CP.Full nodes -> 
        do

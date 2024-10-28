@@ -28,6 +28,7 @@ import qualified System.IO as S           --base
 import qualified Parser.ChartParser as CP
 import qualified Parser.CCG as CCG
 import qualified Parser.Language.Japanese.Lexicon as LEX
+import qualified Parser.Language.Japanese.Juman.CallJuman as Juman
 import qualified Interface.Text as T
 import qualified Interface.TeX as TEX
 import qualified Interface.HTML as HTML
@@ -171,9 +172,9 @@ printLexicalItem style node = case style of
   SVG  -> SVG.node2svg node
 
 -- | prints the numeration
-printNumeration :: S.Handle -> Style -> T.Text -> IO()
-printNumeration handle style sentence = do
-  numeration <- LEX.setupLexicon sentence
+printNumeration :: S.Handle -> Style -> Juman.MorphAnalyzerName -> T.Text -> IO()
+printNumeration handle style morphaName sentence = do
+  numeration <- LEX.setupLexicon morphaName sentence
   mapM_ ((T.hPutStrLn handle) . (printLexicalItem style)) numeration
 
 -- -- | Deprecated:

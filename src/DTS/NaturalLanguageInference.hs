@@ -57,6 +57,7 @@ data InferenceSetting = InferenceSetting {
   , nbest :: Int  -- ^ n-best
   , maxDepth :: Maybe Int -- ^ max depth for prover
   , maxTime :: Maybe Int  -- ^ max time for prover
+  , parseSetting :: CCG.ParseSetting
   , typeChecker :: QT.TypeChecker
   , proverName :: ProverName
   } 
@@ -133,7 +134,7 @@ checkInference :: InferenceSetting
 checkInference InferenceSetting{..} infPair = do
   -- | Parse sentences
   let sentences = reverse $ (hypothesis infPair):(reverse $ premises infPair) 
-      parseResult = sequentialParseWithTypeCheck CCG.defaultParseSetting [("dummy",DTT.Entity)] [] sentences 
+      parseResult = sequentialParseWithTypeCheck parseSetting [("dummy",DTT.Entity)] [] sentences 
   printMoreSentenceOrInference S.stdout HTML parseResult
   -- | ToDo: analyze results of sequential parse"
 

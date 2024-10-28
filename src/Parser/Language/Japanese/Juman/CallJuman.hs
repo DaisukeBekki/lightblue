@@ -11,30 +11,43 @@ Stability   : beta
 A module for compound nouns in Japanese.
 -}
 module Parser.Language.Japanese.Juman.CallJuman (
+  MorphAnalyzerName(..)
   -- jumanCompoundNouns,
-  kwjaCompoundNouns,
+  --, kwjaCompoundNouns
+  , compoundNouns
   ) where
 
 import Prelude as P
-import qualified Data.Text.Lazy as T                 --text
-import qualified Data.Text.Lazy.IO as T              --text
-import qualified System.Process as S                 --process
-import qualified Shelly as S            -- shelly
+import qualified Data.Char as C           --base
+import qualified Data.Text.Lazy as T      --text
+import qualified Data.Text.Lazy.IO as T   --text
+import qualified System.Process as S      --process
+import qualified Shelly as S              -- shelly
 import Parser.CCG
 import qualified Parser.Language.Japanese.Templates as TPL
 import Debug.Trace
 
+data MorphAnalyzerName = JUMAN | KWJA deriving (Eq,Show)
+instance Read MorphAnalyzerName where
+  readsPrec _ r =
+    [(JUMAN,s) | (x,s) <- lex r, map C.toLower x == "juman"]
+    ++ [(KWJA,s) | (x,s) <- lex r, map C.toLower x == "kwja"]
+
 -- | Main function: jumaCompoundNouns
 -- |   given a sentence, returns a list of compound nouns
-jumanCompoundNouns :: T.Text -> IO([Node])
-jumanCompoundNouns sentence = do
-  fmap jumanNouns2nodes $ callJuman sentence
+compoundNouns :: MorphAnalyzerName -> T.Text -> IO([Node])
+compoundNouns JUMAN = fmap jumanNouns2nodes . callJuman 
+compoundNouns KWJA = fmap jumanNouns2nodes . callKWJA
 
-  -- | Main function: kwjaCompoundNouns
--- |   given a sentence, returns a list of compound nouns
-kwjaCompoundNouns :: T.Text -> IO([Node])
-kwjaCompoundNouns sentence = do
-  fmap jumanNouns2nodes $ callKWJA sentence
+-- jumanCompoundNouns :: T.Text -> IO([Node])
+-- jumanCompoundNouns sentence = do
+--   fmap jumanNouns2nodes $ callJuman sentence
+
+--   -- | Main function: kwjaCompoundNouns
+-- -- |   given a sentence, returns a list of compound nouns
+-- kwjaCompoundNouns :: T.Text -> IO([Node])
+-- kwjaCompoundNouns sentence = do
+--   fmap jumanNouns2nodes $ callKWJA sentence
 
 data JumanCompNoun = 
   JumanCompCN [T.Text] 
