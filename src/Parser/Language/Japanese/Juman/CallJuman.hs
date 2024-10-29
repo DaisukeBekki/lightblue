@@ -20,12 +20,12 @@ module Parser.Language.Japanese.Juman.CallJuman (
 import Prelude as P
 import qualified Data.Char as C           --base
 import qualified Data.Text.Lazy as T      --text
-import qualified Data.Text.Lazy.IO as T   --text
-import qualified System.Process as S      --process
+--import qualified Data.Text.Lazy.IO as T   --text
+--import qualified System.Process as S      --process
 import qualified Shelly as S              -- shelly
 import Parser.CCG
 import qualified Parser.Language.Japanese.Templates as TPL
-import Debug.Trace
+--import Debug.Trace
 
 data MorphAnalyzerName = JUMAN | KWJA deriving (Eq,Show)
 instance Read MorphAnalyzerName where
@@ -62,33 +62,32 @@ type ConjugationForm = T.Text
 type JumanPair = (PhoneticForm, POS, POSDetail, ConjugationForm) -- (表層,品詞,品詞細分,（動詞なら）活用形)
 
 -- | Call Juman as an external process and returns a list of juman pos-tags
-callJuman :: T.Text -> IO([JumanCompNoun])
+callJuman :: T.Text -> IO [JumanCompNoun]
 callJuman sentence = do
-  (_, stdout, _, _) <- S.runInteractiveCommand $ T.unpack $ T.concat ["echo ", sentence, " | jumanpp"]
-  --(_, stdout, _, procHandle) <- S.runInteractiveCommand $ T.unpack $ T.concat ["echo ", sentence, " | juman"]
-  --_ <- S.waitForProcess procHandle
-  t <- T.hGetContents stdout
-  --terminateProcess processhandle
-  --mapped <- see $ map ((\l -> ((l!!0),(l!!3),(l!!5),(l!!9))) . (T.split (==' '))) $ filter (\x -> not (T.isPrefixOf "@" x)) $ P.takeWhile (/= "EOS") $ T.lines t 
-  --return $ findCompNouns [] mapped
-  return $ findCompNouns [] $ map ((\l -> ((l!!0),(l!!3),(l!!5),(l!!9))) . (T.split (==' '))) $ filter (\x -> not (T.isPrefixOf "@" x)) $ P.takeWhile (/= "EOS") $ T.lines t 
-
--- | Call KWJA as an external process and returns a list of juman pos-tags
-callKWJA :: T.Text -> IO([JumanCompNoun])
-callKWJA sentence = do
-  t <- S.shelly $ S.silently $ S.escaping False $ S.cmd $ S.fromText $ T.toStrict $ T.concat ["kwja --text ", sentence]
-  let jumanPairs = getJumanPairs $ excludeSpecialPrefixes $ T.lines (T.fromStrict t)
-  return $ findCompNouns [] jumanPairs
-  -- return $ findCompNouns [] $ getJumanPairs $ excludeSpecialPrefixes $ T.lines t 
+  output <- S.shelly $ S.silently $ S.escaping False $ S.cmd $ S.fromText $ T.toStrict $ T.concat 
+    ["echo ", sentence, " | jumanpp"]
+  return $ findCompNouns [] $ getJumanPairs $ excludeSpecialPrefixes $ T.lines $ T.fromStrict $ output
   where 
-    -- (表層,品詞,品詞細分,（動詞なら）活用形)の4つ組を取得
-    getJumanPairs :: [T.Text] -> [JumanPair]
-    getJumanPairs text = 
-      map ((\l -> ((l!!0),(l!!3),(l!!5),(l!!9))) . (T.split (==' '))) text
     -- EOSまでの行を取得し、@+*から始まる行を除外する
     excludeSpecialPrefixes :: [T.Text] -> [T.Text]
-    excludeSpecialPrefixes text = 
-      filter (\x -> not (isPrefixOfAny ["@","*","+","#"] x)) $ P.takeWhile (/= "EOS") text 
+    excludeSpecialPrefixes = 
+      filter (\x -> not (T.isPrefixOf "@" x)) . P.takeWhile (/= "EOS")
+
+-- | Call KWJA as an external process and returns a list of juman pos-tags
+callKWJA :: T.Text -> IO [JumanCompNoun]
+callKWJA sentence = do
+  output <- S.shelly $ S.silently $ S.escaping False $ S.cmd $ S.fromText $ T.toStrict $ T.concat 
+    ["kwja --text ", sentence]
+  return $ findCompNouns [] $ getJumanPairs $ excludeSpecialPrefixes $ T.lines $ T.fromStrict output
+  where 
+    -- EOSまでの行を取得し、@+*から始まる行を除外する
+    excludeSpecialPrefixes :: [T.Text] -> [T.Text]
+    excludeSpecialPrefixes = 
+      filter (\x -> not (isPrefixOfAny ["@","*","+","#"] x)) . P.takeWhile (/= "EOS") 
+
+-- (表層,品詞,品詞細分,（動詞なら）活用形)の4つ組を取得
+getJumanPairs :: [T.Text] -> [JumanPair]
+getJumanPairs = map ((\l -> ((l!!0),(l!!3),(l!!5),(l!!9))) . (T.split (==' '))) 
 
 -- | Check if the given text is a prefix of any of the given prefixes
 isPrefixOfAny :: [T.Text] -> T.Text -> Bool
