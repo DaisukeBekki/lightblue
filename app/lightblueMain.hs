@@ -235,7 +235,7 @@ lightblueMain (Options commands input filepath morphaName nbest beamW nsample if
         (\(sid,sentence) -> do
           let parseResult = NLI.singleParseWithTypeCheck parseSetting [("dummy",DTT.Entity)] [] sentence
           case output of
-            TREE       -> NLI.printSentenceAndParseTrees handle style parseResult
+            TREE       -> NLI.printSentenceAndParseTrees handle style nbest parseResult
             NUMERATION -> I.printNumeration handle style morphaName sentence
             POSTAG     -> do
                           let (NLI.SentenceAndParseTrees _ parseTrees) = parseResult
