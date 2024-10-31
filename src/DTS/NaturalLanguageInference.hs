@@ -135,18 +135,18 @@ checkInference InferenceSetting{..} infPair = do
   -- | Parse sentences
   let sentences = reverse $ (hypothesis infPair):(reverse $ premises infPair) 
       parseResult = sequentialParseWithTypeCheck parseSetting [("dummy",DTT.Entity)] [] sentences 
-  printMoreSentenceOrInference S.stdout HTML parseResult
+  printMoreSentenceOrInference S.stdout HTML nbest parseResult
   -- | ToDo: analyze results of sequential parse"
 
 -- | prints a CCG node (=i-th parsing result for a given sentence) in a specified style (=HTML|text|XML|TeX)
-printSentenceAndParseTrees :: S.Handle -> Style -> SentenceAndParseTrees -> IO ()
-printSentenceAndParseTrees h style (SentenceAndParseTrees sentence parseTrees) = do
+printSentenceAndParseTrees :: S.Handle -> Style -> Int -> SentenceAndParseTrees -> IO ()
+printSentenceAndParseTrees h style nbest (SentenceAndParseTrees sentence parseTrees) = do
     S.hPutStrLn h $ interimOf style ""
     T.hPutStrLn h sentence
     parseTrees' <- toList parseTrees 
     -- | [ParseTreesAndFelicityCheck CCG.Node UDTT.TypeCheckQuery (ListT IO FelicityCheckAndMore) ]
-    forM_ (zip parseTrees' ([1..]::[Int])) $ \((ParseTreesAndFelicityCheck node tcQuery tcResults),ith) -> do
-      T.hPutStrLn h $ T.concat ["[parse ", T.pack $ show ith, ": score=", CCG.showScore node, "] ", CCG.pf node]
+    forM_ (zip (take nbest parseTrees') ([1..]::[Int])) $ \((ParseTreesAndFelicityCheck node tcQuery tcResults),ith) -> do
+      T.hPutStrLn h $ T.concat ["[parse ", T.pack $ show ith, ": score=", CCG.showScore node, "]", CCG.pf node]
       T.hPutStrLn h $ printer style node
       S.hPutStrLn h $ interimOf style ""
       T.hPutStrLn h $ printer style $ UDTTwN.fromDeBruijnJudgment tcQuery
@@ -154,18 +154,18 @@ printSentenceAndParseTrees h style (SentenceAndParseTrees sentence parseTrees) =
       forM_ (zip tcResults' ([1..]::[Int])) $ \((FelicityCheckAndMore tcDiagram moreResult),jth) -> do
         T.hPutStrLn h $ T.concat ["[type check diagram ", T.pack $ show jth, "]"]
         T.hPutStrLn h $ printer style $ fmap DTTwN.fromDeBruijnJudgment tcDiagram
-        printMoreSentenceOrInference h style moreResult
+        printMoreSentenceOrInference h style nbest moreResult
 
-printMoreSentenceOrInference :: S.Handle -> Style -> MoreSentencesOrInference -> IO ()
-printMoreSentenceOrInference h style (MoreSentences s) = printSentenceAndParseTrees h style s
-printMoreSentenceOrInference h style (AndInference (InferenceAndResults psq proofDiagrams)) = do
+printMoreSentenceOrInference :: S.Handle -> Style -> Int -> MoreSentencesOrInference -> IO ()
+printMoreSentenceOrInference h style nbest (MoreSentences s) = printSentenceAndParseTrees h style nbest s
+printMoreSentenceOrInference h style _ (AndInference (InferenceAndResults psq proofDiagrams)) = do
   S.hPutStrLn h $ interimOf style ""
   T.hPutStrLn h $ printer style $ DTTwN.fromDeBruijnProofSearchQuery psq
   proofDiagrams' <- toList proofDiagrams
   forM_ (zip proofDiagrams' ([1..]::[Int])) $ \(proofDiagram,kth) -> do
     T.hPutStrLn h $ T.concat ["[proof diagram ", T.pack $ show kth, "]"]
     T.hPutStrLn h $ printer style $ fmap DTTwN.fromDeBruijnJudgment proofDiagram
-printMoreSentenceOrInference h style NoSentence = S.hPutStr h $ interimOf style "No more sentence" 
+printMoreSentenceOrInference h style _ NoSentence = S.hPutStr h $ interimOf style "No more sentence" 
 
 printer :: (SimpleText a, Typeset a, MathML a) => Style -> a -> T.Text
 printer TEXT = toText
