@@ -51,7 +51,7 @@ searchProof' a b c d setting=
   in result{WB.trees = L.nub (WB.trees result)}
 
 -- | Prover for lightblue:
-prove' :: QT.Prover
+prove' :: QT.ProverBuilder
 prove' QT.ProofSearchSetting{..} (DdB.ProofSearchQuery sig ctx typ) =  -- LiftT IO (Tree (U.Judgment U.DTT) UDTTrule)
   let setting = WB.Setting {
         WB.mode = case logicSystem of

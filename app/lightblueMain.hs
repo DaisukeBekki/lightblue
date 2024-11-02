@@ -7,7 +7,6 @@ import Control.Monad (forM_)              --base
 import ListT (toList)                     --list-t
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
---import qualified Data.Text as StrictT     --text
 import qualified Data.Text.IO as StrictT  --text
 import Data.Ratio ((%))                   --base
 import qualified Data.Char as C           --base
@@ -23,29 +22,25 @@ import qualified Parser.Language.Japanese.Juman.CallJuman as Juman
 import Parser.Language (LangOptions(..),jpOptions)
 import qualified Interface as I
 import qualified Interface.Text as T
-import qualified Interface.HTML as I
 import qualified JSeM as J
 import qualified JSeM.XML as J
 import qualified DTS.UDTTdeBruijn as UDTT
 import qualified DTS.DTTdeBruijn as DTT
-import DTS.TypeChecker (typeCheck,typeInfer,nullProver)
+import DTS.TypeChecker (typeInfer,nullProver)
 import qualified DTS.QueryTypes as QT
 import qualified DTS.NaturalLanguageInference as NLI
---import qualified DTS.Prover.TypeChecker as TC
---import qualified DTS.Prover.Wani.WaniBase as Wani
---import qualified DTS.Prover.Diag.TypeChecker as Diag
---import qualified DTS.Prover.Coq.DTStoProlog as D2P
 
 data Options =
   Version
   | Stat
   | Test
-  | Options Command ParseInput FilePath Juman.MorphAnalyzerName Int Int Int Bool
+  | Options Command ParseInput FilePath Juman.MorphAnalyzerName Int Int Int Int Int Bool Bool
     deriving (Show, Eq)
 
 data Command =
-  Parse ParseOutput I.Style Bool
-  | Infer NLI.ProverName
+  Parse I.ParseOutput I.Style Bool Bool NLI.ProverName
+  -- | Infer NLI.ProverName
+  | Numeration I.Style
   | Debug Int Int
   | Demo
   -- | Treebank
@@ -60,14 +55,6 @@ instance Read ParseInput where
   readsPrec _ r =
     [(SENTENCES,s) | (x,s) <- lex r, map C.toLower x == "sentences"]
     ++ [(JSEM,s) | (x,s) <- lex r, map C.toLower x == "jsem"]
-
-data ParseOutput = TREE | POSTAG | NUMERATION deriving (Eq,Show)
-instance Read ParseOutput where
-  readsPrec _ r =
-    [(TREE,s) | (x,s) <- lex r, map C.toLower x == "tree"]
-    ++ [(POSTAG,s) | (x,s) <- lex r, map C.toLower x == "postag"]
-    ++ [(NUMERATION,s) | (x,s) <- lex r, map C.toLower x == "numeration"]
-
 
 -- | Main function.  Check README.md for the usage.
 main :: IO()
@@ -90,7 +77,7 @@ optionParser =
   flag' Stat ( long "stat" 
              <> help "Print the lightblue statistics" )
   <|> 
-  flag' Test ( long "test" 
+  flag' Test ( long "test"
              <> hidden 
              <> internal
              <> help "Execute the test code" )
@@ -99,10 +86,13 @@ optionParser =
     <$> subparser 
       (command "parse"
            (info parseOptionParser
-                 (progDesc "Local options: [-o|--output tree|postag|numeration] [-s|--style html|text|tex|xml] [--typecheck] (The default values: -o tree -s html)" ))
-      <> command "infer"
-           (info inferOptionParser
-                 (progDesc "Local options: [-p|--prover wani|null] [--nsample n] (The default values: -p wani --nsample 0)" ))
+                 (progDesc "Local options: [-o|--output tree|postag] [-s|--style html|text|tex|xml] [--noTypeCheck] [--noInference] [-p|--prover wani|null] (The default values: -o tree -s html -p wani)" ))
+      -- <> command "infer"
+      --      (info inferOptionParser
+      --            (progDesc "Local options: [-p|--prover wani|null] [--nsample n] (The default values: -p wani --nsample 0)" ))
+      <> command "numeration"
+           (info numerationOptionParser
+                 (progDesc "Local option: [-s|--style html|text|tex|xml] (shows all the lexical items in each of the numeration for the inupt sentences" ))
       <> command "debug"
            (info debugOptionParser
                  (progDesc "shows all the parsing results between the two pivots. Local options: INT INT (No default values)" ))
@@ -139,18 +129,32 @@ optionParser =
         <> value Juman.KWJA
         <> help "Specify morphological analyzer (default: KWJA)" )
     <*> option auto 
-      ( long "nbest"
-      <> short 'n'
-      <> help "Show N-best results"
-      <> showDefault
-      <> value 1
-      <> metavar "INT" )
-    <*> option auto 
       ( long "beam"
       <> short 'b'
       <> help "Specify the beam width"
       <> showDefault
       <> value 24
+      <> metavar "INT" )
+    <*> option auto 
+      ( long "nparse"
+      -- <> short 'n'
+      <> help "Show N-best parse trees for each sentence"
+      <> showDefault
+      <> value 1
+      <> metavar "INT" )
+    <*> option auto 
+      ( long "ntypecheck"
+      -- <> short 'n'
+      <> help "Show N-best type check diagram for each logical form"
+      <> showDefault
+      <> value 1
+      <> metavar "INT" )
+    <*> option auto 
+      ( long "nproof"
+      -- <> short 'n'
+      <> help "Show N-best proof diagram for each proof search"
+      <> showDefault
+      <> value 1
       <> metavar "INT" )
     <*> option auto
       ( long "nsample"
@@ -162,16 +166,29 @@ optionParser =
     <*> switch 
       ( long "time"
       <> help "Show the execution time in stderr" )
+    <*> switch 
+      ( long "verbose"
+      <> help "Show logs of type inferer and type checker" )
 
-inferOptionParser :: Parser Command
-inferOptionParser = Infer
+-- inferOptionParser :: Parser Command
+-- inferOptionParser = Infer
+--   <$> option auto
+--     ( long "prover"
+--       <> short 'p'
+--       <> metavar "Wani|Null"
+--       <> showDefault
+--       <> value NLI.Wani
+--       <> help "Choose prover" )
+
+numerationOptionParser :: Parser Command
+numerationOptionParser = Numeration
   <$> option auto
-    ( long "prover"
-      <> short 'p'
-      <> metavar "Wani|Null"
-      <> showDefault
-      <> value NLI.Wani
-      <> help "Choose prover" )
+    ( long "style"
+    <> short 's'
+    <> metavar "text|tex|xml|html"
+    <> help "Print results in the specified format"
+    <> showDefault
+    <> value I.HTML )
 
 debugOptionParser :: Parser Command
 debugOptionParser = Debug
@@ -183,26 +200,36 @@ parseOptionParser = Parse
   <$> option auto
     ( long "output"
     <> short 'o'
-    <> metavar "tree|postag|numeration"
+    <> metavar "tree|postag"
     <> help "Specify the output content"
     <> showDefault
-    <> value TREE )
+    <> value I.TREE )
   <*> option auto
     ( long "style"
     <> short 's'
     <> metavar "text|tex|xml|html"
-    <> help "Print results in the specified style"
+    <> help "Print results in the specified format"
     <> showDefault
     <> value I.HTML )
   <*> switch 
-    ( long "typecheck"
-    <> help "Show type-checking trees for SRs" )
+    ( long "noTypeCheck"
+    <> help "Execute type checking for LFs" )
+  <*> switch 
+    ( long "noInference"
+    <> help "True if it is not an inference (parse and type check only)" )
+  <*> option auto
+    ( long "prover"
+      <> short 'p'
+      <> metavar "Wani|Null"
+      <> showDefault
+      <> value NLI.Wani
+      <> help "Choose prover" )
 
 lightblueMain :: Options -> IO()
 lightblueMain Version = showVersion
 lightblueMain Stat = showStat
 lightblueMain Test = test
-lightblueMain (Options commands input filepath morphaName nbest beamW nsample iftime) = do
+lightblueMain (Options commands input filepath morphaName beamW nParse nTypeCheck nProof nSample iftime verbose) = do
   start <- Time.getCurrentTime
   contents <- case filepath of
     "-" -> T.getContents
@@ -219,60 +246,71 @@ lightblueMain (Options commands input filepath morphaName nbest beamW nsample if
     -- |
     -- | Parse
     -- |
-    lightblueMainLocal (Parse output style ifTypeCheck) contents = do
-      let handle = S.stdout;
+    lightblueMainLocal (Parse output style noTypeCheck isInference proverName) contents = do
+      let handle = S.stdout
+          parseSetting = CP.ParseSetting jpOptions morphaName beamW nParse nTypeCheck nProof True Nothing Nothing isInference verbose
+          prover = NLI.getProver proverName $ QT.ProofSearchSetting Nothing Nothing (Just QT.Intuitionistic)
       sentences <- case input of 
                      SENTENCES -> return $ T.lines contents
                      JSEM -> do
                              parsedJSeM <- J.xml2jsemData $ T.toStrict contents
-                             let parsedJSeM' = if nsample == 0
+                             let parsedJSeM' = if nSample == 0
                                                  then parsedJSeM
-                                                 else take nsample parsedJSeM
+                                                 else take nSample parsedJSeM
                              return $ concat $ map (\j -> (map T.fromStrict $ J.premises j) ++ [T.fromStrict $ J.hypothesis j]) parsedJSeM'
-      let parseSetting = CP.ParseSetting jpOptions morphaName beamW True Nothing Nothing
       S.hPutStrLn handle $ I.headerOf style
       mapM_
         (\(sid,sentence) -> do
-          let parseResult = NLI.singleParseWithTypeCheck parseSetting [("dummy",DTT.Entity)] [] sentence
-          case output of
-            TREE       -> NLI.printSentenceAndParseTrees handle style nbest parseResult
-            NUMERATION -> I.printNumeration handle style morphaName sentence
-            POSTAG     -> do
-                          let (NLI.SentenceAndParseTrees _ parseTrees) = parseResult
-                          parseTrees' <- toList parseTrees 
-                          let nodes = map (\(NLI.ParseTreesAndFelicityCheck n _ _) -> n) parseTrees'
-                          I.posTagger handle style $ take nbest nodes
+          let (NLI.MoreSentences parseResult) = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] [sentence]
+          NLI.printSentenceAndParseTrees handle style noTypeCheck (case output of I.TREE -> False; I.POSTAG -> True) parseResult
+            -- I.POSTAG     -> do
+            --                 let (NLI.SentenceAndParseTrees _ parseTrees) = parseResult
+            --                 parseTrees' <- toList parseTrees 
+            --                 let nodes = map (\(NLI.ParseTreesAndFelicityCheck n _ _) -> n) parseTrees'
+            --                 I.posTagger handle style $ take nParse nodes
           --let len = length nodes;
-          S.hPutStrLn handle $ I.interimOf style $ "" --"[" ++ show (min (length nbestnodes) len) ++ " parse result(s) shown out of " ++ show len ++ " for s" ++ (show $ sid) ++ "]"
+          S.hPutStrLn handle $ I.interimOf style $ "[" ++ (show sid) ++ "]" --"[" ++ show (min (length nbestnodes) len) ++ " parse result(s) shown out of " ++ show len ++ " for s" ++ (show $ sid) ++ "]"
           ) $ zip ([1..]::[Int]) sentences
       S.hPutStr handle $ I.footerOf style
-    -- |
-    -- | Infer
-    -- |
-    lightblueMainLocal (Infer proverName) contents = do
-      let handle = S.stdout;
-          parseSetting = CP.ParseSetting jpOptions morphaName beamW True Nothing Nothing
-          inferenceSetting = NLI.InferenceSetting beamW nbest Nothing Nothing parseSetting typeCheck proverName
-      S.hPutStrLn handle $ I.headerOf I.HTML
-      case input of
-        SENTENCES -> do -- lightblue infer -i sentence 
-          let sentences = T.lines contents 
-              inferencePair = if null sentences
-                then NLI.InferencePair [] T.empty
-                else NLI.InferencePair (init sentences) (last sentences)
-          NLI.checkInference inferenceSetting inferencePair
-        JSEM -> do  --  ligthblue infer -i jsem -f ../JSeM_beta/JSeM_beta_150415.xml
-          parsedJSeM <- J.xml2jsemData $ T.toStrict contents
-          let parsedJSeM' = if nsample == 0
-                               then parsedJSeM
-                               else take nsample parsedJSeM
-          forM_ parsedJSeM' $ \j -> do
-            mapM_ T.putStr ["JSeM [", T.fromStrict $ J.jsem_id j, "] "]
-            let inferencePair = NLI.InferencePair (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
-            --mapM_ (T.putStrLn . T.fromStrict) $ J.premises j
-            --T.putStrLn $ T.fromStrict $ J.hypothesis j
-            NLI.checkInference inferenceSetting inferencePair
-      S.hPutStrLn handle $ I.footerOf I.HTML
+    -- | 
+    -- | Numeration
+    -- | 
+    lightblueMainLocal (Numeration style) contents = do
+      let handle = S.stdout
+          sentences = T.lines contents
+      S.hPutStrLn handle $ I.headerOf style
+      mapM_ (\(sid,sentence) -> do
+        S.hPutStrLn handle $ I.interimOf style $ "[" ++ (show sid) ++ "]"
+        I.printNumeration handle style morphaName sentence
+        ) $ zip ([1..]::[Int]) sentences
+      S.hPutStr handle $ I.footerOf style
+    -- -- |
+    -- -- | Infer
+    -- -- |
+    -- lightblueMainLocal (Infer proverName) contents = do
+    --   let handle = S.stdout
+    --       parseSetting = CP.ParseSetting jpOptions morphaName beamW True Nothing Nothing True
+    --       inferenceSetting = NLI.InferenceSetting beamW nParse Nothing Nothing parseSetting typeCheck proverName
+    --   S.hPutStrLn handle $ I.headerOf I.HTML
+    --   case input of
+    --     SENTENCES -> do -- lightblue infer -i sentence 
+    --       let sentences = T.lines contents 
+    --           inferencePair = if null sentences
+    --             then NLI.InferencePair [] T.empty
+    --             else NLI.InferencePair (init sentences) (last sentences)
+    --       NLI.checkInference inferenceSetting inferencePair
+    --     JSEM -> do  --  ligthblue infer -i jsem -f ../JSeM_beta/JSeM_beta_150415.xml
+    --       parsedJSeM <- J.xml2jsemData $ T.toStrict contents
+    --       let parsedJSeM' = if nsample == 0
+    --                            then parsedJSeM
+    --                            else take nsample parsedJSeM
+    --       forM_ parsedJSeM' $ \j -> do
+    --         mapM_ T.putStr ["JSeM [", T.fromStrict $ J.jsem_id j, "] "]
+    --         let inferencePair = NLI.InferencePair (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
+    --         --mapM_ (T.putStrLn . T.fromStrict) $ J.premises j
+    --         --T.putStrLn $ T.fromStrict $ J.hypothesis j
+    --         NLI.checkInference inferenceSetting inferencePair
+    --   S.hPutStrLn handle $ I.footerOf I.HTML
     -- |
     -- | Debug
     -- |
@@ -285,7 +323,7 @@ lightblueMain (Options commands input filepath morphaName nbest beamW nsample if
       mapM_
         --(\(sid,sentence) -> do
         (\(_,sentence) -> do
-          chart <- CP.parse (CP.ParseSetting jpOptions morphaName beamW True Nothing Nothing) sentence
+          chart <- CP.parse (CP.ParseSetting jpOptions morphaName beamW nParse nTypeCheck nProof True Nothing Nothing False False) sentence
           --let filterednodes = concat $ map snd $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
           --I.printNodes S.stdout I.HTML sid sentence False filterednodes
           mapM_ (\((x,y),node) -> do
@@ -353,7 +391,7 @@ test = do
       -- typeA = DTS.Kind
       tcq = UDTT.TypeInferQuery signature context termA 
       pss = QT.ProofSearchSetting Nothing Nothing (Just QT.Intuitionistic)
-  typeCheckResults <- toList $ typeInfer nullProver pss tcq
+  typeCheckResults <- toList $ typeInfer (nullProver pss) False tcq
   T.putStrLn $ T.toText $ head typeCheckResults
   --T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 0) DTS.Type
   --T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 2) DTS.Type
@@ -397,7 +435,7 @@ parseSentence morphaName beam score sentence = do
   (i,j,k,total) <- score
   S.putStr $ "[" ++ show (total+1) ++ "] "
   T.putStrLn sentence
-  chart <- CP.parse (CP.ParseSetting jpOptions morphaName beam True Nothing Nothing) sentence
+  chart <- CP.parse (CP.ParseSetting jpOptions morphaName beam 1 1 1 True Nothing Nothing False False) sentence
   case CP.extractParseResult beam chart of
     CP.Full nodes -> 
        do
@@ -421,69 +459,3 @@ percent :: (Int,Int) -> String
 percent (i,j) = if j == 0
                    then show (0::F.Fixed F.E2)
                    else show ((fromRational (toEnum i % toEnum j)::F.Fixed F.E2) * 100)
-
-{-
-unknownOptionError :: String -> IO()
-unknownOptionError unknown = do
-  S.hPutStr S.stderr "Not supported: "
-  S.hPutStrLn S.stderr $ show $ parserUsage defaultPrefs optionParser unknown
--}
-
-{-  
-  let nbest = 3;
-      bestNodes =  map (take nbest) [[1,2,3,4],[5],[7,8,9,10]]::[[Int]];
-      doubledNodes = map (map (\node -> (node, show node))) bestNodes
-      chozenNodes = Prover.choice doubledNodes; 
-      zippedNodes = map unzip chozenNodes;
-      tripledNodes = map (\(ns,ss) -> (ns,ss,[sum ns])) zippedNodes;
-      --nodeSrPrList = dropWhile (\(_,_,ps) -> ps /= []) tripledNodes;
-  print bestNodes
-  print doubledNodes
-  print chozenNodes
-  print zippedNodes
-  print tripledNodes
--}
-
-{-
-proofSearch :: [DTS.Signature] 
-               -> [DTS.Preterm]  -- ^ hypothesis:premises
-               -> [Ty.UTree Ty.UJudgement]
-proofSearch sig nodes = 
-  case nodes of
-    [] -> []
-    (t:ts) -> Ty.proofSearch ts (("evt",DTS.Type):("entity",DTS.Type):sig) t
-
--- | lightblue --fuman (hidden option)
--- | transforms an input (from stdin) each of whose line is a json entry
--- | into an output (to stdout) each of whose line is a paragraph.
--- | Usage:
--- | cat <file> | lightblue --fuman | head -n | Fuman/para2sentence > ...txt
--- |
-fuman2text :: IO()
-fuman2text = do
-  jsonStrings <- T.getContents
-  mapM_ T.putStrLn $ M.catMaybes $ map (\j -> j ^? key "fuman" . _String) $ T.lines jsonStrings
-
-processJSeMData :: J.JSeMData -> IO()
-processJSeMData jsemdata = do
-  let sem = DTS.betaReduce $ currying psems hsem
-  T.putStrLn $ T.toText sem
-
-currying :: [DTS.Preterm] -> DTS.Preterm -> DTS.Preterm
-currying [] preterm = preterm
-currying (p:ps) preterm = DTS.Pi p (currying ps preterm)
-
-parseText :: T.Text -> IO(DTS.Preterm)
-parseText sentence = do
-  nodes <- CP.simpleParse 16 sentence
-  return $ CP.sem (head nodes)
-
-callCoq :: T.Text -> IO()
-callCoq _ = do
-  let coqcommand = T.concat ["echo -e \"Extraction Language Scheme.\nParameter A:Prop.\nParameter B:Prop.\nTheorem id: A -> B -> A.\nExtraction id.\n\" | coqtop 2> /dev/null | awk '{if($0 != \"\") {print $0}}' | tail -n 2"]
-  (_, stdout, _, _) <- S.runInteractiveCommand $ T.unpack coqcommand
-  t <- T.hGetContents stdout
-  T.putStrLn $ T.replace "\n" "" $ T.strip t
--}
-
-
