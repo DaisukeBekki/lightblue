@@ -12,6 +12,7 @@
 
 module Interface (
   Style(..)
+  , ParseOutput(..)
   , headerOf
   , interimOf
   , footerOf
@@ -57,6 +58,14 @@ instance Read Style where
     -- ++ [(TEXT,s) | (x,s) <- lex r, map C.toLower x == "text"]
     -- ++ [(TEX,s) | (x,s) <- lex r, map C.toLower x == "tex"]
     -- ++ [(XML,s) | (x,s) <- lex r, map C.toLower x == "xml"]
+
+data ParseOutput = TREE | POSTAG deriving (Eq,Show)
+
+instance Read ParseOutput where
+  readsPrec _ r =
+    [(TREE,s) | (x,s) <- lex r, map C.toLower x == "tree"]
+    ++ [(POSTAG,s) | (x,s) <- lex r, map C.toLower x == "postag"]
+    -- ++ [(NUMERATION,s) | (x,s) <- lex r, map C.toLower x == "numeration"]
 
 -- | header in style
 headerOf :: Style -> String
@@ -151,10 +160,10 @@ printNodes handle SVG _ _ _ nodes = do
           T.hPutStr handle $ SVG.node2svg node
         ) $ zip nodes ([0..]::[Int])
 
--- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style
-posTagger :: S.Handle -> Style -> [CCG.Node] -> IO()
-posTagger handle XML = mapM_ ((T.hPutStrLn handle) . (X.node2XML 0 0 True))
-posTagger handle style = mapM_ (\node -> mapM_ (T.hPutStrLn handle) $ node2PosTags style node)
+-- | prints CCG node (=a parsing result) in a \"part-of-speech tagger\" style
+posTagger :: S.Handle -> Style -> CCG.Node -> IO()
+posTagger handle XML = (T.hPutStrLn handle) . (X.node2XML 0 0 True)
+posTagger handle style = mapM_ (T.hPutStrLn handle) . (node2PosTags style)
 
 -- | A subroutine for `posTagger` function
 node2PosTags :: Style -> CCG.Node -> [T.Text]

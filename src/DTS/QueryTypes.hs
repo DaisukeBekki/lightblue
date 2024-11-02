@@ -6,9 +6,10 @@ module DTS.QueryTypes (
   -- * type query
   , DTTProofDiagram
   , TypeChecker
-  , TypeInfer
+  , TypeInferer
   , LogicSystem(..)
   , ProofSearchSetting(..)
+  , ProverBuilder
   , Prover
   -- * ListEx monad
   --, ListEx(..)
@@ -24,9 +25,7 @@ import Interface.TeX
 import Interface.HTML
 import Interface.Tree
 import qualified DTS.DTTdeBruijn as DTTdB
---import qualified DTS.DTTwithName as DTTwN
 import qualified DTS.UDTTdeBruijn as UDTTdB
---import qualified DTS.UDTTwithName as UDTTwN
 import DTS.GeneralTypeQuery (GeneralTypeQuery(..))
 
 -- BOTF?
@@ -67,9 +66,9 @@ instance MathML DTTrule where
 
 type DTTProofDiagram = Tree DTTrule (DTTdB.Judgment)
 
-type TypeChecker = Prover -> ProofSearchSetting -> UDTTdB.TypeCheckQuery -> ListT IO DTTProofDiagram
+type TypeChecker = Prover -> Bool -> UDTTdB.TypeCheckQuery -> ListT IO DTTProofDiagram
 
-type TypeInfer = Prover -> ProofSearchSetting -> UDTTdB.TypeInferQuery -> ListT IO DTTProofDiagram
+type TypeInferer = Prover -> Bool -> UDTTdB.TypeInferQuery -> ListT IO DTTProofDiagram
 
 data LogicSystem = Intuitionistic | Classical deriving (Eq, Show)
 
@@ -79,91 +78,7 @@ data ProofSearchSetting = ProofSearchSetting {
   , logicSystem :: Maybe LogicSystem
   } deriving (Eq, Show)
 
-type Prover = ProofSearchSetting -> DTTdB.ProofSearchQuery -> ListT IO DTTProofDiagram
+type Prover = DTTdB.ProofSearchQuery -> ListT IO DTTProofDiagram
 
-
-{-
-data TypeCheckError = IndexOutOfBounds
-
-instance Show TypeCheckError where
-  show IndexOutOfBounds = "Index out of bounds"
-
-instance SimpleText TypeCheckError where
-  toText = T.pack . show
-instance Typeset TypeCheckError where
-  toTeX = T.pack . show
-instance MathML TypeCheckError where
-  toMathML = T.pack . show
--}
-
-{-
-instance MathML ProofSearchQuery where
-  toMathML (ProofSearchQuery _ cont typ) = -- | prints a proof search query in MathML
-    let (vcontext', vtyp') = UDTT.initializeIndex $ do
-                               (varnames,vcontext) <- UDTT.fromDeBruijnContextLoop $ DTT.toUDTTcontext cont
-                               vtyp <- UDTT.fromDeBruijn varnames $ DTT.toUDTT typ
-                               return (vcontext, vtyp)
-    in T.concat ["<mrow>", toMathML vcontext', "<mo>&vdash;</mo><mo>?</mo><mo>:</mo>", toMathML vtyp', "</mrow>"]
--}
-
---data ProofSearchResult = Diagrams [Tree RuleName Judgment] deriving (Eq, Show)
-
-{-
-signatureChecker :: TypeChecker -> DTT.Signature -> Bool
-signatureChecker = signatureCheckerLoop []
-  where signatureCheckerLoop _ _ [] = True
-        signatureCheckerLoop typeChecker prevSig (sig:sigs) =
-          case typeChecker of
-            [] -> False
-            (Tree rulename node dtrs):_ -> True
-          &&
-          signatureCheckerLoop typeChecker (new:prevSig) sigs
-
-contextChecker :: Context -> Bool
-contextChecker = contextCheckerLoop []
-  where contextCheckerLoop _ [] = True
-        contextCheckerLoop prevCon (con:cons) =
--}
-
-{-
--- | ListEx Monad (List with exceptions)
-
-newtype ListEx a = ListEx { result :: [(a, T.Text)] }
-
-instance (Show a) => Show (ListEx a) where
-  show ex = show $ result ex 
-
-instance Functor ListEx where
-  fmap f m1 = do -- M.liftM
-              x1 <- m1
-              return $ f x1
-
-instance Applicative ListEx where
-  pure = return
-  (<*>) m1 m2 = do -- M.ap
-                x1 <- m1
-                x2 <- m2
-                return $ x1 x2
-
-instance Monad ListEx where
-  return m = ListEx [(m,"")]
-  ListEx xs >>= f = ListEx $ do
-      (a,msg) <- xs
-      map (\(b,msg') -> (b,T.append msg msg')) $ result $ f a -- [(b, msg)]
-
-instance M.MonadFail ListEx where
-  fail s = ListEx []
-
-instance M.Alternative ListEx where
-  empty = ListEx []
-  ListEx as <|> ListEx bs = ListEx (as ++ bs)
-
---instance M.Traversal ListEx where
---  traverse = 
-
-exception :: T.Text -> ListEx a
-exception msg = ListEx [((),msg)]
-
-record :: T.Text -> ListEx ()
-record msg = ListEx [(unit,msg)]
--}
+type ProverBuilder = ProofSearchSetting -> Prover
+ 
