@@ -34,27 +34,26 @@ data Options =
   Version
   | Stat
   | Test
-  | Options Command ParseInput FilePath Juman.MorphAnalyzerName Int Int Int Int Int Bool Bool
+  | Options Command FilePath Juman.MorphAnalyzerName Int Int Int Int Int Bool Bool
     deriving (Show, Eq)
 
 data Command =
   Parse I.ParseOutput I.Style Bool Bool NLI.ProverName
-  -- | Infer NLI.ProverName
+  | JSeM I.Style Bool NLI.ProverName
   | Numeration I.Style
   | Debug Int Int
   | Demo
   -- | Treebank
-  | JSeMParser
     deriving (Show, Eq)
 
 --commandReader :: String -> a -> String -> [(a,String)]
 --commandReader r command option = [(command,s) | (x,s) <- lex r, map C.toLower x == option]
 
-data ParseInput = SENTENCES | JSEM deriving (Eq,Show)
-instance Read ParseInput where
-  readsPrec _ r =
-    [(SENTENCES,s) | (x,s) <- lex r, map C.toLower x == "sentences"]
-    ++ [(JSEM,s) | (x,s) <- lex r, map C.toLower x == "jsem"]
+-- data ParseInput = SENTENCES | JSEM deriving (Eq,Show)
+-- instance Read ParseInput where
+--   readsPrec _ r =
+--     [(SENTENCES,s) | (x,s) <- lex r, map C.toLower x == "sentences"]
+--     ++ [(JSEM,s) | (x,s) <- lex r, map C.toLower x == "jsem"]
 
 -- | Main function.  Check README.md for the usage.
 main :: IO()
@@ -87,34 +86,34 @@ optionParser =
       (command "parse"
            (info parseOptionParser
                  (progDesc "Local options: [-o|--output tree|postag] [-s|--style html|text|tex|xml] [--noTypeCheck] [--noInference] [-p|--prover wani|null] (The default values: -o tree -s html -p wani)" ))
+      <> command "jsem"
+           (info jsemOptionParser
+                 (progDesc "Local options: [-s|--style html|text|tex|xml] [--noTypeCheck] [-p|--prover wani|null] (The default values: -s html -p wani)" ))
       -- <> command "infer"
       --      (info inferOptionParser
       --            (progDesc "Local options: [-p|--prover wani|null] [--nsample n] (The default values: -p wani --nsample 0)" ))
       <> command "numeration"
            (info numerationOptionParser
                  (progDesc "Local option: [-s|--style html|text|tex|xml] (shows all the lexical items in each of the numeration for the inupt sentences" ))
-      <> command "debug"
-           (info debugOptionParser
-                 (progDesc "shows all the parsing results between the two pivots. Local options: INT INT (No default values)" ))
+      -- <> command "debug"
+      --      (info debugOptionParser
+      --            (progDesc "shows all the parsing results between the two pivots. Local options: INT INT (No default values)" ))
       <> command "demo"
            (info (pure Demo)
                  (progDesc "sequentially shows parsing results of a given corpus. No local options." ))
       -- <> command "treebank"
       --      (info (pure Treebank)
       --            (progDesc "print a semantic treebank build from a given corpus. No local options" ))
-      <> command "jsemparser"
-           (info (pure JSeMParser)
-                 (progDesc "parse a jsem file. No local options" ))
-      <> metavar "COMMAND (=parse|infer|debug|demo)"
+      <> metavar "COMMAND (=parse|jsem|numeration|demo)"
       <> commandGroup "Available COMMANDs and thier local options"
       <> help "specifies the task to execute.  See 'Available COMMANDs ...' below about local options for each command"
       )
-    <*> option auto
-      ( long "input"
-        <> short 'i' 
-        <> metavar "sentences|jsem"
-        <> value SENTENCES
-        <> help "Specify input type (default: sentences)" )
+    -- <*> option auto
+    --   ( long "input"
+    --     <> short 'i' 
+    --     <> metavar "sentences|jsem"
+    --     <> value SENTENCES
+    --     <> help "Specify input type (default: sentences)" )
     <*> strOption 
       ( long "file"
       <> short 'f'
@@ -225,11 +224,31 @@ parseOptionParser = Parse
       <> value NLI.Wani
       <> help "Choose prover" )
 
+jsemOptionParser :: Parser Command
+jsemOptionParser = JSeM
+  <$> option auto
+    ( long "style"
+    <> short 's'
+    <> metavar "text|tex|xml|html"
+    <> help "Print results in the specified format"
+    <> showDefault
+    <> value I.HTML )
+  <*> switch 
+    ( long "noTypeCheck"
+    <> help "Execute type checking for LFs" )
+  <*> option auto
+    ( long "prover"
+      <> short 'p'
+      <> metavar "Wani|Null"
+      <> showDefault
+      <> value NLI.Wani
+      <> help "Choose prover" )
+
 lightblueMain :: Options -> IO()
 lightblueMain Version = showVersion
 lightblueMain Stat = showStat
 lightblueMain Test = test
-lightblueMain (Options commands input filepath morphaName beamW nParse nTypeCheck nProof nSample iftime verbose) = do
+lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nProof nSample iftime verbose) = do
   start <- Time.getCurrentTime
   contents <- case filepath of
     "-" -> T.getContents
@@ -250,28 +269,35 @@ lightblueMain (Options commands input filepath morphaName beamW nParse nTypeChec
       let handle = S.stdout
           parseSetting = CP.ParseSetting jpOptions morphaName beamW nParse nTypeCheck nProof True Nothing Nothing isInference verbose
           prover = NLI.getProver proverName $ QT.ProofSearchSetting Nothing Nothing (Just QT.Intuitionistic)
-      sentences <- case input of 
-                     SENTENCES -> return $ T.lines contents
-                     JSEM -> do
-                             parsedJSeM <- J.xml2jsemData $ T.toStrict contents
-                             let parsedJSeM' = if nSample == 0
-                                                 then parsedJSeM
-                                                 else take nSample parsedJSeM
-                             return $ concat $ map (\j -> (map T.fromStrict $ J.premises j) ++ [T.fromStrict $ J.hypothesis j]) parsedJSeM'
+          parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] $ T.lines contents
+          posTagOnly = case output of 
+                         I.TREE -> False
+                         I.POSTAG -> True
       S.hPutStrLn handle $ I.headerOf style
-      mapM_
-        (\(sid,sentence) -> do
-          let (NLI.MoreSentences parseResult) = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] [sentence]
-          NLI.printSentenceAndParseTrees handle style noTypeCheck (case output of I.TREE -> False; I.POSTAG -> True) parseResult
-            -- I.POSTAG     -> do
-            --                 let (NLI.SentenceAndParseTrees _ parseTrees) = parseResult
-            --                 parseTrees' <- toList parseTrees 
-            --                 let nodes = map (\(NLI.ParseTreesAndFelicityCheck n _ _) -> n) parseTrees'
-            --                 I.posTagger handle style $ take nParse nodes
-          --let len = length nodes;
-          S.hPutStrLn handle $ I.interimOf style $ "[" ++ (show sid) ++ "]" --"[" ++ show (min (length nbestnodes) len) ++ " parse result(s) shown out of " ++ show len ++ " for s" ++ (show $ sid) ++ "]"
-          ) $ zip ([1..]::[Int]) sentences
+      NLI.printMoreSentenceOrInference handle style noTypeCheck posTagOnly parseResult
       S.hPutStr handle $ I.footerOf style
+    --
+    -- | JSeM Parser
+    -- 
+    lightblueMainLocal (JSeM style noTypeCheck proverName) contents = do
+      parsedJSeM <- J.xml2jsemData $ T.toStrict contents
+      let handle = S.stdout
+          parseSetting = CP.ParseSetting jpOptions morphaName beamW nParse nTypeCheck nProof True Nothing Nothing True False
+          prover = NLI.getProver proverName $ QT.ProofSearchSetting Nothing Nothing (Just QT.Intuitionistic)
+          parsedJSeM' = if nSample == 0
+                          then parsedJSeM
+                          else take nSample parsedJSeM
+      S.hPutStrLn handle $ I.headerOf style
+      forM_ parsedJSeM' $ \j -> do
+        mapM_ T.putStr ["[JSeM id: ", T.fromStrict $ J.jsem_id j, "] "]
+        mapM_ StrictT.putStr $ J.premises j
+        S.putStr "==>"
+        StrictT.putStrLn $ J.hypothesis j
+        let sentences = reverse $ (T.fromStrict $ J.hypothesis j):(map T.fromStrict $ J.premises j)
+            parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] sentences
+        NLI.printMoreSentenceOrInference handle style noTypeCheck False parseResult
+        S.putStrLn $ "Ground truth: " ++ (show $ J.answer j)
+      S.hPutStrLn handle $ I.footerOf style
     -- | 
     -- | Numeration
     -- | 
@@ -285,54 +311,24 @@ lightblueMain (Options commands input filepath morphaName beamW nParse nTypeChec
         ) $ zip ([1..]::[Int]) sentences
       S.hPutStr handle $ I.footerOf style
     -- -- |
-    -- -- | Infer
+    -- -- | Debug
     -- -- |
-    -- lightblueMainLocal (Infer proverName) contents = do
-    --   let handle = S.stdout
-    --       parseSetting = CP.ParseSetting jpOptions morphaName beamW True Nothing Nothing True
-    --       inferenceSetting = NLI.InferenceSetting beamW nParse Nothing Nothing parseSetting typeCheck proverName
-    --   S.hPutStrLn handle $ I.headerOf I.HTML
-    --   case input of
-    --     SENTENCES -> do -- lightblue infer -i sentence 
-    --       let sentences = T.lines contents 
-    --           inferencePair = if null sentences
-    --             then NLI.InferencePair [] T.empty
-    --             else NLI.InferencePair (init sentences) (last sentences)
-    --       NLI.checkInference inferenceSetting inferencePair
-    --     JSEM -> do  --  ligthblue infer -i jsem -f ../JSeM_beta/JSeM_beta_150415.xml
-    --       parsedJSeM <- J.xml2jsemData $ T.toStrict contents
-    --       let parsedJSeM' = if nsample == 0
-    --                            then parsedJSeM
-    --                            else take nsample parsedJSeM
-    --       forM_ parsedJSeM' $ \j -> do
-    --         mapM_ T.putStr ["JSeM [", T.fromStrict $ J.jsem_id j, "] "]
-    --         let inferencePair = NLI.InferencePair (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
-    --         --mapM_ (T.putStrLn . T.fromStrict) $ J.premises j
-    --         --T.putStrLn $ T.fromStrict $ J.hypothesis j
-    --         NLI.checkInference inferenceSetting inferencePair
-    --   S.hPutStrLn handle $ I.footerOf I.HTML
-    -- |
-    -- | Debug
-    -- |
-    --lightblueMainLocal (Debug i j) contents = do
-    lightblueMainLocal (Debug _ _) contents = do
-      parsedJSeM <- J.xml2jsemData $ T.toStrict contents
-      let sentences = case input of 
-            SENTENCES -> T.lines contents
-            JSEM -> concat $ map (\jsem -> (map T.fromStrict $ J.premises jsem) ++ [T.fromStrict $ J.hypothesis jsem]) parsedJSeM
-      mapM_
-        --(\(sid,sentence) -> do
-        (\(_,sentence) -> do
-          chart <- CP.parse (CP.ParseSetting jpOptions morphaName beamW nParse nTypeCheck nProof True Nothing Nothing False False) sentence
-          --let filterednodes = concat $ map snd $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
-          --I.printNodes S.stdout I.HTML sid sentence False filterednodes
-          mapM_ (\((x,y),node) -> do
-                                  S.putStr $ "(" ++ (show x) ++ "," ++ (show y) ++ ") "
-                                  if null node
-                                     then S.putStrLn ""
-                                     else T.putStrLn $ T.toText $ CP.cat $ head node
-                                  ) $ M.toList chart
-          ) $ zip ([0..]::[Int]) sentences
+    -- --lightblueMainLocal (Debug i j) contents = do
+    -- lightblueMainLocal (Debug _ _) contents = do
+    --   parsedJSeM <- J.xml2jsemData $ T.toStrict contents
+    --   let sentences = T.lines contents
+    --   forM_ () $ 
+    --     (\(_,sentence) -> do
+    --       chart <- CP.parse (CP.ParseSetting jpOptions morphaName beamW nParse nTypeCheck nProof True Nothing Nothing False False) sentence
+    --       --let filterednodes = concat $ map snd $ filter (\((x,y),_) -> i <= x && y <= j) $ M.toList chart
+    --       --I.printNodes S.stdout I.HTML sid sentence False filterednodes
+    --       mapM_ (\((x,y),node) -> do
+    --                               S.putStr $ "(" ++ (show x) ++ "," ++ (show y) ++ ") "
+    --                               if null node
+    --                                  then S.putStrLn ""
+    --                                  else T.putStrLn $ T.toText $ CP.cat $ head node
+    --                               ) $ M.toList chart
+    --       ) $ zip ([0..]::[Int]) sentences
     -- |
     -- | Demo (sequential parsing of a given corpus)
     -- |
@@ -343,17 +339,6 @@ lightblueMain (Options commands input filepath morphaName beamW nParse nTypeChec
     -- --
     -- lightblueMainLocal Treebank contents = do
     --   I.treebankBuilder beamw $ T.lines contents
-    --
-    -- | JSeM Parser
-    -- 
-    lightblueMainLocal JSeMParser contents = do
-      parsedJSeM <- J.xml2jsemData $ T.toStrict contents
-      forM_ parsedJSeM $ \jsem -> do
-        putStr $ show $ J.answer jsem
-        S.putChar '\t'
-        mapM_ StrictT.putStr $ J.premises jsem
-        S.putChar '\t' 
-        StrictT.putStrLn $ J.hypothesis jsem
 
 -- | lightblue --version
 -- |

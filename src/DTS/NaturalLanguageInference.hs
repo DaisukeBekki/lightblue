@@ -23,7 +23,7 @@ module DTS.NaturalLanguageInference (
   , InferenceAndResults(..)
   , parseWithTypeCheck
   , printSentenceAndParseTrees
-  --, printMoreSentenceOrInference
+  , printMoreSentenceOrInference
   ) where
 
 import Control.Monad (when,forM_,join)    --base
