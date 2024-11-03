@@ -124,7 +124,7 @@ optionParser =
     <*> option auto
       ( long "ma"
         <> short 'm' 
-        <> metavar "juman|kwja"
+        <> metavar "juman|jumanpp|kwja"
         <> value Juman.KWJA
         <> help "Specify morphological analyzer (default: KWJA)" )
     <*> option auto 
