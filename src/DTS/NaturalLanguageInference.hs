@@ -84,7 +84,7 @@ getProver pn = case pn of
 
 {-- Data structure for sequential parsing and the inference --} 
 data SentenceAndParseTrees = SentenceAndParseTrees T.Text (ListT IO ParseTreesAndFelicityCheck) -- ^ A next sentence and its parse results
-data ParseTreesAndFelicityCheck = ParseTreesAndFelicityCheck CCG.Node UDTT.TypeCheckQuery (ListT IO FelicityCheckAndMore) -- ^ A parse result, type check query for its felicity condition, and its results
+data ParseTreesAndFelicityCheck = ParseTreesAndFelicityCheck CCG.Node DTT.Signature UDTT.TypeCheckQuery (ListT IO FelicityCheckAndMore) -- ^ A parse result, type check query for its felicity condition, and its results
 data FelicityCheckAndMore = FelicityCheckAndMore QT.DTTProofDiagram MoreSentencesOrInference -- ^ A type check diagram and the next sentence if this is not the last sentence, or an inference query otherwise.
 data MoreSentencesOrInference = MoreSentences SentenceAndParseTrees | AndInference InferenceAndResults | NoSentence 
 data InferenceAndResults = InferenceAndResults DTT.ProofSearchQuery (ListT IO QT.DTTProofDiagram) -- ^ A proof search query for the inference and its results.
@@ -112,7 +112,7 @@ parseWithTypeCheck ps prover signtr contxt (text:texts) =
     node <- takeNbest (CP.nParse ps) $ join $ fmap fromFoldable $ lift $ CP.simpleParse ps text 
     let signtr' = L.nub $ (CCG.sig node) ++ signtr
         tcQuery = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
-    return $ ParseTreesAndFelicityCheck node tcQuery $ do
+    return $ ParseTreesAndFelicityCheck node signtr' tcQuery $ do
                tcDiagram <- takeNbest (CP.nTypeCheck ps) $ TY.typeCheck prover (CP.verbose ps) tcQuery
                let contxt' = (DTT.trm $ Tree.node tcDiagram):contxt
                return $ FelicityCheckAndMore tcDiagram $ parseWithTypeCheck ps prover signtr' contxt' texts
@@ -130,7 +130,7 @@ printSentenceAndParseTrees h style noTypeCheck posTagOnly (SentenceAndParseTrees
     T.hPutStrLn h sentence
     parseTrees' <- toList parseTrees 
     -- | [ParseTreesAndFelicityCheck CCG.Node UDTT.TypeCheckQuery (ListT IO FelicityCheckAndMore) ]
-    forM_ (zip parseTrees' ([1..]::[Int])) $ \((ParseTreesAndFelicityCheck node tcQuery tcResults),ith) -> do
+    forM_ (zip parseTrees' ([1..]::[Int])) $ \((ParseTreesAndFelicityCheck node signtr tcQuery tcResults),ith) -> do
       S.hPutStrLn h $ interimOf style $ "[parse " ++ (show ith) ++ ": score=" ++ (T.unpack $ CCG.showScore node) ++ "]"
       T.hPutStrLn h $ T.concat ["PF = ", CCG.pf node]
       if posTagOnly
@@ -138,12 +138,15 @@ printSentenceAndParseTrees h style noTypeCheck posTagOnly (SentenceAndParseTrees
           posTagger h style node
         else do
           T.hPutStrLn h $ printer style node
-          S.hPutStrLn h $ interimOf style $ "[Type check query ]"
+          S.hPutStrLn h $ interimOf style $ "[Signature]"
+          T.hPutStrLn h $ printer style $ DTTwN.fromDeBruijnSignature signtr
+          S.hPutStrLn h $ interimOf style $ "[Type check query]"
           T.hPutStrLn h $ printer style $ UDTTwN.fromDeBruijnJudgment tcQuery
       tcResults' <- toList tcResults
+      S.putStrLn $ (show $ length tcResults') ++ " results."
       forM_ (zip tcResults' ([1..]::[Int])) $ \((FelicityCheckAndMore tcDiagram moreResult),jth) -> do
         when (not (noTypeCheck || posTagOnly)) $ do
-          S.hPutStrLn h $ interimOf style $ "[type check diagram " ++ (show jth) ++ "]"
+          S.hPutStrLn h $ interimOf style $ "[Type check diagram " ++ (show jth) ++ "]"
           T.hPutStrLn h $ printer style $ fmap DTTwN.fromDeBruijnJudgment tcDiagram
         printMoreSentenceOrInference h style noTypeCheck posTagOnly moreResult
 
@@ -153,7 +156,7 @@ printMoreSentenceOrInference h style _ _ (AndInference (InferenceAndResults psq 
   T.hPutStrLn h $ printer style $ DTTwN.fromDeBruijnProofSearchQuery psq
   proofDiagrams' <- toList proofDiagrams
   forM_ (zip proofDiagrams' ([1..]::[Int])) $ \(proofDiagram,kth) -> do
-    S.hPutStrLn h $ interimOf style $ "[proof diagram " ++ (show kth) ++ "]"
+    S.hPutStrLn h $ interimOf style $ "[Proof diagram " ++ (show kth) ++ "]"
     T.hPutStrLn h $ printer style $ fmap DTTwN.fromDeBruijnJudgment proofDiagram
 printMoreSentenceOrInference h style _ _ NoSentence = return () -- S.hPutStrLn h $ interimOf style "[End of discourse]" 
 
