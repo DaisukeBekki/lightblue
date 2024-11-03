@@ -314,5 +314,6 @@ orSR :: (UDTTpreterm, Signature)
 orSR = ((Lam (Lam (Pi (Not (Var 1)) (Var 1)))), [])
 
 conjunctionSR :: T.Text -> (UDTTpreterm, Signature)
-conjunctionSR c = ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (Sigma (App (Var 2) (Var 1)) ((App (App (Con c) (Var 1)) (Var 0)))))))), 
-  [(c, DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))])
+conjunctionSR _ = ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))), [])
+  -- ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (Sigma (App (Var 2) (Var 1)) ((App (App (Con c) (Var 1)) (Var 0)))))))), 
+  --[(c, DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))])
