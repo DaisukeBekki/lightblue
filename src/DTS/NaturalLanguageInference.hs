@@ -26,7 +26,7 @@ module DTS.NaturalLanguageInference (
   , printMoreSentenceOrInference
   ) where
 
-import Control.Monad (when,forM_,join)    --base
+import Control.Monad (when,forM_,join,liftM) --base
 import Control.Monad.State (lift)         --mtl
 import qualified System.IO as S           --base
 import qualified Data.Char as C           --base
@@ -104,6 +104,7 @@ parseWithTypeCheck ps prover signtr (typ:contxt) [] = -- ^ Context is given and 
     else NoSentence
 parseWithTypeCheck ps prover signtr contxt (text:texts) = 
   MoreSentences $ SentenceAndParseTrees text $ do
+    --lift $ S.putStrLn $ "nParse = " ++ (show $ CP.nParse ps)
     -- | IO [CCG.node] =lift=>           ListT IO [CCG.node] 
     -- |               =fmap(foldable)=> ListT IO (ListT IO CCG.Node)
     -- |               =join=>           ListT IO CCG.Node
@@ -111,51 +112,50 @@ parseWithTypeCheck ps prover signtr contxt (text:texts) =
     node <- takeNbest (CP.nParse ps) $ join $ fmap fromFoldable $ lift $ CP.simpleParse ps text 
     let signtr' = L.nub $ (CCG.sig node) ++ signtr
         tcQuery = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
-    tcDiagram <- takeNbest (CP.nTypeCheck ps) $ TY.typeCheck prover (CP.verbose ps) tcQuery
-    let contxt' = (DTT.trm $ Tree.node tcDiagram):contxt
     return $ ParseTreesAndFelicityCheck node tcQuery $ do
+               tcDiagram <- takeNbest (CP.nTypeCheck ps) $ TY.typeCheck prover (CP.verbose ps) tcQuery
+               let contxt' = (DTT.trm $ Tree.node tcDiagram):contxt
                return $ FelicityCheckAndMore tcDiagram $ parseWithTypeCheck ps prover signtr' contxt' texts
 
 -- | Take n element from the top of the list.
 -- | If n < 0, it returns all the elements.
 takeNbest :: Int -> ListT IO a -> ListT IO a
-takeNbest n list 
-  | n >= 0 = ListT.take n list
-  | otherwise = list
+takeNbest n l
+  | n >= 0 = ListT.take n l
+  | otherwise = l
  
 -- | prints a CCG node (=i-th parsing result for a given sentence) in a specified style (=HTML|text|XML|TeX)
 printSentenceAndParseTrees :: S.Handle -> Style -> Bool -> Bool -> SentenceAndParseTrees -> IO ()
 printSentenceAndParseTrees h style noTypeCheck posTagOnly (SentenceAndParseTrees sentence parseTrees) = do
-    S.hPutStrLn h $ interimOf style ""
     T.hPutStrLn h sentence
     parseTrees' <- toList parseTrees 
     -- | [ParseTreesAndFelicityCheck CCG.Node UDTT.TypeCheckQuery (ListT IO FelicityCheckAndMore) ]
     forM_ (zip parseTrees' ([1..]::[Int])) $ \((ParseTreesAndFelicityCheck node tcQuery tcResults),ith) -> do
-      T.hPutStrLn h $ T.concat ["[parse ", T.pack $ show ith, ": score=", CCG.showScore node, "]", CCG.pf node]
+      S.hPutStrLn h $ interimOf style $ "[parse " ++ (show ith) ++ ": score=" ++ (T.unpack $ CCG.showScore node) ++ "]"
+      T.hPutStrLn h $ T.concat ["PF = ", CCG.pf node]
       if posTagOnly
         then do
           posTagger h style node
         else do
           T.hPutStrLn h $ printer style node
-          S.hPutStrLn h $ interimOf style ""
+          S.hPutStrLn h $ interimOf style $ "[Type check query ]"
           T.hPutStrLn h $ printer style $ UDTTwN.fromDeBruijnJudgment tcQuery
       tcResults' <- toList tcResults
       forM_ (zip tcResults' ([1..]::[Int])) $ \((FelicityCheckAndMore tcDiagram moreResult),jth) -> do
         when (not (noTypeCheck || posTagOnly)) $ do
-          T.hPutStrLn h $ T.concat ["[type check diagram ", T.pack $ show jth, "]"]
+          S.hPutStrLn h $ interimOf style $ "[type check diagram " ++ (show jth) ++ "]"
           T.hPutStrLn h $ printer style $ fmap DTTwN.fromDeBruijnJudgment tcDiagram
         printMoreSentenceOrInference h style noTypeCheck posTagOnly moreResult
 
 printMoreSentenceOrInference :: S.Handle -> Style -> Bool -> Bool -> MoreSentencesOrInference -> IO ()
 printMoreSentenceOrInference h style ntc pto (MoreSentences s) = printSentenceAndParseTrees h style ntc pto s
 printMoreSentenceOrInference h style _ _ (AndInference (InferenceAndResults psq proofDiagrams)) = do
-  S.hPutStrLn h $ interimOf style ""
   T.hPutStrLn h $ printer style $ DTTwN.fromDeBruijnProofSearchQuery psq
   proofDiagrams' <- toList proofDiagrams
   forM_ (zip proofDiagrams' ([1..]::[Int])) $ \(proofDiagram,kth) -> do
-    T.hPutStrLn h $ T.concat ["[proof diagram ", T.pack $ show kth, "]"]
+    S.hPutStrLn h $ interimOf style $ "[proof diagram " ++ (show kth) ++ "]"
     T.hPutStrLn h $ printer style $ fmap DTTwN.fromDeBruijnJudgment proofDiagram
-printMoreSentenceOrInference h style _ _ NoSentence = S.hPutStr h $ interimOf style "No more sentence" 
+printMoreSentenceOrInference h style _ _ NoSentence = return () -- S.hPutStrLn h $ interimOf style "[End of discourse]" 
 
 printer :: (SimpleText a, Typeset a, MathML a) => Style -> a -> T.Text
 printer TEXT = toText

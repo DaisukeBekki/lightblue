@@ -275,7 +275,7 @@ lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nPro
                          I.POSTAG -> True
       S.hPutStrLn handle $ I.headerOf style
       NLI.printMoreSentenceOrInference handle style noTypeCheck posTagOnly parseResult
-      S.hPutStr handle $ I.footerOf style
+      S.hPutStrLn handle $ I.footerOf style
     --
     -- | JSeM Parser
     -- 
@@ -309,7 +309,7 @@ lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nPro
         S.hPutStrLn handle $ I.interimOf style $ "[" ++ (show sid) ++ "]"
         I.printNumeration handle style morphaName sentence
         ) $ zip ([1..]::[Int]) sentences
-      S.hPutStr handle $ I.footerOf style
+      S.hPutStrLn handle $ I.footerOf style
     -- -- |
     -- -- | Debug
     -- -- |

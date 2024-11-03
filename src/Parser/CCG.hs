@@ -501,6 +501,7 @@ data RuleSymbol =
   | FFCx1 -- ^ Forward function crossed composition rule 1
   | FFCx2 -- ^ Forward function crossed composition rule 2
   | FFSx  -- ^ Forward function crossed substitution rule
+  | FFSx2 -- ^ Forward function crossed substitution rule 2
   | COORD -- ^ Coordination rule
   | PAREN -- ^ Parenthesis rule
   | WRAP  -- ^ Wrap rule
@@ -524,6 +525,7 @@ instance SimpleText RuleSymbol where
     FFCx1 -> ">Bx"
     FFCx2 -> ">Bx2"
     FFSx  -> ">Sx"
+    FFSx2 -> ">Sx2"
     COORD -> "<Φ>"
     PAREN -> "PAREN"
     WRAP  -> "WRAP"
@@ -546,6 +548,7 @@ instance Typeset RuleSymbol where
     FFCx1 -> ">B_{\\times}"
     FFCx2 -> ">B_{\\times}^2"
     FFSx  -> ">S_{\\times}"
+    FFSx2 -> ">S_{\\times}^2"
     COORD -> "\\langle\\Phi\\rangle"
     PAREN -> "PAREN"
     WRAP  -> "WRAP"
@@ -565,7 +568,8 @@ unaryRules _ prevlist = prevlist
 -- | The function to apply all the binary rules to a given pair of CCG nodes.
 binaryRules :: Node -> Node -> [Node] -> [Node]
 binaryRules lnode rnode = 
-  forwardFunctionCrossedSubstitutionRule lnode rnode
+  forwardFunctionCrossedSubstitution2Rule lnode rnode
+  . forwardFunctionCrossedSubstitutionRule lnode rnode
   . forwardFunctionCrossedComposition2Rule lnode rnode
   . forwardFunctionCrossedComposition1Rule lnode rnode
   . backwardFunctionComposition3Rule lnode rnode
@@ -888,6 +892,37 @@ forwardFunctionCrossedSubstitutionRule lnode@(Node {rs=_,cat=((x `SL` y1) `BS` z
                         sig = sig(lnode) ++ sig(rnode)
                         }:prevlist
 forwardFunctionCrossedSubstitutionRule _ _ prevlist = prevlist
+
+-- | Forward functional crossed substitution rule Lv.2
+forwardFunctionCrossedSubstitution2Rule :: Node -> Node -> [Node] -> [Node]
+forwardFunctionCrossedSubstitution2Rule lnode@(Node {rs=_,cat=(((x `SL` y1) `BS` z1) `BS` w1), sem=f}) rnode@(Node {cat=((y2 `BS` z2) `BS` w2), sem=g}) prevlist =
+  -- [>Sx] x/y1\z:f  y2\z:g  ==> x\z: \z.(fz)(gz)
+  -- [>Sx2] x/y1\z1\w1:f  y2\z2\w2:g  ==> x\z\w: \w.\z.(fwz)(gwz)
+  if not (isArgumentCategory z1) || not (isArgumentCategory z2) -- isNoncaseNP z1 -- to block CM + be-ident -- r == FFC1 || r == FFC2 || r == FFC3 || (isTNoncaseNP y1) || not (isArgumentCategory z2) || not (isArgumentCategory z1) -- Non-normal forms + Ad-hoc rule
+  then prevlist
+  else
+    let inc = maximumIndexC (cat rnode) in
+    case unifyCategory [] [] [] (incrementIndexC w1 inc) w2 of
+      Nothing -> prevlist -- Unification failure
+      Just (w,csub1,fsub1) ->
+        case unifyCategory csub1 fsub1 [] (incrementIndexC z1 inc) z2 of
+          Nothing -> prevlist -- Unification failure
+          Just (z,csub2,fsub2) ->
+            case unifyCategory csub2 fsub2 [] (incrementIndexC y1 inc) y2 of
+              Nothing -> prevlist -- Unification failure
+              Just (_,csub3,fsub3) ->
+                let newcat = simulSubstituteCV csub3 fsub3 (((incrementIndexC x inc) `BS` z) `BS` w) in
+                      Node {
+                        rs = FFSx2,
+                        pf = pf(lnode) `T.append` pf(rnode),
+                        cat = newcat,
+                        sem = betaReduce $ transvec newcat $ betaReduce $ Lam (Lam (App (App (App f (Var 1)) (Var 0)) (App (App g (Var 1)) (Var 0)))),
+                        daughters = [lnode,rnode],
+                        score = score(lnode)*score(rnode)*(100 % 100),
+                        source = "",
+                        sig = sig(lnode) ++ sig(rnode)
+                        }:prevlist
+forwardFunctionCrossedSubstitution2Rule _ _ prevlist = prevlist
 
 -- | Coordination rule.
 coordinationRule :: Node -> Node -> Node -> [Node] -> [Node]
