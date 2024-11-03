@@ -1237,10 +1237,10 @@ category2type :: Cat -> UDTTpreterm
 category2type ct = case ct of
   SL x y -> Pi (category2type y) (category2type x)
   BS x y -> Pi (category2type y) (category2type x)
-  S _ -> Pi (Pi (Con "event") Type) Type
-  NP _ -> Con "entity"
-  N   -> Pi (Con "entity") (Pi (Pi (Con "state") Type) Type)
-  Sbar _ -> Pi (Pi (Con "event") Type) Type
+  S _ -> Pi (Pi Entity Type) Type
+  NP _ -> Entity
+  N   -> Pi Entity (Pi (Pi Entity Type) Type)
+  Sbar _ -> Pi (Pi Entity Type) Type
   T _ _ c -> category2type c
   _ -> Unit
 
@@ -1249,8 +1249,8 @@ preterm2prop ct preterm = case ct of
   SL x y -> Sigma (category2type y) (preterm2prop x (App (shiftIndices preterm 1 0) (Var 0)))
   BS x y -> Sigma (category2type y) (preterm2prop x (App (shiftIndices preterm 1 0) (Var 0)))
   S _ -> App preterm (Lam Top)
-  NP _ -> Sigma (Pi (Con "entity") Type) (App (shiftIndices preterm 1 0) (Var 0))
-  N -> Sigma (Con "entity") (App (App (shiftIndices preterm 1 0) (Var 0)) (Lam Top))
+  NP _ -> Sigma (Pi Entity Type) (App (shiftIndices preterm 1 0) (Var 0))
+  N -> Sigma Entity (App (App (shiftIndices preterm 1 0) (Var 0)) (Lam Top))
   Sbar _ -> App preterm (Lam Top)
   T _ _ c -> preterm2prop c $ transvec c preterm
   _ -> Unit

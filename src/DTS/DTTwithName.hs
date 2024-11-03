@@ -337,9 +337,10 @@ fromDeBruijnLoop vnames preterm = case preterm of
 variableNameFor :: DTTdB.Preterm -> Indexed VarName
 variableNameFor preterm =
   case preterm of
-    DTTdB.Con cname | cname == "entity" -> do i <- xIndex; return $ VarName 'x' i
-              | cname == "evt"    -> do i <- eIndex; return $ VarName 'e' i
-              -- cname == "state"  -> VN.VN.VarName 's' i
+    DTTdB.Entity -> do i <- xIndex; return $ VarName 'x' i
+    -- DTTdB.Con cname | cname == "entity" -> do i <- xIndex; return $ VarName 'x' i
+    --                 | cname == "evt"    -> do i <- eIndex; return $ VarName 'e' i
+    --           -- cname == "state"  -> VN.VN.VarName 's' i
     DTTdB.Eq _ _ _ -> do i <- xIndex; return $ VarName 's' i
     DTTdB.Nat      -> do i <- xIndex; return $ VarName 'k' i
     _        -> do i <- uIndex; return $ VarName 'u' i

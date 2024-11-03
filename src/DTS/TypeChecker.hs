@@ -42,12 +42,21 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
   when verbose $ lift $ T.hPutStrLn S.stderr $ toText $ UDTTwN.fromDeBruijnTypeInferQuery tiq
   case trm of -- sig:Signature, ctx:Context, trm:Preterm DTT, typ:Preterm DTT
     UDTTdB.Var i -> do
-      when (i >= length ctx) $ fail $ T.unpack $ T.concat [T.pack (show i), " is out of bound in the context: ", toText ctx]
+      when (i >= length ctx) $ do
+        let msg = T.concat [T.pack (show i), " is out of bound in the context: ", toText ctx]
+        when verbose $ lift $ T.hPutStrLn S.stderr msg
+        fail $ T.unpack msg
       return $ Tree QT.Var (DTTdB.Judgment sig ctx (DTTdB.Var i) (ctx!!i)) []
     UDTTdB.Con t -> do
-      case lookup t sig of
-        Just termA -> return $ Tree QT.Con (DTTdB.Judgment sig ctx (DTTdB.Con t) termA) []
-        Nothing -> fail $ T.unpack $ T.concat ["No constant symbol for ", t]
+      let termAs = snd $ unzip $ filter (\(key,_) -> key == t) sig
+      if termAs == []
+        then do
+          let msg = T.concat ["No constant symbol for ", t]
+          when verbose $ lift $ T.hPutStrLn S.stderr msg
+          fail $ T.unpack msg
+        else do
+          termA <- fromFoldable termAs
+          return $ Tree QT.Con (DTTdB.Judgment sig ctx (DTTdB.Con t) termA) []
     UDTTdB.Type -> return $ Tree QT.TypeF (DTTdB.Judgment sig ctx DTTdB.Type DTTdB.Kind) []
     UDTTdB.Pi termA termB -> do
       diagramA <- typeCheck' (UDTTdB.Judgment sig ctx termA DTTdB.Type)  -- | diagramAs :: [Tree]
@@ -143,7 +152,10 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
     --       termB' = UDTTdB.betaReduce $ UDTTdB.subst termB termM 0
     --   typeCheck' $ UDTTdB.Judgment sig ctx termB' UDTTdB.Type
     -- | type inference fails
-    termM -> fail $ T.unpack $ T.concat [toText termM, " is not an inferable term."]
+    termM -> do
+             let msg = T.concat [toText termM, " is not an inferable term."]
+             when verbose $ lift $ T.hPutStrLn S.stderr msg
+             fail $ T.unpack msg
 
 -- | The default type checker for UDTT
 typeCheck :: QT.TypeChecker -- | QT.Prover -> Bool -> UDTTdB.Judgment -> ListT IO TypeCheckResult
