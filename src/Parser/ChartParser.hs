@@ -55,7 +55,7 @@ data ParseSetting = ParseSetting {
   } 
 
 defaultParseSetting :: ParseSetting
-defaultParseSetting = ParseSetting jpOptions Juman.KWJA 32 1 1 1 True Nothing Nothing True False
+defaultParseSetting = ParseSetting jpOptions Juman.KWJA 32 (-1) (-1) (-1) True Nothing Nothing True False
 
 type Chart = M.Map (Int,Int) [CCG.Node]
 

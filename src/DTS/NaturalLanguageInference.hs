@@ -100,7 +100,7 @@ parseWithTypeCheck _ _ _ [] [] = NoSentence     -- ^ Context is empty and no sen
 parseWithTypeCheck ps prover signtr (typ:contxt) [] = -- ^ Context is given and no more sentence (= All parse done)
   if CP.isInference ps
     then let psq = DTT.ProofSearchQuery signtr contxt typ 
-         in AndInference $ InferenceAndResults psq $ ListT.take (CP.nProof ps) $ prover psq
+         in AndInference $ InferenceAndResults psq $ takeNbest (CP.nProof ps) $ prover psq
     else NoSentence
 parseWithTypeCheck ps prover signtr contxt (text:texts) = 
   MoreSentences $ SentenceAndParseTrees text $ do
@@ -108,14 +108,21 @@ parseWithTypeCheck ps prover signtr contxt (text:texts) =
     -- |               =fmap(foldable)=> ListT IO (ListT IO CCG.Node)
     -- |               =join=>           ListT IO CCG.Node
     -- |               =take n=>         ListT IO CCG.Node
-    node <- ListT.take (CP.nParse ps) $ join $ fmap fromFoldable $ lift $ CP.simpleParse ps text 
+    node <- takeNbest (CP.nParse ps) $ join $ fmap fromFoldable $ lift $ CP.simpleParse ps text 
     let signtr' = L.nub $ (CCG.sig node) ++ signtr
         tcQuery = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
-    tcDiagram <- ListT.take (CP.nTypeCheck ps) $ TY.typeCheck prover (CP.verbose ps) tcQuery
+    tcDiagram <- takeNbest (CP.nTypeCheck ps) $ TY.typeCheck prover (CP.verbose ps) tcQuery
     let contxt' = (DTT.trm $ Tree.node tcDiagram):contxt
     return $ ParseTreesAndFelicityCheck node tcQuery $ do
                return $ FelicityCheckAndMore tcDiagram $ parseWithTypeCheck ps prover signtr' contxt' texts
 
+-- | Take n element from the top of the list.
+-- | If n < 0, it returns all the elements.
+takeNbest :: Int -> ListT IO a -> ListT IO a
+takeNbest n list 
+  | n >= 0 = ListT.take n list
+  | otherwise = list
+ 
 -- | prints a CCG node (=i-th parsing result for a given sentence) in a specified style (=HTML|text|XML|TeX)
 printSentenceAndParseTrees :: S.Handle -> Style -> Bool -> Bool -> SentenceAndParseTrees -> IO ()
 printSentenceAndParseTrees h style noTypeCheck posTagOnly (SentenceAndParseTrees sentence parseTrees) = do

@@ -132,28 +132,28 @@ optionParser =
       <> short 'b'
       <> help "Specify the beam width"
       <> showDefault
-      <> value 24
+      <> value 32
       <> metavar "INT" )
     <*> option auto 
       ( long "nparse"
       -- <> short 'n'
       <> help "Show N-best parse trees for each sentence"
       <> showDefault
-      <> value 1
+      <> value (-1)
       <> metavar "INT" )
     <*> option auto 
       ( long "ntypecheck"
       -- <> short 'n'
       <> help "Show N-best type check diagram for each logical form"
       <> showDefault
-      <> value 1
+      <> value (-1)
       <> metavar "INT" )
     <*> option auto 
       ( long "nproof"
       -- <> short 'n'
       <> help "Show N-best proof diagram for each proof search"
       <> showDefault
-      <> value 1
+      <> value (-1)
       <> metavar "INT" )
     <*> option auto
       ( long "nsample"
@@ -416,12 +416,12 @@ parseSentence :: Juman.MorphAnalyzerName
                  -> IO(Int,Int,Int,Int) -- ^ (The number of fully succeeded, partially succeeded, failed, and total parses)
                  -> T.Text           -- ^ A next sentence to parse
                  -> IO(Int,Int,Int,Int)
-parseSentence morphaName beam score sentence = do
+parseSentence morphaN beamW score sentence = do
   (i,j,k,total) <- score
   S.putStr $ "[" ++ show (total+1) ++ "] "
   T.putStrLn sentence
-  chart <- CP.parse (CP.ParseSetting jpOptions morphaName beam 1 1 1 True Nothing Nothing False False) sentence
-  case CP.extractParseResult beam chart of
+  chart <- CP.parse (CP.defaultParseSetting {CP.morphaName=morphaN, CP.beamWidth=beamW}) sentence
+  case CP.extractParseResult beamW chart of
     CP.Full nodes -> 
        do
        T.putStrLn $ T.toText $ head $ nodes
