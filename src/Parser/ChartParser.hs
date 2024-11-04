@@ -52,7 +52,7 @@ data ParseSetting = ParseSetting {
   , ifPurify :: Bool           -- ^ If True, apply purifyText to the input text before parsing
   , ifDebug :: Maybe (Int,Int) -- ^ Debug mode: If Just (i,j), then debug mode and dump parse result of (i,j). If Nothing, then non-debug mode
   , ifFilterNode :: Maybe (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ filter for CCG nodes.  Nothing: no filtering
-  , isInference :: Bool        -- ^ If True, it is an inference and execute proof search
+  , noInference :: Bool        -- ^ If True, it is an inference and execute proof search
   , verbose :: Bool            -- ^ If True, type checker and inferer dump logs
   } 
 

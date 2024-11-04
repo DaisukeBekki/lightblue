@@ -92,16 +92,16 @@ data InferenceAndResults = InferenceAndResults DTT.ProofSearchQuery (ListT IO QT
 type Discourse = [T.Text]
 
 -- | Parse sequential texts, and check their semantic felicity condition.
--- | If isInference = True, check whether the premise texts entails the hypothesis text.
+-- | If noInference = True, it does not execute inference.
 -- | The specification of this function reflects a view about what are entailments between texts,          
 -- | that is an interface problem between natural language semantics and logic
 parseWithTypeCheck :: CP.ParseSetting -> QT.Prover -> DTT.Signature -> DTT.Context -> Discourse -> MoreSentencesOrInference
 parseWithTypeCheck _ _ _ [] [] = NoSentence     -- ^ Context is empty and no sentece is given 
 parseWithTypeCheck ps prover signtr (typ:contxt) [] = -- ^ Context is given and no more sentence (= All parse done)
-  if CP.isInference ps
-    then let psq = DTT.ProofSearchQuery signtr contxt typ 
+  if CP.noInference ps
+    then NoSentence
+    else let psq = DTT.ProofSearchQuery signtr contxt typ 
          in AndInference $ InferenceAndResults psq $ takeNbest (CP.nProof ps) $ prover psq
-    else NoSentence
 parseWithTypeCheck ps prover signtr contxt (text:texts) = 
   MoreSentences $ SentenceAndParseTrees text $ do
     --lift $ S.putStrLn $ "nParse = " ++ (show $ CP.nParse ps)

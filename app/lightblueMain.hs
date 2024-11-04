@@ -35,12 +35,12 @@ data Options =
   Version
   | Stat
   | Test
-  | Options Command FilePath Juman.MorphAnalyzerName Int Int Int Int Int Bool Bool
+  | Options Command FilePath Juman.MorphAnalyzerName Int Int Int Int Bool Bool Bool Bool
     deriving (Show, Eq)
 
 data Command =
-  Parse I.ParseOutput I.Style Bool Bool NLI.ProverName
-  | JSeM I.Style Bool NLI.ProverName
+  Parse I.ParseOutput I.Style NLI.ProverName
+  | JSeM I.Style NLI.ProverName Int
   | Numeration I.Style
   -- | Debug Int Int
   | Demo
@@ -156,13 +156,12 @@ optionParser =
       <> showDefault
       <> value (-1)
       <> metavar "INT" )
-    <*> option auto
-      ( long "nsample"
-      <> metavar "text|tex|xml|html"
-      <> help "How many data to process: 0 means all data"
-      <> showDefault
-      <> value 0
-      <> metavar "INT" )  
+    <*> switch 
+      ( long "noTypeCheck"
+      <> help "If True, execute no type checking for LFs" )
+    <*> switch 
+      ( long "noInference"
+      <> help "If true, execute no inference" )
     <*> switch 
       ( long "time"
       <> help "Show the execution time in stderr" )
@@ -186,12 +185,6 @@ parseOptionParser = Parse
     <> help "Print results in the specified format"
     <> showDefault
     <> value I.HTML )
-  <*> switch 
-    ( long "noTypeCheck"
-    <> help "Execute type checking for LFs" )
-  <*> switch 
-    ( long "noInference"
-    <> help "True if it is not an inference (parse and type check only)" )
   <*> option auto
     ( long "prover"
       <> short 'p'
@@ -209,9 +202,6 @@ jsemOptionParser = JSeM
     <> help "Print results in the specified format"
     <> showDefault
     <> value I.HTML )
-  <*> switch 
-    ( long "noTypeCheck"
-    <> help "Execute type checking for LFs" )
   <*> option auto
     ( long "prover"
       <> short 'p'
@@ -219,6 +209,13 @@ jsemOptionParser = JSeM
       <> showDefault
       <> value NLI.Wani
       <> help "Choose prover" )
+  <*> option auto
+    ( long "nsample"
+    <> metavar "text|tex|xml|html"
+    <> help "How many data to process: 0 means all data"
+    <> showDefault
+    <> value 0
+    <> metavar "INT" )  
 
 numerationOptionParser :: Parser Command
 numerationOptionParser = Numeration
@@ -239,7 +236,7 @@ lightblueMain :: Options -> IO()
 lightblueMain Version = showVersion
 lightblueMain Stat = showStat
 lightblueMain Test = test
-lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nProof nSample iftime verbose) = do
+lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nProof noTypeCheck noInference iftime verbose) = do
   start <- Time.getCurrentTime
   contents <- case filepath of
     "-" -> T.getContents
@@ -257,9 +254,9 @@ lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nPro
     -- |
     -- | Parse
     -- |
-    lightblueMainLocal (Parse output style noTypeCheck isInference proverName) lr contents = do
+    lightblueMainLocal (Parse output style proverName) lr contents = do
       let handle = S.stdout
-          parseSetting = CP.ParseSetting jpOptions lr beamW nParse nTypeCheck nProof True Nothing Nothing isInference verbose
+          parseSetting = CP.ParseSetting jpOptions lr beamW nParse nTypeCheck nProof True Nothing Nothing noInference verbose
           prover = NLI.getProver proverName $ QT.ProofSearchSetting Nothing Nothing (Just QT.Intuitionistic)
           parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] $ T.lines contents
           posTagOnly = case output of 
@@ -271,14 +268,14 @@ lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nPro
     --
     -- | JSeM Parser
     -- 
-    lightblueMainLocal (JSeM style noTypeCheck proverName) lr contents = do
+    lightblueMainLocal (JSeM style proverName nSample) lr contents = do
       parsedJSeM <- J.xml2jsemData $ T.toStrict contents
       let handle = S.stdout
-          parseSetting = CP.ParseSetting jpOptions lr beamW nParse nTypeCheck nProof True Nothing Nothing True False
+          parseSetting = CP.ParseSetting jpOptions lr beamW nParse nTypeCheck nProof True Nothing Nothing noInference verbose
           prover = NLI.getProver proverName $ QT.ProofSearchSetting Nothing Nothing (Just QT.Intuitionistic)
-          parsedJSeM' = if nSample == 0
-                          then parsedJSeM
-                          else take nSample parsedJSeM
+          parsedJSeM'
+            | nSample < 0 = parsedJSeM
+            | otherwise = take nSample parsedJSeM
       S.hPutStrLn handle $ I.headerOf style
       forM_ parsedJSeM' $ \j -> do
         mapM_ T.putStr ["[JSeM id: ", T.fromStrict $ J.jsem_id j, "] "]
@@ -377,7 +374,8 @@ test = do
 processCorpus :: LEX.LexicalResource -> Int -> [T.Text] -> IO()
 processCorpus lr beamW contents = do
     start <- Time.getCurrentTime
-    (i,j,k,total) <- L.foldl' (parseSentence lr beamW) (return (0,0,0,0)) $ filter isSentence contents
+    let parseSetting = CP.ParseSetting jpOptions lr beamW 1 1 1 True Nothing Nothing False False
+    (i,j,k,total) <- L.foldl' (parseSentence parseSetting beamW) (return (0,0,0,0)) $ filter isSentence contents
     stop <- Time.getCurrentTime
     let totaltime = Time.diffUTCTime stop start
     mapM_ (S.hPutStr S.stdout) [
@@ -402,17 +400,16 @@ processCorpus lr beamW contents = do
       ]
     where isSentence t = not (T.null t || "（" `T.isSuffixOf` t)
 
-parseSentence :: LEX.LexicalResource
-                 -> Int                    -- ^ beam width
+parseSentence :: CP.ParseSetting
+                 -> Int                 -- ^ beam width
                  -> IO(Int,Int,Int,Int) -- ^ (The number of fully succeeded, partially succeeded, failed, and total parses)
-                 -> T.Text           -- ^ A next sentence to parse
+                 -> T.Text              -- ^ A next sentence to parse
                  -> IO(Int,Int,Int,Int)
-parseSentence lr beamW score sentence = do
+parseSentence ps beamW score sentence = do
   (i,j,k,total) <- score
   S.putStr $ "[" ++ show (total+1) ++ "] "
   T.putStrLn sentence
-  let parseSetting = CP.ParseSetting jpOptions lr beamW 1 1 1 True Nothing Nothing False False
-  chart <- CP.parse parseSetting sentence
+  chart <- CP.parse ps sentence
   case CP.extractParseResult beamW chart of
     CP.Full nodes -> 
        do
