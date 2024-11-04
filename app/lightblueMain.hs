@@ -19,7 +19,7 @@ import qualified Data.Time as Time        --time
 import qualified Parser.ChartParser as CP
 import qualified Parser.Language.Japanese.MyLexicon as LEX
 import qualified Parser.Language.Japanese.Juman.CallJuman as Juman
-import Parser.Language (LangOptions(..),jpOptions)
+import Parser.Language (jpOptions)
 import qualified Interface as I
 import qualified Interface.Text as T
 import qualified JSeM as J
@@ -41,7 +41,7 @@ data Command =
   Parse I.ParseOutput I.Style Bool Bool NLI.ProverName
   | JSeM I.Style Bool NLI.ProverName
   | Numeration I.Style
-  | Debug Int Int
+  -- | Debug Int Int
   | Demo
   -- | Treebank
     deriving (Show, Eq)
@@ -179,21 +179,6 @@ optionParser =
 --       <> value NLI.Wani
 --       <> help "Choose prover" )
 
-numerationOptionParser :: Parser Command
-numerationOptionParser = Numeration
-  <$> option auto
-    ( long "style"
-    <> short 's'
-    <> metavar "text|tex|xml|html"
-    <> help "Print results in the specified format"
-    <> showDefault
-    <> value I.HTML )
-
-debugOptionParser :: Parser Command
-debugOptionParser = Debug
-  <$> argument auto idm
-  <*> argument auto idm
-
 parseOptionParser :: Parser Command
 parseOptionParser = Parse
   <$> option auto
@@ -243,6 +228,21 @@ jsemOptionParser = JSeM
       <> showDefault
       <> value NLI.Wani
       <> help "Choose prover" )
+
+numerationOptionParser :: Parser Command
+numerationOptionParser = Numeration
+  <$> option auto
+    ( long "style"
+    <> short 's'
+    <> metavar "text|tex|xml|html"
+    <> help "Print results in the specified format"
+    <> showDefault
+    <> value I.HTML )
+
+-- debugOptionParser :: Parser Command
+-- debugOptionParser = Debug
+--   <$> argument auto idm
+--   <*> argument auto idm
 
 lightblueMain :: Options -> IO()
 lightblueMain Version = showVersion
