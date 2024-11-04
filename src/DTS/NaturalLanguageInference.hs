@@ -24,16 +24,18 @@ module DTS.NaturalLanguageInference (
   , parseWithTypeCheck
   , printSentenceAndParseTrees
   , printMoreSentenceOrInference
+  , trawlMoreSentencesOrInference
   ) where
 
 import Control.Monad (when,forM_,join)    --base
 import Control.Monad.State (lift)         --mtl
+import Control.Monad.IO.Class (liftIO)    --base
 import qualified System.IO as S           --base
 import qualified Data.Char as C           --base
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.List as L           --base
-import ListT (ListT(..),fromFoldable,toList,take) --list-t
+import ListT (ListT(..),fromFoldable,toList,take,null) --list-t
 import qualified Parser.ChartParser as CP
 import qualified Parser.CCG as CCG
 import Interface 
@@ -87,7 +89,7 @@ data SentenceAndParseTrees = SentenceAndParseTrees T.Text (ListT IO ParseTreesAn
 data ParseTreesAndFelicityCheck = ParseTreesAndFelicityCheck CCG.Node DTT.Signature UDTT.TypeCheckQuery (ListT IO FelicityCheckAndMore) -- ^ A parse result, type check query for its felicity condition, and its results
 data FelicityCheckAndMore = FelicityCheckAndMore QT.DTTProofDiagram MoreSentencesOrInference -- ^ A type check diagram and the next sentence if this is not the last sentence, or an inference query otherwise.
 data MoreSentencesOrInference = MoreSentences SentenceAndParseTrees | AndInference InferenceAndResults | NoSentence 
-data InferenceAndResults = InferenceAndResults DTT.ProofSearchQuery (ListT IO QT.DTTProofDiagram) -- ^ A proof search query for the inference and its results.
+data InferenceAndResults = InferenceAndResults DTT.ProofSearchQuery (ListT IO QT.DTTProofDiagram) DTT.ProofSearchQuery (ListT IO QT.DTTProofDiagram) -- ^ A proof search query for the inference and its results.
 
 type Discourse = [T.Text]
 
@@ -100,8 +102,11 @@ parseWithTypeCheck _ _ _ [] [] = NoSentence     -- ^ Context is empty and no sen
 parseWithTypeCheck ps prover signtr (typ:contxt) [] = -- ^ Context is given and no more sentence (= All parse done)
   if CP.noInference ps
     then NoSentence
-    else let psq = DTT.ProofSearchQuery signtr contxt typ 
-         in AndInference $ InferenceAndResults psq $ takeNbest (CP.nProof ps) $ prover psq
+    else let psqPos = DTT.ProofSearchQuery signtr contxt $ typ 
+             resultPos = takeNbest (CP.nProof ps) $ prover psqPos
+             psqNeg = DTT.ProofSearchQuery signtr contxt $ DTT.Pi typ DTT.Bot
+             resultNeg = takeNbest (CP.nProof ps) $ prover psqNeg
+         in AndInference $ InferenceAndResults psqPos resultPos psqNeg resultNeg
 parseWithTypeCheck ps prover signtr contxt (text:texts) = 
   MoreSentences $ SentenceAndParseTrees text $ do
     --lift $ S.putStrLn $ "nParse = " ++ (show $ CP.nParse ps)
@@ -152,12 +157,18 @@ printSentenceAndParseTrees h style noTypeCheck posTagOnly (SentenceAndParseTrees
 
 printMoreSentenceOrInference :: S.Handle -> Style -> Bool -> Bool -> MoreSentencesOrInference -> IO ()
 printMoreSentenceOrInference h style ntc pto (MoreSentences s) = printSentenceAndParseTrees h style ntc pto s
-printMoreSentenceOrInference h style _ _ (AndInference (InferenceAndResults psq proofDiagrams)) = do
-  T.hPutStrLn h $ printer style $ DTTwN.fromDeBruijnProofSearchQuery psq
-  proofDiagrams' <- toList proofDiagrams
-  forM_ (zip proofDiagrams' ([1..]::[Int])) $ \(proofDiagram,kth) -> do
+printMoreSentenceOrInference h style _ _ (AndInference (InferenceAndResults psqPos proofDiagramsPos psqNeg proofDiagramsNeg)) = do
+  T.hPutStrLn h $ printer style $ DTTwN.fromDeBruijnProofSearchQuery psqPos
+  proofDiagramsPos' <- toList proofDiagramsPos
+  forM_ (zip proofDiagramsPos' ([1..]::[Int])) $ \(proofDiagram,kth) -> do
     S.hPutStrLn h $ interimOf style $ "[Proof diagram " ++ (show kth) ++ "]"
     T.hPutStrLn h $ printer style $ fmap DTTwN.fromDeBruijnJudgment proofDiagram
+  T.hPutStrLn h $ printer style $ DTTwN.fromDeBruijnProofSearchQuery psqNeg
+  proofDiagramsNeg' <- toList proofDiagramsNeg
+  forM_ (zip proofDiagramsNeg' ([1..]::[Int])) $ \(proofDiagram,kth) -> do
+    S.hPutStrLn h $ interimOf style $ "[Proof diagram " ++ (show kth) ++ "]"
+    T.hPutStrLn h $ printer style $ fmap DTTwN.fromDeBruijnJudgment proofDiagram
+  --T.hPutStrLn h $ T.concat ["[Label = ", T.pack $ show label, "]"]
 printMoreSentenceOrInference _ _ _ _ NoSentence = return () -- S.hPutStrLn h $ interimOf style "[End of discourse]" 
 
 printer :: (SimpleText a, Typeset a, MathML a) => Style -> a -> T.Text
@@ -165,3 +176,35 @@ printer TEXT = toText
 printer TEX  = toTeX
 printer HTML = \obj -> T.concat [HTML.startMathML, toMathML obj, HTML.endMathML]
 printer _    = toText
+
+{-- Trawling functions --}
+
+trawlSentenceAndParseTrees :: SentenceAndParseTrees -> ListT IO InferenceLabel
+trawlSentenceAndParseTrees (SentenceAndParseTrees _ parseTreesAndFelicityChecks) = do
+  parseTreesAndFelicityCheck <- parseTreesAndFelicityChecks -- :: ParseTreesAndFelicityCheck
+  x <- trawlParseTreesAndFelicityCheck parseTreesAndFelicityCheck
+  return x
+
+trawlParseTreesAndFelicityCheck :: ParseTreesAndFelicityCheck -> ListT IO InferenceLabel
+trawlParseTreesAndFelicityCheck (ParseTreesAndFelicityCheck _ _ _ felicityCheckAndMores) = do
+  felicityCheckAndMore <- felicityCheckAndMores
+  x <- trawlFelicityCheckAndMore felicityCheckAndMore
+  return x
+
+trawlFelicityCheckAndMore :: FelicityCheckAndMore -> ListT IO InferenceLabel
+trawlFelicityCheckAndMore (FelicityCheckAndMore _ moreSentencesOrInference) = trawlMoreSentencesOrInference moreSentencesOrInference
+
+trawlMoreSentencesOrInference :: MoreSentencesOrInference -> ListT IO InferenceLabel
+trawlMoreSentencesOrInference (MoreSentences sentenceAndParseTrees) = trawlSentenceAndParseTrees sentenceAndParseTrees
+trawlMoreSentencesOrInference (AndInference inferenceAndResults) = trawlInferenceAndResults inferenceAndResults
+trawlMoreSentencesOrInference NoSentence = fromFoldable []
+
+trawlInferenceAndResults :: InferenceAndResults -> ListT IO InferenceLabel
+trawlInferenceAndResults (InferenceAndResults _ resultPos _ resultNeg) = do
+  ifYes <- liftIO $ ListT.null resultPos
+  ifNo <- liftIO $ ListT.null resultNeg
+  return $ if ifYes 
+             then YES
+             else if ifNo
+                  then NO
+                  else UNK
