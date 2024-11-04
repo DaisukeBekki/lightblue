@@ -310,6 +310,10 @@ lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nPro
         I.printNumeration handle style morphaName sentence
         ) $ zip ([1..]::[Int]) sentences
       S.hPutStrLn handle $ I.footerOf style
+    -- |
+    -- | Demo (sequential parsing of a given corpus)
+    -- |
+    lightblueMainLocal Demo contents = processCorpus morphaName beamW $ T.lines contents
     -- -- |
     -- -- | Debug
     -- -- |
@@ -329,11 +333,6 @@ lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nPro
     --                                  else T.putStrLn $ T.toText $ CP.cat $ head node
     --                               ) $ M.toList chart
     --       ) $ zip ([0..]::[Int]) sentences
-    -- |
-    -- | Demo (sequential parsing of a given corpus)
-    -- |
-    lightblueMainLocal Demo contents = do
-      processCorpus morphaName beamW $ T.lines contents
     -- --
     -- -- | Treebank Builder
     -- --
