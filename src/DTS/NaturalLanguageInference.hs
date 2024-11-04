@@ -26,7 +26,7 @@ module DTS.NaturalLanguageInference (
   , printMoreSentenceOrInference
   ) where
 
-import Control.Monad (when,forM_,join,liftM) --base
+import Control.Monad (when,forM_,join)    --base
 import Control.Monad.State (lift)         --mtl
 import qualified System.IO as S           --base
 import qualified Data.Char as C           --base
@@ -158,7 +158,7 @@ printMoreSentenceOrInference h style _ _ (AndInference (InferenceAndResults psq 
   forM_ (zip proofDiagrams' ([1..]::[Int])) $ \(proofDiagram,kth) -> do
     S.hPutStrLn h $ interimOf style $ "[Proof diagram " ++ (show kth) ++ "]"
     T.hPutStrLn h $ printer style $ fmap DTTwN.fromDeBruijnJudgment proofDiagram
-printMoreSentenceOrInference h style _ _ NoSentence = return () -- S.hPutStrLn h $ interimOf style "[End of discourse]" 
+printMoreSentenceOrInference _ _ _ _ NoSentence = return () -- S.hPutStrLn h $ interimOf style "[End of discourse]" 
 
 printer :: (SimpleText a, Typeset a, MathML a) => Style -> a -> T.Text
 printer TEXT = toText

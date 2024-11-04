@@ -28,12 +28,13 @@ module Parser.ChartParser (
 import Data.List as L
 import Data.Char                          --base
 import System.IO.Unsafe (unsafePerformIO) --base
-import qualified Data.Text.Lazy as T   --text
+import qualified Data.Text.Lazy as T      --text
+import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.Map as M         --container
 import qualified Parser.CCG as CCG --(Node, unaryRules, binaryRules, trinaryRules, isCONJ, cat, SimpleText)
 import Parser.Language (LangOptions(..),jpOptions)
 import qualified Parser.Language.Japanese.Juman.CallJuman as Juman
-import qualified Parser.Language.Japanese.Lexicon as L (LexicalItems, lookupLexicon, setupLexicon, emptyCategories)
+import qualified Parser.Language.Japanese.Lexicon as L (LexicalResource(..), lexicalResourceBuilder, LexicalItems, lookupLexicon, setupLexicon, emptyCategories, myLexicon)
 import qualified Parser.Language.Japanese.Templates as LT
 import qualified DTS.QueryTypes as QT
 
@@ -42,7 +43,8 @@ import qualified DTS.QueryTypes as QT
 -- | The type for CYK-charts.
 data ParseSetting = ParseSetting {
   langOptions :: LangOptions   -- ^ Language options
-  , morphaName :: Juman.MorphAnalyzerName -- ^ Morphological analyzer
+  , lexicalResource :: L.LexicalResource
+  -- , morphaName :: Juman.MorphAnalyzerName -- ^ Morphological analyzer
   , beamWidth :: Int           -- ^ The beam width
   , nParse :: Int              -- ^ Show N-best parse trees for each sentence
   , nTypeCheck :: Int          -- ^ Show N-best type check diagram for each logical form
@@ -54,8 +56,10 @@ data ParseSetting = ParseSetting {
   , verbose :: Bool            -- ^ If True, type checker and inferer dump logs
   } 
 
-defaultParseSetting :: ParseSetting
-defaultParseSetting = ParseSetting jpOptions Juman.KWJA 32 (-1) (-1) (-1) True Nothing Nothing True False
+defaultParseSetting :: IO ParseSetting
+defaultParseSetting = do
+  lr <- L.lexicalResourceBuilder Juman.KWJA
+  return $ ParseSetting jpOptions lr 32 (-1) (-1) (-1) True Nothing Nothing True False
 
 type Chart = M.Map (Int,Int) [CCG.Node]
 
@@ -72,7 +76,7 @@ parse ParseSetting{..} sentence
           nodeFilter = case ifFilterNode of
                          Just filter -> filter
                          Nothing -> (\_ _ -> id)
-      lexicon <- L.setupLexicon morphaName sentenceToParse
+      lexicon <- L.setupLexicon lexicalResource sentenceToParse
       let (chart,_,_,_) = T.foldl' (chartAccumulator ifDebug beamWidth lexicon nodeFilter) 
                                    (M.empty,[0],0,T.empty)
                                    sentenceToParse
@@ -97,7 +101,8 @@ simpleParse' :: Maybe (Int,Int)   -- ^ Debug mode: If Just (i,j), dump parse res
             -> T.Text -- ^ an input text
             -> IO([CCG.Node],Chart)
 simpleParse' ifDebug beamW ifPurify filterNodes sentence = do
-  chart <- parse (ParseSetting jpOptions Juman.KWJA beamW 1 1 1 ifPurify ifDebug (Just filterNodes) True False) sentence
+  lexicalResource <- L.lexicalResourceBuilder Juman.KWJA
+  chart <- parse (ParseSetting jpOptions lexicalResource beamW 1 1 1 ifPurify ifDebug (Just filterNodes) True False) sentence
   case extractParseResult beamW chart of
     Full nodes -> return (nodes,chart)
     Partial nodes -> return (nodes,chart)

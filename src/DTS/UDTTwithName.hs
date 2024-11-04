@@ -40,6 +40,7 @@ module DTS.UDTTwithName (
   ) where
 
 import qualified GHC.Generics        as G --base
+import qualified System.Environment as E -- base
 import qualified Data.List as L           --base
 import qualified Data.Text.Lazy as T      -- text
 --import qualified Data.Text.Lazy.IO as T -- text
