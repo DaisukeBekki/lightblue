@@ -257,7 +257,7 @@ lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nPro
     lightblueMainLocal (Parse output style proverName) lr contents = do
       let handle = S.stdout
           parseSetting = CP.ParseSetting jpOptions lr beamW nParse nTypeCheck nProof True Nothing Nothing noInference verbose
-          prover = NLI.getProver proverName $ QT.ProofSearchSetting Nothing Nothing (Just QT.Intuitionistic)
+          prover = NLI.getProver proverName $ QT.ProofSearchSetting Nothing Nothing (Just QT.Classical)
           parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] $ T.lines contents
           posTagOnly = case output of 
                          I.TREE -> False
@@ -272,7 +272,7 @@ lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nPro
       parsedJSeM <- J.xml2jsemData $ T.toStrict contents
       let handle = S.stdout
           parseSetting = CP.ParseSetting jpOptions lr beamW nParse nTypeCheck nProof True Nothing Nothing noInference verbose
-          prover = NLI.getProver proverName $ QT.ProofSearchSetting Nothing Nothing (Just QT.Intuitionistic)
+          prover = NLI.getProver proverName $ QT.ProofSearchSetting Nothing Nothing (Just QT.Classical)
           parsedJSeM'
             | nSample < 0 = parsedJSeM
             | otherwise = take nSample parsedJSeM
@@ -365,7 +365,7 @@ test = do
       termA = UDTT.Sigma (UDTT.Con "entity") (UDTT.App (UDTT.Con "f") (UDTT.Var 0))
       -- typeA = DTS.Kind
       tcq = UDTT.TypeInferQuery signature context termA 
-      pss = QT.ProofSearchSetting Nothing Nothing (Just QT.Intuitionistic)
+      pss = QT.ProofSearchSetting Nothing Nothing (Just QT.Classical)
   typeCheckResults <- toList $ typeInfer (nullProver pss) False tcq
   T.putStrLn $ T.toText $ head typeCheckResults
   --T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 0) DTS.Type

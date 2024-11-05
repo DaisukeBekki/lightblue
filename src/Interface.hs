@@ -89,7 +89,7 @@ interimOf style text = case style of
 footerOf :: Style -> String
 footerOf style = case style of
   HTML -> HTML.htmlFooter4MathML
-  TEXT -> ""
+  TEXT -> "□"
   XML  -> "</sentences></document></root>"
   TEX  -> ""
   SVG  -> SVG.svgFooter
