@@ -293,7 +293,7 @@ lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nPro
             prediction = case inferenceLabels of
               [] -> J.Other
               (bestLabel:_) -> bestLabel
-        S.putStrLn $ "\nPrediction: " ++ (show prediction) ++ "\nGround truth: " ++ (show groundTruth)
+        S.putStrLn $ "\nPrediction: " ++ (show prediction) ++ "\nGround truth: " ++ (show groundTruth) ++ "\n"
         return (prediction, groundTruth)
       T.putStrLn $ T.fromStrict $ NLP.showClassificationReport pairs
       S.hPutStrLn handle $ I.footerOf style
