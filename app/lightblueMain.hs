@@ -289,15 +289,12 @@ lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nPro
             parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] sentences
         NLI.printParseResult handle style 1 noTypeCheck False parseResult
         inferenceLabels <- toList $ NLI.trawlParseResult parseResult
-        S.putStr $ "\nPrediction: "
-        mapM_ (S.hPutStrLn handle . show) inferenceLabels
-        S.putStrLn $ "Ground truth: " ++ (show $ J.answer j) ++ "\n"
-        return (
-          J.jsemLabel2YesNo $ J.answer j, 
-          case inferenceLabels of
-            [] -> J.Unk
-            (bestLabel:_) -> bestLabel
-          )
+        let groundTruth = J.jsemLabel2YesNo $ J.answer j
+            prediction = case inferenceLabels of
+              [] -> J.Other
+              (bestLabel:_) -> bestLabel
+        S.putStrLn $ "\nPrediction: " ++ (show prediction) ++ "\nGround truth: " ++ (show groundTruth)
+        return (prediction, groundTruth)
       T.putStrLn $ T.fromStrict $ NLP.showClassificationReport pairs
       S.hPutStrLn handle $ I.footerOf style
     -- | 
