@@ -134,9 +134,9 @@ takeNbest n l
   | otherwise = l
  
 -- | prints a CCG node (=i-th parsing result for a given sentence) in a specified style (=HTML|text|XML|TeX)
-printParseResult :: S.Handle -> Style -> Bool -> Bool -> ParseResult -> IO ()
-printParseResult h style noTypeCheck posTagOnly (SentenceAndParseTrees sentence parseTrees) = do
-    T.hPutStrLn h sentence
+printParseResult :: S.Handle -> Style -> Int -> Bool -> Bool -> ParseResult -> IO ()
+printParseResult h style sid noTypeCheck posTagOnly (SentenceAndParseTrees sentence parseTrees) = do
+    T.hPutStrLn h $ T.concat["[Sentence ", T.pack $ show sid, ": ", sentence, "]\n"]
     parseTrees' <- toList parseTrees 
     -- | [ParseTreeAndFelicityChecks CCG.Node UDTT.TypeCheckQuery (ListT IO FelicityCheckAndMore) ]
     forM_ (zip parseTrees' ([1..]::[Int])) $ \((ParseTreeAndFelicityChecks node signtr tcQuery tcResults),ith) -> do
@@ -157,20 +157,22 @@ printParseResult h style noTypeCheck posTagOnly (SentenceAndParseTrees sentence 
         when (not (noTypeCheck || posTagOnly)) $ do
           S.hPutStrLn h $ interimOf style $ "[Type check diagram " ++ (show jth) ++ " for parse " ++ (show ith) ++ "]"
           T.hPutStrLn h $ printer style $ fmap DTTwN.fromDeBruijnJudgment tcDiagram
-        printParseResult h style noTypeCheck posTagOnly moreResult
-printParseResult h style _ _ (InferenceResults (QueryAndDiagrams psqPos proofDiagramsPos) (QueryAndDiagrams psqNeg proofDiagramsNeg)) = do
+        printParseResult h style (sid+1) noTypeCheck posTagOnly moreResult
+printParseResult h style _ _ _ (InferenceResults (QueryAndDiagrams psqPos proofDiagramsPos) (QueryAndDiagrams psqNeg proofDiagramsNeg)) = do
   T.hPutStrLn h $ printer style $ DTTwN.fromDeBruijnProofSearchQuery psqPos
   proofDiagramsPos' <- toList proofDiagramsPos
+  S.hPutStrLn h $ (show $ length proofDiagramsPos') ++ " proof diagrams found\n"
   forM_ (zip proofDiagramsPos' ([1..]::[Int])) $ \(proofDiagram,kth) -> do
     S.hPutStrLn h $ interimOf style $ "[Proof diagram " ++ (show kth) ++ "]"
     T.hPutStrLn h $ printer style $ fmap DTTwN.fromDeBruijnJudgment proofDiagram
   T.hPutStrLn h $ printer style $ DTTwN.fromDeBruijnProofSearchQuery psqNeg
   proofDiagramsNeg' <- toList proofDiagramsNeg
+  S.hPutStrLn h $ (show $ length proofDiagramsNeg') ++ " proof diagrams found"
   forM_ (zip proofDiagramsNeg' ([1..]::[Int])) $ \(proofDiagram,kth) -> do
     S.hPutStrLn h $ interimOf style $ "[Proof diagram " ++ (show kth) ++ "]"
     T.hPutStrLn h $ printer style $ fmap DTTwN.fromDeBruijnJudgment proofDiagram
   --T.hPutStrLn h $ T.concat ["[Label = ", T.pack $ show label, "]"]
-printParseResult _ _ _ _ NoSentence = return () -- S.hPutStrLn h $ interimOf style "[End of discourse]" 
+printParseResult _ _ _ _ _ NoSentence = return () -- S.hPutStrLn h $ interimOf style "[End of discourse]" 
 
 printer :: (SimpleText a, Typeset a, MathML a) => Style -> a -> T.Text
 printer TEXT = toText
@@ -190,8 +192,8 @@ trawlParseResult (InferenceResults (QueryAndDiagrams _ resultPos) (QueryAndDiagr
   ifYes <- liftIO $ ListT.null resultPos
   ifNo  <- liftIO $ ListT.null resultNeg
   return $ case () of
-             _ | ifYes     -> YES
-               | ifNo      -> NO
+             _ | not ifYes -> YES
+               | not ifNo  -> NO
                | otherwise -> UNK
 trawlParseResult NoSentence = fromFoldable []
 

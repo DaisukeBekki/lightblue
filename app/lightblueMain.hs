@@ -263,7 +263,7 @@ lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nPro
                          I.TREE -> False
                          I.POSTAG -> True
       S.hPutStrLn handle $ I.headerOf style
-      NLI.printParseResult handle style noTypeCheck posTagOnly parseResult
+      NLI.printParseResult handle style 1 noTypeCheck posTagOnly parseResult
       S.hPutStrLn handle $ I.footerOf style
     --
     -- | JSeM Parser
@@ -280,14 +280,16 @@ lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nPro
       forM_ parsedJSeM' $ \j -> do
         mapM_ T.putStr ["[JSeM id: ", T.fromStrict $ J.jsem_id j, "] "]
         mapM_ StrictT.putStr $ J.premises j
-        S.putStr "==>"
+        S.putStr " ==> "
         StrictT.putStrLn $ J.hypothesis j
+        S.putStr "\n"
         let sentences = reverse $ (T.fromStrict $ J.hypothesis j):(map T.fromStrict $ J.premises j)
             parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] sentences
-        NLI.printParseResult handle style noTypeCheck False parseResult
+        NLI.printParseResult handle style 1 noTypeCheck False parseResult
         inferenceLabels <- toList $ NLI.trawlParseResult parseResult
+        S.putStr $ "\nPrediction: "
         mapM_ (S.hPutStrLn handle . show) inferenceLabels
-        S.putStrLn $ "Ground truth: " ++ (show $ J.answer j)
+        S.putStrLn $ "Ground truth: " ++ (show $ J.answer j) ++ "\n"
       S.hPutStrLn handle $ I.footerOf style
     -- | 
     -- | Numeration
