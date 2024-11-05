@@ -263,7 +263,7 @@ lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nPro
                          I.TREE -> False
                          I.POSTAG -> True
       S.hPutStrLn handle $ I.headerOf style
-      NLI.printMoreSentenceOrInference handle style noTypeCheck posTagOnly parseResult
+      NLI.printParseResult handle style noTypeCheck posTagOnly parseResult
       S.hPutStrLn handle $ I.footerOf style
     --
     -- | JSeM Parser
@@ -284,8 +284,8 @@ lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nPro
         StrictT.putStrLn $ J.hypothesis j
         let sentences = reverse $ (T.fromStrict $ J.hypothesis j):(map T.fromStrict $ J.premises j)
             parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] sentences
-        NLI.printMoreSentenceOrInference handle style noTypeCheck False parseResult
-        inferenceLabels <- toList $ NLI.trawlMoreSentencesOrInference parseResult
+        NLI.printParseResult handle style noTypeCheck False parseResult
+        inferenceLabels <- toList $ NLI.trawlParseResult parseResult
         mapM_ (S.hPutStrLn handle . show) inferenceLabels
         S.putStrLn $ "Ground truth: " ++ (show $ J.answer j)
       S.hPutStrLn handle $ I.footerOf style

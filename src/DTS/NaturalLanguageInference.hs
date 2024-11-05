@@ -16,15 +16,12 @@ module DTS.NaturalLanguageInference (
   , InferenceResult(..)
   , ProverName(..)
   , getProver
-  , SentenceAndParseTrees(..)
-  , ParseTreesAndFelicityCheck(..)
-  , FelicityCheckAndMore(..)
-  , MoreSentencesOrInference(..)
-  , InferenceAndResults(..)
+  , ParseResult(..)
+  , ParseTreeAndFelicityChecks(..)
+  , QueryAndDiagrams(..)
   , parseWithTypeCheck
-  , printSentenceAndParseTrees
-  , printMoreSentenceOrInference
-  , trawlMoreSentencesOrInference
+  , printParseResult
+  , trawlParseResult
   ) where
 
 import Control.Monad (when,forM_,join)    --base
@@ -85,11 +82,18 @@ getProver pn = case pn of
   Null -> TY.nullProver
 
 {-- Data structure for sequential parsing and the inference --} 
-data SentenceAndParseTrees = SentenceAndParseTrees T.Text (ListT IO ParseTreesAndFelicityCheck) -- ^ A next sentence and its parse results
-data ParseTreesAndFelicityCheck = ParseTreesAndFelicityCheck CCG.Node DTT.Signature UDTT.TypeCheckQuery (ListT IO FelicityCheckAndMore) -- ^ A parse result, type check query for its felicity condition, and its results
-data FelicityCheckAndMore = FelicityCheckAndMore QT.DTTProofDiagram MoreSentencesOrInference -- ^ A type check diagram and the next sentence if this is not the last sentence, or an inference query otherwise.
-data MoreSentencesOrInference = MoreSentences SentenceAndParseTrees | AndInference InferenceAndResults | NoSentence 
-data InferenceAndResults = InferenceAndResults DTT.ProofSearchQuery (ListT IO QT.DTTProofDiagram) DTT.ProofSearchQuery (ListT IO QT.DTTProofDiagram) -- ^ A proof search query for the inference and its results.
+
+data ParseResult = 
+  SentenceAndParseTrees T.Text (ListT IO ParseTreeAndFelicityChecks) -- ^ A next sentence and its parse results
+  | InferenceResults QueryAndDiagrams QueryAndDiagrams 
+  | NoSentence 
+data ParseTreeAndFelicityChecks = 
+  ParseTreeAndFelicityChecks CCG.Node DTT.Signature UDTT.TypeCheckQuery (ListT IO (QT.DTTProofDiagram, ParseResult)) 
+  -- ^ A parse result, type check query for its felicity condition, and its results
+  -- ^ A type check diagram and the next sentence if this is not the last sentence, or an inference query otherwise.
+data QueryAndDiagrams = 
+  QueryAndDiagrams DTT.ProofSearchQuery (ListT IO QT.DTTProofDiagram) 
+  -- ^ A proof search query for the inference and its results.
 
 type Discourse = [T.Text]
 
@@ -97,7 +101,7 @@ type Discourse = [T.Text]
 -- | If noInference = True, it does not execute inference.
 -- | The specification of this function reflects a view about what are entailments between texts,          
 -- | that is an interface problem between natural language semantics and logic
-parseWithTypeCheck :: CP.ParseSetting -> QT.Prover -> DTT.Signature -> DTT.Context -> Discourse -> MoreSentencesOrInference
+parseWithTypeCheck :: CP.ParseSetting -> QT.Prover -> DTT.Signature -> DTT.Context -> Discourse -> ParseResult
 parseWithTypeCheck _ _ _ [] [] = NoSentence     -- ^ Context is empty and no sentece is given 
 parseWithTypeCheck ps prover signtr (typ:contxt) [] = -- ^ Context is given and no more sentence (= All parse done)
   if CP.noInference ps
@@ -106,9 +110,9 @@ parseWithTypeCheck ps prover signtr (typ:contxt) [] = -- ^ Context is given and 
              resultPos = takeNbest (CP.nProof ps) $ prover psqPos
              psqNeg = DTT.ProofSearchQuery signtr contxt $ DTT.Pi typ DTT.Bot
              resultNeg = takeNbest (CP.nProof ps) $ prover psqNeg
-         in AndInference $ InferenceAndResults psqPos resultPos psqNeg resultNeg
+         in InferenceResults (QueryAndDiagrams psqPos resultPos) (QueryAndDiagrams psqNeg resultNeg)
 parseWithTypeCheck ps prover signtr contxt (text:texts) = 
-  MoreSentences $ SentenceAndParseTrees text $ do
+  SentenceAndParseTrees text $ do
     --lift $ S.putStrLn $ "nParse = " ++ (show $ CP.nParse ps)
     -- | IO [CCG.node] =lift=>           ListT IO [CCG.node] 
     -- |               =fmap(foldable)=> ListT IO (ListT IO CCG.Node)
@@ -117,10 +121,10 @@ parseWithTypeCheck ps prover signtr contxt (text:texts) =
     node <- takeNbest (CP.nParse ps) $ join $ fmap fromFoldable $ lift $ CP.simpleParse ps text 
     let signtr' = L.nub $ (CCG.sig node) ++ signtr
         tcQuery = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
-    return $ ParseTreesAndFelicityCheck node signtr' tcQuery $ do
+    return $ ParseTreeAndFelicityChecks node signtr' tcQuery $ do
                tcDiagram <- takeNbest (CP.nTypeCheck ps) $ TY.typeCheck prover (CP.verbose ps) tcQuery
                let contxt' = (DTT.trm $ Tree.node tcDiagram):contxt
-               return $ FelicityCheckAndMore tcDiagram $ parseWithTypeCheck ps prover signtr' contxt' texts
+               return (tcDiagram, parseWithTypeCheck ps prover signtr' contxt' texts)
 
 -- | Take n element from the top of the list.
 -- | If n < 0, it returns all the elements.
@@ -130,12 +134,12 @@ takeNbest n l
   | otherwise = l
  
 -- | prints a CCG node (=i-th parsing result for a given sentence) in a specified style (=HTML|text|XML|TeX)
-printSentenceAndParseTrees :: S.Handle -> Style -> Bool -> Bool -> SentenceAndParseTrees -> IO ()
-printSentenceAndParseTrees h style noTypeCheck posTagOnly (SentenceAndParseTrees sentence parseTrees) = do
+printParseResult :: S.Handle -> Style -> Bool -> Bool -> ParseResult -> IO ()
+printParseResult h style noTypeCheck posTagOnly (SentenceAndParseTrees sentence parseTrees) = do
     T.hPutStrLn h sentence
     parseTrees' <- toList parseTrees 
-    -- | [ParseTreesAndFelicityCheck CCG.Node UDTT.TypeCheckQuery (ListT IO FelicityCheckAndMore) ]
-    forM_ (zip parseTrees' ([1..]::[Int])) $ \((ParseTreesAndFelicityCheck node signtr tcQuery tcResults),ith) -> do
+    -- | [ParseTreeAndFelicityChecks CCG.Node UDTT.TypeCheckQuery (ListT IO FelicityCheckAndMore) ]
+    forM_ (zip parseTrees' ([1..]::[Int])) $ \((ParseTreeAndFelicityChecks node signtr tcQuery tcResults),ith) -> do
       S.hPutStrLn h $ interimOf style $ "[parse " ++ (show ith) ++ ": score=" ++ (T.unpack $ CCG.showScore node) ++ "]"
       T.hPutStrLn h $ T.concat ["PF = ", CCG.pf node]
       if posTagOnly
@@ -143,21 +147,18 @@ printSentenceAndParseTrees h style noTypeCheck posTagOnly (SentenceAndParseTrees
           posTagger h style node
         else do
           T.hPutStrLn h $ printer style node
-          S.hPutStrLn h $ interimOf style $ "[Signature]"
+          S.hPutStrLn h $ interimOf style $ "[Signature for parse " ++ (show ith) ++ "]"
           T.hPutStrLn h $ printer style $ DTTwN.fromDeBruijnSignature signtr
-          S.hPutStrLn h $ interimOf style $ "[Type check query]"
+          S.hPutStrLn h $ interimOf style $ "[Type check query for parse " ++ (show ith) ++ "]"
           T.hPutStrLn h $ printer style $ UDTTwN.fromDeBruijnJudgment tcQuery
       tcResults' <- toList tcResults
-      S.putStrLn $ (show $ length tcResults') ++ " results."
-      forM_ (zip tcResults' ([1..]::[Int])) $ \((FelicityCheckAndMore tcDiagram moreResult),jth) -> do
+      --S.putStrLn $ (show $ length tcResults') ++ " results."
+      forM_ (zip tcResults' ([1..]::[Int])) $ \((tcDiagram, moreResult),jth) -> do
         when (not (noTypeCheck || posTagOnly)) $ do
-          S.hPutStrLn h $ interimOf style $ "[Type check diagram " ++ (show jth) ++ "]"
+          S.hPutStrLn h $ interimOf style $ "[Type check diagram " ++ (show jth) ++ " for parse " ++ (show ith) ++ "]"
           T.hPutStrLn h $ printer style $ fmap DTTwN.fromDeBruijnJudgment tcDiagram
-        printMoreSentenceOrInference h style noTypeCheck posTagOnly moreResult
-
-printMoreSentenceOrInference :: S.Handle -> Style -> Bool -> Bool -> MoreSentencesOrInference -> IO ()
-printMoreSentenceOrInference h style ntc pto (MoreSentences s) = printSentenceAndParseTrees h style ntc pto s
-printMoreSentenceOrInference h style _ _ (AndInference (InferenceAndResults psqPos proofDiagramsPos psqNeg proofDiagramsNeg)) = do
+        printParseResult h style noTypeCheck posTagOnly moreResult
+printParseResult h style _ _ (InferenceResults (QueryAndDiagrams psqPos proofDiagramsPos) (QueryAndDiagrams psqNeg proofDiagramsNeg)) = do
   T.hPutStrLn h $ printer style $ DTTwN.fromDeBruijnProofSearchQuery psqPos
   proofDiagramsPos' <- toList proofDiagramsPos
   forM_ (zip proofDiagramsPos' ([1..]::[Int])) $ \(proofDiagram,kth) -> do
@@ -169,7 +170,7 @@ printMoreSentenceOrInference h style _ _ (AndInference (InferenceAndResults psqP
     S.hPutStrLn h $ interimOf style $ "[Proof diagram " ++ (show kth) ++ "]"
     T.hPutStrLn h $ printer style $ fmap DTTwN.fromDeBruijnJudgment proofDiagram
   --T.hPutStrLn h $ T.concat ["[Label = ", T.pack $ show label, "]"]
-printMoreSentenceOrInference _ _ _ _ NoSentence = return () -- S.hPutStrLn h $ interimOf style "[End of discourse]" 
+printParseResult _ _ _ _ NoSentence = return () -- S.hPutStrLn h $ interimOf style "[End of discourse]" 
 
 printer :: (SimpleText a, Typeset a, MathML a) => Style -> a -> T.Text
 printer TEXT = toText
@@ -179,32 +180,20 @@ printer _    = toText
 
 {-- Trawling functions --}
 
-trawlSentenceAndParseTrees :: SentenceAndParseTrees -> ListT IO InferenceLabel
-trawlSentenceAndParseTrees (SentenceAndParseTrees _ parseTreesAndFelicityChecks) = do
-  parseTreesAndFelicityCheck <- parseTreesAndFelicityChecks -- :: ParseTreesAndFelicityCheck
-  x <- trawlParseTreesAndFelicityCheck parseTreesAndFelicityCheck
-  return x
-
-trawlParseTreesAndFelicityCheck :: ParseTreesAndFelicityCheck -> ListT IO InferenceLabel
-trawlParseTreesAndFelicityCheck (ParseTreesAndFelicityCheck _ _ _ felicityCheckAndMores) = do
-  felicityCheckAndMore <- felicityCheckAndMores
-  x <- trawlFelicityCheckAndMore felicityCheckAndMore
-  return x
-
-trawlFelicityCheckAndMore :: FelicityCheckAndMore -> ListT IO InferenceLabel
-trawlFelicityCheckAndMore (FelicityCheckAndMore _ moreSentencesOrInference) = trawlMoreSentencesOrInference moreSentencesOrInference
-
-trawlMoreSentencesOrInference :: MoreSentencesOrInference -> ListT IO InferenceLabel
-trawlMoreSentencesOrInference (MoreSentences sentenceAndParseTrees) = trawlSentenceAndParseTrees sentenceAndParseTrees
-trawlMoreSentencesOrInference (AndInference inferenceAndResults) = trawlInferenceAndResults inferenceAndResults
-trawlMoreSentencesOrInference NoSentence = fromFoldable []
-
-trawlInferenceAndResults :: InferenceAndResults -> ListT IO InferenceLabel
-trawlInferenceAndResults (InferenceAndResults _ resultPos _ resultNeg) = do
+trawlParseResult :: ParseResult -> ListT IO InferenceLabel
+trawlParseResult (SentenceAndParseTrees _ parseTreeAndFelicityChecks) = do
+  (ParseTreeAndFelicityChecks _ _ _ felicityCheckAndMores) <- parseTreeAndFelicityChecks 
+  (_, parseResult) <- felicityCheckAndMores
+  label <- trawlParseResult parseResult
+  return label
+trawlParseResult (InferenceResults (QueryAndDiagrams _ resultPos) (QueryAndDiagrams _ resultNeg)) = do
   ifYes <- liftIO $ ListT.null resultPos
-  ifNo <- liftIO $ ListT.null resultNeg
-  return $ if ifYes 
-             then YES
-             else if ifNo
-                  then NO
-                  else UNK
+  ifNo  <- liftIO $ ListT.null resultNeg
+  return $ case () of
+             _ | ifYes     -> YES
+               | ifNo      -> NO
+               | otherwise -> UNK
+trawlParseResult NoSentence = fromFoldable []
+
+ 
+
