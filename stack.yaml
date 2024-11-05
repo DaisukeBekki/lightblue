@@ -4,7 +4,7 @@ flags: {}
 
 extra-deps:
 - git: http://github.com/DaisukeBekki/JSeM
-  commit: 60c1efd96fdd00e0a80c78368dac51f684c6f988
+  commit: c2cd39168e267007b4690dbf625329bac57a8185
 - git: http://github.com/DaisukeBekki/nlp-tools
   commit: e4bd3783f4e872b8df29538d9219e41f40378363
 # 1bf4e582c603c823a89c3dfd1fba0ab4d3d8899a
