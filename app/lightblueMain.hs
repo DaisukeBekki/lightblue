@@ -214,7 +214,7 @@ jsemOptionParser = JSeM
     <> metavar "text|tex|xml|html"
     <> help "How many data to process: 0 means all data"
     <> showDefault
-    <> value 0
+    <> value (-1)
     <> metavar "INT" )  
 
 numerationOptionParser :: Parser Command
