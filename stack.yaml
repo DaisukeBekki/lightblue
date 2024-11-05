@@ -3,10 +3,11 @@ resolver: lts-18.28
 flags: {}
 
 extra-deps:
-  - git: http://github.com/DaisukeBekki/JSeM.git
-    commit: 9834b94f9fdf787903a5926003a8122c467d621f
-  - git: http://github.com/DaisukeBekki/nlp-tools
-    commit: 1bf4e582c603c823a89c3dfd1fba0ab4d3d8899a
+- git: http://github.com/DaisukeBekki/JSeM
+  commit: 60c1efd96fdd00e0a80c78368dac51f684c6f988
+- git: http://github.com/DaisukeBekki/nlp-tools
+  commit: e4bd3783f4e872b8df29538d9219e41f40378363
+# 1bf4e582c603c823a89c3dfd1fba0ab4d3d8899a
 #  - git: git@github.com:DaisukeBekki/hasktorch-tools.git
 #    commit: 936928cdee27e179a5e3775d146046b107b0eba1
 

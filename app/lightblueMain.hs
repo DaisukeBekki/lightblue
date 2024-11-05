@@ -3,7 +3,7 @@
 
 import Options.Applicative hiding (style) --optparse-applicative
 --import Data.Semigroup ((<>))              --semigroup
-import Control.Monad (forM_)              --base
+import Control.Monad (forM)               --base
 import ListT (toList)                     --list-t
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
@@ -30,6 +30,8 @@ import qualified DTS.DTTdeBruijn as DTT
 import DTS.TypeChecker (typeInfer,nullProver)
 import qualified DTS.QueryTypes as QT
 import qualified DTS.NaturalLanguageInference as NLI
+import qualified JSeM as JSeM                         --jsem
+import qualified ML.Exp.Classification.Bounded as NLP --nlp-tools
 
 data Options =
   Version
@@ -277,7 +279,7 @@ lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nPro
             | nSample < 0 = parsedJSeM
             | otherwise = take nSample parsedJSeM
       S.hPutStrLn handle $ I.headerOf style
-      forM_ parsedJSeM' $ \j -> do
+      pairs <- forM parsedJSeM' $ \j -> do
         mapM_ T.putStr ["[JSeM id: ", T.fromStrict $ J.jsem_id j, "] "]
         mapM_ StrictT.putStr $ J.premises j
         S.putStr " ==> "
@@ -290,6 +292,13 @@ lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nPro
         S.putStr $ "\nPrediction: "
         mapM_ (S.hPutStrLn handle . show) inferenceLabels
         S.putStrLn $ "Ground truth: " ++ (show $ J.answer j) ++ "\n"
+        return (
+          J.jsemLabel2YesNo $ J.answer j, 
+          case inferenceLabels of
+            [] -> J.Unk
+            (bestLabel:_) -> bestLabel
+          )
+      T.putStrLn $ T.fromStrict $ NLP.showClassificationReport pairs
       S.hPutStrLn handle $ I.footerOf style
     -- | 
     -- | Numeration

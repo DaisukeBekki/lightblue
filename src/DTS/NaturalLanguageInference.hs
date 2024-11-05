@@ -12,8 +12,8 @@ A module for Natural Language Inference
 
 module DTS.NaturalLanguageInference (
   InferenceSetting(..)
-  , InferencePair(..)
-  , InferenceResult(..)
+  --, InferencePair(..)
+  --, InferenceResult(..)
   , ProverName(..)
   , getProver
   , ParseResult(..)
@@ -33,21 +33,22 @@ import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.List as L           --base
 import ListT (ListT(..),fromFoldable,toList,take,null) --list-t
-import qualified Parser.ChartParser as CP
-import qualified Parser.CCG as CCG
-import Interface 
-import Interface.Text
-import Interface.HTML as HTML
-import Interface.TeX
-import Interface.Tree as Tree
+import qualified Parser.ChartParser as CP      --lightblue
+import qualified Parser.CCG as CCG             --lightblue
+import Interface                               --lightblue
+import Interface.Text                          --lightblue
+import Interface.HTML as HTML                  --lightblue
+import Interface.TeX                           --lightblue
+import Interface.Tree as Tree                  --lightblue
 --import Parser.Language (LangOptions(..),jpOptions)
-import qualified DTS.UDTTdeBruijn as UDTT
-import qualified DTS.UDTTwithName as UDTTwN
-import qualified DTS.DTTdeBruijn as DTT
-import qualified DTS.DTTwithName as DTTwN
-import qualified DTS.QueryTypes as QT
-import qualified DTS.TypeChecker as TY
-import qualified DTS.Prover.Wani.Prove as Wani
+import qualified DTS.UDTTdeBruijn as UDTT      --lightblue
+import qualified DTS.UDTTwithName as UDTTwN    --lightblue
+import qualified DTS.DTTdeBruijn as DTT        --lightblue
+import qualified DTS.DTTwithName as DTTwN      --lightblue
+import qualified DTS.QueryTypes as QT          --lightblue
+import qualified DTS.TypeChecker as TY         --lightblue
+import qualified DTS.Prover.Wani.Prove as Wani --lightblue
+import qualified JSeM as JSeM                  --jsem
 
 data InferenceSetting = InferenceSetting {
   beam :: Int     -- ^ beam width
@@ -58,14 +59,15 @@ data InferenceSetting = InferenceSetting {
   , proverName :: ProverName
   } 
 
-data InferenceLabel = YES | NO | UNK deriving (Eq, Show, Read)
+type InferenceLabel = JSeM.YesNo
+--data InferenceLabel = YES | NO | UNK deriving (Eq, Show, Read)
 
-data InferencePair = InferencePair {
-  premises :: [T.Text]   -- ^ premises
-  , hypothesis :: T.Text -- ^ a hypothesis
-  } deriving (Eq, Show)
+-- data InferencePair = InferencePair {
+--   premises :: [T.Text]   -- ^ premises
+--   , hypothesis :: T.Text -- ^ a hypothesis
+--   } deriving (Eq, Show)
 
-data InferenceResult = InferenceResult (InferencePair, [CCG.Node], [UDTT.Preterm], DTT.Signature, [Tree QT.DTTrule DTT.Judgment]) --, QT.ProofSearchQuery, QT.ProofSearchResult)) 
+--data InferenceResult = InferenceResult (InferencePair, [CCG.Node], [UDTT.Preterm], DTT.Signature, [Tree QT.DTTrule DTT.Judgment]) --, QT.ProofSearchQuery, QT.ProofSearchResult)) 
 
 data ProverName = Wani | Null deriving (Eq,Show)
 
@@ -171,7 +173,6 @@ printParseResult h style _ _ _ (InferenceResults (QueryAndDiagrams psqPos proofD
   forM_ (zip proofDiagramsNeg' ([1..]::[Int])) $ \(proofDiagram,kth) -> do
     S.hPutStrLn h $ interimOf style $ "[Proof diagram " ++ (show kth) ++ "]"
     T.hPutStrLn h $ printer style $ fmap DTTwN.fromDeBruijnJudgment proofDiagram
-  --T.hPutStrLn h $ T.concat ["[Label = ", T.pack $ show label, "]"]
 printParseResult _ _ _ _ _ NoSentence = return () -- S.hPutStrLn h $ interimOf style "[End of discourse]" 
 
 printer :: (SimpleText a, Typeset a, MathML a) => Style -> a -> T.Text
@@ -192,9 +193,9 @@ trawlParseResult (InferenceResults (QueryAndDiagrams _ resultPos) (QueryAndDiagr
   ifYes <- liftIO $ ListT.null resultPos
   ifNo  <- liftIO $ ListT.null resultNeg
   return $ case () of
-             _ | not ifYes -> YES
-               | not ifNo  -> NO
-               | otherwise -> UNK
+             _ | not ifYes -> JSeM.Yes
+               | not ifNo  -> JSeM.No
+               | otherwise -> JSeM.Unk
 trawlParseResult NoSentence = fromFoldable []
 
  
