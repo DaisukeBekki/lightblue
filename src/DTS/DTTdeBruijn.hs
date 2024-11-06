@@ -381,7 +381,7 @@ data Judgment = Judgment {
   , contxt :: Context  -- ^ A context \Gamma in \Gamma \vdash M:A
   , trm :: Preterm     -- ^ A term M in \Gamma \vdash M:A
   , typ :: Preterm     -- ^ A type A in \Gamma \vdash M:A
-  } deriving (Eq)
+  } deriving (Eq, G.Generic, Store)
 
 embedJudgment :: Judgment -> GeneralTypeQuery Signature Context Preterm Preterm
 embedJudgment (Judgment sig cxt trm typ) = GeneralTypeQuery sig cxt (Term trm) (Term typ)
