@@ -35,7 +35,6 @@ dependencies:
   - aeson >= 1.0
   - bytestring >= 0.10
   - yaml >= 0.8.3
-  - hexpat >= 0.20
   - parsec >= 3.1.14
   - filepath >= 1.4
   - shelly >= 1.8.1
@@ -58,9 +57,7 @@ library:
   - Parser.Language.Japanese.Juman.CallJuman
   - Parser.Language.Japanese.Juman.Config  
   - Parser.Language.Japanese.Juman.ParseJumanDic
-  - Parser.Language.Japanese.Juman.ParseCaseFrame
   - Parser.Language.Japanese.Juman.ConvertJumanDic
-  - Parser.Language.Japanese.Juman.ShowCaseFrame
   - Interface
   - Interface.Text
   - Interface.TeX
@@ -91,11 +88,6 @@ executables:
   lightblue:
     source-dirs:  app
     main:         lightblueMain.hs
-    ghc-options:  [-threaded, -rtsopts, -with-rtsopts=-N]
-    dependencies: lightblue
-  buildLexicion:
-    source-dirs:  app/Juman
-    main:         buildLexicon.hs
     ghc-options:  [-threaded, -rtsopts, -with-rtsopts=-N]
     dependencies: lightblue
     
