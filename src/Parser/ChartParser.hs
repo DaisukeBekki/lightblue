@@ -1,9 +1,8 @@
-{-# OPTIONS -Wall #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 {-|
 Module      : ChartParser
-Copyright   : (c) Daisuke Bekki, 2016
+Copyright   : (c) Daisuke Bekki, 2016, 2024
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
@@ -13,68 +12,156 @@ A left-corner CKY-parser for lexical grammars.
 
 module Parser.ChartParser (
   -- * Data structures for CCG derivations
-  Chart,
-  CCG.Node(..),
+  Chart
+  , CCG.Node(..)
   -- * Main parsing functions
-  parse,
-  simpleParse,
-  simpleParse',
+  , ParseSetting(..)
+  , defaultParseSetting
+  , parse
+  , simpleParse
+  , simpleParse'
   -- * Partial parsing function(s)
-  ParseResult(..),
-  extractParseResult,
-  --bestOnly
+  , ParseResult(..)
+  , extractParseResult
   ) where
 
 import Data.List as L
 import Data.Char                          --base
 import System.IO.Unsafe (unsafePerformIO) --base
-import qualified Data.Text.Lazy as T   --text
+import qualified Data.Text.Lazy as T      --text
+import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.Map as M         --container
 import qualified Parser.CCG as CCG --(Node, unaryRules, binaryRules, trinaryRules, isCONJ, cat, SimpleText)
 import Parser.Language (LangOptions(..),jpOptions)
-import qualified Parser.Language.Japanese.Lexicon as L (LexicalItems, lookupLexicon, setupLexicon, emptyCategories)
+import qualified Parser.Language.Japanese.Juman.CallJuman as Juman
+import qualified Parser.Language.Japanese.Lexicon as L (LexicalResource(..), lexicalResourceBuilder, LexicalItems, lookupLexicon, setupLexicon, emptyCategories, myLexicon)
 import qualified Parser.Language.Japanese.Templates as LT
+import qualified DTS.QueryTypes as QT
 
 {- Main functions -}
 
 -- | The type for CYK-charts.
+data ParseSetting = ParseSetting {
+  langOptions :: LangOptions   -- ^ Language options
+  , lexicalResource :: L.LexicalResource
+  -- , morphaName :: Juman.MorphAnalyzerName -- ^ Morphological analyzer
+  , beamWidth :: Int           -- ^ The beam width
+  , nParse :: Int              -- ^ Show N-best parse trees for each sentence
+  , nTypeCheck :: Int          -- ^ Show N-best type check diagram for each logical form
+  , nProof :: Int              -- ^ Show N-best proof diagram for each proof search
+  , ifPurify :: Bool           -- ^ If True, apply purifyText to the input text before parsing
+  , ifDebug :: Maybe (Int,Int) -- ^ Debug mode: If Just (i,j), then debug mode and dump parse result of (i,j). If Nothing, then non-debug mode
+  , ifFilterNode :: Maybe (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ filter for CCG nodes.  Nothing: no filtering
+  , noInference :: Bool        -- ^ If True, it is an inference and execute proof search
+  , verbose :: Bool            -- ^ If True, type checker and inferer dump logs
+  } 
+
+defaultParseSetting :: IO ParseSetting
+defaultParseSetting = do
+  lr <- L.lexicalResourceBuilder Juman.KWJA
+  return $ ParseSetting jpOptions lr 32 (-1) (-1) (-1) True Nothing Nothing True False
+
 type Chart = M.Map (Int,Int) [CCG.Node]
 
--- | Main parsing function to parse a Japanees sentence and generates a CYK-chart.
-parse :: Int           -- ^ The beam width
-         -> Bool       -- ^ If True, use purifyText
-         -> (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ filter for CCG nodes
-         -> T.Text     -- ^ A sentence to be parsed
-         -> IO (Chart) -- ^ A pair of the resulting CYK-chart and a list of CYK-charts for segments
-parse = parse' Nothing
-
--- | The main routine of 'parse' function
-parse' :: Maybe (Int,Int) -- ^ Debug mode: If Just (i,j), then debug mode and dump parse result of (i,j). If Nothing, then non-debug mode
-          -> Int          -- ^ The beam width
-          -> Bool         -- ^ If True, use purifyText
-          -> (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ filter for CCG nodes
-          -> T.Text       -- ^ A sentence to be parsed
-          -> IO (Chart)   -- ^ A pair of the resulting CYK-chart and a list of CYK-charts for segments
-parse' ifDebug beam ifPurify filterNodes sentence 
+-- | Main parsing function to parse a Japanees sentence that generates a CYK-chart.
+parse :: ParseSetting 
+         -> T.Text    -- ^ A sentence to be parsed
+         -> IO Chart  -- ^ A pair of the resulting CYK-chart and a list of CYK-charts for segments
+parse ParseSetting{..} sentence 
   | sentence == T.empty = return M.empty -- returns an empty chart, otherwise foldl returns a runtime error when text is empty
   | otherwise = do
-      lexicon <- L.setupLexicon (T.replace "―" "。" sentence)
-      let (chart,_,_,_) = T.foldl' (chartAccumulator ifDebug beam lexicon filterNodes) 
+      let sentenceToParse = if ifPurify
+                              then purifyText langOptions sentence
+                              else sentence
+          nodeFilter = case ifFilterNode of
+                         Just filter -> filter
+                         Nothing -> (\_ _ -> id)
+      lexicon <- L.setupLexicon lexicalResource sentenceToParse
+      let (chart,_,_,_) = T.foldl' (chartAccumulator ifDebug beamWidth lexicon nodeFilter) 
                                    (M.empty,[0],0,T.empty)
-                                   (if ifPurify
-                                      then purifyText sentence
-                                      else sentence)
+                                   sentenceToParse
       return chart
 
+simpleParse :: ParseSetting 
+           -> T.Text -- ^ an input text
+           -> IO [CCG.Node]
+simpleParse ps@ParseSetting{..} sentence = do 
+  --let parseSetting = defaultParseSetting {beamWidth = beamW}
+  chart <- parse ps sentence
+  return $ case extractParseResult beamWidth chart of
+             Full nodes -> nodes
+             Partial nodes -> nodes
+             Failed -> []
+
+-- | For the compatibility with ABCbanKParser
+simpleParse' :: Maybe (Int,Int)   -- ^ Debug mode: If Just (i,j), dump parse result of (i,j). 
+            -> Int    -- ^ beam 
+            -> Bool   -- ^ If purify
+            -> (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ filter for CCG nodes
+            -> T.Text -- ^ an input text
+            -> IO([CCG.Node],Chart)
+simpleParse' ifDebug beamW ifPurify filterNodes sentence = do
+  lexicalResource <- L.lexicalResourceBuilder Juman.KWJA
+  chart <- parse (ParseSetting jpOptions lexicalResource beamW 1 1 1 ifPurify ifDebug (Just filterNodes) True False) sentence
+  case extractParseResult beamW chart of
+    Full nodes -> return (nodes,chart)
+    Partial nodes -> return (nodes,chart)
+    Failed -> return ([],chart)
+
+-- parse :: Int           -- ^ The beam width
+--          -> Bool       -- ^ If True, use purifyText
+--          -> (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ filter for CCG nodes
+--          -> T.Text     -- ^ A sentence to be parsed
+--          -> IO (Chart) -- ^ A pair of the resulting CYK-chart and a list of CYK-charts for segments
+-- parse = parse' Nothing
+-- | The main routine of 'parse' function
+-- parse' :: Maybe (Int,Int) -- ^ Debug mode: If Just (i,j), then debug mode and dump parse result of (i,j). If Nothing, then non-debug mode
+--           -> Int          -- ^ The beam width
+--           -> Bool         -- ^ If True, use purifyText
+--           -> (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ filter for CCG nodes
+--           -> T.Text       -- ^ A sentence to be parsed
+--           -> IO (Chart)   -- ^ A pair of the resulting CYK-chart and a list of CYK-charts for segments
+-- parse' ifDebug beam ifPurify filterNodes sentence 
+--   | sentence == T.empty = return M.empty -- returns an empty chart, otherwise foldl returns a runtime error when text is empty
+--   | otherwise = do
+--       lexicon <- L.setupLexicon (T.replace "―" "。" sentence)
+--       let (chart,_,_,_) = T.foldl' (chartAccumulator ifDebug beam lexicon filterNodes) 
+--                                    (M.empty,[0],0,T.empty)
+--                                    (if ifPurify
+--                                       then purifyText sentence
+--                                       else sentence)
+--       return chart
+
+-- | Simple parsing function to return just the best node for a given sentence
+-- simpleParse :: Int    -- ^ beam 
+--             -> T.Text -- ^ an input text
+--             -> IO [CCG.Node]
+-- simpleParse beam sentence = do 
+--   (nodes,_) <- simpleParse' Nothing beam True (\_ _ -> id) sentence
+--   return nodes
+
+-- simpleParse' :: Maybe (Int,Int)   -- ^ Debug mode: If Just (i,j), dump parse result of (i,j). 
+--             -> Int    -- ^ beam 
+--             -> Bool   -- ^ If purify
+--             -> (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ filter for CCG nodes
+--             -> T.Text -- ^ an input text
+--             -> IO([CCG.Node],Chart)
+-- simpleParse' ifDebug beam ifPurify filterNodes sentence = do
+--   chart <- parse' ifDebug beam ifPurify filterNodes sentence
+--   case extractParseResult beam chart of
+--     Full nodes -> return (nodes,chart)
+--     Partial nodes -> return (nodes,chart)
+--     Failed -> return ([],chart)
+
 -- | removes occurrences of non-letters from an input text.
-purifyText :: T.Text -> T.Text
-purifyText text = 
+purifyText :: LangOptions -> T.Text -> T.Text
+purifyText langOptions text = 
   case T.uncons text of -- remove a non-literal symbol at the beginning of a sentence (if any)
     Nothing -> T.empty
-    Just (c,t) | isSpace c                                  -> purifyText t               -- ignore white spaces
-               | T.any (==c) (meaninglessSymbols jpOptions) -> purifyText t               -- ignore meaningless symbols
-               | T.any (==c) (punctuations jpOptions)       -> T.cons '、' $ purifyText t -- punctuations
-               | otherwise                                  -> T.cons c $ purifyText t
+    Just (c,t) | isSpace c                                 -> purifyText langOptions t               -- ignore white spaces
+               | T.any (==c) (symbolsToIgnore langOptions) -> purifyText langOptions t               -- ignore meaningless symbols
+               | T.any (==c) (punctuations langOptions)    -> T.cons '、' $ purifyText langOptions t -- punctuations
+               | otherwise                                 -> T.cons c $ purifyText langOptions t
 
 -- | quadruples representing a state during parsing:
 -- the parsed result (Chart) of the left of the pivot,
@@ -212,27 +299,6 @@ checkEmptyCategories prevlist =
   foldl' (\p ec -> foldl' (\list node -> (CCG.binaryRules node ec) $ (CCG.binaryRules ec node) list) p p) prevlist L.emptyCategories
 
 {- Partial Parsing -}
-
--- | Simple parsing function to return just the best node for a given sentence
-simpleParse :: Int    -- ^ beam 
-            -> T.Text -- ^ an input text
-            -> IO([CCG.Node])
-simpleParse beam sentence = do 
-  (nodes,_) <- simpleParse' Nothing beam True (\_ _ -> id) sentence
-  return nodes
-
-simpleParse' :: Maybe (Int,Int)   -- ^ Debug mode: If Just (i,j), dump parse result of (i,j). 
-            -> Int    -- ^ beam 
-            -> Bool   -- ^ If purify
-            -> (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ filter for CCG nodes
-            -> T.Text -- ^ an input text
-            -> IO([CCG.Node],Chart)
-simpleParse' ifDebug beam ifPurify filterNodes sentence = do
-  chart <- parse' ifDebug beam ifPurify filterNodes sentence
-  case extractParseResult beam chart of
-    Full nodes -> return (nodes,chart)
-    Partial nodes -> return (nodes,chart)
-    Failed -> return ([],chart)
 
 -- | A data type for the parsing result.
 data ParseResult = 

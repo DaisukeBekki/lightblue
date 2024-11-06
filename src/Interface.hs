@@ -1,25 +1,25 @@
-{-# OPTIONS -Wall #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
-{-
+{-|
 -- Module      : Interface
 -- Copyright   : (c) Daisuke Bekki, 2016
 -- Licence     : All right reserved
 -- Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 -- Stability   : beta
 -- 
--- Interfaces.
+-- Interface programs
 -}
 
 module Interface (
-  Style(..),
-  headerOf,
-  interimOf,
-  footerOf,
-  printNodes,
-  posTagger,
-  printNumeration,
-  treebankBuilder
+  Style(..)
+  , ParseOutput(..)
+  , headerOf
+  , interimOf
+  , footerOf
+  , printNodes
+  , posTagger
+  , printNumeration
+  --, treebankBuilder
   ) where
 
 import qualified Data.Char as C           --base
@@ -29,14 +29,17 @@ import qualified System.IO as S           --base
 import qualified Parser.ChartParser as CP
 import qualified Parser.CCG as CCG
 import qualified Parser.Language.Japanese.Lexicon as LEX
+import qualified Parser.Language.Japanese.Juman.CallJuman as Juman
 import qualified Interface.Text as T
 import qualified Interface.TeX as TEX
 import qualified Interface.HTML as HTML
 import qualified Interface.XML as X
-import qualified DTS.UDTT as DTS
-import qualified DTS.UDTTwithName as VN
-import qualified DTS.Prover as Prover
-import qualified DTS.Prover.Judgement as Ty
+import qualified DTS.UDTTdeBruijn as UDTTdB
+import qualified DTS.UDTTwithName as UDTTwN
+import qualified DTS.DTTdeBruijn as DTTdB
+import qualified DTS.DTTwithName as DTTwN
+--import qualified UDTTdB.Prover.Diag.Prover as Ty
+--import qualified UDTTdB.Prover.Diag.Judgement as Ty
 --import qualified Classifier.DiscourseRelation as DR
 import qualified Interface.SVG as SVG
 
@@ -55,6 +58,14 @@ instance Read Style where
     -- ++ [(TEXT,s) | (x,s) <- lex r, map C.toLower x == "text"]
     -- ++ [(TEX,s) | (x,s) <- lex r, map C.toLower x == "tex"]
     -- ++ [(XML,s) | (x,s) <- lex r, map C.toLower x == "xml"]
+
+data ParseOutput = TREE | POSTAG deriving (Eq,Show)
+
+instance Read ParseOutput where
+  readsPrec _ r =
+    [(TREE,s) | (x,s) <- lex r, map C.toLower x == "tree"]
+    ++ [(POSTAG,s) | (x,s) <- lex r, map C.toLower x == "postag"]
+    -- ++ [(NUMERATION,s) | (x,s) <- lex r, map C.toLower x == "numeration"]
 
 -- | header in style
 headerOf :: Style -> String
@@ -78,7 +89,7 @@ interimOf style text = case style of
 footerOf :: Style -> String
 footerOf style = case style of
   HTML -> HTML.htmlFooter4MathML
-  TEXT -> ""
+  TEXT -> "□"
   XML  -> "</sentences></document></root>"
   TEX  -> ""
   SVG  -> SVG.svgFooter
@@ -99,12 +110,12 @@ printNodes handle HTML sid sentence typecheck nodes = do
           if typecheck 
              then do
                   T.hPutStrLn handle $ HTML.startMathML;
-                  let trees = map Ty.utreeToMathML $ Prover.checkFelicity (CCG.sig node) [] (CCG.sem node);
-                      -- T.hPutStrLn handle $ DTS.toVerticalMathML $ do
+                  let trees = [] -- map Ty.utreeToMathML $ Ty.checkFelicity (CCG.sig node) [] (CCG.sem node);
+                      -- T.hPutStrLn handle $ UDTTdB.toVerticalMathML $ do
                       --   t1 <- Ty.checkFelicity (CCG.sig node) [] (CCG.sem node);
                       --   t2 <- Ty.aspElim t1
                       --   t3 <- Ty.getTerm t2
-                      --   return $ DTS.betaReduce $ Ty.repositP t3
+                      --   return $ UDTTdB.betaReduce $ Ty.repositP t3
                   if null trees 
                     then return ()
                     else T.hPutStrLn handle $ head trees
@@ -149,10 +160,10 @@ printNodes handle SVG _ _ _ nodes = do
           T.hPutStr handle $ SVG.node2svg node
         ) $ zip nodes ([0..]::[Int])
 
--- | prints CCG nodes (=a parsing result) in a \"part-of-speech tagger\" style
-posTagger :: S.Handle -> Style -> [CCG.Node] -> IO()
-posTagger handle XML = mapM_ ((T.hPutStrLn handle) . (X.node2XML 0 0 True))
-posTagger handle style = mapM_ (\node -> mapM_ (T.hPutStrLn handle) $ node2PosTags style node)
+-- | prints CCG node (=a parsing result) in a \"part-of-speech tagger\" style
+posTagger :: S.Handle -> Style -> CCG.Node -> IO()
+posTagger handle XML = (T.hPutStrLn handle) . (X.node2XML 0 0 True)
+posTagger handle style = mapM_ (T.hPutStrLn handle) . (node2PosTags style)
 
 -- | A subroutine for `posTagger` function
 node2PosTags :: Style -> CCG.Node -> [T.Text]
@@ -163,65 +174,67 @@ node2PosTags style node =
 
 printLexicalItem :: Style -> CCG.Node -> T.Text
 printLexicalItem style node = case style of
-  TEXT -> T.concat [CCG.pf node, "\t", T.toText (CCG.cat node), " \t", T.toText (CCG.sem node), "\t", CCG.source node, "\t[", CCG.showScore node, "]"]
+  TEXT -> T.concat [CCG.pf node, "\t", T.toText (CCG.cat node), " \t", T.toText $ UDTTwN.fromDeBruijn [] $ CCG.sem node, "\t", CCG.source node, "\t[", CCG.showScore node, "]"]
   TEX  -> TEX.toTeX node
   HTML -> T.concat $ [HTML.startMathML, HTML.toMathML node, HTML.endMathML]
   XML  -> X.node2XML 0 0 True node
   SVG  -> SVG.node2svg node
 
 -- | prints the numeration
-printNumeration :: S.Handle -> Style -> T.Text -> IO()
-printNumeration handle style sentence = do
-  numeration <- LEX.setupLexicon sentence
+printNumeration :: S.Handle -> Style -> LEX.LexicalResource -> T.Text -> IO()
+printNumeration handle style lexicalResource sentence = do
+  numeration <- LEX.setupLexicon lexicalResource sentence
   mapM_ ((T.hPutStrLn handle) . (printLexicalItem style)) numeration
 
--- | parses sentences in the given corpus and yields a list of SRs in HTML format.
-treebankBuilder :: Int -> [T.Text] -> IO()
-treebankBuilder beam sentences = do
-  S.putStrLn HTML.htmlHeader4MathML
-  T.putStrLn HTML.startMathML
-  nodes <- mapM (CP.simpleParse beam) sentences
-  let srs = DTS.fromDeBruijnSRlist $ map (CP.sem . head) nodes
-  S.putStrLn "<mtable columnalign='left'>"
-  mapM_ (\(sentence,(var,term)) -> do
-            T.hPutStrLn S.stderr sentence
-            mapM_ T.putStr ["<mtr><mtd><mtext color='Purple'>",
-                            sentence,
-                            "</mtext></mtd></mtr><mtr><mtd>",
-                            HTML.toMathML var,
-                            "<mo>:</mo>",
-                            HTML.toMathML term,
-                            "</mtd></mtr>"
-                            ]
-        ) $ zip sentences srs
-  S.putStrLn "</mtable>"
-  mapM_ (\(_,preterm) -> sr2drelTSV preterm) srs
-  T.putStrLn HTML.endMathML
-  S.putStrLn HTML.htmlFooter4MathML
+-- -- | Deprecated:
+-- -- | parses sentences in the given corpus and yields a list of SRs in HTML format.
+-- treebankBuilder :: Int -> [T.Text] -> IO()
+-- treebankBuilder beam sentences = do
+--   S.putStrLn HTML.htmlHeader4MathML
+--   T.putStrLn HTML.startMathML
+--   nodes <- mapM (CP.simpleParse beam) sentences
+--   let srs = map (UDTTwN.fromDeBruijn [] . CP.sem . head) nodes
+--   S.putStrLn "<mtable columnalign='left'>"
+--   mapM_ (\(sentence,(var,term)) -> do
+--             T.hPutStrLn S.stderr sentence
+--             mapM_ T.putStr ["<mtr><mtd><mtext color='Purple'>",
+--                             sentence,
+--                             "</mtext></mtd></mtr><mtr><mtd>",
+--                             HTML.toMathML var,
+--                             "<mo>:</mo>",
+--                             HTML.toMathML term,
+--                             "</mtd></mtr>"
+--                             ]
+--         ) $ zip sentences srs
+--   S.putStrLn "</mtable>"
+--   mapM_ (\(_,preterm) -> sr2drelTSV preterm) srs
+--   T.putStrLn HTML.endMathML
+--   S.putStrLn HTML.htmlFooter4MathML
 
--- | traverses a DTS preterm and output a TSV line when finding a DRel (used in the `lightblue treebank` command)
-sr2drelTSV :: VN.Preterm -> IO()
-sr2drelTSV preterm = case preterm of
-  VN.Pi _ a b -> do {sr2drelTSV a; sr2drelTSV b}
-  VN.Not a    -> sr2drelTSV a
-  VN.Lam _ m  -> sr2drelTSV m
-  VN.App m n  -> do {sr2drelTSV m; sr2drelTSV n}
-  VN.Sigma _ a b -> do {sr2drelTSV a; sr2drelTSV b}
-  VN.Pair m n -> do {sr2drelTSV m; sr2drelTSV n}
-  VN.Proj _ m -> sr2drelTSV m
-  VN.Lamvec _ m -> sr2drelTSV m
-  VN.Appvec _ m -> sr2drelTSV m
-  VN.Asp _ m -> sr2drelTSV m
-  VN.Succ n -> sr2drelTSV n
-  VN.Natrec e g n -> do{sr2drelTSV e; sr2drelTSV g; sr2drelTSV n}
-  VN.Eq a m n -> do{sr2drelTSV a; sr2drelTSV m; sr2drelTSV n}
-  VN.Refl a m -> do{sr2drelTSV a; sr2drelTSV m}
-  VN.Idpeel m n -> do{sr2drelTSV m; sr2drelTSV n}
-  --VN.DRel i t a b -> do
-  --                   DR.outputTSV i t a b
-  --                   sr2drelTSV a
-  --                   sr2drelTSV b
-  _ -> return ()
+-- -- | Deprecated:
+-- -- | traverses a DTS preterm and output a TSV line when finding a DRel (used in the `lightblue treebank` command)
+-- sr2drelTSV :: UDTTwN.Preterm -> IO()
+-- sr2drelTSV preterm = case preterm of
+--   UDTTwN.Pi _ a b -> do {sr2drelTSV a; sr2drelTSV b}
+--   UDTTwN.Not a    -> sr2drelTSV a
+--   UDTTwN.Lam _ m  -> sr2drelTSV m
+--   UDTTwN.App m n  -> do {sr2drelTSV m; sr2drelTSV n}
+--   UDTTwN.Sigma _ a b -> do {sr2drelTSV a; sr2drelTSV b}
+--   UDTTwN.Pair m n -> do {sr2drelTSV m; sr2drelTSV n}
+--   UDTTwN.Proj _ m -> sr2drelTSV m
+--   UDTTwN.Lamvec _ m -> sr2drelTSV m
+--   UDTTwN.Appvec _ m -> sr2drelTSV m
+--   UDTTwN.Asp m -> sr2drelTSV m
+--   UDTTwN.Succ n -> sr2drelTSV n
+--   UDTTwN.Natrec e g n -> do{sr2drelTSV e; sr2drelTSV g; sr2drelTSV n}
+--   UDTTwN.Eq a m n -> do{sr2drelTSV a; sr2drelTSV m; sr2drelTSV n}
+--   UDTTwN.Refl a m -> do{sr2drelTSV a; sr2drelTSV m}
+--   UDTTwN.Idpeel m n -> do{sr2drelTSV m; sr2drelTSV n}
+--   --UDTTwN.DRel i t a b -> do
+--   --                   DR.outputTSV i t a b
+--   --                   sr2drelTSV a
+--   --                   sr2drelTSV b
+--   _ -> return ()
 
 {-
 -- | prints every box in the (parsed) CYK chart as a TeX source code.

@@ -1,5 +1,4 @@
-{-# OPTIONS -Wall #-}
-{-# LANGUAGE DeriveGeneric, DefaultSignatures #-}
+{-# LANGUAGE DeriveGeneric, DefaultSignatures, RecordWildCards #-}
 
 {-|
 Module      : Parser.Language.Japanese.Lexicon
@@ -12,45 +11,64 @@ A Japanese CCG lexicon.
 -}
 module Parser.Language.Japanese.Lexicon (
   --Node(..),
-  LexicalItems,
+  LexicalItems
+  , LexicalResource(..)
+  , lexicalResourceBuilder
   --isCONJ,
-  lookupLexicon,
-  setupLexicon,
-  LEX.emptyCategories,
-  LEX.myLexicon
+  , lookupLexicon
+  , setupLexicon
+  , LEX.emptyCategories
+  , LEX.myLexicon
   ) where
 
 import Prelude hiding (id)
-import qualified Data.Text.Lazy as T    --text
+import qualified System.Environment as E --base
+import qualified Data.Text.Lazy as T     --text
 import qualified Data.Text.Lazy.IO as T --text
-import qualified Data.List as L         -- base
-import qualified Data.Map as M          -- base
-import qualified System.Environment as E -- base
+import qualified Data.List as L          -- base
+import qualified Data.Map as M           -- base
 import Parser.CCG
 import qualified Parser.Language.Japanese.MyLexicon as LEX
 import Parser.Language.Japanese.Templates
 import qualified Parser.Language.Japanese.Juman.CallJuman as JU
-import DTS.UDTT
+import DTS.UDTTdeBruijn as UDTT         --lightblue
+import qualified DTS.DTTdeBruijn as DTT --lightblue
+
+type UDTTpreterm = UDTT.Preterm
+type Signature = DTT.Signature
 
 -- | Lexicon consists of a set of CCG Nodes
 type LexicalItems = [Node]
+
+data LexicalResource = 
+  JapaneseSetA {
+    baseLexicon :: [Node]
+    , jumanDic :: [[T.Text]]
+    , morphaName :: JU.MorphAnalyzerName
+  } deriving (Eq, Show)
+
+lexicalResourceBuilder :: JU.MorphAnalyzerName -> IO LexicalResource
+lexicalResourceBuilder morphaName = do
+  lightbluepath <- E.getEnv "LIGHTBLUE"
+  jumandicData <- T.readFile $ lightbluepath ++ "src/Parser/Language/Japanese/Juman/Juman.dic"
+  let jumanDic = map (T.split (=='\t')) $ T.lines jumandicData
+  return $ JapaneseSetA LEX.myLexicon jumanDic morphaName
 
 -- | This function takes a word and a lexicon and returns a set of CCG lexical entries whose PF is that word.
 lookupLexicon :: T.Text -> LexicalItems -> [Node]
 lookupLexicon word lexicon = filter (\l -> (pf l) == word) lexicon
 
 -- | This function takes a sentence and returns a numeration needed to parse that sentence, i.e., a union of 
-setupLexicon :: T.Text -> IO(LexicalItems)
-setupLexicon sentence = do
+setupLexicon :: LexicalResource -> T.Text -> IO LexicalItems
+setupLexicon JapaneseSetA{..} sentence = do
   --  1. Setting up lexical items provided by JUMAN++
-  lightbluepath <- E.getEnv "LIGHTBLUE"
-  jumandic <- T.readFile $ lightbluepath ++ "src/Parser/Language/Japanese/Juman/Juman.dic"
-  let jumandicFiltered = filter (\l -> (head l) `T.isInfixOf` sentence) $ map (T.split (=='\t')) (T.lines jumandic)
+  let jumandicFiltered = filter (\l -> (head l) `T.isInfixOf` sentence) jumanDic
   let (jumandicParsed,(cn,pn)) = L.foldl' parseJumanLine ([],(M.empty,M.empty)) $ jumandicFiltered
   --  2. Setting up private lexicon
-  let mylexiconFiltered = filter (\l -> T.isInfixOf (pf l) sentence) LEX.myLexicon
+  let mylexiconFiltered = filter (\l -> T.isInfixOf (pf l) sentence) baseLexicon
   --  3. Setting up compound nouns (returned from an execution of JUMAN)
-  jumanCN <- JU.jumanCompoundNouns (T.replace "―" "、" sentence)
+  -- jumanCN <- JU.jumanCompoundNouns (T.replace "―" "、" sentence)
+  jumanCN <- JU.compoundNouns morphaName sentence
   --  4. Accumulating common nons and proper names entries
   let commonnouns = map (\(hyoki, (daihyo,score')) -> lexicalitem hyoki "(CN)" score' N (commonNounSR daihyo)) $ M.toList cn
   let propernames = map (\(hyoki, (daihyo,score')) -> lexicalitem hyoki "(PN)" score' ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) (properNameSR daihyo)) $ M.toList pn
@@ -78,7 +96,7 @@ parseJumanLine (lexicalitems, (commonnouns, propernames)) jumanline =
     _ -> (lexicalitems,(commonnouns,propernames))
 
 -- | Main function 1 "jumanPos2Cat" that converts Juman entries to lexical items
-jumanPos2Cat :: T.Text -> T.Text -> T.Text -> [(Cat,(Preterm,Signature))]
+jumanPos2Cat :: T.Text -> T.Text -> T.Text -> [(Cat,(UDTTpreterm,Signature))]
 jumanPos2Cat daihyo ct caseframe 
   -- T.isPrefixOf "名詞:普通名詞"     ct  = constructCommonNoun daihyo
   -- T.isPrefixOf "名詞:人名"        ct  = constructProperName daihyo
@@ -134,16 +152,16 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "感動詞"                 ct  = [(defS [Exp] [Term], (id, []))]
   | otherwise                                = [(defS [Exp] [Term], ((Con $ T.concat [T.pack "Juman Error: ", ct]), []))]
 
---constructProperName :: T.Text -> [(Cat, (Preterm, Signature))]
+--constructProperName :: T.Text -> [(Cat, (UDTTpreterm, Signature))]
 --constructProperName daihyo = [((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])), properNameSR daihyo)]
 
-constructPredicate :: T.Text -> [FeatureValue] -> [FeatureValue] -> [(Cat, (Preterm, Signature))]
+constructPredicate :: T.Text -> [FeatureValue] -> [FeatureValue] -> [(Cat, (UDTTpreterm, Signature))]
 constructPredicate daihyo posF conjF = [(defS posF conjF `BS` NP [F[Ga]], predSR 1 daihyo)]
 
-constructCommonNoun :: T.Text -> [(Cat, (Preterm, Signature))]
+constructCommonNoun :: T.Text -> [(Cat, (UDTTpreterm, Signature))]
 constructCommonNoun daihyo = [(N, commonNounSR daihyo)]
 
-constructVerb :: T.Text -> T.Text -> [FeatureValue] -> [FeatureValue] -> [(Cat, (Preterm, Signature))]
+constructVerb :: T.Text -> T.Text -> [FeatureValue] -> [FeatureValue] -> [(Cat, (UDTTpreterm, Signature))]
 constructVerb daihyo caseframe posF conjF =
   let caseframe' = if caseframe == T.empty
                      then "ガ"
@@ -151,23 +169,23 @@ constructVerb daihyo caseframe posF conjF =
       caseframelist = T.split (=='#') caseframe' in
   [(verbCat cf posF conjF, verbSR daihyo event cf) | cf <- caseframelist]
 
-constructNominalPrefix :: T.Text -> [(Cat, (Preterm, Signature))]
+constructNominalPrefix :: T.Text -> [(Cat, (UDTTpreterm, Signature))]
 constructNominalPrefix daihyo = [(N `SL` N, nominalModifier daihyo)]
 
-constructNominalSuffix :: T.Text -> [(Cat, (Preterm, Signature))]
+constructNominalSuffix :: T.Text -> [(Cat, (UDTTpreterm, Signature))]
 constructNominalSuffix daihyo = [(N `BS` N, nominalModifier daihyo)]
 
-constructConjunction :: T.Text -> [(Cat, (Preterm, Signature))]
+constructConjunction :: T.Text -> [(Cat, (UDTTpreterm, Signature))]
 constructConjunction daihyo = 
   [
   (((T False 1 (S [F anyPos, F[Term,NTerm,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]]))
     `SL` (T False 1 (S [F anyPos, F[Term,NTerm,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]]))), 
-    ((Lam (Lam (Sigma (App (Var 1) (Lam Top)) ((App (App (Con daihyo) (Proj Snd $ Asp 1 (Sigma Type (Var 0)))) (Var 0)))))), [(daihyo, Pi entity (Pi entity Type))]))
+    ((Lam (Lam (Sigma (App (Var 1) (Lam Top)) ((App (App (Con daihyo) (Proj Snd $ Asp (Sigma Type (Var 0)))) (Var 0)))))), [(daihyo, DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]))
     ]
 
-constructSubordinateConjunction :: T.Text -> [(Cat, (Preterm, Signature))]
+constructSubordinateConjunction :: T.Text -> [(Cat, (UDTTpreterm, Signature))]
 constructSubordinateConjunction daihyo = 
   [((modifiableS `SL` modifiableS) `BS` (S [F anyPos, F[Attr], SF 7 [P,M], SF 8 [P,M], SF 9 [P,M], F[M],F[M] ]), 
     ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (Sigma (App (Var 2) (Var 1)) (App (App (Con daihyo) (Var 1)) (Var 0))))))),
-     [(daihyo, Pi entity (Pi entity Type))]))
+     [(daihyo, DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]))
   ]

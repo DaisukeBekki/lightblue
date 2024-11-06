@@ -1,15 +1,16 @@
-name:                lightblue
-version:             0.2.2.2
-description:         Please see the README on GitHub at <https://github.com/DaisukeBekki/lightblue#README.md>
-homepage:            https://github.com/DaisukeBekki/lightblue
-category:            CCG Parser, Dependent Type Prover
-synopsis:            A Japanese CCG parser with DTS
-license:             AllRightsReserved
-license-file:        LICENSE
-copyright:           Daisuke Bekki
-author:              Daisuke Bekki and Bekki Laboratory
-maintainer:          Daisuke Bekki
-stability:           beta
+name:         lightblue
+version:      0.3.3
+description:  Please see the README on GitHub at <https://github.com/DaisukeBekki/lightblue#README.md>
+homepage:     https://github.com/DaisukeBekki/lightblue
+category:     CCG Parser, Dependent Type Prover
+synopsis:     A Japanese CCG parser with DTS
+license:      AllRightsReserved
+license-file: LICENSE
+copyright:    Daisuke Bekki
+author:       Daisuke Bekki and Bekki Laboratory
+maintainer:   Daisuke Bekki
+stability:    beta
+ghc-options:  -Wall
 
 extra-source-files:
   - README.md
@@ -25,7 +26,8 @@ dependencies:
   - xml-conduit >= 1.9
   - optparse-applicative >= 0.13
   - semigroups >= 0.16
-  - jsem >= 0.1
+  - jsem >= 1.1
+  - nlp-tools >= 0.2.0
   - array >= 0.5.3.0
   - mtl >= 2.2.2
   - directory >=1.3.3.0
@@ -37,6 +39,11 @@ dependencies:
   - hexpat >= 0.20
   - parsec >= 3.1.14
   - filepath >= 1.4
+  - shelly >= 1.8.1
+  - mtl >= 2.2.2
+  - serialise >= 0.2.4
+  - list-t >= 1.0.0.0
+  - store >= 0.7.14
 
 library:
   source-dirs: src
@@ -61,20 +68,25 @@ library:
   - Interface.XML
   - Interface.HTML
   - Interface.SVG
-  - DTS.DTT
+  - Interface.Tree
+  - DTS.Index
+  - DTS.GeneralTypeQuery
+  - DTS.UDTTdeBruijn
   - DTS.UDTTwithName
-  - DTS.UDTT
-  - DTS.Prover
-  - DTS.Prover.Judgement
-  - DTS.Prover.TypeChecker
-  - DTS.Prover_daido.Judgement
-  - DTS.Prover_daido.TypeChecker
-  - DTS.DTStoProlog
-  - DTS.Wani.WaniBase
-  - DTS.Wani.Forward
-  - DTS.Wani.Backward
-  - DTS.Wani.Arrowterm
-  - DTS.Wani.Prove
+  - DTS.DTTdeBruijn
+  - DTS.DTTwithName
+  - DTS.QueryTypes
+  - DTS.TypeChecker
+  - DTS.NaturalLanguageInference
+  - DTS.Prover.Wani.WaniBase
+  - DTS.Prover.Wani.Forward
+  - DTS.Prover.Wani.Backward
+  - DTS.Prover.Wani.Arrowterm
+  - DTS.Prover.Wani.Prove
+#  - DTS.Prover.Coq.DTS2Coq
+#  - DTS.Prover.Diag.Prover
+#  - DTS.Prover.Diag.Judgement
+#  - DTS.Prover.Diag.TypeChecker
 
 executables:
   lightblue:
@@ -94,4 +106,8 @@ tests:
     main:         testJumanDicSettings.hs
     ghc-options:  [-threaded, -rtsopts, -with-rtsopts=-N]
     dependencies: lightblue
-
+  typeCheck:
+    source-dirs:  test/DTS
+    main:         testTypeChecker.hs
+    ghc-options:  [-threaded, -rtsopts, -with-rtsopts=-N]
+    dependencies: lightblue

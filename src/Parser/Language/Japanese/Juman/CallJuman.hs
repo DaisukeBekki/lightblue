@@ -11,52 +11,87 @@ Stability   : beta
 A module for compound nouns in Japanese.
 -}
 module Parser.Language.Japanese.Juman.CallJuman (
-  jumanCompoundNouns
+  MorphAnalyzerName(..)
+  -- jumanCompoundNouns,
+  --, kwjaCompoundNouns
+  , compoundNouns
   ) where
 
 import Prelude as P
-import qualified Data.Text.Lazy as T                 --text
-import qualified Data.Text.Lazy.IO as T              --text
-import qualified System.Process as S                 --process
+import qualified Data.Char as C           --base
+import qualified Data.Text.Lazy as T      --text
+--import qualified Data.Text.Lazy.IO as T   --text
+--import qualified System.Process as S      --process
+import qualified Shelly as S              -- shelly
 import Parser.CCG
 import qualified Parser.Language.Japanese.Templates as TPL
+--import Debug.Trace
 
-{-
-see :: [JumanPair] -> IO([JumanPair])
-see = mapM see2
-
-see2 :: JumanPair -> IO(JumanPair)
-see2 noun@(j1,j2,j3,j4) = do
-  T.putStr j1
-  T.putStr ","
-  T.putStr j2
-  T.putStr ","
-  T.putStr j3
-  T.putStr ","
-  T.putStrLn j4
-  return noun
--}
+data MorphAnalyzerName = JUMAN | JUMANPP | KWJA deriving (Eq,Show)
+instance Read MorphAnalyzerName where
+  readsPrec _ r =
+    [(JUMAN,s) | (x,s) <- lex r, map C.toLower x == "juman"]
+    ++ [(JUMANPP,s) | (x,s) <- lex r, map C.toLower x == "jumanpp"]
+    ++ [(KWJA,s) | (x,s) <- lex r, map C.toLower x == "kwja"]
 
 -- | Main function: jumaCompoundNouns
 -- |   given a sentence, returns a list of compound nouns
-jumanCompoundNouns :: T.Text -> IO([Node])
-jumanCompoundNouns sentence = do
-  fmap jumanNouns2nodes $ callJuman sentence
+compoundNouns :: MorphAnalyzerName -> T.Text -> IO([Node])
+compoundNouns JUMAN = fmap jumanNouns2nodes . callJuman 
+compoundNouns JUMANPP = fmap jumanNouns2nodes . callJumanpp 
+compoundNouns KWJA = fmap jumanNouns2nodes . callKWJA
 
-data JumanCompNoun = JumanCompCN [T.Text] | JumanCompNP [T.Text] deriving (Eq,Show)
-type JumanPair = (T.Text, T.Text, T.Text, T.Text) -- (表層,品詞,品詞細分,（動詞なら）活用形)
+-- jumanCompoundNouns :: T.Text -> IO([Node])
+-- jumanCompoundNouns sentence = do
+--   fmap jumanNouns2nodes $ callJuman sentence
+
+--   -- | Main function: kwjaCompoundNouns
+-- -- |   given a sentence, returns a list of compound nouns
+-- kwjaCompoundNouns :: T.Text -> IO([Node])
+-- kwjaCompoundNouns sentence = do
+--   fmap jumanNouns2nodes $ callKWJA sentence
+
+data JumanCompNoun = 
+  JumanCompCN [T.Text] 
+  | JumanCompNP [T.Text] 
+  deriving (Eq,Show)
+
+type PhoneticForm = T.Text
+type POS = T.Text
+type POSDetail = T.Text
+type ConjugationForm = T.Text
+
+type JumanPair = (PhoneticForm, POS, POSDetail, ConjugationForm) -- (表層,品詞,品詞細分,（動詞なら）活用形)
 
 -- | Call Juman as an external process and returns a list of juman pos-tags
-callJuman :: T.Text -> IO([JumanCompNoun])
-callJuman sentence = do
-  (_, stdout, _, _) <- S.runInteractiveCommand $ T.unpack $ T.concat ["echo ", sentence, " | jumanpp"]
-  --(_, stdout, _, procHandle) <- S.runInteractiveCommand $ T.unpack $ T.concat ["echo ", sentence, " | juman"]
-  --_ <- S.waitForProcess procHandle
-  t <- T.hGetContents stdout
-  --terminateProcess processhandle
-  --mapped <- see $ map ((\l -> ((l!!0),(l!!3),(l!!5),(l!!9))) . (T.split (==' '))) $ filter (\x -> not (T.isPrefixOf "@" x)) $ P.takeWhile (/= "EOS") $ T.lines t 
-  --return $ findCompNouns [] mapped
-  return $ findCompNouns [] $ map ((\l -> ((l!!0),(l!!3),(l!!5),(l!!9))) . (T.split (==' '))) $ filter (\x -> not (T.isPrefixOf "@" x)) $ P.takeWhile (/= "EOS") $ T.lines t 
+callJuman :: T.Text -> IO [JumanCompNoun]
+callJuman = callMorphologicalAnalyzer (\s -> T.concat ["echo ", s, " | juman"]) ["@"]
+
+-- | Call Juman as an external process and returns a list of juman pos-tags
+callJumanpp :: T.Text -> IO [JumanCompNoun]
+callJumanpp = callMorphologicalAnalyzer (\s -> T.concat ["echo ", s, " | jumanpp"]) ["@"]
+
+-- | Call KWJA as an external process and returns a list of juman pos-tags
+callKWJA :: T.Text -> IO [JumanCompNoun]
+callKWJA = callMorphologicalAnalyzer (\s -> T.concat ["kwja --text ", s]) ["@","*","+","#"]
+
+callMorphologicalAnalyzer :: (T.Text -> T.Text) -> [T.Text] -> T.Text -> IO [JumanCompNoun]
+callMorphologicalAnalyzer command prefixes sentence = do
+  output <- S.shelly $ S.silently $ S.escaping False $ S.cmd $ S.fromText $ T.toStrict $ command sentence
+  return $ findCompNouns [] $ getJumanPairs $ excludeSpecialPrefixes $ T.lines $ T.fromStrict output
+  where 
+    -- EOSまでの行を取得し、@+*から始まる行を除外する
+    excludeSpecialPrefixes :: [T.Text] -> [T.Text]
+    excludeSpecialPrefixes = 
+      filter (\x -> not (isPrefixOfAny prefixes x)) . P.takeWhile (/= "EOS") 
+
+-- (表層,品詞,品詞細分,（動詞なら）活用形)の4つ組を取得
+getJumanPairs :: [T.Text] -> [JumanPair]
+getJumanPairs = map ((\l -> ((l!!0),(l!!3),(l!!5),(l!!9))) . (T.split (==' '))) 
+
+-- | Check if the given text is a prefix of any of the given prefixes
+isPrefixOfAny :: [T.Text] -> T.Text -> Bool
+isPrefixOfAny prefixes x = any (`T.isPrefixOf` x) prefixes
 
 -- | Transforming juman pos-tags obtained from the given sentence 
 -- | into a list of (possible) compound nouns

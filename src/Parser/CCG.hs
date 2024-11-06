@@ -1,5 +1,4 @@
-{-# OPTIONS -Wall #-}
-{-# LANGUAGE OverloadedStrings, FlexibleInstances #-}
+{-# LANGUAGE GADTs, FlexibleInstances #-}
 
 {-|
 Module      : Parser.CCG
@@ -42,17 +41,24 @@ import qualified Data.List as L      --base
 import qualified Data.Maybe as Maybe --base
 import Data.Fixed                    --base
 import Data.Ratio                    --base
-import DTS.UDTT
+import qualified DTS.DTTdeBruijn as DTTdB      --lightblue
+import DTS.UDTTdeBruijn as DTS hiding (sig)--lightblue
+import qualified DTS.DTTwithName as DTTwN  --lightblue
+import qualified DTS.UDTTwithName as VN  --lightblue
+import qualified Interface.Tree as Tree --lightblue
 import Interface.Text
 import Interface.TeX
 import Interface.HTML
+
+type UDTTpreterm = DTS.Preterm
+type Signature = DTTdB.Signature
 
 -- | A node in CCG derivation tree.
 data Node = Node {
   rs :: RuleSymbol,    -- ^ The name of the rule
   pf :: T.Text,        -- ^ The phonetic form
   cat :: Cat,          -- ^ The syntactic category (in CCG)
-  sem :: Preterm,      -- ^ The semantic representation (in DTS)
+  sem :: UDTTpreterm,      -- ^ The semantic representation (in DTS)
   sig :: Signature,    -- ^ Signature
   daughters :: [Node], -- ^ The daughter nodes
   score :: Rational,   -- ^ The score (between 0.00 to 1.00, larger the better)
@@ -78,23 +84,27 @@ showScore node = T.pack (show ((fromRational $ score node)::Fixed E2))
 
 instance SimpleText Node where
   toText n -- @(Node _ _ _ _ sig' _ _ _) 
-    = T.concat [toTextLoop "" n, "Sig. ", toText (sig n), "\n"]
+    = T.concat [toTextLoop "" n, "Sig. ", toText $ DTTwN.fromDeBruijnSignature $ sig n, "\n"]
     where toTextLoop indent node =
             case daughters node of 
-              [] -> T.concat [T.pack indent, toText (rs node), " ", pf node, " ", toText (cat node), " ", toText (sem node), " ", source node, " [", showScore node, "]\n"]
-              dtrs -> T.concat $ [T.pack indent, toText (rs node), " ", toText (cat node), " ", toText (sem node), " [", showScore node, "]\n"] ++ (map (\d -> toTextLoop (indent++"  ") d) dtrs)
+              [] -> T.concat [T.pack indent, toText (rs node), " ", pf node, " ", toText (cat node), " ", toText $ VN.fromDeBruijn [] $ sem node, " ", source node, " [", showScore node, "]\n"]
+              dtrs -> T.concat $ [T.pack indent, toText (rs node), " ", toText (cat node), " ", toText $ VN.fromDeBruijn [] $ sem node, " [", showScore node, "]\n"] ++ (map (\d -> toTextLoop (indent++"  ") d) dtrs)
 
 instance Typeset Node where
   toTeX node = -- @(Node _ _ _ _ _ _ _ _) =
     case daughters node of 
-      [] -> T.concat ["\\vvlex[", (source node), "]{", (pf node), "}{", toTeX (cat node), "}{", toTeX $ sem node, "}"] --, "\\ensuremath{", (source node), "}"]
-      dtrs -> T.concat ["\\nd[", toTeX (rs node), "]{\\vvcat{", toTeX (cat node), "}{", toTeX $ sem node, "}}{", T.intercalate "&" $ map toTeX dtrs, "}"] --, "\\ensuremath{", (source node), "}"]
+      [] -> T.concat ["\\vvlex[", (source node), "]{", (pf node), "}{", toTeX (cat node), "}{", toTeX $ VN.fromDeBruijn [] $ sem node, "}"] --, "\\ensuremath{", (source node), "}"]
+      dtrs -> T.concat ["\\nd[", toTeX (rs node), "]{\\vvcat{", toTeX (cat node), "}{", toTeX $ VN.fromDeBruijn [] $ sem node, "}}{", T.intercalate "&" $ map toTeX dtrs, "}"] --, "\\ensuremath{", (source node), "}"]
 
 instance MathML Node where
   toMathML node = -- @(Node _ _ _ _ _ _ _ _) =
     case daughters node of 
-      [] -> T.concat ["<mrow><mfrac linethickness='2px'><mtext fontsize='1.0' color='Black'>", pf node, "</mtext><mfrac linethickness='0px'><mstyle color='Red'>", toMathML $ cat node, "</mstyle><mstyle color='Black'>", toMathML $ betaReduce $ sem node, "</mstyle></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", source node, "</mtext></mrow>"] 
-      dtrs -> T.concat ["<mrow><mfrac linethickness='2px'><mrow>", T.concat $ map toMathML dtrs, "</mrow><mfrac linethickness='0px'><mstyle color='Red'>", toMathML $ cat node, "</mstyle><mstyle color='Black'>", toMathML $ betaReduce $ sem node, "</mstyle></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", toMathML $ rs node, "</mtext></mrow>"] 
+      [] -> T.concat ["<mrow><mfrac linethickness='2px'><mtext fontsize='1.0' color='Black'>", pf node, "</mtext><mfrac linethickness='0px'><mstyle color='Red'>", toMathML $ cat node, "</mstyle><mstyle color='Black'>", toMathML $ VN.fromDeBruijn [] $ betaReduce $ sem node, "</mstyle></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", source node, "</mtext></mrow>"] 
+      dtrs -> T.concat ["<mrow><mfrac linethickness='2px'><mrow>", T.concat $ map toMathML dtrs, "</mrow><mfrac linethickness='0px'><mstyle color='Red'>", toMathML $ cat node, "</mstyle><mstyle color='Black'>", toMathML $ VN.fromDeBruijn [] $ betaReduce $ sem node, "</mstyle></mfrac></mfrac><mtext fontsize='0.8' color='Black'>", toMathML $ rs node, "</mtext></mrow>"] 
+
+-- | ゆくゆくは、Catはtype classとして再定義し、
+-- | merge : Cat -> Cat -> Cat??のようにclass関数を用意してパーザはそれのみ使う
+-- | Featureは言語別にモジュールを分けて定義できるようにする
 
 -- | Syntactic categories of 
 data Cat =
@@ -491,6 +501,7 @@ data RuleSymbol =
   | FFCx1 -- ^ Forward function crossed composition rule 1
   | FFCx2 -- ^ Forward function crossed composition rule 2
   | FFSx  -- ^ Forward function crossed substitution rule
+  | FFSx2 -- ^ Forward function crossed substitution rule 2
   | COORD -- ^ Coordination rule
   | PAREN -- ^ Parenthesis rule
   | WRAP  -- ^ Wrap rule
@@ -514,6 +525,7 @@ instance SimpleText RuleSymbol where
     FFCx1 -> ">Bx"
     FFCx2 -> ">Bx2"
     FFSx  -> ">Sx"
+    FFSx2 -> ">Sx2"
     COORD -> "<Φ>"
     PAREN -> "PAREN"
     WRAP  -> "WRAP"
@@ -536,6 +548,7 @@ instance Typeset RuleSymbol where
     FFCx1 -> ">B_{\\times}"
     FFCx2 -> ">B_{\\times}^2"
     FFSx  -> ">S_{\\times}"
+    FFSx2 -> ">S_{\\times}^2"
     COORD -> "\\langle\\Phi\\rangle"
     PAREN -> "PAREN"
     WRAP  -> "WRAP"
@@ -555,7 +568,8 @@ unaryRules _ prevlist = prevlist
 -- | The function to apply all the binary rules to a given pair of CCG nodes.
 binaryRules :: Node -> Node -> [Node] -> [Node]
 binaryRules lnode rnode = 
-  forwardFunctionCrossedSubstitutionRule lnode rnode
+  forwardFunctionCrossedSubstitution2Rule lnode rnode
+  . forwardFunctionCrossedSubstitutionRule lnode rnode
   . forwardFunctionCrossedComposition2Rule lnode rnode
   . forwardFunctionCrossedComposition1Rule lnode rnode
   . backwardFunctionComposition3Rule lnode rnode
@@ -879,6 +893,37 @@ forwardFunctionCrossedSubstitutionRule lnode@(Node {rs=_,cat=((x `SL` y1) `BS` z
                         }:prevlist
 forwardFunctionCrossedSubstitutionRule _ _ prevlist = prevlist
 
+-- | Forward functional crossed substitution rule Lv.2
+forwardFunctionCrossedSubstitution2Rule :: Node -> Node -> [Node] -> [Node]
+forwardFunctionCrossedSubstitution2Rule lnode@(Node {rs=_,cat=(((x `SL` y1) `BS` z1) `BS` w1), sem=f}) rnode@(Node {cat=((y2 `BS` z2) `BS` w2), sem=g}) prevlist =
+  -- [>Sx] x/y1\z:f  y2\z:g  ==> x\z: \z.(fz)(gz)
+  -- [>Sx2] x/y1\z1\w1:f  y2\z2\w2:g  ==> x\z\w: \w.\z.(fwz)(gwz)
+  if not (isArgumentCategory z1) || not (isArgumentCategory z2) -- isNoncaseNP z1 -- to block CM + be-ident -- r == FFC1 || r == FFC2 || r == FFC3 || (isTNoncaseNP y1) || not (isArgumentCategory z2) || not (isArgumentCategory z1) -- Non-normal forms + Ad-hoc rule
+  then prevlist
+  else
+    let inc = maximumIndexC (cat rnode) in
+    case unifyCategory [] [] [] (incrementIndexC w1 inc) w2 of
+      Nothing -> prevlist -- Unification failure
+      Just (w,csub1,fsub1) ->
+        case unifyCategory csub1 fsub1 [] (incrementIndexC z1 inc) z2 of
+          Nothing -> prevlist -- Unification failure
+          Just (z,csub2,fsub2) ->
+            case unifyCategory csub2 fsub2 [] (incrementIndexC y1 inc) y2 of
+              Nothing -> prevlist -- Unification failure
+              Just (_,csub3,fsub3) ->
+                let newcat = simulSubstituteCV csub3 fsub3 (((incrementIndexC x inc) `BS` z) `BS` w) in
+                      Node {
+                        rs = FFSx2,
+                        pf = pf(lnode) `T.append` pf(rnode),
+                        cat = newcat,
+                        sem = betaReduce $ transvec newcat $ betaReduce $ Lam (Lam (App (App (App f (Var 1)) (Var 0)) (App (App g (Var 1)) (Var 0)))),
+                        daughters = [lnode,rnode],
+                        score = score(lnode)*score(rnode)*(100 % 100),
+                        source = "",
+                        sig = sig(lnode) ++ sig(rnode)
+                        }:prevlist
+forwardFunctionCrossedSubstitution2Rule _ _ prevlist = prevlist
+
 -- | Coordination rule.
 coordinationRule :: Node -> Node -> Node -> [Node] -> [Node]
 coordinationRule lnode@(Node {rs=r, cat=x1, sem=s1}) cnode@(Node {cat=CONJ, sem=conj}) rnode@(Node {cat=x2, sem=s2}) prevlist =
@@ -920,9 +965,9 @@ parenthesisRule _ _ _ prevlist = prevlist
 {- Variable-length Lambda Calculus -}
 
 -- | Lamvec, Appvec: 
--- "transvec" function transforms the first argument (of type Preterm)
+-- "transvec" function transforms the first argument (of type UDTTpreterm)
 -- into the one without 
-transvec :: Cat -> Preterm -> Preterm
+transvec :: Cat -> UDTTpreterm -> UDTTpreterm
 transvec c preterm = case c of
   SL x _ -> case preterm of 
               Lam m    -> Lam (transvec x m)
@@ -1188,24 +1233,24 @@ unifyFeatures fsub f1 f2 = case (f1,f2) of
 
 {- Functions for partial parsing -}
 
-category2type :: Cat -> Preterm
+category2type :: Cat -> UDTTpreterm
 category2type ct = case ct of
   SL x y -> Pi (category2type y) (category2type x)
   BS x y -> Pi (category2type y) (category2type x)
-  S _ -> Pi (Pi (Con "event") Type) Type
-  NP _ -> Con "entity"
-  N   -> Pi (Con "entity") (Pi (Pi (Con "state") Type) Type)
-  Sbar _ -> Pi (Pi (Con "event") Type) Type
+  S _ -> Pi (Pi Entity Type) Type
+  NP _ -> Entity
+  N   -> Pi Entity (Pi (Pi Entity Type) Type)
+  Sbar _ -> Pi (Pi Entity Type) Type
   T _ _ c -> category2type c
   _ -> Unit
 
-preterm2prop :: Cat -> Preterm -> Preterm
+preterm2prop :: Cat -> UDTTpreterm -> UDTTpreterm
 preterm2prop ct preterm = case ct of
   SL x y -> Sigma (category2type y) (preterm2prop x (App (shiftIndices preterm 1 0) (Var 0)))
   BS x y -> Sigma (category2type y) (preterm2prop x (App (shiftIndices preterm 1 0) (Var 0)))
   S _ -> App preterm (Lam Top)
-  NP _ -> Sigma (Pi (Con "entity") Type) (App (shiftIndices preterm 1 0) (Var 0))
-  N -> Sigma (Con "entity") (App (App (shiftIndices preterm 1 0) (Var 0)) (Lam Top))
+  NP _ -> Sigma (Pi Entity Type) (App (shiftIndices preterm 1 0) (Var 0))
+  N -> Sigma Entity (App (App (shiftIndices preterm 1 0) (Var 0)) (Lam Top))
   Sbar _ -> App preterm (Lam Top)
   T _ _ c -> preterm2prop c $ transvec c preterm
   _ -> Unit
