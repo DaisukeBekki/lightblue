@@ -40,9 +40,22 @@ import Interface.TeX                  --lightblue
 import Interface.HTML                 --lightblue
 import DTS.GeneralTypeQuery           --lightblue
 import Data.Store (Store(..), Size(..), Peek, Poke, size)
+import Data.Store.Internal (getSize)
+import Data.Word (Word8)
 
 -- | 'Proj' 'Fst' m is the first projection of m, while 'Proj' 'Snd' m is the second projection of m.
 data Selector = Fst | Snd deriving (Eq, Show)
+
+instance Store Selector where
+  size = ConstSize 1
+  poke Fst = poke (1 :: Word8)
+  poke Snd = poke (2 :: Word8)
+  peek = do
+      tag <- peek :: Peek Word8
+      case tag of
+          1 -> return Fst
+          2 -> return Snd
+          _ -> fail "Invalid Selector tag"
 
 -- | Print a selector as "1" or "2".
 instance SimpleText Selector where
@@ -97,40 +110,39 @@ instance Show Preterm where
   show = T.unpack . toText
 
 instance Store T.Text where
-    size = VarSize $ \txt -> fromIntegral (T.length txt)
-    poke = poke . T.unpack
-    peek = T.pack <$> peek
+  size = VarSize $ \txt -> fromIntegral (T.length txt)
+  poke = poke . T.unpack
+  peek = T.pack <$> peek
 
 instance Store Preterm where
-    size = ConstSize 8
-    -- size = VarSize $ \term -> case term of
-    --     Var i     -> i
-    --     Con txt   -> fromIntegral (T.length txt)
-    --     Type      -> 1
-    --     Kind      -> 1
-    --     Pi a b    -> 1 + fromIntegral a + fromIntegral b
-    --     Lam m     -> 1 + fromIntegral m
-    --     App m n   -> 1 + fromIntegral m + fromIntegral n
-    --     Not m     -> 1 + fromIntegral m
-    --     Sigma a b -> 1 + fromIntegral a + fromIntegral b
-    --     Pair m n  -> 1 + fromIntegral m + fromIntegral n
-    --     Proj s m  -> 1 + fromIntegral s + fromIntegral m
-    --     Disj a b  -> 1 + fromIntegral a + fromIntegral b
-    --     Iota s m  -> 1 + fromIntegral s + fromIntegral m
-    --     Unpack p l m n -> 1 + fromIntegral p + fromIntegral l + fromIntegral m + fromIntegral n
-    --     Bot       -> 1
-    --     Unit      -> 1
-    --     Top       -> 1
-    --     Entity    -> 1
-    --     Nat       -> 1
-    --     Zero      -> 1
-    --     Succ n    -> 1 + fromIntegral n
-    --     Natrec n e f -> 1 + fromIntegral n + fromIntegral e + fromIntegral f
-    --     Eq a m n  -> 1 + fromIntegral a + fromIntegral m + fromIntegral n
-    --     Refl a m  -> 1 + fromIntegral a + fromIntegral m
-    --     Idpeel m n -> 1 + fromIntegral m + fromIntegral n
-    poke = poke . show
-    peek = peek
+  size = VarSize $ \term -> case term of
+    Var i     -> i
+    Con txt   -> fromIntegral (T.length txt)
+    Type      -> 1
+    Kind      -> 1
+    Pi a b    -> 1 + getSize a + getSize b
+    Lam m     -> 1 + getSize m
+    App m n   -> 1 + getSize m + getSize n
+    Not m     -> 1 + getSize m
+    Sigma a b -> 1 + getSize a + getSize b
+    Pair m n  -> 1 + getSize m + getSize n
+    Proj s m  -> 1 + getSize s + getSize m
+    Disj a b  -> 1 + getSize a + getSize b
+    Iota s m  -> 1 + getSize s + getSize m
+    Unpack p l m n -> 1 + getSize p + getSize l + getSize m + getSize n
+    Bot       -> 1
+    Unit      -> 1
+    Top       -> 1
+    Entity    -> 1
+    Nat       -> 1
+    Zero      -> 1
+    Succ n    -> 1 + getSize n
+    Natrec n e f -> 1 + getSize n + getSize e + getSize f
+    Eq a m n  -> 1 + getSize a + getSize m + getSize n
+    Refl a m  -> 1 + getSize a + getSize m
+    Idpeel m n -> 1 + getSize m + getSize n
+  poke = poke . show
+  peek = peek
 
 -- | translates a preterm into a simple text notation.
 instance SimpleText Preterm where
