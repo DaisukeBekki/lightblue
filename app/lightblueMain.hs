@@ -280,7 +280,9 @@ lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nPro
             | otherwise = take nSample parsedJSeM
       S.hPutStrLn handle $ I.headerOf style
       pairs <- forM parsedJSeM' $ \j -> do
-        mapM_ T.putStr ["[JSeM id: ", T.fromStrict $ J.jsem_id j, "] "]
+        let title = T.concat ["[JSeM id: ", T.fromStrict $ J.jsem_id j, "] "]
+        T.hPutStrLn S.stdout title
+        T.hPutStrLn S.stderr title
         mapM_ StrictT.putStr $ J.premises j
         S.putStr " ==> "
         StrictT.putStrLn $ J.hypothesis j
@@ -293,9 +295,13 @@ lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nPro
             prediction = case inferenceLabels of
               [] -> J.Other
               (bestLabel:_) -> bestLabel
-        S.putStrLn $ "\nPrediction: " ++ (show prediction) ++ "\nGround truth: " ++ (show groundTruth) ++ "\n"
+        let result = "\nPrediction: " ++ (show prediction) ++ "\nGround truth: " ++ (show groundTruth) ++ "\n"
+        S.hPutStrLn S.stdout result
+        S.hPutStrLn S.stderr result
         return (prediction, groundTruth)
-      T.putStrLn $ T.fromStrict $ NLP.showClassificationReport pairs
+      let evaluation = T.fromStrict $ NLP.showClassificationReport pairs
+      T.hPutStrLn S.stdout evaluation
+      T.hPutStrLn S.stderr evaluation
       S.hPutStrLn handle $ I.footerOf style
     -- | 
     -- | Numeration
