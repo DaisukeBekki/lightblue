@@ -393,7 +393,52 @@ data Judgment = Judgment {
   , contxt :: Context  -- ^ A context \Gamma in \Gamma \vdash M:A
   , trm :: Preterm     -- ^ A term M in \Gamma \vdash M:A
   , typ :: Preterm     -- ^ A type A in \Gamma \vdash M:A
-  } deriving (Eq, G.Generic, Store)
+  } deriving (Eq, G.Generic)
+
+instance Store Judgment where
+  size = VarSize $ \(Judgment sig ctx term typ) -> 
+    let sigSize = sum $ map (\(txt, pt) -> fromIntegral (T.length txt) + getSize pt) sig
+        ctxSize = sum $ map getSize ctx
+        termSize = getSize term
+        typSize = getSize typ
+    in 1 + sigSize + ctxSize + termSize + typSize
+
+  poke (Judgment sig ctx term typ) = do
+    -- Store the lengths first
+    poke (length sig :: Int)
+    poke (length ctx :: Int)
+
+    -- Store signature elements
+    mapM_ (\(name, pt) -> do
+      poke name
+      poke pt) sig
+
+    -- Store context elements
+    mapM_ poke ctx
+
+    -- Store term and type
+    poke term
+    poke typ
+
+  peek = do
+    -- Read the lengths
+    sigLen <- peek :: Peek Int
+    ctxLen <- peek :: Peek Int
+
+    -- Read signature
+    sig <- sequence $ replicate sigLen $ do
+      name <- peek
+      pt <- peek
+      return (name, pt)
+
+    -- Read context
+    ctx <- sequence $ replicate ctxLen peek
+
+    -- Read term and type
+    term <- peek
+    typ <- peek
+
+    return $ Judgment sig ctx term typ
 
 embedJudgment :: Judgment -> GeneralTypeQuery Signature Context Preterm Preterm
 embedJudgment (Judgment sig cxt trm typ) = GeneralTypeQuery sig cxt (Term trm) (Term typ)
