@@ -116,8 +116,8 @@ instance Store T.Text where
 
 instance Store Preterm where
   size = VarSize $ \term -> case term of
-    Var i     -> i
-    Con txt   -> fromIntegral (T.length txt)
+    Var i     -> 8
+    Con txt   -> 1 + fromIntegral (T.length txt)
     Type      -> 1
     Kind      -> 1
     Pi a b    -> 1 + getSize a + getSize b
