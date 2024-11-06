@@ -82,7 +82,7 @@ deduce sig var arrowType depth setting
   | any (\(con',aType')->A.contextLen (sig,var) == (A.contextLen con')&&A.sameCon (sig,var) con'&& A.sameTerm ((sig,var),arrowType) (con',aType')) (B.deduceNgLst (B.sStatus setting)) = 
       B.debugLog (sig,var) arrowType depth setting "Avoid endless loops."  (B.resultDef{B.rStatus = B.mergeStatus (B.sStatus setting) B.statusDef{B.usedMaxDepth = depth}})
   | otherwise = 
-    case arrowType of
+    case {--D.trace (show $ B.deduceNgLst (B.sStatus setting))--} arrowType of
       A.Conclusion UDdB.Kind -> -- The only term for `kind` is `type`.
         B.resultDef{
           B.trees = [UDT.Tree QT.Var (A.AJudgment sig var (A.aType) (A.Conclusion UDdB.Kind)) []],

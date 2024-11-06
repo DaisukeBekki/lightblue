@@ -1,189 +1,31 @@
 {-# LANGUAGE OverloadedStrings #-}
-module DTS.Prover.Wani.BackwardRule
+module DTS.Prover.Wani.BackwardRules
 (
-  Goal(..),
-  conFromGoal,
-  termFromGoal,
-  typesFromGoal,
-  Rule(..),
-  SubGoal(..),
-  goalFromSubGoal,
-  cluesFromSubGoal,
-  substLstFromSubGoal,
-  SubstSet(..),
-  treeFromSubGoalSet,
-  dsideFromSubGoalSet,
-  subGoalsFromSubGoalSet,
-  SubstLst(..),
-  Clue(..),
-  SubGoalSet(..),
-  ProofType(..),
-  ProofTerm(..),
   -- * Rules
   piIntro,
   piElim,
   piForm,
   sigmaIntro,
   sigmaForm,
+  eqForm,
   membership,
-  ax,
   dne,
-  -- * deduce
-  deduce
+  efq
 ) where
 
 import qualified DTS.UDTTdeBruijn as UDdB
 import qualified DTS.Prover.Wani.Arrowterm as A -- Aterm
 import qualified Interface.Tree as UDT
 import qualified DTS.QueryTypes as QT
-import DTS.Labels (DTT)                   -- UDTT
 
 import qualified DTS.Prover.Wani.WaniBase as WB 
 import qualified DTS.Prover.Wani.Forward as F
 
 import qualified Data.Text.Lazy as T 
 import qualified Data.List as L 
-import qualified Debug.Trace as D
 import qualified Data.Maybe as M
+import qualified Debug.Trace as D
 
-import qualified Interface.HTML as HTML
-import qualified Data.Bifunctor
-
--- | term in judgments
-type ProofTerm = A.Arrowterm
-
--- | type in judgments
-type ProofType = A.Arrowterm
-
--- Goal sig var  M.Nothing [targetType]
-data Goal = 
-  Goal 
-    A.SAEnv -- ^ sigs
-    A.AEnv  -- ^ vars
-    (Maybe ProofTerm) -- ^ maybe term ( if typecheck is needed, it will be Just *, and it will be Nothing if deduce is needed.)
-    [ProofType] -- ^ In most cases, this value is a list with only one element. Only when you want to indicate the term is a type, it takes the form [type,kind].
-  deriving (Eq)
-
-instance Show Goal where
-  show term = case term of
-    Goal sig var maybeTerm proofTypes -> 
-      let wrappedTerm = maybe (A.Conclusion $ UDdB.Con "?") id maybeTerm
-      in L.intercalate " / " $ map (\(num,proofType) -> "GoalOption-" ++ (show num) ++ "/" ++ (show $ length proofTypes) ++ (show $ A.AJudgment sig var wrappedTerm proofType)) $ zip [1..] proofTypes
-
-conFromGoal :: Goal -> (A.SAEnv,A.AEnv)
-conFromGoal (Goal sig var _ _) = (sig,var)
-
-termFromGoal :: Goal -> Maybe ProofTerm
-termFromGoal (Goal _ _ maybeProofTerm _) = maybeProofTerm
-
-typesFromGoal :: Goal -> [ProofType]
-typesFromGoal (Goal _ _ _ proofTypes) = proofTypes
-
-type Rule = Goal -> ([SubGoalSet],T.Text)
-
-data SubGoal = 
-  SubGoal 
-    Goal
-    SubstLst
-    Clue
-  deriving (Eq,Show)
-
--- | In deduce, the proof search is performed from the left side of the upper row. 
--- | When there is a target to which the proof term resulting from the left proof search to be assigned, a substSet is created for each such target.
-
--- | Suppose we want to execute proofsearch of \( \text{pochi:entity,taro:entity,} u_1 \text{: man(taro) } \vdash \text{ ? : [x:entity,man(x)] } \) and use SigmaIntro, there will be 2 minigoals, \( \text{pochi:entity,taro:entity,} u_1 \text{: man(taro)} \vdash ?_1 \text{ : entity}\) and  \( \text{pochi:entity,taro:entity,} u_1 \text{: man(taro)}  \vdash ?_2 \text{ : man(}?_1\text{)}\).
--- | After the former is completed, \( ?_1\) can be \( \text{pochi}\) or \( \text{taro} \). Rule provides 1 SubstSet for \( ?_1 \) in the latter minigoal. 
-data SubstSet = 
-  SubstSet 
-    [ProofTerm] -- ^ In the subgoalSet resulting from the output of the `Rule`, this value is initially specified as []. As the left-hand proof search proceeds, this value is changed to list of proofterms.
-    ProofType -- ^ The target is notated as `A.aVar` number. The way the numbers are assigned follow De Bruijn. That is, 0 for itself and 1+ for the left-minigoal-proofterm.
-  deriving (Eq)
-
-instance Show SubstSet where
-  show term = case term of
-    SubstSet substTerms target -> 
-      let termText = show substTerms
-      in "[ "++ termText ++ " / (" ++ (show target) ++")]"
-
-type SubstLst = [SubstSet]
-
-{-|
-  The clue \(([(a,b)],\text{Maybe } (c,d)) \) in 1 `SubGoal` means the following.
-
-  1. the proofterm for this Subgoal is mentioned in the type of \(b\) and the form is \(a\).
-
-  2. \(c \equiv d \)
--}
-type Clue = ([(ProofTerm,ProofType)],Maybe (ProofTerm,ProofTerm))
-
-goalFromSubGoal :: SubGoal -> Goal
-goalFromSubGoal (SubGoal goal substLst clue) = goal
-
-substLstFromSubGoal :: SubGoal -> SubstLst
-substLstFromSubGoal (SubGoal goal substLst clue) = substLst
-
-cluesFromSubGoal :: SubGoal -> Clue
-cluesFromSubGoal (SubGoal goal substLst clue) = clue
-
-data SubGoalSet = 
-  SubGoalSet 
-    QT.DTTrule -- ^ label of rule
-    (Maybe (UDT.Tree QT.DTTrule A.AJudgment))  -- ^ forwardedTree; a tree for function in `piElim` or the upside tree for `membership`
-    [SubGoal]  -- ^ list of subgoals; Proofsearch is performed starting with the one in the front
-    A.AJudgment -- ^ judgement for the downside; The part that needs to be updated based on the upside is indicated as `A.aVar` num. The left-most proofterm in the upside is `A.aVar` -1, the second proof term from the left is `A.aVar` -2, and so on, decreasing in number.
-  deriving (Eq,Show)
-
-labelFromSubGoalSet :: SubGoalSet -> QT.DTTrule
-labelFromSubGoalSet subGoalSet = case subGoalSet of SubGoalSet label _ _ _ -> label
-
-treeFromSubGoalSet :: SubGoalSet -> Maybe (UDT.Tree QT.DTTrule A.AJudgment)
-treeFromSubGoalSet subGoalSet = case subGoalSet of SubGoalSet _ tree subgoals dside -> tree
-
-subGoalsFromSubGoalSet :: SubGoalSet -> [SubGoal]
-subGoalsFromSubGoalSet subGoalSet = case subGoalSet of SubGoalSet _ tree subgoals dside -> subgoals
-
-dsideFromSubGoalSet :: SubGoalSet -> A.AJudgment
-dsideFromSubGoalSet subGoalSet = case subGoalSet of SubGoalSet _ tree subgoals dside -> dside
-
-debugLog :: Goal -> WB.Depth -> WB.Setting -> T.Text -> a -> a
-debugLog goal depth setting = WB.debugLogWithTerm (conFromGoal goal) (A.Conclusion $ UDdB.Con $T.pack "?") (head $ typesFromGoal goal) depth setting
-
-debugLogSubgoalSet :: SubGoalSet -> WB.Depth -> WB.Setting  -> QT.DTTrule -> a -> a
-debugLogSubgoalSet subGoalSet depth setting label answer =
-  if WB.debug setting 
-    then
-      D.trace
-        ((if WB.allProof (WB.sStatus setting) then "all " else "")++  L.replicate (2*depth) ' ' ++ show depth ++ " " ++ (show label) ++ " subgoals are(is) ..." ++ (show subGoalSet))
-        answer
-    else answer
-
-exitMessage :: ExitReason -> QT.DTTrule ->T.Text
-exitMessage reasonCode label = 
-  let message = case reasonCode of
-        MultipleTypes -> "Goal has multiple types"
-        TypeMisMatch aterm -> T.concat [T.pack $ show aterm, " is not acceptable"]
-        TermMisMatch aterm -> T.concat [T.pack $ show aterm, " is not acceptable"]
-        Other output -> output
-  in T.concat [message," in ",T.pack (show label)]
-
-
-data ExitReason = MultipleTypes | TypeMisMatch ProofType | TermMisMatch (M.Maybe ProofTerm) | Other T.Text
-
-backwardToforward :: Goal -> WB.Depth -> WB.Setting -> WB.Result
-backwardToforward goal depth setting =
-  let (sig,var) = conFromGoal goal
-      forwardResult = F.forwardContext sig var
-      forwardTrees = WB.trees forwardResult
-      matchLst =  L.nub $
-        filter 
-          (\xTree -> 
-            let x = A.downSide' xTree 
-                xCon =A.envfromAJudgment x
-                xType =   A.typefromAJudgment x
-            in 
-                or $ map (\aType -> A.sameTerm ((sig,var),aType) (xCon,xType)) (typesFromGoal goal))
-            $ forwardTrees  
-  in debugLog goal depth setting "backwardToforward" (forwardResult{WB.trees = matchLst,WB.rStatus = WB.sStatus setting})
 
 -- | piIntro rule
 --
@@ -241,7 +83,7 @@ backwardToforward goal depth setting =
 -- |          | output         | \([\text{subgoalSet}]\)                                                                   |
 -- +----------+----------------+-------------------------------------------------------------------------------------------+
 -- pi 型の前件及び型付きラムダ型の型部分は正規化されているものとする
-piIntro :: Rule
+piIntro :: WB.Rule
 
 -- | piElim rule
 --
@@ -365,7 +207,7 @@ piIntro :: Rule
 -- |          | output         | \( [subgoalSet] \)                                                                                               |
 -- +----------+----------------+------------------------------------------------------------------------------------------------------------------+
 -- pi 型の前件及び型付きラムダ型の型部分は正規化されているものとする
-piElim :: Rule
+piElim :: WB.Rule
 
 -- | piForm
 -- 
@@ -378,11 +220,11 @@ piElim :: Rule
 -- |          |                |           +--------+---------------------------------------------------------------------------------------------+
 -- |          |                |           |substLst| \( [] \)                                                                                    |
 -- |          |                |           +--------+---------------------------------------------------------------------------------------------+
--- |          |                |           | clue   | \( (([(var -2 , (man (var -1)))],\text{Nothing})) \)                                        |
+-- |          |                |           | clue   | \( ([],\text{Nothing}) \)                                                                   |
 -- |          |                +-----------+--------+---------------------------------------------------------------------------------------------+
--- |          |                | subgoal2  | goal   | \( \Gamma , A1 \vdash \text{Just} man(var (-1)) :  [ type , kind ]  \)                      |
+-- |          |                | subgoal2  | goal   | \( \Gamma , A1 \vdash \text{Just} man(var 0) :  [ type , kind ]  \)                         |
 -- |          |                |           +--------+---------------------------------------------------------------------------------------------+
--- |          |                |           |substLst| \( [([],var(-1))] \)                                                                        |
+-- |          |                |           |substLst| \( [] \)                                                                                    |
 -- |          |                |           +--------+---------------------------------------------------------------------------------------------+
 -- |          |                |           | clue   | \( ([],\text{Nothing}) \)                                                                   |
 -- |          |                +-----------+--------+---------------------------------------------------------------------------------------------+
@@ -404,7 +246,7 @@ piElim :: Rule
 -- |          +----------------+------------------------------------------------------------------------------------------------------------------+
 -- |          | output         | \( [subgoalSet] \)                                                                                               |
 -- +----------+----------------+------------------------------------------------------------------------------------------------------------------+
-piForm :: Rule
+piForm :: WB.Rule
 
 -- | sigmaIntro
 -- 
@@ -478,7 +320,7 @@ piForm :: Rule
 -- |          | output         | \( [subgoalSet] \)                                                                                               |
 -- +----------+----------------+------------------------------------------------------------------------------------------------------------------+
 
-sigmaIntro :: Rule
+sigmaIntro :: WB.Rule
 
 
 -- | sigmaForm
@@ -518,8 +360,40 @@ sigmaIntro :: Rule
 -- |          +----------------+------------------------------------------------------------------------------------------------------------------+
 -- |          | output         | \( [subgoalSet] \)                                                                                               |
 -- +----------+----------------+------------------------------------------------------------------------------------------------------------------+
-sigmaForm :: Rule
+sigmaForm :: WB.Rule
 
+-- | eqForm
+-- 
+-- +----------+----------------+------------------------------------------------------------------------------------------------------------------+
+-- | typecheck| input goal     | \( \Gamma \vdash  t (\equiv \text{Just } A {=}_{c} B : s \)                                                      |
+-- |          +----------------+------------------------------------------------------------------------------------------------------------------+
+-- |          | assertion      | \( t \text{ is Just } = \text{ type and (s is a list contains type) } \)                                         |
+-- |          +----------------+-----------+--------+---------------------------------------------------------------------------------------------+
+-- |          | subgoals       | subgoal1  | goal   | \( \Gamma \vdash \text{Just } c : [type] \)                                                 |
+-- |          |                |           +--------+---------------------------------------------------------------------------------------------+
+-- |          |                |           |substLst| \( [] \)                                                                                    |
+-- |          |                |           +--------+---------------------------------------------------------------------------------------------+
+-- |          |                |           | clue   | \( ([],\text{Nothing}) \)                                                                   |
+-- |          |                +-----------+--------+---------------------------------------------------------------------------------------------+
+-- |          |                | subgoal2  | goal   | \( \Gamma \vdash \text{Just} A : [ c ] \)                                                   |
+-- |          |                |           +--------+---------------------------------------------------------------------------------------------+
+-- |          |                |           |substLst| \( [] \)                                                                                    |
+-- |          |                |           +--------+---------------------------------------------------------------------------------------------+
+-- |          |                |           | clue   | \( ([],\text{Nothing}) \)                                                                   |
+-- |          |                +-----------+--------+---------------------------------------------------------------------------------------------+
+-- |          |                | subgoaln  | goal   | \( \Gamma \vdash \text{Just } B : [ c ] \)                                                  |
+-- |          |                |           +--------+---------------------------------------------------------------------------------------------+
+-- |          |                |           |substLst| \( [] \)                                                                                    |
+-- |          |                |           +--------+---------------------------------------------------------------------------------------------+
+-- |          |                |           | clue   | \( ([],\text{Nothing}) \)                                                                   |
+-- |          +----------------+-----------+--------+---------------------------------------------------------------------------------------------+
+-- |          | dSide          | \( \Gamma \vdash t (\equiv \text{Just } A {=}_{c} B : s \)                                                       |
+-- |          +----------------+------------------------------------------------------------------------------------------------------------------+
+-- |          | subgoalSet     | \( \text{"eqForm" (Nothing) subgoals dSide} \)                                                                   |
+-- |          +----------------+------------------------------------------------------------------------------------------------------------------+
+-- |          | output         | \( [subgoalSet] \)                                                                                               |
+-- +----------+----------------+------------------------------------------------------------------------------------------------------------------+
+eqForm :: WB.Rule
 
 -- | membership
 -- 
@@ -576,33 +450,8 @@ sigmaForm :: Rule
 -- |          +----------------+-----------+-----------+------------------------------------------------------------------------------------------+
 -- |          | output         | \( [subgoalSet1,subgoalSet2,...,subgoalSetn] \)                                                                  |
 -- +----------+----------------+------------------------------------------------------------------------------------------------------------------+
-membership :: Rule
+membership :: WB.Rule
 
-
--- | ax
---
--- +----------+----------------+------------------------------------------------------------------------------------------------------------------+
--- | deduce   | input goal     | \( \Gamma \vdash  \text{Nothing} : l \)                                                                          |
--- |          +----------------+------------------------------------------------------------------------------------------------------------------+
--- |          | assertion      | \( l \equiv [kind] \)                                                                                            |
--- |          +----------------+------------------------------------------------------------------------------------------------------------------+
--- |          | dSide          | \( \Gamma \vdash type : kind \)                                                                                  |
--- |          +----------------+------------------------------------------------------------------------------------------------------------------+
--- |          | subgoalSet     | \( \text{"ax" Nothing [ ] dside} \)                                                                              |
--- |          +----------------+------------------------------------------------------------------------------------------------------------------+
--- |          | output         | \( [subgoalSet] \)                                                                                               |
--- +----------+----------------+------------------------------------------------------------------------------------------------------------------+
--- | typecheck| input goal     | \( \Gamma \vdash  \text{Just} t : l \)                                                                           |
--- |          +----------------+------------------------------------------------------------------------------------------------------------------+
--- |          | assertion      | \( l \equiv [kind] \text{ and } t \equiv \text{type}\)                                                           |
--- |          +----------------+------------------------------------------------------------------------------------------------------------------+
--- |          | dSide          | \( \Gamma \vdash type : kind \)                                                                                  |
--- |          +----------------+------------------------------------------------------------------------------------------------------------------+
--- |          | subgoalSet     | \( \text{"ax" Nothing [ ] dside} \)                                                                              |
--- |          +----------------+------------------------------------------------------------------------------------------------------------------+
--- |          | output         | \( [subgoalSet] \)                                                                                               |
--- +----------+----------------+------------------------------------------------------------------------------------------------------------------+
-ax :: Rule
 
 -- | dne
 -- 
@@ -635,31 +484,14 @@ ax :: Rule
 -- |          +----------------+------------------------------------------------------------------------------------------------------------------+
 -- |          | output         | \( [subgoalSet] \)                                                                                               |
 -- +----------+----------------+------------------------------------------------------------------------------------------------------------------+
-dne :: Rule
+dne :: WB.Rule
 
--- | If isAllow is true, this function returns l only when lst includes goaltype. If isAllow is false, this function returns l only when lst excludes goaltype.
-acceptableType :: QT.DTTrule -> Goal -> Bool -> [ProofType] -> (M.Maybe ProofType,T.Text) 
-acceptableType label goal isAllow lst =
-  case typesFromGoal goal of
-    [l] -> if isAllow ==  (any (l==) lst) then (Just l,"") else (Nothing,exitMessage (TypeMisMatch l) label)
-    _ -> (Nothing,exitMessage MultipleTypes label)
 
--- e1:entity -> type , [u0:entity,u1:entity,u2:entity->type,u3:(var 0)(var 2),u4:(var 4)(var 2)]=>x
--- convertToSubstableTerm ((var 0)(var 2),3) 0 -> u3:(var -3)(var -1)
--- convertToSubstableTerm ((var 4)(var 2),4) 0 -> u4:(var 0)(var -2)
--- convertToSubstableTerm ((var 0)(var 2),3) 1 -> u3:(var -2)(var 0)
--- convertToSubstableTerm ((var 4)(var 2),3) 1 -> u4:(var 1)(var -1)
-convertToSubstableTerm :: (ProofType,Int) -> Int -> ProofType
-convertToSubstableTerm (childTerm,idAboutChild) idAboutTarget = A.shiftIndices childTerm (idAboutTarget-idAboutChild) 0 
-
---  input           |  u5:[ y0:entity, y1:var 1(var 0),y2:entity ->type,y3:var3(var 1)] => var 1(var 3) 
---  parentLsts      |  [(4,[1,3]),(3,[1,3]),(2,[]),(1,[0,1]),(0,[])]     
-
-membership goal = 
-  case acceptableType QT.Var goal False [] of
+membership goal setting = 
+  case WB.acceptableType QT.Var goal False [] of
     (Nothing,message) -> ([],message)
     (Just arrowType,_) -> 
-      let (sig,var) = conFromGoal goal
+      let (sig,var) = WB.conFromGoal goal
           forwardedTrees = WB.trees $ F.forwardContext sig var
           trees = L.nub $
             filter 
@@ -668,26 +500,29 @@ membership goal =
                     x = A.downSide' tree
                     xCon = A.envfromAJudgment x
                     xType = A.typefromAJudgment x
+                    xTerm = A.termfromAJudgment x
+                    aboutTerm = maybe True (\term -> A.sameTerm ((sig,var),term) (xCon,xTerm)) (WB.termFromGoal goal)
                   in
-                    A.sameTerm ((sig,var),arrowType) (xCon,xType))
+                    aboutTerm && A.sameTerm ((sig,var),arrowType) (xCon,xType))
               forwardedTrees
           subgoalsets =
             map
               (\tree ->
                 let
                   dSide = A.downSide' tree
-                in SubGoalSet QT.Var (M.Just tree) [] dSide
+                in WB.SubGoalSet QT.Var (M.Just tree) [] dSide
               )
               trees
       in (subgoalsets,"")
 
-piElim goal =
-  case acceptableType QT.PiE goal False [(A.Conclusion UDdB.Kind)] of
+-- 未変更
+piElim goal setting =
+  case WB.acceptableType QT.PiE goal False [(A.Conclusion UDdB.Kind)] of
     (Nothing,message) -> -- point1 : typeMisMatch
       ([],message)
     (Just arrowType,_) -> 
-      let (sig,var) = conFromGoal goal
-          maybeTerm = termFromGoal goal
+      let (sig,var) = WB.conFromGoal goal
+          maybeTerm = WB.termFromGoal goal
           termsInProofTerm = let -- [b,a,f] for (f(a))(b)
             maybeTermsInAppTerm appTerm =
                 case appTerm of 
@@ -699,7 +534,7 @@ piElim goal =
           isDeduce = null termsInProofTerm
           (env',b') = case arrowType of A.Arrow env b -> (env,b) ; _ -> ([],arrowType)
       in if termIsNotAppType -- point2 : termMisMatch
-        then ([],exitMessage (TermMisMatch maybeTerm) QT.PiE)
+        then ([],WB.exitMessage (WB.TermMisMatch maybeTerm) QT.PiE)
         else
           let
             argNumAndFunctions = -- return [(the num of args,functionTree) pair]
@@ -729,63 +564,69 @@ piElim goal =
             subgoalsetForFunctions =
               let subgoalsetForFunction (argNum,functionTree) = 
                     let functionJudgment = A.downSide' functionTree
-                        dSide =
-                          let
-                            arrowTerm = M.maybe (A.betaReduce $ foldl A.ArrowApp (A.termfromAJudgment functionJudgment) (reverse $ map A.aVar [(-argNum)..(-1)])) id maybeTerm
-                          in A.AJudgment sig var arrowTerm arrowType
-                        subgoals =
-                          let
-                            A.Arrow args result = -- format the function ; if the (function,result) is ([a,b]->c,b->c), the term will be ([a]->([b]->c))
+                        A.Arrow args result = -- format the function ; if the (function,result) is ([a,b]->c,b->c), the term will be ([a]->([b]->c))
                               let A.Arrow formerLst latter = A.typefromAJudgment functionJudgment
                                   notArgFormerNum = length formerLst - argNum
                               in A.Arrow (drop notArgFormerNum formerLst) (A.arrowNotat $ A.Arrow (take notArgFormerNum formerLst) latter)  
+                        dSide =
+                          let
+                            arrowTerm = M.maybe (A.betaReduce $ foldl A.ArrowApp (A.termfromAJudgment functionJudgment) (reverse $ map A.aVar [(-argNum)..(-1)])) id maybeTerm
+                            arrowType' = foldl (\r (old,newNegate) -> A.arrowSubst r (A.aVar $ negate newNegate) (A.aVar old)) (A.shiftIndices result (negate $ length args) 0) (zip (reverse [0..(argNum-1)]) [1..])
+                          in A.AJudgment sig var arrowTerm arrowType'
+                        subgoals =
+                          let
                             parentLsts = -- ex : [(4,[1,3]),(3,[1,3]),(2,[]),(1,[0,1]),(0,[])] for [ y0:entity, y1:var 1(var 0),y2:entity ->type,y3:var3(var 1)] => var 1(var 3) 
                               reverse $ zipWith (\term num -> (num,A.varsInaTerm term)) (reverse (result:args)) [0..]
                             subgoalForArg idInLstFromOld = 
                               let targetArg = A.shiftIndices ((reverse args) !! idInLstFromOld) (-idInLstFromOld) 0
-                                  goal = Goal sig var (if isDeduce then M.Nothing else (M.Just $ (reverse $ init termsInProofTerm) !! idInLstFromOld)) [targetArg]
+                                  goal = WB.Goal sig var (if isDeduce then M.Nothing else (M.Just $ (reverse $ init termsInProofTerm) !! idInLstFromOld)) [targetArg]
                                   substLst = 
-                                    M.maybe [] (\parentIds -> map (\refNum -> SubstSet [] (convertToSubstableTerm (A.aVar refNum,idInLstFromOld) 0) ) (filter (< idInLstFromOld) $ L.sort parentIds)) (lookup idInLstFromOld parentLsts)
-                                  clueWithResult = let (resultIdFromOld,parentLst) = head parentLsts in if any (==resultIdFromOld-idInLstFromOld-1) parentLst then M.Just (convertToSubstableTerm (result,resultIdFromOld) idInLstFromOld,arrowType) else M.Nothing
+                                    M.maybe [] (\parentIds -> map (\refNum -> WB.SubstSet [] (WB.convertToSubstableTerm (A.aVar refNum,idInLstFromOld) 0) ) (filter (< idInLstFromOld) $ L.sort parentIds)) (lookup idInLstFromOld parentLsts)
+                                  clueWithResult = let (resultIdFromOld,parentLst) = (head parentLsts) in if any (==resultIdFromOld-idInLstFromOld-1) parentLst then M.Just (WB.convertToSubstableTerm (result,resultIdFromOld) idInLstFromOld,arrowType) else M.Nothing
                                   clueWithArg =  -- y0-clueAboutArg | [(var 0 (var -1),var -2=-1+0-1)] / y1-clueAboutArg | [(var 1 (var -1),var -3=-1+1-3)]
-                                    M.mapMaybe (\(argIdFromOld,parentLst) -> if any (==argIdFromOld-idInLstFromOld-1) parentLst && ( argIdFromOld < argNum ) then M.Just (convertToSubstableTerm ((reverse args) !! argIdFromOld,argIdFromOld) idInLstFromOld,A.aVar (-1+idInLstFromOld-argIdFromOld)) else M.Nothing) parentLsts
-                                in SubGoal goal substLst (clueWithArg,clueWithResult)
+                                    M.mapMaybe (\(argIdFromOld,parentLst) -> if any (==argIdFromOld-idInLstFromOld-1) parentLst && ( argIdFromOld < argNum ) then M.Just (WB.convertToSubstableTerm ((reverse args) !! argIdFromOld,argIdFromOld) idInLstFromOld,A.aVar (-1+idInLstFromOld-argIdFromOld)) else M.Nothing) parentLsts
+                                in WB.SubGoal goal substLst (clueWithArg,clueWithResult)
                           in map subgoalForArg [0..(argNum-1)] 
-                    in SubGoalSet QT.PiE (M.Just functionTree) subgoals dSide
+                    in WB.SubGoalSet QT.PiE (M.Just functionTree) subgoals dSide
               in map subgoalsetForFunction argNumAndFunctions
       in (subgoalsetForFunctions,"")
 
-piIntro goal =
-  case acceptableType QT.PiI goal False [] of
-  (Nothing,message) -> ([],message)
-  (Just arrowType,_) -> 
-    case arrowType of
-      A.Arrow l t ->
-        let (sig,var) = conFromGoal goal
-            subgoalsets = let
-                canBeConclusionTerm = maybe M.Nothing (\term -> if A.canBeSame 0 dSideterm term then M.Just (A.rmLam (length l) term) else M.Nothing) (termFromGoal goal)
-                dSideterm = maybe (A.betaReduce $ A.addLam (length l) (A.aVar (-2))) id canBeConclusionTerm
-                dSide = A.AJudgment sig var dSideterm arrowType
-                subgoal1 = let
-                    goal = Goal sig var (M.Just arrowType) [A.aType,A.Conclusion UDdB.Kind]
-                  in SubGoal goal [] ([],M.Nothing)
-                subgoal2 = let
-                    goal = Goal sig (l ++ var) canBeConclusionTerm [t]
-                  in SubGoal goal [] ([],M.Nothing)
-              in [SubGoalSet QT.PiI M.Nothing [subgoal1,subgoal2] dSide]
-        in (subgoalsets,"")
-      _ -> ([],exitMessage (TypeMisMatch arrowType) QT.PiI)
 
+piForm goal setting = 
+  case WB.acceptableType QT.PiF goal True [(A.Conclusion UDdB.Type),(A.Conclusion UDdB.Kind)] of
+    (Nothing,message) -> -- point1 : typeMisMatch
+      ([],message)
+    (Just arrowType,_) -> 
+      case WB.termFromGoal goal of
+        M.Just (A.Arrow con res) ->
+          let (sig,var) = WB.conFromGoal goal
+              subgoalset = 
+                let dside = A.AJudgment sig var (A.Arrow con res) arrowType
+                    subgoals = 
+                      let subgoalForMem idInLstFromOld = 
+                            let
+                              goal = 
+                                WB.Goal 
+                                  sig 
+                                  ((drop ((length con) +1 - idInLstFromOld) (res:con)) ++ var) 
+                                  (M.Just ((reverse $res:con) !! idInLstFromOld))
+                                  [A.aType,A.Conclusion UDdB.Kind]
+                            in WB.SubGoal goal [] ([],M.Nothing)
+                      in map subgoalForMem [0..(length con)]
+                in WB.SubGoalSet QT.PiF M.Nothing subgoals dside
+          in ([subgoalset],"")
+        term ->  -- if term is M.Nothing or M.Just `not Arrow type`, return WB.TermMisMatch
+          ([],WB.exitMessage (WB.TermMisMatch term) QT.PiF)
 
-piForm goal = undefined
-
-sigmaIntro goal = 
-  case acceptableType QT.SigmaI goal False [] of
+-- targetSigma = A.ArrowSigma' [A.Arrow [A.aCon $ T.pack "A"] (A.ArrowApp (A.aCon $ T.pack "B") (A.aVar 0))] (A.Arrow [A.aCon $ T.pack "A"] (A.ArrowApp (A.ArrowApp (A.aCon $ T.pack "C") (A.aVar 0)) (A.ArrowApp (A.aVar 1) (A.aVar 0)))) 
+-- について、shiftIndices term -1 0 が A -> C 0 0 0 になっちゃう問題。shiftIndices  -1 を使うのが向いていない説がある。
+sigmaIntro goal setting = 
+  case WB.acceptableType QT.SigmaI goal False [] of
     (Nothing,message) -> -- point1 : typeMisMatch
       ([],message)
     (Just (A.ArrowSigma' for lat),_) -> 
-      let (sig,var) = conFromGoal goal
-          maybeTerm = termFromGoal goal
+      let (sig,var) = WB.conFromGoal goal
+          maybeTerm = WB.termFromGoal goal
           termsInProofTerm = let -- [a,b,c] for (a,(b,c))
             maybeTermsInPairTerm pairTerm =
                 case pairTerm of 
@@ -796,7 +637,7 @@ sigmaIntro goal =
           termIsNotPairType = (length termsInProofTerm == 1) -- When termsInProofTerm is a list with one element, the term is not appType
           isDeduce = null termsInProofTerm
       in if termIsNotPairType -- point2 : termMisMatch
-        then ([],exitMessage (TermMisMatch maybeTerm) QT.SigmaI)
+        then ([],WB.exitMessage (WB.TermMisMatch maybeTerm) QT.SigmaI)
         else
           let subgoalset =  let 
                 dSide = let
@@ -808,28 +649,133 @@ sigmaIntro goal =
                           reverse $ zipWith (\term num -> (num,A.varsInaTerm term)) (reverse (lat:for)) [0..]
                       subgoalForMem idInLstFromOld = let
                           targetMem = A.shiftIndices ((reverse $ lat:for) !! idInLstFromOld) (-idInLstFromOld) 0
-                          goal = Goal sig var (if isDeduce then M.Nothing else M.Just$ termsInProofTerm !! idInLstFromOld) [targetMem]
-                          substLst = M.maybe [] (\parentIds -> map (\refNum -> SubstSet [] (convertToSubstableTerm (A.aVar refNum,idInLstFromOld) 0) ) (filter (< idInLstFromOld) $ L.sort parentIds)) (lookup idInLstFromOld parentLsts)
+                          goal = WB.Goal sig var (if isDeduce then M.Nothing else M.Just$ termsInProofTerm !! idInLstFromOld) [targetMem]
+                          substLst = M.maybe [] (\parentIds -> map (\refNum -> WB.SubstSet [] (WB.convertToSubstableTerm (A.aVar refNum,idInLstFromOld) 0) ) (filter (< idInLstFromOld) $ L.sort parentIds)) (lookup idInLstFromOld parentLsts)
                           clues = --
                             M.mapMaybe 
                               (\(argIdFromOld,parentLst) -> 
                                 if any (==argIdFromOld-idInLstFromOld-1) parentLst 
-                                  then M.Just (convertToSubstableTerm ((reverse (lat:for)) !! argIdFromOld,argIdFromOld) idInLstFromOld,A.aVar (-1+idInLstFromOld-argIdFromOld)) 
+                                  then M.Just (WB.convertToSubstableTerm ((reverse (lat:for)) !! argIdFromOld,argIdFromOld) idInLstFromOld,A.aVar (-1+idInLstFromOld-argIdFromOld)) 
                                   else M.Nothing)
                               parentLsts
-                        in SubGoal goal substLst (clues,M.Nothing)
+                        in WB.SubGoal goal substLst (clues,M.Nothing)
                   in map subgoalForMem [0..(length for)]
-                in SubGoalSet QT.SigmaI M.Nothing subgoals dSide
+                in WB.SubGoalSet QT.SigmaI M.Nothing subgoals dSide
             in ([subgoalset],"")
     (Just a,message) -> -- point3 : typeMisMatch
-      ([],exitMessage (TypeMisMatch a) QT.SigmaI)
+      ([],WB.exitMessage (WB.TypeMisMatch a) QT.SigmaI)
 
-sigmaForm goal = undefined
+sigmaForm goal setting = 
+  case WB.acceptableType QT.SigmaF goal True [(A.Conclusion UDdB.Type)] of
+    (Nothing,message) -> -- point1 : typeMisMatch
+      ([],message)
+    (Just arrowType,_) ->
+      case WB.termFromGoal goal of
+        M.Just (A.ArrowSigma' con res) -> 
+          let (sig,var) = WB.conFromGoal goal
+              subgoalset = 
+                let dside = A.AJudgment sig var (A.ArrowSigma' con res) arrowType
+                    subgoals = 
+                      let subgoalForMem idInLstFromOld = 
+                            let 
+                              goal = 
+                                WB.Goal 
+                                  sig 
+                                  ((drop ((length con) - idInLstFromOld) con) ++ var) 
+                                  (M.Just ((reverse con) !! idInLstFromOld))
+                                  [A.aType,A.Conclusion UDdB.Kind]
+                            in WB.SubGoal goal [] ([],M.Nothing)
+                      in (WB.SubGoal ( WB.Goal sig (con ++ var) (M.Just res) [A.aType]) [] ([],M.Nothing)):map subgoalForMem [0..((length con)-1)]
+                in WB.SubGoalSet QT.SigmaF M.Nothing subgoals dside
+          in ([subgoalset],"")
+        term -> -- if term is M.Nothing or M.Just `not Arrow type`, return WB.TermMisMatch
+          ([],WB.exitMessage (WB.TermMisMatch term) QT.SigmaF)
 
-ax goal = undefined
+eqForm goal setting= 
+  case WB.acceptableType QT.IqF goal True [(A.Conclusion UDdB.Type),(A.Conclusion UDdB.Kind)] of
+    (Nothing,message) -> -- point1 : typeMisMatch
+      ([],message)
+    (Just arrowType,_) -> 
+      case WB.termFromGoal goal of
+        M.Just (A.ArrowEq t a b) ->
+          let (sig,var) = WB.conFromGoal goal
+              subgoalset = 
+                let dside = A.AJudgment sig var (A.ArrowEq t a b) arrowType
+                    subgoalForT =
+                      let goal = WB.Goal sig var (M.Just t) [arrowType]
+                      in WB.SubGoal goal [] ([],M.Nothing)
+                    subgoalForA =
+                      let goal = WB.Goal sig var (M.Just a) [t]
+                      in WB.SubGoal goal [] ([],M.Nothing)
+                    subgoalForB =
+                      let goal = WB.Goal sig var (M.Just b) [t]
+                      in WB.SubGoal goal [] ([],M.Nothing)
+                in WB.SubGoalSet QT.IqF M.Nothing [subgoalForT,subgoalForA,subgoalForB] dside
+          in ([subgoalset],"")
+        term -> -- if term is M.Nothing or M.Just `not Arrow type`, return WB.TermMisMatch
+          ([],WB.exitMessage (WB.TermMisMatch term) QT.IqF)
 
-dne goal = undefined
+dne goal setting = 
+  case WB.acceptableType QT.PiE goal False [(A.Conclusion UDdB.Kind),A.aType ] of
+    (M.Nothing,message) -> -- point1 : typeMisMatch
+      ([],T.append "dne- " message)
+    (M.Just (A.Arrow [A.Arrow _ (A.Conclusion UDdB.Bot)] (A.Conclusion UDdB.Bot)),_) -> 
+      ([],"duplicate DNE")
+    (M.Just arrowType,_) ->
+      let (sig,var) = WB.conFromGoal goal
+          subgoalsets = let
+              dSideTerm = A.ArrowApp (A.aCon $T.pack " dne ") (A.aVar (-2))
+              dSide = A.AJudgment sig var dSideTerm arrowType
+              subgoal1 = -- arrowType の型が Type であるかを確認する
+                WB.SubGoal
+                  ( WB.Goal sig var (M.Just arrowType) [A.aType])
+                  []
+                  ([],M.Nothing)
+              subgoal2 = let
+                  goal = WB.Goal sig var M.Nothing [A.Arrow [A.Arrow [arrowType] (A.Conclusion UDdB.Bot)] (A.Conclusion UDdB.Bot)]
+                in WB.SubGoal goal [] ([],M.Nothing)
+            in [WB.SubGoalSet QT.PiI M.Nothing [subgoal1,subgoal2] dSide]
+        in (subgoalsets,"")
 
--- | dediuce
-deduce :: Goal -> WB.Depth -> WB.Setting -> WB.Result
-deduce goal depth setting = undefined
+efq goal setting = 
+   case WB.acceptableType QT.PiE goal False [(A.Conclusion UDdB.Bot)] of
+    (M.Nothing,message) -> -- point1 : typeMisMatch
+      ([],T.append "efq- " message)
+    (M.Just arrowType,_) ->
+      let (sig,var) = WB.conFromGoal goal
+          subgoalsets = let
+              dSideTerm = A.ArrowApp (A.aCon $T.pack " efq ") (A.aVar (-2))
+              dSide = A.AJudgment sig var dSideTerm arrowType
+              subgoal1 = -- arrowType の型が Type であるかを確認する
+                WB.SubGoal
+                  ( WB.Goal sig var (M.Just arrowType) [A.aType])
+                  []
+                  ([],M.Nothing)
+              subgoal2 = let
+                  goal = WB.Goal sig var M.Nothing [A.Conclusion UDdB.Bot]
+                in WB.SubGoal goal [] ([],M.Nothing)
+            in [WB.SubGoalSet QT.PiI M.Nothing [subgoal1,subgoal2] dSide]
+        in (subgoalsets,"")
+
+
+piIntro goal setting = 
+  case WB.acceptableType QT.PiI goal False [] of
+  (Nothing,message) -> ([],message)
+  (Just arrowType,_) -> 
+    case arrowType of
+      A.Arrow l t ->
+        let (sig,var) = WB.conFromGoal goal
+            subgoalsets = let
+                canBeConclusionTerm = A.rmLam (length l) (WB.termFromGoal goal)-- maybe M.Nothing (\term -> (A.rmLam (length l) term)) (WB.termFromGoal goal)
+                dSideterm = maybe (A.betaReduce $ A.addLam (length l) (A.aVar (-1))) id  canBeConclusionTerm
+                dSide = A.AJudgment sig var dSideterm arrowType
+                subgoal1 = let
+                    goal1 = WB.Goal sig (l ++ var) canBeConclusionTerm [t]
+                  in WB.SubGoal goal1 [] ([],M.Nothing)
+                subgoal2 = let
+                    goal2 = WB.Goal sig var (M.Just arrowType) [A.aType,A.Conclusion UDdB.Kind]
+                  in WB.SubGoal goal2 [] ([],M.Nothing)
+              in [WB.SubGoalSet QT.PiI M.Nothing [subgoal1,subgoal2] dSide]
+        in (subgoalsets,"")
+      _ -> ([],WB.exitMessage (WB.TypeMisMatch arrowType) QT.PiI)
+

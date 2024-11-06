@@ -36,11 +36,13 @@ module DTS.Prover.Wani.Arrowterm
   genFreeCon,
   isFreeCon,
   canBeSame,
+  canBeSame',
   addLam,
   rmLam,
   addApp,
   thereIsVar,
   varsInaTerm,
+  boundUpLim,
   betaReduce
 ) where
 
@@ -54,6 +56,7 @@ import qualified Data.List.Split as S
 import qualified Debug.Trace as D
 import qualified Interface.Tree as UDT
 import qualified DTS.QueryTypes as QT
+import qualified Data.Maybe as M
 
 data ArrowSelector = ArrowFst | ArrowSnd deriving (Eq, Show)
 -- | Arrowterm
@@ -199,6 +202,17 @@ varsInaTerm' base aTerm =
     Arrow ars ar -> concatMap (\(num,a) -> varsInaTerm' (base+num) a) (zip [0..] $reverse $ ar:ars)
     ArrowEq ar ar' ar2 -> concatMap (varsInaTerm' base) [ar,ar',ar2]  
 
+boundUpLim :: Arrowterm -> Int
+boundUpLim term =
+  case (betaReduce . arrowNotat) term of
+    Conclusion a -> 0
+    (ArrowSigma' a b) -> minimum $ (negate (length a) + boundUpLim b): map (\(num,a') -> (-num) +  boundUpLim a') (zip [0..] a)
+    (ArrowPair h t)-> minimum [boundUpLim h,boundUpLim t]
+    (ArrowApp a b) -> minimum[boundUpLim a,boundUpLim b]
+    (ArrowProj s p) -> boundUpLim p
+    (ArrowLam p) -> -1 + boundUpLim p
+    (Arrow a b) -> minimum $ (negate (length a) + boundUpLim b): map (\(num,a') -> (-num) +  boundUpLim a') (zip [0..] a)
+    (ArrowEq a b t) -> minimum [boundUpLim a,boundUpLim b]
 
 -- | 入力された(UDdB.Preterm DTT)をArrowTermに変換する
 dt2Arrow :: (UDdB.Preterm DTT) -> Arrowterm
@@ -307,11 +321,11 @@ subst preterm l i =
     l
   else
     case preterm of
-      UDdB.Pi a b -> UDdB.Pi (subst a l i) (subst b (UDdB.shiftIndices l 1 0)  (UDdB.shiftIndices i 1 0))
+      UDdB.Pi a b -> UDdB.Pi (subst a l i) (subst b (UDdB.shiftIndices l 1 ((minimum $ varsInaTerm $ fromDT2A l)-1))  (UDdB.shiftIndices i 1 ((minimum $ varsInaTerm $ fromDT2A i)-1)))
       UDdB.Not m -> UDdB.Not (subst m l i)
-      UDdB.Lam m -> UDdB.Lam (subst m (UDdB.shiftIndices l 1 0) (UDdB.shiftIndices i 1 0))
+      UDdB.Lam m -> UDdB.Lam (subst m (UDdB.shiftIndices l 1 ((minimum $ varsInaTerm $ fromDT2A l)-1)) (UDdB.shiftIndices i 1 ((minimum $ varsInaTerm $ fromDT2A i)-1)))
       UDdB.App m n    -> UDdB.App (subst m l i) (subst n l i)
-      UDdB.Sigma a b  -> UDdB.Sigma (subst a l i) (subst b (UDdB.shiftIndices l 1 0) (UDdB.shiftIndices i 1 0))
+      UDdB.Sigma a b  -> UDdB.Sigma (subst a l i) (subst b (UDdB.shiftIndices l 1 ((minimum $ varsInaTerm $ fromDT2A l)-1)) (UDdB.shiftIndices i 1 ((minimum $ varsInaTerm $ fromDT2A i)-1)))
       UDdB.Pair m n   -> UDdB.Pair (subst m l i) (subst n l i)
       UDdB.Proj s m   -> UDdB.Proj s (subst m l i)
       UDdB.Eq a m n   -> UDdB.Eq (subst a l i) (subst m l i) (subst n l i)
@@ -391,18 +405,44 @@ canBeSame lim (  ArrowEq a b t) (  ArrowEq a' b' t') =
   canBeSame lim a a' && canBeSame lim b b' && canBeSame lim t t'
 canBeSame lim other other' = False
 
+--形だけ比較
+canBeSame' :: Int ->   Arrowterm ->   Arrowterm -> [(Arrowterm,Arrowterm)]
+canBeSame' _ (  Conclusion UDdB.Top) (  Conclusion UDdB.Top) = []
+canBeSame' _ (  Conclusion UDdB.Bot) (  Conclusion UDdB.Bot) = []
+canBeSame' _ (  Conclusion UDdB.Type) (  Conclusion UDdB.Type) = []
+canBeSame' lim (  Conclusion (UDdB.Var anum)) (  Conclusion (UDdB.Var anum')) =[(aVar anum,aVar anum')]
+canBeSame' _ (Conclusion (UDdB.Con t)) (Conclusion (UDdB.Con t')) = [(aCon t,aCon t')]
+canBeSame' lim (  Conclusion (UDdB.Var anum)) a = [(aVar anum,a)]
+canBeSame' lim a (  Conclusion (UDdB.Var anum))  = [(a,aVar anum)]
+canBeSame' lim (  ArrowSigma' con a) (  ArrowSigma' con' a') =
+  concatMap (\(num,(s,t)) -> canBeSame' (lim+num) s t) (zip [0..] (zip (a:con) (a':con')))
+canBeSame' lim (  ArrowApp a1 a2) (  ArrowApp a1' a2')=
+   canBeSame' lim a1 a1' ++ canBeSame' lim a2 a2'
+canBeSame' lim (  ArrowProj s a) (  ArrowProj s' a') =
+  if s == s' then canBeSame' lim a a' else [(ArrowProj s a, ArrowProj s' a')]
+canBeSame' lim (  ArrowPair a1 a2) (  ArrowPair a1' a2')=
+  canBeSame' lim a1 a1' ++ canBeSame' lim a2 a2'
+canBeSame' lim (  ArrowLam a) (  ArrowLam a') = canBeSame' lim a a'
+canBeSame' lim (  Arrow con a) (  Arrow con' a') =
+   concatMap (\(num,(s,t)) -> canBeSame' (lim+num) s t) (zip [0..] (zip (a:con) (a':con')))
+canBeSame' lim (  ArrowEq a b t) (  ArrowEq a' b' t') =
+  canBeSame' lim a a' ++ canBeSame' lim b b' ++ canBeSame' lim t t'
+canBeSame' lim other other' = [(other,other')]
+
 addApp ::Int -> Arrowterm -> Arrowterm
 addApp 0 base = base
 addApp num base = addApp (num - 1) $ ArrowApp (shiftIndices base 1 0) (Conclusion $ {-- DT.Var --} UDdB.Var 0)
 
 addLam :: Int -> Arrowterm -> Arrowterm
-addLam 0 term = term
-addLam num term = ArrowLam $ addLam (num - 1) term
+addLam num term =
+  if num > 0 then ArrowLam $ addLam (num - 1) (shiftIndices term 1 ((minimum $ varsInaTerm term) -1)) else term
 
-rmLam :: Int -> Arrowterm -> Arrowterm
+rmLam :: Int -> M.Maybe Arrowterm -> M.Maybe Arrowterm
 rmLam 0 term = term
-rmLam num (ArrowLam a) = rmLam (num-1) a
-rmLam num notLam = undefined
+rmLam num term =
+  case term of
+    M.Just (ArrowLam a) -> maybe M.Nothing M.Just (rmLam (num-1) $ M.Just a)
+    _ -> M.Nothing
 
 sameCon :: Context -> Context -> Bool
 sameCon (sigCon1,varCon1) (sigCon2,varCon2) = 

@@ -12,6 +12,7 @@ import DTS.Labels (DTT)
 import qualified DTS.QueryTypes as QT
 import qualified DTS.Prover.Wani.Arrowterm as A
 import qualified DTS.Prover.Wani.Backward as B
+import qualified DTS.Prover.Wani.BackwardWithRules as BR
 import qualified DTS.Prover.Wani.WaniBase as WB 
 import qualified Interface.Tree as UDT
 import qualified DTS.QueryTypes as QT
@@ -47,7 +48,7 @@ hojo varEnv sigEnv pre_type setting =
 
 searchProof' :: WB.DeduceRule
 searchProof' a b c d setting= 
-  let result =  B.deduce a b c d setting
+  let result =  BR.deduce a b c d setting
   in result{WB.trees = L.nub (WB.trees result)}
 
 -- | Prover for lightblue:
@@ -65,8 +66,9 @@ prove' QT.ProofSearchSetting{..} QT.ProofSearchQuery{..} =  -- [Tree (U.Judgment
         WB.maxtime = case maxTime of
                         Just t -> t
                         Nothing -> 100000,
-        WB.debug = False,
-        WB.sStatus = WB.statusDef
+        WB.debug = True,
+        WB.sStatus = WB.statusDef,
+        WB.ruleConHojo = "sub_"
         };
       result = hojo ctx sig typ setting
   in map A.aTreeTojTree' $ WB.trees result

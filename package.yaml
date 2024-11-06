@@ -1,5 +1,5 @@
 name:         lightblue
-version:      0.3.0
+version:      0.3.1
 description:  Please see the README on GitHub at <https://github.com/DaisukeBekki/lightblue#README.md>
 homepage:     https://github.com/DaisukeBekki/lightblue
 category:     CCG Parser, Dependent Type Prover
@@ -74,7 +74,8 @@ library:
   - DTS.Prover.Wani.WaniBase
   - DTS.Prover.Wani.Forward
   - DTS.Prover.Wani.Backward
-  - DTS.Prover.Wani.BackwardRule
+  - DTS.Prover.Wani.BackwardRules
+  - DTS.Prover.Wani.BackwardWithRules
   - DTS.Prover.Wani.Arrowterm
   - DTS.Prover.Wani.Prove
 #  - DTS.Prover.Coq.DTS2Coq
