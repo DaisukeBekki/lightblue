@@ -102,14 +102,14 @@ $ lightblue --stat
 |numeration|
 
 
-|Local Option for parse|
-|:---------------------------------|Description                            |  
+|Local Option for parse            |Description                           |  
+|:---------------------------------|--------------------------------------|
 |-o or --output {tree|postag}      |Specify the output content            |
 |-s or --style {text|tex|xml|html} |Print results in the specified format |
 |-p or --prover {Wani|Null}        |Choose prover                         |
 
 |Global Option                   |Description                                                    |
-|:-------------------------------|:---------------00---------------------------------------------|
+|:-------------------------------|:--------------------------------------------------------------|
 |-v or --version                 |Print the lightblue version                                    |
 |--stat                          |Print the lightblue statistics                                 |
 |-f or --file <filepath>         |Reads input texts from <filepath><br>(Specify '-' to use stdin)|
