@@ -114,35 +114,7 @@ instance Store T.Text where
   poke = poke . T.unpack
   peek = T.pack <$> peek
 
-instance Store Preterm where
-  size = VarSize $ \term -> case term of
-    Var i     -> 8
-    Con txt   -> 1 + fromIntegral (T.length txt)
-    Type      -> 1
-    Kind      -> 1
-    Pi a b    -> 1 + getSize a + getSize b
-    Lam m     -> 1 + getSize m
-    App m n   -> 1 + getSize m + getSize n
-    Not m     -> 1 + getSize m
-    Sigma a b -> 1 + getSize a + getSize b
-    Pair m n  -> 1 + getSize m + getSize n
-    Proj s m  -> 1 + getSize s + getSize m
-    Disj a b  -> 1 + getSize a + getSize b
-    Iota s m  -> 1 + getSize s + getSize m
-    Unpack p l m n -> 1 + getSize p + getSize l + getSize m + getSize n
-    Bot       -> 1
-    Unit      -> 1
-    Top       -> 1
-    Entity    -> 1
-    Nat       -> 1
-    Zero      -> 1
-    Succ n    -> 1 + getSize n
-    Natrec n e f -> 1 + getSize n + getSize e + getSize f
-    Eq a m n  -> 1 + getSize a + getSize m + getSize n
-    Refl a m  -> 1 + getSize a + getSize m
-    Idpeel m n -> 1 + getSize m + getSize n
-  poke = poke . show
-  peek = peek
+instance Store Preterm
 
 -- | translates a preterm into a simple text notation.
 instance SimpleText Preterm where
@@ -395,51 +367,6 @@ data Judgment = Judgment {
   , typ :: Preterm     -- ^ A type A in \Gamma \vdash M:A
   } deriving (Eq, G.Generic)
 
-instance Store Judgment where
-  size = VarSize $ \(Judgment sig ctx term typ) -> 
-    let sigSize = sum $ map (\(txt, pt) -> fromIntegral (T.length txt) + getSize pt) sig
-        ctxSize = sum $ map getSize ctx
-        termSize = getSize term
-        typSize = getSize typ
-    in 1 + sigSize + ctxSize + termSize + typSize
-
-  poke (Judgment sig ctx term typ) = do
-    -- Store the lengths first
-    poke (length sig :: Int)
-    poke (length ctx :: Int)
-
-    -- Store signature elements
-    mapM_ (\(name, pt) -> do
-      poke name
-      poke pt) sig
-
-    -- Store context elements
-    mapM_ poke ctx
-
-    -- Store term and type
-    poke term
-    poke typ
-
-  peek = do
-    -- Read the lengths
-    sigLen <- peek :: Peek Int
-    ctxLen <- peek :: Peek Int
-
-    -- Read signature
-    sig <- sequence $ replicate sigLen $ do
-      name <- peek
-      pt <- peek
-      return (name, pt)
-
-    -- Read context
-    ctx <- sequence $ replicate ctxLen peek
-
-    -- Read term and type
-    term <- peek
-    typ <- peek
-
-    return $ Judgment sig ctx term typ
-
 embedJudgment :: Judgment -> GeneralTypeQuery Signature Context Preterm Preterm
 embedJudgment (Judgment sig cxt trm typ) = GeneralTypeQuery sig cxt (Term trm) (Term typ)
 
@@ -451,6 +378,7 @@ instance Typeset Judgment where
   toTeX = toTeX . embedJudgment
 instance MathML Judgment where
   toMathML = toMathML . embedJudgment
+instance Store Judgment
 
 type TypeCheckQuery = Judgment
 
