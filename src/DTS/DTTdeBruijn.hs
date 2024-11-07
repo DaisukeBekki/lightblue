@@ -44,18 +44,7 @@ import Data.Store.Internal (getSize)
 import Data.Word (Word8)
 
 -- | 'Proj' 'Fst' m is the first projection of m, while 'Proj' 'Snd' m is the second projection of m.
-data Selector = Fst | Snd deriving (Eq, Show)
-
-instance Store Selector where
-  size = ConstSize 1
-  poke Fst = poke (1 :: Word8)
-  poke Snd = poke (2 :: Word8)
-  peek = do
-      tag <- peek :: Peek Word8
-      case tag of
-          1 -> return Fst
-          2 -> return Snd
-          _ -> fail "Invalid Selector tag"
+data Selector = Fst | Snd deriving (Eq, Show, G.Generic, Store)
 
 -- | Print a selector as "1" or "2".
 instance SimpleText Selector where
