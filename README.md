@@ -101,12 +101,17 @@ $ lightblue --stat
 |```jsem```      |
 |```numeration```|
 
-
-|Local Option for parse                           |Default   |Description                           |  
+|Local Option for ```parse```                     |Default   |Description                           |  
 |:------------------------------------------------|:---------|:-------------------------------------|
 |```-o``` or ```--output {tree\|postag}```        |```tree```|Specify the output content            |
 |```-s``` or ```--style {text\|tex\|xml\|html}``` |```text```|Print results in the specified format |
 |```-p``` or ```--prover {Wani\|Null}```          |```Wani```|Choose prover                         |
+
+|Local Option for ```jsem```                     |Default   |Description                            |  
+|:------------------------------------------------|:---------|:-------------------------------------|
+|```-s``` or ```--style {text\|tex\|xml\|html}``` |```text```|Print results in the specified format |
+|```-p``` or ```--prover {Wani\|Null}```          |```Wani```|Choose prover                         |
+|```--nsample <int>```                            |```-1```  |How many data to process              |
 
 |Global Option                                |Default   |Description                                                    |
 |:--------------------------------------------|:---------|:--------------------------------------------------------------|

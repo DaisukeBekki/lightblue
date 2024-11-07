@@ -213,7 +213,6 @@ jsemOptionParser = JSeM
       <> help "Choose prover" )
   <*> option auto
     ( long "nsample"
-    <> metavar "text|tex|xml|html"
     <> help "How many data to process: 0 means all data"
     <> showDefault
     <> value (-1)
