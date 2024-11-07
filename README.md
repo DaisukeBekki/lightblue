@@ -104,9 +104,9 @@ $ lightblue --stat
 
 |Local Option for parse            |Description                           |  
 |:---------------------------------|--------------------------------------|
-|-o or --output {tree|postag}      |Specify the output content            |
-|-s or --style {text|tex|xml|html} |Print results in the specified format |
-|-p or --prover {Wani|Null}        |Choose prover                         |
+|-o or --output {tree\|postag}      |Specify the output content            |
+|-s or --style {text\|tex\|xml\|html} |Print results in the specified format |
+|-p or --prover {Wani\|Null}        |Choose prover                         |
 
 |Global Option                   |Description                                                    |
 |:-------------------------------|:--------------------------------------------------------------|
@@ -114,10 +114,10 @@ $ lightblue --stat
 |--stat                          |Print the lightblue statistics                                 |
 |-f or --file \<filepath\>         |Reads input texts from <filepath><br>(Specify '-' to use stdin)|
 |-m or --ma {juman\|jumanpp\|kwja} |Specify morphological analyzer (default: KWJA)                 |
-|-b or --beam <int>              |Set the beam width to <int>                                    |
-|--nparse <int>                  |Show N-best parse trees for each sentence                      |
-|--ntypecheck <int>              |Show N-best type check diagram for each logical form           |
-|--nproof <int>                  |Show N-best proof diagram for each proof search                |
+|-b or --beam \<int\>              |Set the beam width to <int>                                    |
+|--nparse \<int\>                  |Show N-best parse trees for each sentence                      |
+|--ntypecheck \<int\>              |Show N-best type check diagram for each logical form           |
+|--nproof \<int\>                  |Show N-best proof diagram for each proof search                |
 |--noTypeCheck                   |If True, execute no type checking for LFs                      |
 |--noInference                   |If true, execute no inference                                  |
 |--time                          |Show the execution time in stderr                              |
