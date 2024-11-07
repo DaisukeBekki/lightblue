@@ -103,7 +103,7 @@ $ lightblue --stat
 
 
 |Local Option for parse                           |Default   |Description                           |  
-|:------------------------------------------------|:---------|:--------------^^^^^^-----------------|
+|:------------------------------------------------|:---------|:-------------------------------------|
 |```-o``` or ```--output {tree\|postag}```        |```tree```|Specify the output content            |
 |```-s``` or ```--style {text\|tex\|xml\|html}``` |```text```|Print results in the specified format |
 |```-p``` or ```--prover {Wani\|Null}```          |```Wani```|Choose prover                         |
