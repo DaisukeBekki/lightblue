@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, DeriveGeneric, DeriveAnyClass #-}
+{-# LANGUAGE FlexibleInstances, DeriveGeneric, DeriveAnyClass, TemplateHaskell #-}
 
 {-|
 Copyright   : (c) Daisuke Bekki, 2024
@@ -33,15 +33,15 @@ module DTS.DTTdeBruijn (
 
 import qualified GHC.Generics        as G --base
 import qualified Data.Text.Lazy as T  --text
-import Data.Store (Store(..))         --store
+import Data.Store (Store(..), Size(..), Peek, Poke, size)         --store
+import Data.Store.Internal (getSize)
+import Data.Store.TH (makeStore)
+import Data.Word (Word8)
 --import qualified Codec.Serialise as S --serialise
 import Interface.Text                 --lightblue
 import Interface.TeX                  --lightblue
 import Interface.HTML                 --lightblue
 import DTS.GeneralTypeQuery           --lightblue
-import Data.Store (Store(..), Size(..), Peek, Poke, size)
-import Data.Store.Internal (getSize)
-import Data.Word (Word8)
 
 -- | 'Proj' 'Fst' m is the first projection of m, while 'Proj' 'Snd' m is the second projection of m.
 data Selector = Fst | Snd deriving (Eq, Show, G.Generic, Store)
@@ -98,12 +98,9 @@ data Preterm =
 instance Show Preterm where
   show = T.unpack . toText
 
-instance Store T.Text where
-  size = VarSize $ \txt -> fromIntegral (T.length txt)
-  poke = poke . T.unpack
-  peek = T.pack <$> peek
-
 instance Store Preterm
+
+makeStore ''T.Text
 
 -- | translates a preterm into a simple text notation.
 instance SimpleText Preterm where
