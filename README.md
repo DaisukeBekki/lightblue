@@ -22,7 +22,9 @@ Either of the following tools must be installed before executing *lightblue*.
 
 - [KWJA (Japanese text analyzer)](https://github.com/ku-nlp/kwja)
 
-- [JUMAN (a User-Extensible Morphological Analyzer for Japanese)](http://nlp.ist.i.kyoto-u.ac.jp/EN/index.php?JUMAN) (>= version 7.0) -->
+- [JUMAN (a User-Extensible Morphological Analyzer for Japanese)](http://nlp.ist.i.kyoto-u.ac.jp/EN/index.php?JUMAN) (>= version 7.0) 
+
+- [JUMAN++](https://nlp.ist.i.kyoto-u.ac.jp/?JUMAN%2B%2B) 
 
 [//]: # (1. blas and lapack )
 [//]: # (`sudo apt-get install libblas-dev liblapack-dev` )
@@ -41,92 +43,80 @@ $ cd <lightblue>
 $ stack build
 ```
 
-### How to run
 Set the permission of the shell scripts `lightblue` to executable.
 ```
 $ chmod 755 lightblue
 ```
 
-To parse a Japanese sentence and get a text|HTML|TeX|XML representation, execute:
+## Running lightblue
+### Quick Start
+
+To parse a Japanese sentence and get a parsing result in a text format, execute:
 ```
-$ echo 太郎がパンを食べた。 | ./lightblue parse -s {text|html|tex|xml}
+$ echo 太郎がパンを食べた。 | ./lightblue parse -s text
 ```
 
-With `-n|--nbest` option, *lightblue* will show the N-best parse results.
-
-With `--time` option, *lightblue* will show the execution time for parsing.
-
-*lightblue* can be used as a part-of-speech tagger when the `-o postag` option is specified:
+To see a parsing result in HTML formal, execute (choose your browser):
 ```
-$ echo 太郎がパンを食べた。 | ./lightblue parse -o postag
-```
-
-The following command shows the list of lexical items prepared for pasing the given sentence:
-```
-$ echo 太郎がパンを食べた。| ./lightblue parse -o numeration
+$ echo 太郎がパンを食べた。 | ./lightblue parse -s html > result.html; firefox result.html
 ```
 
 If you have a text file (one sentence per line) &lt;corpusfile&gt;, then you can feed it to *lightblue* by:
 ```
-$ ./lightblue demo -f <corpusfile>
+$ ./lightblue parse -s html -f <corpusfile>
 ```
 
 To parse a JSeM file and execute inferences therein, then you can feed it to *lightblue* by:
 ```
-$ ./lightblue infer -i jsem -f <jsemfile>
+$ ./lightblue jsem -f <jsemfile>
 ```
 
-To check the inference relations &lt;premise_1&gt;, ..., &lt;premise_n&gt; |- &lt;hypothesis&gt;, simply execute:
+### Usage
+The syntax of the lightblue command is as follows:
 ```
-$ ./lightblue infer -f <filename>
-```
-where &lt;filename&gt; is the path of a text file, consisting of premises and a hypothesis with one sentence per each line:
-```
-<premise_1>
-...
-<premise_n>
-<hypothesis>
+stack run lightblue -- <command> <local options> <global options>
 ```
 
-Check also:
-```
-$ lightblue --help
-$ lightblue --version
-$ lightblue --stat
-```
+|Command         |                                                                      |
+|:---------------|:---------------------------------------------------------------------|
+|```parse```     |Parse Japanese sentences and get a parsing result.                    |
+|```jsem```      |Parse a JSeM file and execute inferences therein.                     |
+|```numeration```|Shows the list of lexical items prepared for pasing the given sentence|
+|```version```   |Print the lightblue version.                                          |
+|```stat```      |Print the lightblue statistics.                                       |
 
-|Command   |
-|:---------|
-|```parse```     |
-|```jsem```      |
-|```numeration```|
+Each of ```parse ``` and ```jsem``` commands has a set of local options.
 
-|Local Option for ```parse```                     |Default   |Description                           |  
-|:------------------------------------------------|:---------|:-------------------------------------|
-|```-o``` or ```--output {tree\|postag}```        |```tree```|Specify the output content            |
-|```-s``` or ```--style {text\|tex\|xml\|html}``` |```text```|Print results in the specified format |
-|```-p``` or ```--prover {Wani\|Null}```          |```Wani```|Choose prover                         |
+|Local Option for ```parse```                     |Default   |Description                                                    |  
+|:------------------------------------------------|:---------|:--------------------------------------------------------------|
+|```-o``` or ```--output {tree\|postag}```        |```tree```|Specify the output content.<br>
+                                                              ```tree```: Shows parse trees and their type check results.<br> 
+                                                              ```postag```: Use lightblue as a part-of-speech tagger         |
+|```-p``` or ```--prover {Wani\|Null}```          |```Wani```|Choose prover.<br>
+                                                              ```Wani```: Use the Wani prover (Daido and Bekki 2020)<br>     |
+                                                              ```None```: Use the null prover (that returns no diagrams).    |
 
-|Local Option for ```jsem```                     |Default   |Description                            |  
+|Local Option for ```jsem```                      |Default   |Description                           |  
 |:------------------------------------------------|:---------|:-------------------------------------|
 |```-s``` or ```--style {text\|tex\|xml\|html}``` |```text```|Print results in the specified format |
 |```-p``` or ```--prover {Wani\|Null}```          |```Wani```|Choose prover                         |
 |```--nsample <int>```                            |```-1```  |How many data to process              |
 
-|Global Option                                |Default   |Description                                                    |
-|:--------------------------------------------|:---------|:--------------------------------------------------------------|
-|```-v``` or ```--version```                  |          |Print the lightblue version                                    |
-|```--stat```                                 |          |Print the lightblue statistics                                 |
-|```-f``` or ```--file <filepath>```          |          |Reads input texts from <filepath><br>(Specify '-' to use stdin)|
-|```-m``` or ```--ma {juman\|jumanpp\|kwja}```|```kwja```|Specify morphological analyzer (default: KWJA)                 |
-|```-b``` or ```--beam <int>```               |```32```  |Set the beam width to <int>                                    |
-|```--nparse <int>```                         |```-1```  |Show N-best parse trees for each sentence                      |
-|```--ntypecheck <int>```                     |```-1```  |Show N-best type check diagram for each logical form           |
-|```--nproof <int>```                         |```-1```  |Show N-best proof diagram for each proof search                |
-|```--noTypeCheck```                          |          |If True, execute no type checking for LFs                      |
-|```--noInference```                          |          |If true, execute no inference                                  |
-|```--time```                                 |          |Show the execution time in stderr                              |
-|```--verbose```                              |          |Show logs of type inferer and type checker                     |
+The global options are common to all commands.
+
+|Global Option                                    |Default   |Description                                                     |
+|:------------------------------------------------|:---------|:---------------------------------------------------------------|
+|```-s``` or ```--style {text\|tex\|xml\|html}``` |```text```|Show parse results in the specified format.                     |
+|```-f``` or ```--file <filepath>```              |          |Reads input texts from <filepath><br>(Specify '-' to use stdin) |
+|```-m``` or ```--ma {juman\|jumanpp\|kwja}```    |```kwja```|Specify morphological analyzer (default: KWJA)                  |
+|```-b``` or ```--beam <int>```                   |```32```  |Set the beam width to <int>                                     |
+|```--nparse <int>```                             |```-1```  |Search only N-best parse trees for each sentence (A negative value means no filtering) |                      |
+|```--ntypecheck <int>```                         |```-1```  |Search only N-best diagrams for each type checking of a logical form (A negative value means no filtering) |
+|```--nproof <int>```                             |```-1```  |Search only N-best diagrams for each proof search (A negative value means no filtering) |
+|```--noTypeCheck```                              |          |If True, execute no type checking for LFs.                      |
+|```--noInference```                              |          |If true, execute no inference.                                  |
+|```--time```                                     |          |Show the execution time in stderr.                              |
+|```--verbose```                                  |          |Show logs of type inferer and type checker.                     |
 
 ### For developpers ###
 Installing Haskell-mode for Emacs will help.
