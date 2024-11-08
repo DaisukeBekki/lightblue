@@ -90,9 +90,7 @@ Each of ```parse ``` and ```jsem``` commands has a set of local options.
 |Local Option for ```parse```                     |Default   |Description                                                    |  
 |:------------------------------------------------|:---------|:--------------------------------------------------------------|
 |```-o``` or ```--output {tree\|postag}```        |```tree```|Specify the output content.<br>```tree```: Shows parse trees and their type check results.<br> ```postag```: Use lightblue as a part-of-speech tagger         |
-|```-p``` or ```--prover {Wani\|Null}```          |```Wani```|Choose prover.<br>
-                                                              ```Wani```: Use the Wani prover (Daido and Bekki 2020)<br>     |
-                                                              ```None```: Use the null prover (that returns no diagrams).    |
+|```-p``` or ```--prover {Wani\|Null}```          |```Wani```|Choose prover.<br>```Wani```: Use the Wani prover (Daido and Bekki 2020)<br>```None```: Use the null prover (that returns no diagrams).    |
 
 |Local Option for ```jsem```                      |Default   |Description                           |  
 |:------------------------------------------------|:---------|:-------------------------------------|
