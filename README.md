@@ -95,7 +95,7 @@ Each of ```parse ``` and ```jsem``` commands has a set of local options.
 |Local Options for ```jsem```                      |Default   |Description                           |  
 |:-------------------------------------------------|:---------|:-------------------------------------|
 |```-p``` or ```--prover {Wani\|Null}```           |```Wani```|Choose prover                         |
-|```--nsample <int>```                             |```-1```  |How many data to process              |
+|```--nsample <int>```                             |```-1```  |Specify a number of data to process (A negative value means no filtering) |
 
 The global options are common to all commands.
 
