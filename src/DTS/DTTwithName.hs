@@ -167,6 +167,7 @@ toText' flag preterm = case preterm of
     Eq a m n -> T.concat [toText' flag m, "=[", toText' flag a, "]", toText' flag n]
     Refl a m -> T.concat ["refl", toText' flag a, "(", toText' flag m, ")"]
     Idpeel m n -> T.concat ["idpeel(", toText' flag m, ",", toText' flag n, ")"]
+    _ -> "Error: The definition of DTS.DTTwithname.toText' is not exhaustive."
 
 -- | Each `Preterm` is translated by the `toTeX` method into a representation \"with variable names\" in a TeX source code.
 instance Typeset Preterm where
@@ -205,6 +206,7 @@ instance Typeset Preterm where
     Eq a m n  -> T.concat [toTeX m, "=_{", toTeX a,"}", toTeX n]
     Refl a m  -> T.concat ["\\type{refl}_{", toTeX a, "}\\left(", toTeX m,"\\right)"]
     Idpeel m n -> T.concat ["\\type{idpeel}\\left(", toTeX m, ",", toTeX n, "\\right)"]
+    _ -> "Error: The definition of DTS.DTTwithname.toTeX is not exhaustive."
 
 toTeXEmbedded :: Preterm -> T.Text
 toTeXEmbedded preterm = case preterm of
@@ -217,7 +219,7 @@ instance MathML Preterm where
     Con cname -> T.concat ["<mtext>", cname, "</mtext>"]
     Type -> "<mi>type</mi>"
     Kind -> "<mi>kind</mi>"
-    Pi vname a b -> T.concat ["<mrow><mo>(</mo>", toMathML vname, "<mo>:</mo>", toMathML a, "<mo>&rarr;</mo>", toMathML b, "</mrow>"]
+    Pi vname a b -> T.concat ["<mrow><mo>(</mo>", toMathML vname, "<mo>:</mo>", toMathML a, "<mo>)</mo><mo>&rarr;</mo>", toMathML b, "</mrow>"]
     Not a -> T.concat["<mrow><mi>&not;</mi>", toMathML a, "</mrow>"]
     Lam vname m -> T.concat ["<mrow><mi>&lambda;</mi>", toMathML vname, "<mpadded lspace='-0.2em' width='-0.2em'><mo>.</mo></mpadded>", toMathML m, "</mrow>"]
     App (App (Con cname) y) x ->
@@ -246,6 +248,7 @@ instance MathML Preterm where
     Eq a m n -> T.concat ["<mrow>", toMathML m, "<msub><mo>=</mo>", toMathML a, "</msub>", toMathML n, "</mrow>"]
     Refl a m -> T.concat ["<mrow><mi>refl</mi>", toMathML a, "<mo>(</mo>", toMathML m, "<mo>)</mo></mrow>"]
     Idpeel m n -> T.concat ["<mrow><mi>idpeel</mi><mo>(</mo>", toMathML m, toMathML n, "<mo>)</mo></mrow>"]
+    _ -> "Error: The definition of DTS.DTTwithname.toMathML is not exhaustive."
 
 -- | Conversion btw. de Bruijn notation and a variable name notation.
 fromDeBruijn :: [VarName] -> DTTdB.Preterm -> Preterm
@@ -337,9 +340,10 @@ fromDeBruijnLoop vnames preterm = case preterm of
 variableNameFor :: DTTdB.Preterm -> Indexed VarName
 variableNameFor preterm =
   case preterm of
-    DTTdB.Con cname | cname == "entity" -> do i <- xIndex; return $ VarName 'x' i
-              | cname == "evt"    -> do i <- eIndex; return $ VarName 'e' i
-              -- cname == "state"  -> VN.VN.VarName 's' i
+    DTTdB.Entity -> do i <- xIndex; return $ VarName 'x' i
+    -- DTTdB.Con cname | cname == "entity" -> do i <- xIndex; return $ VarName 'x' i
+    --                 | cname == "evt"    -> do i <- eIndex; return $ VarName 'e' i
+    --           -- cname == "state"  -> VN.VN.VarName 's' i
     DTTdB.Eq _ _ _ -> do i <- xIndex; return $ VarName 's' i
     DTTdB.Nat      -> do i <- xIndex; return $ VarName 'k' i
     _        -> do i <- uIndex; return $ VarName 'u' i

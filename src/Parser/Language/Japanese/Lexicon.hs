@@ -1,5 +1,4 @@
-{-# OPTIONS -Wall #-}
-{-# LANGUAGE DeriveGeneric, DefaultSignatures #-}
+{-# LANGUAGE DeriveGeneric, DefaultSignatures, RecordWildCards #-}
 
 {-|
 Module      : Parser.Language.Japanese.Lexicon
@@ -12,26 +11,28 @@ A Japanese CCG lexicon.
 -}
 module Parser.Language.Japanese.Lexicon (
   --Node(..),
-  LexicalItems,
+  LexicalItems
+  , LexicalResource(..)
+  , lexicalResourceBuilder
   --isCONJ,
-  lookupLexicon,
-  setupLexicon,
-  LEX.emptyCategories,
-  LEX.myLexicon
+  , lookupLexicon
+  , setupLexicon
+  , LEX.emptyCategories
+  , LEX.myLexicon
   ) where
 
 import Prelude hiding (id)
-import qualified Data.Text.Lazy as T    --text
+import qualified System.Environment as E --base
+import qualified Data.Text.Lazy as T     --text
 import qualified Data.Text.Lazy.IO as T --text
-import qualified Data.List as L         -- base
-import qualified Data.Map as M          -- base
-import qualified System.Environment as E -- base
+import qualified Data.List as L          -- base
+import qualified Data.Map as M           -- base
 import Parser.CCG
 import qualified Parser.Language.Japanese.MyLexicon as LEX
 import Parser.Language.Japanese.Templates
 import qualified Parser.Language.Japanese.Juman.CallJuman as JU
-import DTS.UDTTdeBruijn as UDTT hiding (sig) --lightblue
-import qualified DTS.DTTdeBruijn as DTT      --lightblue
+import DTS.UDTTdeBruijn as UDTT         --lightblue
+import qualified DTS.DTTdeBruijn as DTT --lightblue
 
 type UDTTpreterm = UDTT.Preterm
 type Signature = DTT.Signature
@@ -39,20 +40,32 @@ type Signature = DTT.Signature
 -- | Lexicon consists of a set of CCG Nodes
 type LexicalItems = [Node]
 
+data LexicalResource = 
+  JapaneseSetA {
+    baseLexicon :: [Node]
+    , jumanDic :: [[T.Text]]
+    , morphaName :: JU.MorphAnalyzerName
+  } deriving (Eq, Show)
+
+lexicalResourceBuilder :: JU.MorphAnalyzerName -> IO LexicalResource
+lexicalResourceBuilder morphaName = do
+  lightbluepath <- E.getEnv "LIGHTBLUE"
+  jumandicData <- T.readFile $ lightbluepath ++ "src/Parser/Language/Japanese/Juman/Juman.dic"
+  let jumanDic = map (T.split (=='\t')) $ T.lines jumandicData
+  return $ JapaneseSetA LEX.myLexicon jumanDic morphaName
+
 -- | This function takes a word and a lexicon and returns a set of CCG lexical entries whose PF is that word.
 lookupLexicon :: T.Text -> LexicalItems -> [Node]
 lookupLexicon word lexicon = filter (\l -> (pf l) == word) lexicon
 
 -- | This function takes a sentence and returns a numeration needed to parse that sentence, i.e., a union of 
-setupLexicon :: JU.MorphAnalyzerName -> T.Text -> IO(LexicalItems)
-setupLexicon morphaName sentence = do
+setupLexicon :: LexicalResource -> T.Text -> IO LexicalItems
+setupLexicon JapaneseSetA{..} sentence = do
   --  1. Setting up lexical items provided by JUMAN++
-  lightbluepath <- E.getEnv "LIGHTBLUE"
-  jumandic <- T.readFile $ lightbluepath ++ "src/Parser/Language/Japanese/Juman/Juman.dic"
-  let jumandicFiltered = filter (\l -> (head l) `T.isInfixOf` sentence) $ map (T.split (=='\t')) (T.lines jumandic)
+  let jumandicFiltered = filter (\l -> (head l) `T.isInfixOf` sentence) jumanDic
   let (jumandicParsed,(cn,pn)) = L.foldl' parseJumanLine ([],(M.empty,M.empty)) $ jumandicFiltered
   --  2. Setting up private lexicon
-  let mylexiconFiltered = filter (\l -> T.isInfixOf (pf l) sentence) LEX.myLexicon
+  let mylexiconFiltered = filter (\l -> T.isInfixOf (pf l) sentence) baseLexicon
   --  3. Setting up compound nouns (returned from an execution of JUMAN)
   -- jumanCN <- JU.jumanCompoundNouns (T.replace "―" "、" sentence)
   jumanCN <- JU.compoundNouns morphaName sentence

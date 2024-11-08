@@ -27,16 +27,18 @@ import Parser.CCG
 import qualified Parser.Language.Japanese.Templates as TPL
 --import Debug.Trace
 
-data MorphAnalyzerName = JUMAN | KWJA deriving (Eq,Show)
+data MorphAnalyzerName = JUMAN | JUMANPP | KWJA deriving (Eq,Show)
 instance Read MorphAnalyzerName where
   readsPrec _ r =
     [(JUMAN,s) | (x,s) <- lex r, map C.toLower x == "juman"]
+    ++ [(JUMANPP,s) | (x,s) <- lex r, map C.toLower x == "jumanpp"]
     ++ [(KWJA,s) | (x,s) <- lex r, map C.toLower x == "kwja"]
 
 -- | Main function: jumaCompoundNouns
 -- |   given a sentence, returns a list of compound nouns
 compoundNouns :: MorphAnalyzerName -> T.Text -> IO([Node])
 compoundNouns JUMAN = fmap jumanNouns2nodes . callJuman 
+compoundNouns JUMANPP = fmap jumanNouns2nodes . callJumanpp 
 compoundNouns KWJA = fmap jumanNouns2nodes . callKWJA
 
 -- jumanCompoundNouns :: T.Text -> IO([Node])
@@ -63,27 +65,25 @@ type JumanPair = (PhoneticForm, POS, POSDetail, ConjugationForm) -- (表層,品�
 
 -- | Call Juman as an external process and returns a list of juman pos-tags
 callJuman :: T.Text -> IO [JumanCompNoun]
-callJuman sentence = do
-  output <- S.shelly $ S.silently $ S.escaping False $ S.cmd $ S.fromText $ T.toStrict $ T.concat 
-    ["echo ", sentence, " | jumanpp"]
-  return $ findCompNouns [] $ getJumanPairs $ excludeSpecialPrefixes $ T.lines $ T.fromStrict $ output
-  where 
-    -- EOSまでの行を取得し、@+*から始まる行を除外する
-    excludeSpecialPrefixes :: [T.Text] -> [T.Text]
-    excludeSpecialPrefixes = 
-      filter (\x -> not (T.isPrefixOf "@" x)) . P.takeWhile (/= "EOS")
+callJuman = callMorphologicalAnalyzer (\s -> T.concat ["echo ", s, " | juman"]) ["@"]
+
+-- | Call Juman as an external process and returns a list of juman pos-tags
+callJumanpp :: T.Text -> IO [JumanCompNoun]
+callJumanpp = callMorphologicalAnalyzer (\s -> T.concat ["echo ", s, " | jumanpp"]) ["@"]
 
 -- | Call KWJA as an external process and returns a list of juman pos-tags
 callKWJA :: T.Text -> IO [JumanCompNoun]
-callKWJA sentence = do
-  output <- S.shelly $ S.silently $ S.escaping False $ S.cmd $ S.fromText $ T.toStrict $ T.concat 
-    ["kwja --text ", sentence]
+callKWJA = callMorphologicalAnalyzer (\s -> T.concat ["kwja --text ", s]) ["@","*","+","#"]
+
+callMorphologicalAnalyzer :: (T.Text -> T.Text) -> [T.Text] -> T.Text -> IO [JumanCompNoun]
+callMorphologicalAnalyzer command prefixes sentence = do
+  output <- S.shelly $ S.silently $ S.escaping False $ S.cmd $ S.fromText $ T.toStrict $ command sentence
   return $ findCompNouns [] $ getJumanPairs $ excludeSpecialPrefixes $ T.lines $ T.fromStrict output
   where 
     -- EOSまでの行を取得し、@+*から始まる行を除外する
     excludeSpecialPrefixes :: [T.Text] -> [T.Text]
     excludeSpecialPrefixes = 
-      filter (\x -> not (isPrefixOfAny ["@","*","+","#"] x)) . P.takeWhile (/= "EOS") 
+      filter (\x -> not (isPrefixOfAny prefixes x)) . P.takeWhile (/= "EOS") 
 
 -- (表層,品詞,品詞細分,（動詞なら）活用形)の4つ組を取得
 getJumanPairs :: [T.Text] -> [JumanPair]

@@ -33,13 +33,14 @@ module DTS.UDTTwithName (
   -- , fromDeBruijnContextLoop -- exportしない方向に
   , Judgment(..)
   , fromDeBruijnJudgment
-  , TypeCheckQuery(..)
+  , TypeCheckQuery
   , fromDeBruijnTypeCheckQuery
-  , TypeInferQuery(..)
+  , TypeInferQuery
   , fromDeBruijnTypeInferQuery
   ) where
 
 import qualified GHC.Generics        as G --base
+import qualified System.Environment as E -- base
 import qualified Data.List as L           --base
 import qualified Data.Text.Lazy as T      -- text
 --import qualified Data.Text.Lazy.IO as T -- text
@@ -179,6 +180,7 @@ toText' flag preterm = case preterm of
     Asp m    -> T.concat ["@", toText' flag m]
     Lamvec vname m  -> T.concat ["λ", toText vname, "+.", toText' flag m]
     Appvec vname m -> T.concat ["(", toText' flag m, " ", toText vname, "+)"]
+    _ -> "Error: The definition of DTS.UDTTwithname.toText' is not exhaustive."
 
 -- | Each `Preterm` is translated by the `toTeX` method into a representation \"with variable names\" in a TeX source code.
 instance Typeset Preterm where
@@ -221,6 +223,7 @@ instance Typeset Preterm where
     Asp m     -> T.concat ["@", toTeX m]
     Lamvec vname m   -> T.concat ["\\lambda\\vec{", toTeX vname, "}.", toTeX m]
     Appvec vname m -> T.concat ["\\APP{", toTeXEmbedded m, "}{\\vec{", toTeX vname, "}}"]
+    _ -> "Error: The definition of DTS.UDTTwithname.toTeX is not exhaustive."
 
 toTeXEmbedded :: Preterm -> T.Text
 toTeXEmbedded preterm = case preterm of
@@ -266,6 +269,7 @@ instance MathML Preterm where
     Asp m      -> T.concat["<mrow><mo>@</mo>", toMathML m, "</mrow>"]
     Lamvec vname m  -> T.concat ["<mrow><mi>&lambda;</mi><mover>", toMathML vname, "<mo>&rarr;</mo></mover><mo>.</mo>", toMathML m, "</mrow>"]
     Appvec vname m -> T.concat ["<mrow>", toMathML m, "<mo> </mo><mover>", toMathML vname, "<mo>&rarr;</mo></mover></mrow>"]
+    _ -> "Error: The definition of DTS.UDTTwithname.toMathML is not exhaustive."
   
 {- Conversion between UDTT and DTT -}
 
