@@ -94,7 +94,6 @@ Each of ```parse ``` and ```jsem``` commands has a set of local options.
 
 |Local Options for ```jsem```                      |Default   |Description                           |  
 |:-------------------------------------------------|:---------|:-------------------------------------|
-|```-s``` or ```--style {text\|tex\|xml\|html}```  |```text```|Print results in the specified format |
 |```-p``` or ```--prover {Wani\|Null}```           |```Wani```|Choose prover                         |
 |```--nsample <int>```                             |```-1```  |How many data to process              |
 
