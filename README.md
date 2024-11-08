@@ -53,22 +53,22 @@ $ chmod 755 lightblue
 
 To parse a Japanese sentence and get a parsing result in a text format, execute:
 ```
-$ echo 太郎がパンを食べた。 | ./lightblue parse -s text
+$ echo 太郎がパンを食べた。 | lightblue parse -s text
 ```
 
 To see a parsing result in HTML formal, execute (choose your browser):
 ```
-$ echo 太郎がパンを食べた。 | ./lightblue parse -s html > result.html; firefox result.html
+$ echo 太郎がパンを食べた。 | lightblue parse -s html > result.html; firefox result.html
 ```
 
 If you have a text file (one sentence per line) &lt;corpusfile&gt;, then you can feed it to *lightblue* by:
 ```
-$ ./lightblue parse -s html -f <corpusfile>
+$ lightblue parse -s html -f <corpusfile>
 ```
 
 To parse a JSeM file and execute inferences therein, then you can feed it to *lightblue* by:
 ```
-$ ./lightblue jsem -f <jsemfile>
+$ lightblue jsem -f <jsemfile>
 ```
 
 ### Usage
