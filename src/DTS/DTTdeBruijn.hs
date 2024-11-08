@@ -33,10 +33,8 @@ module DTS.DTTdeBruijn (
 
 import qualified GHC.Generics        as G --base
 import qualified Data.Text.Lazy as T  --text
-import Data.Store (Store(..), Size(..), Peek, Poke, size)         --store
-import Data.Store.Internal (getSize)
+import Data.Store (Store(..))         --store
 import Data.Store.TH (makeStore)
-import Data.Word (Word8)
 --import qualified Codec.Serialise as S --serialise
 import Interface.Text                 --lightblue
 import Interface.TeX                  --lightblue
