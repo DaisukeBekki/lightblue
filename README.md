@@ -61,7 +61,7 @@ To see a parsing result in HTML formal, execute (choose your browser):
 $ echo 太郎がパンを食べた。 | lightblue parse -s html > result.html; firefox result.html
 ```
 
-If you have a text file (one sentence per line) &lt;corpusfile&gt;, then you can feed it to *lightblue* by:
+If you have a text file (one sentence per line) &lt;corpusfile&gt;, then you can feed its path to *lightblue* by:
 ```
 $ lightblue parse -s html -f <corpusfile>
 ```
@@ -87,20 +87,20 @@ stack run lightblue -- <command> <local options> <global options>
 
 Each of ```parse ``` and ```jsem``` commands has a set of local options.
 
-|Local Option for ```parse```                     |Default   |Description                                                    |  
-|:------------------------------------------------|:---------|:--------------------------------------------------------------|
-|```-o``` or ```--output {tree\|postag}```        |```tree```|Specify the output content.<br>```tree```: Shows parse trees and their type check results.<br> ```postag```: Use lightblue as a part-of-speech tagger         |
-|```-p``` or ```--prover {Wani\|Null}```          |```Wani```|Choose prover.<br>```Wani```: Use the Wani prover (Daido and Bekki 2020)<br>```None```: Use the null prover (that returns no diagrams).    |
+|Local Options for ```parse```                     |Default   |Description                                                    |  
+|:-------------------------------------------------|:---------|:--------------------------------------------------------------|
+|```-o``` or ```--output {tree\|postag}```         |```tree```|Specify the output content.<br>```tree```: Shows parse trees and their type check results.<br> ```postag```: Use lightblue as a part-of-speech tagger         |
+|```-p``` or ```--prover {Wani\|Null}```           |```Wani```|Choose prover.<br>```Wani```: Use the Wani prover (Daido and Bekki 2020)<br>```None```: Use the null prover (that returns no diagrams).    |
 
-|Local Option for ```jsem```                      |Default   |Description                           |  
-|:------------------------------------------------|:---------|:-------------------------------------|
-|```-s``` or ```--style {text\|tex\|xml\|html}``` |```text```|Print results in the specified format |
-|```-p``` or ```--prover {Wani\|Null}```          |```Wani```|Choose prover                         |
-|```--nsample <int>```                            |```-1```  |How many data to process              |
+|Local Options for ```jsem```                      |Default   |Description                           |  
+|:-------------------------------------------------|:---------|:-------------------------------------|
+|```-s``` or ```--style {text\|tex\|xml\|html}```  |```text```|Print results in the specified format |
+|```-p``` or ```--prover {Wani\|Null}```           |```Wani```|Choose prover                         |
+|```--nsample <int>```                             |```-1```  |How many data to process              |
 
 The global options are common to all commands.
 
-|Global Option                                    |Default   |Description                                                     |
+|Global Options                                    |Default   |Description                                                     |
 |:------------------------------------------------|:---------|:---------------------------------------------------------------|
 |```-s``` or ```--style {text\|tex\|xml\|html}``` |```text```|Show parse results in the specified format.                     |
 |```-f``` or ```--file <filepath>```              |          |Reads input texts from <filepath><br>(Specify '-' to use stdin) |
