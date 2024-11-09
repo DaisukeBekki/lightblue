@@ -18,8 +18,10 @@ module DTS.QueryTypes (
   ) where
 
 --import Data.Bifunctor (second)       --base
-import ListT (ListT)                      --list-t
-import qualified Data.Text.Lazy as T --text
+import qualified GHC.Generics   as G   --base
+import Data.Store (Store(..))          --store
+import ListT (ListT)                   --list-t
+import qualified Data.Text.Lazy as T   --text
 import Interface.Text
 import Interface.TeX
 import Interface.HTML
@@ -27,8 +29,6 @@ import Interface.Tree
 import qualified DTS.DTTdeBruijn as DTTdB
 import qualified DTS.UDTTdeBruijn as UDTTdB
 import DTS.GeneralTypeQuery (GeneralTypeQuery(..))
-import qualified GHC.Generics        as G
-import Data.Store (Store(..))         --store
 
 -- BOTF?
 data DTTrule = Var | Con | TypeF | Conv | WK | PiF | PiI | PiE | SigmaF | SigmaI | SigmaE | DisjF | DisjI | DisjE | EnumF | EnumI | EnumE | IqF | IqI | IqE | NatF | NatI | NatE deriving (Eq, Show, Read, G.Generic, Store)

@@ -31,11 +31,10 @@ module DTS.DTTdeBruijn (
   , ProofSearchQuery(..)
   ) where
 
-import qualified GHC.Generics        as G --base
+import qualified GHC.Generics as G    --base
 import qualified Data.Text.Lazy as T  --text
 import Data.Store (Store(..))         --store
-import Data.Store.TH (makeStore)
---import qualified Codec.Serialise as S --serialise
+import Data.Store.TH (makeStore)      --store
 import Interface.Text                 --lightblue
 import Interface.TeX                  --lightblue
 import Interface.HTML                 --lightblue
@@ -93,12 +92,12 @@ data Preterm =
   -- | ToDo: add First Universe
   deriving (Eq, G.Generic)
 
-instance Show Preterm where
-  show = T.unpack . toText
-
 instance Store Preterm
 
 makeStore ''T.Text
+
+instance Show Preterm where
+  show = T.unpack . toText
 
 -- | translates a preterm into a simple text notation.
 instance SimpleText Preterm where
