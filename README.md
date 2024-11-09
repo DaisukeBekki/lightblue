@@ -2,7 +2,6 @@
 ## What is this repository for?
 
 * *lightblue* is a Japanese CCG parser with DTS representations
-* Current version: 0.2.2.0
 * Copyright owner: Daisuke Bekki
 
 ## Installing lightblue
@@ -18,16 +17,13 @@ $ brew install haskell-stack
 See https://docs/haskellstack.org/en/stable/README/#how-to-install for details.
 
 ### Prerequisite 2: Installation of morphological analyzer (KWJA or Juman/Jumanpp)
-Either of the following tools must be installed before executing *lightblue*.
+One of the following Japanese morphological analyzers must be installed before executing *lightblue*.
 
-- [KWJA (Japanese text analyzer)](https://github.com/ku-nlp/kwja)
+- [KWJA](https://github.com/ku-nlp/kwja)
 
-- [JUMAN (a User-Extensible Morphological Analyzer for Japanese)](http://nlp.ist.i.kyoto-u.ac.jp/EN/index.php?JUMAN) (>= version 7.0) 
+- [JUMAN](http://nlp.ist.i.kyoto-u.ac.jp/EN/index.php?JUMAN) (>= version 7.0) 
 
 - [JUMAN++](https://nlp.ist.i.kyoto-u.ac.jp/?JUMAN%2B%2B) 
-
-[//]: # (1. blas and lapack )
-[//]: # (`sudo apt-get install libblas-dev liblapack-dev` )
 
 ### Download lightblue
 Do the following in the directory under which you'd like to install *lightblue*.
@@ -41,7 +37,6 @@ You need to add the environment variable LIGHTBLUE and set its value as &lt;ligh
 ```
 $ cd <lightblue>
 $ stack build
-$ stack install
 ```
 
 Set the permission of the shell scripts `lightblue` to executable.
@@ -54,28 +49,28 @@ $ chmod 755 lightblue
 
 To parse a Japanese sentence and get a parsing result in a text format, execute:
 ```
-$ echo 太郎がパンを食べた。 | lightblue parse -s text
+$ echo 太郎がパンを食べた。 | ./lightblue parse -s text
 ```
 
 To see a parsing result in HTML formal, execute (choose your browser):
 ```
-$ echo 太郎がパンを食べた。 | lightblue parse -s html > result.html; firefox result.html
+$ echo 太郎がパンを食べた。 | ./lightblue parse -s html > result.html; firefox result.html
 ```
 
 If you have a text file (one sentence per line) &lt;corpusfile&gt;, then you can feed its path to *lightblue* by:
 ```
-$ lightblue parse -s html -f <corpusfile>
+$ ./lightblue parse -s html -f <corpusfile>
 ```
 
 To parse a JSeM file and execute inferences therein, then you can feed it to *lightblue* by:
 ```
-$ lightblue jsem -f <jsemfile>
+$ ./lightblue jsem -f <jsemfile>
 ```
 
 ### Usage
 The syntax of the lightblue command is as follows:
 ```
-lightblue <command> <local options> <global options>
+./lightblue <command> <local options> <global options>
 ```
 
 |Command         |                                                                       |
