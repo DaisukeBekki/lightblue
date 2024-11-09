@@ -34,19 +34,20 @@ import qualified JSeM as JSeM                         --jsem
 import qualified ML.Exp.Classification.Bounded as NLP --nlp-tools
 
 data Options =
-  Version
-  | Stat
-  | Test
-  | Options Command FilePath Juman.MorphAnalyzerName Int Int Int Int Bool Bool Bool Bool
+  -- Version
+  -- | Stat
+  -- | Test
+  Options Command I.Style FilePath Juman.MorphAnalyzerName Int Int Int Int Bool Bool Bool Bool
     deriving (Show, Eq)
 
 data Command =
-  Parse I.ParseOutput I.Style NLI.ProverName
-  | JSeM I.Style NLI.ProverName Int
-  | Numeration I.Style
-  -- | Debug Int Int
+  Parse I.ParseOutput NLI.ProverName
+  | JSeM NLI.ProverName Int
+  | Numeration 
   | Demo
-  -- | Treebank
+  | Version
+  | Stat
+  | Test
     deriving (Show, Eq)
 
 --commandReader :: String -> a -> String -> [(a,String)]
@@ -72,42 +73,50 @@ main = customExecParser p opts >>= lightblueMain
 
 optionParser :: Parser Options
 optionParser = 
-  flag' Version ( long "version" 
-                <> short 'v' 
-                <> help "Print the lightblue version" )
-  <|> 
-  flag' Stat ( long "stat" 
-             <> help "Print the lightblue statistics" )
-  <|> 
-  flag' Test ( long "test"
-             <> hidden 
-             <> internal
-             <> help "Execute the test code" )
-  <|> 
+  -- flag' Version ( long "version" 
+  --               <> short 'v' 
+  --               <> hidden
+  --               <> help "Print the lightblue version" )
+  -- <|> 
+  -- flag' Stat ( long "stat"
+  --            <> hidden 
+  --            <> help "Print the lightblue statistics" )
+  -- <|> 
+  -- flag' Test ( long "test"
+  --            <> hidden 
+  --            <> internal
+  --            <> help "Execute the test code" )
+  -- <|> 
   Options
     <$> subparser 
       (command "parse"
            (info parseOptionParser
-                 (progDesc "Local options: [-o|--output tree|postag] [-s|--style html|text|tex|xml] [--noTypeCheck] [--noInference] [-p|--prover wani|null] (The default values: -o tree -s html -p wani)" ))
+                 (progDesc "Local options: [-o|--output tree|postag] [--noTypeCheck] [--noInference] [-p|--prover wani|null] (The default values: -o tree -p wani)" ))
       <> command "jsem"
            (info jsemOptionParser
-                 (progDesc "Local options: [-s|--style html|text|tex|xml] [--noTypeCheck] [-p|--prover wani|null] (The default values: -s html -p wani)" ))
+                 (progDesc "Local options: [--noTypeCheck] [-p|--prover wani|null] (The default values: -p wani)" ))
+      <> command "numeration"
+           (info (pure Numeration)
+                 (progDesc "Shows all the lexical items in each of the numeration for the inupt sentences" ))
+      <> command "demo"
+           (info (pure Demo)
+                 (progDesc "Sequentially shows parsing results of a given corpus. No local options." ))
+      <> command "version"
+           (info (pure Version)
+                 (progDesc "Print the lightblue version." ))
+      <> command "stat"
+           (info (pure Stat)
+                 (progDesc "Print the lightblue statistics" ))
       -- <> command "infer"
       --      (info inferOptionParser
       --            (progDesc "Local options: [-p|--prover wani|null] [--nsample n] (The default values: -p wani --nsample 0)" ))
-      <> command "numeration"
-           (info numerationOptionParser
-                 (progDesc "Local option: [-s|--style html|text|tex|xml] (shows all the lexical items in each of the numeration for the inupt sentences" ))
       -- <> command "debug"
       --      (info debugOptionParser
       --            (progDesc "shows all the parsing results between the two pivots. Local options: INT INT (No default values)" ))
-      <> command "demo"
-           (info (pure Demo)
-                 (progDesc "sequentially shows parsing results of a given corpus. No local options." ))
       -- <> command "treebank"
       --      (info (pure Treebank)
       --            (progDesc "print a semantic treebank build from a given corpus. No local options" ))
-      <> metavar "COMMAND (=parse|jsem|numeration|demo)"
+      <> metavar "COMMAND (=parse|jsem|numeration|demo|version|stat)"
       <> commandGroup "Available COMMANDs and thier local options"
       <> help "specifies the task to execute.  See 'Available COMMANDs ...' below about local options for each command"
       )
@@ -117,6 +126,13 @@ optionParser =
     --     <> metavar "sentences|jsem"
     --     <> value SENTENCES
     --     <> help "Specify input type (default: sentences)" )
+    <*> option auto
+      ( long "style"
+      <> short 's'
+      <> metavar "text|tex|xml|html"
+      <> help "Print results in the specified format"
+      <> showDefault
+      <> value I.HTML )
     <*> strOption 
       ( long "file"
       <> short 'f'
@@ -181,13 +197,6 @@ parseOptionParser = Parse
     <> showDefault
     <> value I.TREE )
   <*> option auto
-    ( long "style"
-    <> short 's'
-    <> metavar "text|tex|xml|html"
-    <> help "Print results in the specified format"
-    <> showDefault
-    <> value I.HTML )
-  <*> option auto
     ( long "prover"
       <> short 'p'
       <> metavar "Wani|Null"
@@ -198,13 +207,6 @@ parseOptionParser = Parse
 jsemOptionParser :: Parser Command
 jsemOptionParser = JSeM
   <$> option auto
-    ( long "style"
-    <> short 's'
-    <> metavar "text|tex|xml|html"
-    <> help "Print results in the specified format"
-    <> showDefault
-    <> value I.HTML )
-  <*> option auto
     ( long "prover"
       <> short 'p'
       <> metavar "Wani|Null"
@@ -213,21 +215,10 @@ jsemOptionParser = JSeM
       <> help "Choose prover" )
   <*> option auto
     ( long "nsample"
-    <> metavar "text|tex|xml|html"
-    <> help "How many data to process: 0 means all data"
+    <> help "How many data to process"
     <> showDefault
     <> value (-1)
     <> metavar "INT" )  
-
-numerationOptionParser :: Parser Command
-numerationOptionParser = Numeration
-  <$> option auto
-    ( long "style"
-    <> short 's'
-    <> metavar "text|tex|xml|html"
-    <> help "Print results in the specified format"
-    <> showDefault
-    <> value I.HTML )
 
 -- debugOptionParser :: Parser Command
 -- debugOptionParser = Debug
@@ -235,10 +226,10 @@ numerationOptionParser = Numeration
 --   <*> argument auto idm
 
 lightblueMain :: Options -> IO()
-lightblueMain Version = showVersion
-lightblueMain Stat = showStat
-lightblueMain Test = test
-lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nProof noTypeCheck noInference iftime verbose) = do
+-- lightblueMain Version = showVersion
+-- lightblueMain Stat = showStat
+-- lightblueMain Test = test
+lightblueMain (Options commands style filepath morphaName beamW nParse nTypeCheck nProof noTypeCheck noInference iftime verbose) = do
   start <- Time.getCurrentTime
   contents <- case filepath of
     "-" -> T.getContents
@@ -256,7 +247,7 @@ lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nPro
     -- |
     -- | Parse
     -- |
-    lightblueMainLocal (Parse output style proverName) lr contents = do
+    lightblueMainLocal (Parse output proverName) lr contents = do
       let handle = S.stdout
           parseSetting = CP.ParseSetting jpOptions lr beamW nParse nTypeCheck nProof True Nothing Nothing noInference verbose
           prover = NLI.getProver proverName $ QT.ProofSearchSetting Nothing Nothing (Just QT.Classical)
@@ -270,7 +261,7 @@ lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nPro
     --
     -- | JSeM Parser
     -- 
-    lightblueMainLocal (JSeM style proverName nSample) lr contents = do
+    lightblueMainLocal (JSeM proverName nSample) lr contents = do
       parsedJSeM <- J.xml2jsemData $ T.toStrict contents
       let handle = S.stdout
           parseSetting = CP.ParseSetting jpOptions lr beamW nParse nTypeCheck nProof True Nothing Nothing noInference verbose
@@ -300,7 +291,7 @@ lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nPro
     -- | 
     -- | Numeration
     -- | 
-    lightblueMainLocal (Numeration style) lr contents = do
+    lightblueMainLocal Numeration lr contents = do
       let handle = S.stdout
           sentences = T.lines contents
       S.hPutStrLn handle $ I.headerOf style
@@ -313,6 +304,12 @@ lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nPro
     -- | Demo (sequential parsing of a given corpus)
     -- |
     lightblueMainLocal Demo lr contents = processCorpus lr beamW $ T.lines contents
+    -- |
+    -- | Other commands
+    -- |
+    lightblueMainLocal Version _ _ = showVersion
+    lightblueMainLocal Stat _ _ = showStat
+    lightblueMainLocal Test _ _ = test
     -- -- |
     -- -- | Debug
     -- -- |
@@ -338,6 +335,7 @@ lightblueMain (Options commands filepath morphaName beamW nParse nTypeCheck nPro
     -- lightblueMainLocal Treebank contents = do
     --   I.treebankBuilder beamw $ T.lines contents
 
+-- |
 -- | lightblue --version
 -- |
 showVersion :: IO()
@@ -347,6 +345,7 @@ showVersion = do
   cabal <- T.readFile $ lightbluepath ++ "lightblue.cabal"
   T.putStrLn $ last $ T.words $ head $ filter (T.isPrefixOf "version:") $ T.lines cabal
 
+-- |
 -- | lightblue --status
 -- |
 showStat :: IO()
