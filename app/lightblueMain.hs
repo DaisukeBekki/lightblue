@@ -97,7 +97,7 @@ optionParser =
                  (progDesc "Local options: [--noTypeCheck] [-p|--prover wani|null] (The default values: -p wani)" ))
       <> command "numeration"
            (info (pure Numeration)
-                 (progDesc "Shows all the lexical items in each of the numeration for the inupt sentences" ))
+                 (progDesc "Shows all the lexical items in each of the numeration for the inupt sentences." ))
       <> command "demo"
            (info (pure Demo)
                  (progDesc "Sequentially shows parsing results of a given corpus. No local options." ))
@@ -106,7 +106,10 @@ optionParser =
                  (progDesc "Print the lightblue version." ))
       <> command "stat"
            (info (pure Stat)
-                 (progDesc "Print the lightblue statistics" ))
+                 (progDesc "Print the lightblue statistics." ))
+      <> command "test"
+           (info (pure Test)
+                 (progDesc "Execute the test code." ))
       -- <> command "infer"
       --      (info inferOptionParser
       --            (progDesc "Local options: [-p|--prover wani|null] [--nsample n] (The default values: -p wani --nsample 0)" ))
