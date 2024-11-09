@@ -1,4 +1,4 @@
-{-# LANGUAGE DuplicateRecordFields, TypeSynonymInstances, FlexibleInstances, RecordWildCards #-}
+{-# LANGUAGE DuplicateRecordFields, TypeSynonymInstances, FlexibleInstances, RecordWildCards, DeriveGeneric, DeriveAnyClass #-}
 
 module DTS.QueryTypes (
   -- * Type system of UDTT
@@ -27,9 +27,11 @@ import Interface.Tree
 import qualified DTS.DTTdeBruijn as DTTdB
 import qualified DTS.UDTTdeBruijn as UDTTdB
 import DTS.GeneralTypeQuery (GeneralTypeQuery(..))
+import qualified GHC.Generics        as G
+import Data.Store (Store(..))         --store
 
 -- BOTF?
-data DTTrule = Var | Con | TypeF | Conv | WK | PiF | PiI | PiE | SigmaF | SigmaI | SigmaE | DisjF | DisjI | DisjE | EnumF | EnumI | EnumE | IqF | IqI | IqE | NatF | NatI | NatE deriving (Eq, Show, Read)
+data DTTrule = Var | Con | TypeF | Conv | WK | PiF | PiI | PiE | SigmaF | SigmaI | SigmaE | DisjF | DisjI | DisjE | EnumF | EnumI | EnumE | IqF | IqI | IqE | NatF | NatI | NatE deriving (Eq, Show, Read, G.Generic, Store)
 
 instance SimpleText DTTrule where
   toText = T.pack . show

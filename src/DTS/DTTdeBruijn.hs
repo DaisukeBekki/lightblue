@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, DeriveGeneric, DeriveAnyClass #-}
+{-# LANGUAGE FlexibleInstances, DeriveGeneric, DeriveAnyClass, TemplateHaskell #-}
 
 {-|
 Copyright   : (c) Daisuke Bekki, 2024
@@ -34,6 +34,7 @@ module DTS.DTTdeBruijn (
 import qualified GHC.Generics        as G --base
 import qualified Data.Text.Lazy as T  --text
 import Data.Store (Store(..))         --store
+import Data.Store.TH (makeStore)
 --import qualified Codec.Serialise as S --serialise
 import Interface.Text                 --lightblue
 import Interface.TeX                  --lightblue
@@ -41,7 +42,7 @@ import Interface.HTML                 --lightblue
 import DTS.GeneralTypeQuery           --lightblue
 
 -- | 'Proj' 'Fst' m is the first projection of m, while 'Proj' 'Snd' m is the second projection of m.
-data Selector = Fst | Snd deriving (Eq, Show)
+data Selector = Fst | Snd deriving (Eq, Show, G.Generic, Store)
 
 -- | Print a selector as "1" or "2".
 instance SimpleText Selector where
@@ -94,6 +95,10 @@ data Preterm =
 
 instance Show Preterm where
   show = T.unpack . toText
+
+instance Store Preterm
+
+makeStore ''T.Text
 
 -- | translates a preterm into a simple text notation.
 instance SimpleText Preterm where
@@ -344,7 +349,7 @@ data Judgment = Judgment {
   , contxt :: Context  -- ^ A context \Gamma in \Gamma \vdash M:A
   , trm :: Preterm     -- ^ A term M in \Gamma \vdash M:A
   , typ :: Preterm     -- ^ A type A in \Gamma \vdash M:A
-  } deriving (Eq)
+  } deriving (Eq, G.Generic)
 
 embedJudgment :: Judgment -> GeneralTypeQuery Signature Context Preterm Preterm
 embedJudgment (Judgment sig cxt trm typ) = GeneralTypeQuery sig cxt (Term trm) (Term typ)
@@ -357,6 +362,7 @@ instance Typeset Judgment where
   toTeX = toTeX . embedJudgment
 instance MathML Judgment where
   toMathML = toMathML . embedJudgment
+instance Store Judgment
 
 type TypeCheckQuery = Judgment
 
