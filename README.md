@@ -41,6 +41,7 @@ You need to add the environment variable LIGHTBLUE and set its value as &lt;ligh
 ```
 $ cd <lightblue>
 $ stack build
+$ stack install
 ```
 
 Set the permission of the shell scripts `lightblue` to executable.
@@ -74,7 +75,7 @@ $ lightblue jsem -f <jsemfile>
 ### Usage
 The syntax of the lightblue command is as follows:
 ```
-stack run lightblue -- <command> <local options> <global options>
+lightblue <command> <local options> <global options>
 ```
 
 |Command         |                                                                       |
