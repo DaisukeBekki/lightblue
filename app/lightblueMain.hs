@@ -353,15 +353,15 @@ showStat = do
   putStrLn "lightblue: "
   putStr "  "
   putStr $ show $ length $ LEX.emptyCategories
-  putStrLn " empty categories from CCG book"
+  putStrLn " empty categories from CCG book (Bekki 2010)"
   putStr "  "
   putStr $ show $ length $ LEX.myLexicon
-  putStrLn " lexical entries for closed words from CCG book"
+  putStrLn " lexical entries for closed words from CCG book (Bekki 2010)"
   jumandicpath <- E.getEnv "LIGHTBLUE"
-  jumandic <- T.readFile $ jumandicpath ++ "src/Parser/Japanese/Juman.dic"
+  jumandic <- T.readFile $ jumandicpath ++ "src/Parser/Language/Japanese/Juman/Juman.dic"
   putStr "  "
   putStr $ show $ length $ T.lines jumandic
-  putStrLn " lexical entries for open words from JUMAN++"
+  putStrLn " lexical entries for open words from JUMAN++ dictionary + Kyoto case frame"
 
 -- | lightblue --test
 -- | 
