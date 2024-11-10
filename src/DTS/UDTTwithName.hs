@@ -24,13 +24,8 @@ module DTS.UDTTwithName (
   , toDeBruijn
   --, fromDeBruijnLoop -- exportしない方向に
   -- * Judgment
-  -- , Signature
-  -- , Context
   -- , toVerticalMathML    -- 再考
   -- , printVerticalMathML -- 再考
-  -- , fromDeBruijnSignature
-  -- , fromDeBruijnContext
-  -- , fromDeBruijnContextLoop -- exportしない方向に
   , Judgment(..)
   , fromDeBruijnJudgment
   , TypeCheckQuery
@@ -40,10 +35,8 @@ module DTS.UDTTwithName (
   ) where
 
 import qualified GHC.Generics        as G --base
-import qualified System.Environment as E -- base
 import qualified Data.List as L           --base
 import qualified Data.Text.Lazy as T      -- text
---import qualified Data.Text.Lazy.IO as T -- text
 import Data.Store (Store(..))             --store
 import Interface.Text
 import Interface.TeX
@@ -404,11 +397,16 @@ fromDeBruijnLoop vnames preterm = case preterm of
     b' <- fromDeBruijnLoop (vname:vnames) b
     return $ Pi vname a' b'
   UDTTdB.Lam m   -> do
-    i <- xIndex
-    let vname = case m of
-                  UDTTdB.Sigma _ _ -> VarName 'x' i
-                  UDTTdB.Pi _ _    -> VarName 'x' i
-                  _         -> VarName 'x' i
+    vname <- case m of
+               UDTTdB.Sigma _ _ -> do
+                 i <- kIndex
+                 return $ VarName 'k' i
+               UDTTdB.Pi _ _    -> do
+                 i <- kIndex
+                 return $ VarName 'k' i
+               _ -> do
+                 i <- xIndex
+                 return $ VarName 'x' i
     m' <- fromDeBruijnLoop (vname:vnames) m
     return $ Lam vname m'
   UDTTdB.App m n -> do
@@ -486,12 +484,26 @@ fromDeBruijnLoop vnames preterm = case preterm of
 variableNameFor :: UDTTdB.Preterm -> Indexed VarName
 variableNameFor preterm =
   case preterm of
-    UDTTdB.Con cname | cname == "entity" -> do i <- xIndex; return $ VarName 'x' i
-              | cname == "evt"    -> do i <- eIndex; return $ VarName 'e' i
-              -- cname == "state"  -> VN.VN.VarName 's' i
-    UDTTdB.Eq _ _ _ -> do i <- xIndex; return $ VarName 's' i
-    UDTTdB.Nat      -> do i <- xIndex; return $ VarName 'k' i
-    _        -> do i <- uIndex; return $ VarName 'u' i
+    UDTTdB.Entity -> do
+                     i <- xIndex
+                     return $ VarName 'x' i
+    -- UDTTdB.Con cname 
+    --   | cname == "entity" -> do
+    --                    i <- xIndex
+    --                    return $ VarName 'x' i
+    --   | cname == "evt" -> do
+    --                    i <- eIndex
+    --                    return $ VarName 'e' i
+    --           -- cname == "state"  -> VN.VN.VarName 's' i
+    UDTTdB.Eq _ _ _ -> do
+                       i <- sIndex
+                       return $ VarName 's' i
+    UDTTdB.Nat      -> do
+                       i <- xIndex
+                       return $ VarName 'x' i
+    _               -> do 
+                       i <- uIndex
+                       return $ VarName 'u' i
 
 -- | translates a preterm with variable name into a preterm in de Bruijn notation.
 toDeBruijn :: [VarName]  -- ^ A context (= a list of variable names)
