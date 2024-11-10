@@ -7,6 +7,7 @@ import Control.Monad (forM)               --base
 import ListT (toList)                     --list-t
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
+import qualified Data.Text as StrictT     --text
 import qualified Data.Text.IO as StrictT  --text
 import Data.Ratio ((%))                   --base
 import qualified Data.Char as C           --base
@@ -42,7 +43,7 @@ data Options =
 
 data Command =
   Parse I.ParseOutput NLI.ProverName
-  | JSeM NLI.ProverName Int
+  | JSeM NLI.ProverName String Int
   | Numeration 
   | Demo
   | Version
@@ -216,12 +217,18 @@ jsemOptionParser = JSeM
       <> showDefault
       <> value NLI.Wani
       <> help "Choose prover" )
+  <*> strOption
+    ( long "jsemid"
+      <> metavar "STRING"
+      <> showDefault
+      <> value "all"
+      <> help "Skip JSeM data the JSeM ID of which is not equial to this value")
   <*> option auto
     ( long "nsample"
-    <> help "How many data to process"
-    <> showDefault
-    <> value (-1)
-    <> metavar "INT" )  
+      <> showDefault
+      <> value (-1)
+      <> metavar "INT"
+      <> help "How many data to process")
 
 -- debugOptionParser :: Parser Command
 -- debugOptionParser = Debug
@@ -264,16 +271,19 @@ lightblueMain (Options commands style filepath morphaName beamW nParse nTypeChec
     --
     -- | JSeM Parser
     -- 
-    lightblueMainLocal (JSeM proverName nSample) lr contents = do
+    lightblueMainLocal (JSeM proverName jsemID nSample) lr contents = do
       parsedJSeM <- J.xml2jsemData $ T.toStrict contents
-      let handle = S.stdout
+      let parsedJSeM'
+            | jsemID == "all" = parsedJSeM
+            | otherwise = dropWhile (\j -> (J.jsem_id j) /= (StrictT.pack jsemID)) parsedJSeM
+          parsedJSeM''
+            | nSample < 0 = parsedJSeM'
+            | otherwise = take nSample parsedJSeM'
+          handle = S.stdout
           parseSetting = CP.ParseSetting jpOptions lr beamW nParse nTypeCheck nProof True Nothing Nothing noInference verbose
           prover = NLI.getProver proverName $ QT.ProofSearchSetting Nothing Nothing (Just QT.Classical)
-          parsedJSeM'
-            | nSample < 0 = parsedJSeM
-            | otherwise = take nSample parsedJSeM
       S.hPutStrLn handle $ I.headerOf style
-      pairs <- forM parsedJSeM' $ \j -> do
+      pairs <- forM parsedJSeM'' $ \j -> do
         mapM_ T.putStr ["[JSeM id: ", T.fromStrict $ J.jsem_id j, "] "]
         mapM_ StrictT.putStr $ J.premises j
         S.putStr " ==> "

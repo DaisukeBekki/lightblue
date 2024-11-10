@@ -91,6 +91,7 @@ Each of ```parse ``` and ```jsem``` commands has a set of local options.
 |Local Options for ```jsem```                      |Default   |Description                           |  
 |:-------------------------------------------------|:---------|:-------------------------------------|
 |```-p``` or ```--prover {Wani\|Null}```           |```Wani```|Choose a prover.<br>```Wani```: Use Wani prover (Daido and Bekki 2020)<br>```None```: Use the null prover (that always returns no diagrams).|
+|```--jsemid <text>```                             |```all``` |Skip JSeM data the JSeM ID of which is not equial to this value.           |
 |```--nsample <int>```                             |```-1```  |Specify a number of JSeM data to process (A negative value means all data) |
 
 The global options are common to all commands.
