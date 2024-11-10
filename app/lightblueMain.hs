@@ -266,7 +266,7 @@ lightblueMain (Options commands style filepath morphaName beamW nParse nTypeChec
                          I.TREE -> False
                          I.POSTAG -> True
       S.hPutStrLn handle $ I.headerOf style
-      NLI.printParseResult handle style 1 noTypeCheck posTagOnly parseResult
+      NLI.printParseResult handle style 1 noTypeCheck posTagOnly "" parseResult
       S.hPutStrLn handle $ I.footerOf style
     --
     -- | JSeM Parser
@@ -284,14 +284,15 @@ lightblueMain (Options commands style filepath morphaName beamW nParse nTypeChec
           prover = NLI.getProver proverName $ QT.ProofSearchSetting Nothing Nothing (Just QT.Classical)
       S.hPutStrLn handle $ I.headerOf style
       pairs <- forM parsedJSeM'' $ \j -> do
-        mapM_ T.putStr ["[JSeM id: ", T.fromStrict $ J.jsem_id j, "] "]
+        let title = "JSeM-ID " ++ (StrictT.unpack $ J.jsem_id j)
+        S.putStr $ "[" ++ title ++ "] "
         mapM_ StrictT.putStr $ J.premises j
         S.putStr " ==> "
         StrictT.putStrLn $ J.hypothesis j
         S.putStr "\n"
         let sentences = reverse $ (T.fromStrict $ J.hypothesis j):(map T.fromStrict $ J.premises j)
             parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] sentences
-        NLI.printParseResult handle style 1 noTypeCheck False parseResult
+        NLI.printParseResult handle style 1 noTypeCheck False title parseResult
         inferenceLabels <- toList $ NLI.trawlParseResult parseResult
         let groundTruth = J.jsemLabel2YesNo $ J.answer j
             prediction = case inferenceLabels of
