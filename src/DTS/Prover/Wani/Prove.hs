@@ -43,7 +43,7 @@ hojo varEnv sigEnv pre_type setting =
   let sigEnv' = map (Data.Bifunctor.second A.fromDT2A) sigEnv
       varEnv' = map A.fromDT2A varEnv
       arrowType = A.fromDT2A  pre_type
-      result = searchProofWithIncrementalDepth sigEnv' varEnv' arrowType 1 setting 1 (M.Just $ WB.maxdepth setting)
+      result = searchProofWithIncrementalDepth sigEnv' varEnv' arrowType 1 setting 1 (let num = WB.maxdepth setting in if num < 0 then M.Nothing else M.Just num)
   in WB.debugLog (sigEnv',varEnv') arrowType 0 setting "goal" result
 
 searchProof' :: WB.DeduceRule
@@ -67,7 +67,7 @@ prove' QT.ProofSearchSetting{..} (DdB.ProofSearchQuery sig ctx typ) =  -- LiftT 
         WB.falsum = True,
         WB.maxdepth = case maxDepth of
                         Just n -> n
-                        Nothing -> 4,
+                        Nothing -> 9,
         WB.maxtime = case maxTime of
                         Just t -> t
                         Nothing -> 100000,
