@@ -43,7 +43,7 @@ hojo varEnv sigEnv pre_type setting =
   let sigEnv' = map (Data.Bifunctor.second A.fromDT2A) sigEnv
       varEnv' = map A.fromDT2A varEnv
       arrowType = A.fromDT2A  pre_type
-      result = searchProofWithIncrementalDepth sigEnv' varEnv' arrowType 1 setting 1 (M.Just 20)
+      result = searchProofWithIncrementalDepth sigEnv' varEnv' arrowType 1 setting 1 (M.Just $ WB.maxdepth setting)
   in WB.debugLog (sigEnv',varEnv') arrowType 0 setting "goal" result
 
 searchProof' :: WB.DeduceRule
