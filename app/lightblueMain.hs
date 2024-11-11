@@ -266,7 +266,7 @@ lightblueMain (Options commands style filepath morphaName beamW nParse nTypeChec
     lightblueMainLocal (Parse output proverName) lr contents = do
       let handle = S.stdout
           parseSetting = CP.ParseSetting jpOptions lr beamW nParse nTypeCheck nProof True Nothing Nothing noInference verbose
-          prover = NLI.getProver proverName $ QT.ProofSearchSetting (Just maxDepth) Nothing (Just QT.Classical)
+          prover = NLI.getProver proverName $ QT.ProofSearchSetting (Just maxDepth) Nothing (Just QT.Classical) verbose
           parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] $ T.lines contents
           posTagOnly = case output of 
                          I.TREE -> False
@@ -287,7 +287,7 @@ lightblueMain (Options commands style filepath morphaName beamW nParse nTypeChec
             | otherwise = take nSample parsedJSeM'
           handle = S.stdout
           parseSetting = CP.ParseSetting jpOptions lr beamW nParse nTypeCheck nProof True Nothing Nothing noInference verbose
-          prover = NLI.getProver proverName $ QT.ProofSearchSetting (Just maxDepth) Nothing (Just QT.Classical)
+          prover = NLI.getProver proverName $ QT.ProofSearchSetting (Just maxDepth) Nothing (Just QT.Classical) verbose
       S.hPutStrLn handle $ I.headerOf style
       pairs <- forM parsedJSeM'' $ \j -> do
         let title = "JSeM-ID " ++ (StrictT.unpack $ J.jsem_id j)
@@ -392,7 +392,7 @@ test = do
       termA = UDTT.Sigma (UDTT.Con "entity") (UDTT.App (UDTT.Con "f") (UDTT.Var 0))
       -- typeA = DTS.Kind
       tcq = UDTT.TypeInferQuery signature context termA 
-      pss = QT.ProofSearchSetting Nothing Nothing (Just QT.Classical)
+      pss = QT.ProofSearchSetting Nothing Nothing (Just QT.Classical) False
   typeCheckResults <- toList $ typeInfer (nullProver pss) False tcq
   T.putStrLn $ T.toText $ head typeCheckResults
   --T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 0) DTS.Type
