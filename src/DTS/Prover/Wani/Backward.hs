@@ -456,7 +456,18 @@ dne' sig var aType depth setting
         in  deduced{B.trees = trees,B.rStatus = status}
 
 efq' :: B.DeduceRule
-efq' sig var aType depth setting = undefined
+efq' sig var aType depth setting
+  | aType == (A.Conclusion DdB.Bot) =  
+    B.debugLog (sig,var) aType depth setting "efq2重"  B.resultDef{B.rStatus = B.sStatus setting}
+  | otherwise = 
+      let deduced = deduce sig var (A.Conclusion DdB.Bot) (depth + 1) setting
+          trees = 
+              map 
+              (\dTree -> let (A.AJudgment sig_d var_d aTerm a_type) = A.downSide' dTree 
+                in UDT.Tree QT.SigmaE (A.AJudgment sig_d var_d (A.ArrowApp (A.aCon $T.pack " efq ") aTerm) aType) [dTree]) 
+              (B.trees deduced)
+          status = B.rStatus deduced
+      in  deduced{B.trees = trees}
 
 piForm' :: B.TypecheckRule
 piForm' sig var aTerm aType depth setting
