@@ -102,10 +102,7 @@ forEq context term =
                   (\pair ->
                     case pair of
                       [A.Arrow fArg fRes,A.Arrow xArg xRes] -> 
-                        let (xArg',xRes') = 
-                              case A.shiftIndices (A.Arrow xArg xRes) (length fArg) 0 of
-                                A.Arrow a b -> (a,b)
-                                c -> ([],c)
+                        let A.Arrow xArg' xRes' = case A.shiftIndices (A.Arrow xArg xRes) (length fArg) 0 of A.Arrow h t->A.Arrow h t;t -> A.Arrow [] t
                             arg = xArg' ++ fArg
                             res = A.ArrowApp (A.shiftIndices fRes (length xArg) 0) (xRes')
                         in A.Arrow arg res
