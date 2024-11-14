@@ -230,7 +230,7 @@ instance MathML Preterm where
     Con cname -> T.concat ["<mtext>", cname, "</mtext>"]
     Type -> "<mi>type</mi>"
     Kind -> "<mi>kind</mi>"
-    Pi vname a b -> T.concat ["<mrow><mo>(</mo>", toMathML vname, "<mo>:</mo>", toMathML a, "<mo>&rarr;</mo>", toMathML b, "</mrow>"]
+    Pi vname a b -> T.concat ["<mrow><mo>(</mo>", toMathML vname, "<mo>:</mo>", toMathML a, "<mo>&rarr;</mo>", toMathML b, "<mo>)</mo></mrow>"]
     Not a -> T.concat["<mrow><mi>&not;</mi>", toMathML a, "</mrow>"]
     Lam vname m -> T.concat ["<mrow><mi>&lambda;</mi>", toMathML vname, "<mpadded lspace='-0.2em' width='-0.2em'><mo>.</mo></mpadded>", toMathML m, "</mrow>"]
     App (App (Con cname) y) x ->
