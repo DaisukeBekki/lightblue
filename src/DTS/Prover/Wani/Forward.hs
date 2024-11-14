@@ -102,7 +102,7 @@ forEq context term =
                   (\pair ->
                     case pair of
                       [A.Arrow fArg fRes,A.Arrow xArg xRes] -> 
-                        let A.Arrow xArg' xRes' = A.shiftIndices (A.Arrow xArg xRes) (length fArg) 0
+                        let A.Arrow xArg' xRes' = case A.shiftIndices (A.Arrow xArg xRes) (length fArg) 0 of A.Arrow h t->A.Arrow h t;t -> A.Arrow [] t
                             arg = xArg' ++ fArg
                             res = A.ArrowApp (A.shiftIndices fRes (length xArg) 0) (xRes')
                         in A.Arrow arg res
@@ -219,7 +219,7 @@ eqForwards2' =  concatMap eqForward2
 eqForward2 :: UDT.Tree A.Arrowrule A.AJudgment -> [UDT.Tree A.Arrowrule A.AJudgment]
 eqForward2 tree =
   case A.downSide' tree of 
-    A.AJudgment sig var aTerm aType ->
+    A.AJudgment sig var aTerm aType -> 
       let eqForwardedTypes = filter (\at -> case at of A.Arrow (_:_) _ -> True; _ -> False) $snd $forEq (sig,var) aType
           eqForwardedTerm = A.ArrowApp (A.aCon "eqElim") (aTerm)
       in map (\eqForwardedType -> UDT.Tree QT.IqE (A.AJudgment sig var eqForwardedTerm eqForwardedType) [tree]) eqForwardedTypes
