@@ -35,6 +35,7 @@ import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.List as L           --base
 import ListT (ListT(..),fromFoldable,toList,take,null) --list-t
 import qualified Parser.ChartParser as CP      --lightblue
+import qualified Parser.PartialParsing as Partial --lightblue
 import qualified Parser.CCG as CCG             --lightblue
 import Interface                               --lightblue
 import Interface.Text                          --lightblue
@@ -121,7 +122,7 @@ parseWithTypeCheck ps prover signtr contxt (text:texts) =
     -- |               =fmap(foldable)=> ListT IO (ListT IO CCG.Node)
     -- |               =join=>           ListT IO CCG.Node
     -- |               =take n=>         ListT IO CCG.Node
-    node <- takeNbest (CP.nParse ps) $ join $ fmap fromFoldable $ lift $ CP.simpleParse ps text 
+    node <- takeNbest (CP.nParse ps) $ join $ fmap fromFoldable $ lift $ Partial.simpleParse ps text 
     let signtr' = L.nub $ (CCG.sig node) ++ signtr
         tcQueryType = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
         tcQueryKind = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Kind
