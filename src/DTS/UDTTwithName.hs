@@ -21,7 +21,7 @@ module DTS.UDTTwithName (
   , toDTT
   -- * Conversion btw. De Bruijn notation and Variable-name notation
   , fromDeBruijn
-  , fromDeBruijnLoop -- exportしない方向に
+  -- , fromDeBruijnLoop -- exportしない方向に
   , toDeBruijn
   -- * Judgment
   -- , toVerticalMathML    -- 再考
