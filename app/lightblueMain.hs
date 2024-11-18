@@ -18,6 +18,7 @@ import qualified System.Environment as E -- base
 import qualified Data.Map as M            --container
 import qualified Data.Time as Time        --time
 import qualified Parser.ChartParser as CP
+import qualified Parser.PartialParsing as CP
 import qualified Parser.Language.Japanese.Lexicon as LEX
 import qualified Parser.Language.Japanese.MyLexicon as LEX
 import qualified Parser.Language.Japanese.Juman.CallJuman as Juman
