@@ -22,7 +22,8 @@ import qualified Parser.PartialParsing as CP
 import qualified Parser.Language.Japanese.Lexicon as LEX
 import qualified Parser.Language.Japanese.MyLexicon as LEX
 import qualified Parser.Language.Japanese.Juman.CallJuman as Juman
-import Parser.Language (jpOptions)
+import qualified Parser.Language.English.Lexicon as ELEX
+import Parser.Language (jpOptions,enOptions)
 import qualified Interface as I
 import qualified Interface.Text as T
 import qualified JSeM as J
@@ -62,7 +63,7 @@ data Command =
 --     ++ [(JSEM,s) | (x,s) <- lex r, map C.toLower x == "jsem"]
 
 -- | Main function.  Check README.md for the usage.
-main :: IO()
+main :: IO ()
 main = customExecParser p opts >>= lightblueMain 
   where opts = info (helper <*> optionParser)
                  ( fullDesc
@@ -242,7 +243,7 @@ jsemOptionParser = JSeM
 --   <$> argument auto idm
 --   <*> argument auto idm
 
-lightblueMain :: Options -> IO()
+lightblueMain :: Options -> IO ()
 -- lightblueMain Version = showVersion
 -- lightblueMain Stat = showStat
 -- lightblueMain Test = test
@@ -359,7 +360,7 @@ lightblueMain (Options commands style filepath morphaName beamW nParse nTypeChec
 -- |
 -- | lightblue --version
 -- |
-showVersion :: IO()
+showVersion :: IO ()
 showVersion = do
   T.putStr "lightblue version: "
   lightbluepath <- E.getEnv "LIGHTBLUE"
@@ -369,7 +370,7 @@ showVersion = do
 -- |
 -- | lightblue --status
 -- |
-showStat :: IO()
+showStat :: IO ()
 showStat = do
   putStrLn "lightblue: "
   putStr "  "
@@ -386,16 +387,17 @@ showStat = do
 
 -- | lightblue --test
 -- | 
-test :: IO()
+test :: IO ()
 test = do
-  let signature = [("entity", DTT.Type), ("evt",DTT.Type), ("f", DTT.Pi (DTT.Con "entity") DTT.Type)]
-      context = [(DTT.Con "dog")]
-      termA = UDTT.Sigma (UDTT.Con "entity") (UDTT.App (UDTT.Con "f") (UDTT.Var 0))
-      -- typeA = DTS.Kind
-      tcq = UDTT.TypeInferQuery signature context termA 
-      pss = QT.ProofSearchSetting Nothing Nothing (Just QT.Classical)
-  typeCheckResults <- toList $ typeInfer (nullProver pss) False tcq
-  T.putStrLn $ T.toText $ head typeCheckResults
+  ELEX.setupLexicon "Every farmer who owns a donkey beats it."
+  -- let signature = [("entity", DTT.Type), ("evt",DTT.Type), ("f", DTT.Pi (DTT.Con "entity") DTT.Type)]
+  --     context = [(DTT.Con "dog")]
+  --     termA = UDTT.Sigma (UDTT.Con "entity") (UDTT.App (UDTT.Con "f") (UDTT.Var 0))
+  --     -- typeA = DTS.Kind
+  --     tcq = UDTT.TypeInferQuery signature context termA 
+  --     pss = QT.ProofSearchSetting Nothing Nothing (Just QT.Classical)
+  -- typeCheckResults <- toList $ typeInfer (nullProver pss) False tcq
+  -- T.putStrLn $ T.toText $ head typeCheckResults
   --T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 0) DTS.Type
   --T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 2) DTS.Type
 

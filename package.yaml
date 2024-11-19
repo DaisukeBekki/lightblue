@@ -63,6 +63,7 @@ library:
   - Parser.Language.Japanese.Juman.ParseCaseFrame
   - Parser.Language.Japanese.Juman.ConvertJumanDic
   - Parser.Language.Japanese.Juman.ShowCaseFrame
+  - Parser.Language.English.Lexicon
   - Interface
   - Interface.Text
   - Interface.TeX

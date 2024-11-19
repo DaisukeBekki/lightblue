@@ -154,7 +154,9 @@ instance SimpleText Cat where
                        toText pmf,
                        "]"
                        ]
+    S []        -> "S"
     NP [cas]    -> T.concat ["NP[", toText cas, "]"]
+    NP []       -> "NP"
     Sbar [sf]   -> T.concat ["Sbar[", toText sf, "]"]
     N           -> "N"
     CONJ        -> "CONJ"
