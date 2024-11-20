@@ -13,6 +13,7 @@ module Parser.Language.Japanese.Filter.KWJAFilter (
 ) where
 
 import Data.List
+import System.Environment (getEnv)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import qualified Data.Text as T
@@ -44,7 +45,8 @@ type OpenWordsMap = M.Map T.Text [(T.Text, S.Set T.Text)]
 kwjaFilter :: T.Text -> IO (Int -> Int -> [CCG.Node] -> [CCG.Node])
 kwjaFilter text = do
     kwjaDatas <- KW.callKWJA text
-    katuyoulist <- JK.parseKatuyouFromPath "../Juman/JUMAN.katuyou"
+    lb <- getEnv "LIGHTBLUE"
+    katuyoulist <- JK.parseKatuyouFromPath $ concat [lb,"src/Parser/Language/Japanese/Juman/JUMAN.katuyou"]
     let conjmap = KF.getConjMap katuyoulist
         -- openWordsMap = getOpenWordsMap kwjaDatas conjmap
         filterNode = createFilterFrom kwjaDatas conjmap
@@ -267,6 +269,7 @@ getOpenWords kwjaData conjmap = case kwjaData of
                                     if hinsi == "名詞"
                                         then (hinsi, (nyuryoku, [])) : getOpenWords (x2 : xs) conjmap
                                         else getOpenWords (x2 : xs) conjmap
+                _ -> getOpenWords (x2 : xs) conjmap
     KW.Juman (J.AltWord _ _ _ _ _ _ _ _ _ _ _ _) : xs ->
         getOpenWords xs conjmap
     KW.Juman _ : xs -> getOpenWords xs conjmap
