@@ -32,6 +32,7 @@ import Parser.Language (LangOptions(..),jpOptions) --lightblue
 import qualified Parser.Language.Japanese.Juman.CallJuman as Juman
 import qualified Parser.Language.Japanese.Lexicon as L (LexicalResource(..), lexicalResourceBuilder, LexicalItems, lookupLexicon, setupLexicon, emptyCategories, myLexicon)
 import qualified Parser.Language.Japanese.Templates as LT
+import qualified Parser.Language.English.Lexicon as EN (setupLexicon)
 import qualified DTS.QueryTypes as QT
 
 {- Main functions -}
@@ -72,7 +73,9 @@ parse ParseSetting{..} sentence
           nodeFilter = case ifFilterNode of
                          Just filter -> filter
                          Nothing -> (\_ _ -> id)
-      lexicon <- L.setupLexicon lexicalResource sentenceToParse
+      lexicon <- case langOptions of
+                   jpOptions -> L.setupLexicon lexicalResource sentenceToParse
+                   enOptions -> EN.setupLexicon sentenceToParse
       let (chart,_,_,_) = T.foldl' (chartAccumulator ifDebug beamWidth lexicon nodeFilter) 
                                    (M.empty,[0],0,T.empty)
                                    sentenceToParse

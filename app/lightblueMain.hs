@@ -23,7 +23,7 @@ import qualified Parser.Language.Japanese.Lexicon as LEX
 import qualified Parser.Language.Japanese.MyLexicon as LEX
 import qualified Parser.Language.Japanese.Juman.CallJuman as Juman
 import qualified Parser.Language.English.Lexicon as ELEX
-import Parser.Language (jpOptions,enOptions)
+import Parser.Language (Language(..),jpOptions,enOptions)
 import qualified Interface as I
 import qualified Interface.Text as T
 import qualified JSeM as J
@@ -40,7 +40,7 @@ data Options =
   -- Version
   -- | Stat
   -- | Test
-  Options Command I.Style FilePath Juman.MorphAnalyzerName Int Int Int Int Int Bool Bool Bool Bool
+  Options Command I.Style FilePath Language Juman.MorphAnalyzerName Int Int Int Int Int Bool Bool Bool Bool
     deriving (Show, Eq)
 
 data Command =
@@ -147,9 +147,15 @@ optionParser =
       <> showDefault
       <> value "-" )
     <*> option auto
+      ( long "language"
+        <> short 'l' 
+        <> metavar "Japanese|English"
+        <> value Japanese
+        <> help "Specify language (default: Japanese)" )
+    <*> option auto
       ( long "ma"
         <> short 'm' 
-        <> metavar "juman|jumanpp|kwja"
+        <> metavar "juman|jumanpp|kwja|nltk"
         <> value Juman.KWJA
         <> help "Specify morphological analyzer (default: KWJA)" )
     <*> option auto 
@@ -247,7 +253,7 @@ lightblueMain :: Options -> IO ()
 -- lightblueMain Version = showVersion
 -- lightblueMain Stat = showStat
 -- lightblueMain Test = test
-lightblueMain (Options commands style filepath morphaName beamW nParse nTypeCheck nProof maxDepth noTypeCheck noInference iftime verbose) = do
+lightblueMain (Options commands style filepath lang morphaName beamW nParse nTypeCheck nProof maxDepth noTypeCheck noInference iftime verbose) = do
   start <- Time.getCurrentTime
   contents <- case filepath of
     "-" -> T.getContents
@@ -267,7 +273,10 @@ lightblueMain (Options commands style filepath morphaName beamW nParse nTypeChec
     -- |
     lightblueMainLocal (Parse output proverName) lr contents = do
       let handle = S.stdout
-          parseSetting = CP.ParseSetting jpOptions lr beamW nParse nTypeCheck nProof True Nothing Nothing noInference verbose
+          langOptions | lang == Japanese = jpOptions
+                      | lang == English = enOptions
+                      | otherwise = jpOptions
+          parseSetting = CP.ParseSetting langOptions lr beamW nParse nTypeCheck nProof True Nothing Nothing noInference verbose
           prover = NLI.getProver proverName $ QT.ProofSearchSetting (Just maxDepth) Nothing (Just QT.Intuitionistic)
           parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] $ T.lines contents
           posTagOnly = case output of 
@@ -389,15 +398,14 @@ showStat = do
 -- | 
 test :: IO ()
 test = do
-  ELEX.setupLexicon "Every farmer who owns a donkey beats it."
-  -- let signature = [("entity", DTT.Type), ("evt",DTT.Type), ("f", DTT.Pi (DTT.Con "entity") DTT.Type)]
-  --     context = [(DTT.Con "dog")]
-  --     termA = UDTT.Sigma (UDTT.Con "entity") (UDTT.App (UDTT.Con "f") (UDTT.Var 0))
-  --     -- typeA = DTS.Kind
-  --     tcq = UDTT.TypeInferQuery signature context termA 
-  --     pss = QT.ProofSearchSetting Nothing Nothing (Just QT.Classical)
-  -- typeCheckResults <- toList $ typeInfer (nullProver pss) False tcq
-  -- T.putStrLn $ T.toText $ head typeCheckResults
+  let signature = [("entity", DTT.Type), ("evt",DTT.Type), ("f", DTT.Pi (DTT.Con "entity") DTT.Type)]
+      context = [(DTT.Con "dog")]
+      termA = UDTT.Sigma (UDTT.Con "entity") (UDTT.App (UDTT.Con "f") (UDTT.Var 0))
+      -- typeA = DTS.Kind
+      tcq = UDTT.TypeInferQuery signature context termA 
+      pss = QT.ProofSearchSetting Nothing Nothing (Just QT.Classical)
+  typeCheckResults <- toList $ typeInfer (nullProver pss) False tcq
+  T.putStrLn $ T.toText $ head typeCheckResults
   --T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 0) DTS.Type
   --T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 2) DTS.Type
 

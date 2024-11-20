@@ -33,7 +33,9 @@ type DTTpreterm = DTT.Preterm
 type UDTTpreterm = UDTT.Preterm
 type Signature = DTT.Signature
 
-setupLexicon :: T.Text -> IO ()
+type LexicalItems = [Node]
+
+setupLexicon :: T.Text -> IO LexicalItems
 setupLexicon sentence = do
   lightbluepath <- E.getEnv "LIGHTBLUE"
   let nltkScript = lightbluepath ++ "src/Parser/Language/English/nltk_pos_tagger.py"
@@ -41,8 +43,10 @@ setupLexicon sentence = do
   output <- S.shelly $ S.silently $ S.escaping False $ S.cmd $ S.fromText $ T.toStrict command 
   let nltkWords = (A.decode $ fromString $ StrictT.unpack output) :: Maybe [NLTKword]
   case nltkWords of
-    Just nltkWords' -> putStrLn $ show $ concat $ map fromNLTKtoCCG nltkWords'
-    Nothing -> T.putStrLn $ T.concat ["Error in NLTK pos tagging: ", sentence]
+    Just nltkWords' -> return $ concat $ map fromNLTKtoCCG nltkWords'
+    Nothing -> do
+               T.putStrLn $ T.concat ["Error in NLTK pos tagging: ", sentence]
+               return []
 
 data NLTKword = NLTKword {
   word :: T.Text
@@ -56,13 +60,16 @@ mylex wds num cat' (sem',sig') = [(lexicalitem wd num 100 cat' (sem',sig')) | wd
 
 fromNLTKtoCCG :: NLTKword -> [Node]
 fromNLTKtoCCG (NLTKword word pos) = case (word,pos) of
-  --(w,"NNP") -> NP [] -- john
-  --(w,"DT") -> ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N)   -- every, a
-  (w,"NN") -> 
-    mylex [w] "NN" N (commonNounSR w)
-  --(w,"WP") -> (N `BS` N) `SL` (S [] `BS` NP [] ) -- who
-  --(w,"VBZ") -> (S [] `BS` NP []) `SL` NP []  -- own
-  --(w,"PRP") -> NP [] -- it
-  --(w,".") -> NP []
-  (w,_) -> 
-    mylex [w] "Error" N (commonNounSR w) 
+  (w,"NNP") -> mylex [w] "NN" (N `SL` N) (nominalModifier w)
+  --NP [] -- john
+  (w,"DT") -> mylex [w] "NN" (N `SL` N) (nominalModifier w)
+  -- ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N)   -- every, a
+  (w,"NN") -> mylex [w] "NN" (N `SL` N) (nominalModifier w)
+  (w,"WP") -> mylex [w] "NN" (N `SL` N) (nominalModifier w)
+  -- (N `BS` N) `SL` (S [] `BS` NP [] ) -- who
+  (w,"VBZ") -> mylex [w] "NN" (N `SL` N) (nominalModifier w)
+  -- (S [] `BS` NP []) `SL` NP []  -- own
+  (w,"PRP") -> mylex [w] "NN" (N `SL` N) (nominalModifier w)
+  (w,".") -> mylex [w] "NN" (N `SL` N) (nominalModifier w)
+  (w,_) -> mylex [w] "NN" (N `SL` N) (nominalModifier w)
+  -- mylex [w] "Error" N (commonNounSR w) 

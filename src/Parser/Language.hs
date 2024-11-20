@@ -14,11 +14,15 @@ module Parser.Language (
   , enOptions
   ) where
 
+import qualified Data.Char as C         --base
 import qualified Data.Text.Lazy as T    --text
--- import qualified Data.Text.Lazy.IO as T --text
 
 -- | Languages
-data Language = Japanese | English deriving (Eq,Show,Read)
+data Language = Japanese | English deriving (Eq,Show)
+instance Read Language where
+  readsPrec _ r =
+    [(Japanese,s) | (x,s) <- lex r, map C.toLower x == "japanese"]
+    ++ [(English,s) | (x,s) <- lex r, map C.toLower x == "english"]
 
 -- | Language options
 data LangOptions = LangOptions {
