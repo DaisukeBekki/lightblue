@@ -14,6 +14,7 @@ module Parser.Language.English.Lexicon (
   setupLexicon
 ) where
 
+import Prelude hiding (id)
 import qualified GHC.Generics as G       --base
 import qualified System.Environment as E --base
 import Data.String (fromString) --base
@@ -68,15 +69,15 @@ fromNLTKtoCCG :: NLTKword -> [Node]
 fromNLTKtoCCG (NLTKword word pos) = case (word,pos) of
   (w,"NNP") -> mylex [w] "NNP" (NP []) (properNameSR w)
   --NP [] -- john
-  (w,"DT") -> mylex [w] "DT" (N `SL` N) (nominalModifier w)
+  (w,"DT") -> mylex [w] "DT" (NP [] `SL` N) (nominalModifier w)
   -- ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N)   -- every, a
   (w,"NN") -> mylex [w] "NN" (N `SL` N) (nominalModifier w)
   (w,"WP") -> mylex [w] "WP" (N `SL` N) (nominalModifier w)
   -- (N `BS` N) `SL` (S [] `BS` NP [] ) -- who
-  (w,"NNS") -> mylex [w] "NNS" (S [] `BS` NP []) (predSR 2 w)
+  (w,"NNS") -> mylex [w] "NNS" (S [] `BS` NP []) (predSR 1 w)
   (w,"VBZ") -> mylex [w] "VBZ" (S [] `BS` NP [] `SL` NP []) (predSR 2 w)
   -- (S [] `BS` NP []) `SL` NP []  -- own
-  (w,"PRP") -> mylex [w] "PRP" (N `SL` N) (nominalModifier w)
-  (w,".") -> mylex [w] "." (N `SL` N) (nominalModifier w)
-  (w,_) -> mylex [w] "_" (N `SL` N) (nominalModifier w)
+  (w,"PRP") -> mylex [w] "PRP" (NP []) (properNameSR w)
+  (w,".") -> mylex [w] "." (PERIOD) (id,[])
+  (w,_) -> mylex [w] "_" (PUNCT) (id,[])
   -- mylex [w] "Error" N (commonNounSR w) 
