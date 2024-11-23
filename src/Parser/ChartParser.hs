@@ -23,6 +23,7 @@ module Parser.ChartParser (
 import Data.List as L
 import Data.Char                          --base
 import System.IO.Unsafe (unsafePerformIO) --base
+import Data.Function    ((&))             --base
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.Map as M         --container
@@ -73,8 +74,8 @@ parse parseSetting@ParseSetting{..} sentence
       lexicon <- case langOptions of
                    jpOptions -> L.setupLexicon lexicalResource sentenceToParse
                    enOptions -> EN.setupLexicon sentenceToParse
-      let (chart,_,_,_) = T.foldl' (chartAccumulator parseSetting lexicon) 
-                                   (M.empty,[0],0,T.empty)
+      let (chart,_,_) = T.foldl' (chartAccumulator parseSetting lexicon) 
+                                   (M.empty,0,T.empty)
                                    sentenceToParse
       return chart
 
@@ -85,15 +86,14 @@ purifyText langOptions text =
     Nothing -> T.empty
     Just (c,t) | isSpace c                                 -> purifyText langOptions t               -- ignore white spaces
                | T.any (==c) (symbolsToIgnore langOptions) -> purifyText langOptions t               -- ignore meaningless symbols
-               | T.any (==c) (punctuations langOptions)    -> T.cons '、' $ purifyText langOptions t -- punctuations
                | otherwise                                 -> T.cons c $ purifyText langOptions t
 
 -- | quadruples representing a state during parsing:
 -- the parsed result (Chart) of the left of the pivot,
--- the stack of ending positions of the previous 'separators' (i.e. '、','，',etc), 
+-- -- the stack of ending positions of the previous 'separators' (i.e. '、','，',etc), 
 -- the pivot (=the current parsing position), and
 -- the revsersed list of chars that has been parsed
-type PartialChart = (Chart,[Int],Int,T.Text)
+type PartialChart = (Chart,Int,T.Text)
 
 -- | The 'chartAccumulator' function is the accumulator of the 'parse' function
 chartAccumulator :: ParseSetting 
@@ -101,43 +101,18 @@ chartAccumulator :: ParseSetting
                     -> PartialChart   -- ^ The accumulated result, given
                     -> Char           -- ^ The next char of a unparsed text
                     -> PartialChart   -- ^ The accumulated result, updated
-chartAccumulator ps@ParseSetting{..} lexicon (chart,seplist@(sep:seps),i,stack) c 
+chartAccumulator ps@ParseSetting{..} lexicon (chart,i,stack) c =
   -- The case where the next Char is a punctuation. Recall that each seperator is an end of a phase
-  | c == '、' = let newchart = M.fromList $ ((i,i+1),[andCONJ (T.singleton c), emptyCM (T.singleton c)]):(foldl' (punctFilter sep i) [] $ M.toList chart);
-                    newstack = T.cons c stack
-               in (newchart, ((i+1):seplist), (i+1), newstack) --, (take 1 (sort (lookupChart sep (i+1) newchart)):parsed))
-  | c == '。' = let newchart = M.fromList $ foldl' (punctFilter sep i) [] $ M.toList chart;
-                    newstack = T.cons c stack
-               in (newchart, ((i+1):seplist), (i+1), newstack) --, (take 1 (sort (lookupChart sep (i+1) newchart)):parsed))
-  | otherwise 
-     = let newstack = (T.cons c stack);
-           (newchart,_,_,_) = T.foldl' (boxAccumulator ps lexicon) (chart,T.empty,i,i+1) newstack;
-           newseps | c `elem` ['「','『'] = (i+1:seplist)
-                   | c `elem` ['」','』'] = seps
-                   | otherwise = seplist 
-       in (newchart,newseps,(i+1),newstack)
+  let newstack = T.cons c stack
+      (newchart,_,_,_) = T.foldl' (boxAccumulator ps lexicon) (chart,T.empty,i,i+1) newstack
+  in (newchart,i+1,newstack)
 -- chartAccumulator _ _ (_,[],_,_) _ = ?
 
--- | 
-punctFilter :: Int    -- ^ Previous pivot
-               -> Int -- ^ Current pivot
-               -> [((Int,Int),[CCG.Node])] -- ^ The list of nodes that has been endorced
-               -> ((Int,Int),[CCG.Node])   -- ^ With respect to a given entry (=e@((from,to),nodes)), 
-               -> [((Int,Int),[CCG.Node])]
-punctFilter sep i charList e@((from,to),nodes) 
-  | to == i = ((from,to+1),filter (CCG.isBunsetsu . CCG.cat) nodes):(e:charList) 
-  | otherwise = e:charList
-                -- if from <= sep
-                --    then e:charList
-                --    else charList
-
-andCONJ :: T.Text -> CCG.Node
-andCONJ c = LT.lexicalitem c "punct" 100 CCG.CONJ LT.andSR
-
-emptyCM :: T.Text -> CCG.Node
-emptyCM c = LT.lexicalitem c "punct" 99 (((CCG.T True 1 LT.modifiableS) `CCG.SL` ((CCG.T True 1 LT.modifiableS) `CCG.BS` (CCG.NP [CCG.F[CCG.Ga,CCG.O]]))) `CCG.BS` (CCG.NP [CCG.F[CCG.Nc]])) LT.argumentCM
-
 type PartialBox = (Chart,T.Text,Int,Int) -- (chard, word, i j)
+
+-- | Backwards function application.
+(.->) :: a -> (a -> b) -> b
+(.->) = (&)
 
 -- | The 'boxAccumulator' function
 boxAccumulator :: ParseSetting
@@ -154,8 +129,15 @@ boxAccumulator ParseSetting{..} lexicon (chart,word,i,j) c = unsafePerformIO $ d
       nodeFilter = case ifFilterNode of
                       Just filter -> filter
                       Nothing -> (\_ _ -> id)
-      nodesBeforeFiltering = checkBinaryRules i j chart $ checkUnaryRules list0 
-      nodesAfterFiltering = take beamWidth $ L.sort $ checkEmptyCategories $ checkParenthesisRule i j chart $ checkCoordinationRule i j chart $ nodeFilter i j $ nodesBeforeFiltering
+      nodesBeforeFiltering = checkUnaryRules list0 
+        .-> checkBinaryRules i j chart  
+      nodesAfterFiltering = nodesBeforeFiltering
+        .-> nodeFilter i j
+        .-> checkCoordinationRule i j chart 
+        .-> checkParenthesisRule i j chart
+        .-> checkEmptyCategories
+        .-> L.sort 
+        .-> take beamWidth
   case ifDebug of
     Just (x,y) ->
       if i >= x && j <= y
@@ -168,7 +150,6 @@ boxAccumulator ParseSetting{..} lexicon (chart,word,i,j) c = unsafePerformIO $ d
         else return ()
     Nothing -> return ()
   return $ ((M.insert (i,j) nodesAfterFiltering chart), newword, i-1, j)
-  --((M.insert (i,j) (cutoff (max (beam+i-j) 24) list1) chart), newword, i-1, j)
 
 -- | take `beam` nodes from the top of `ndoes`.
 --cutoff :: Int -> [CCG.Node] -> [CCG.Node]
@@ -245,4 +226,24 @@ punctFilter sep i chartList e@((from,to),nodes)
                   then e:chartList
                   else chartList
 -}
+
+-- -- | 
+-- punctFilter :: Int    -- ^ Previous pivot
+--                -> Int -- ^ Current pivot
+--                -> [((Int,Int),[CCG.Node])] -- ^ The list of nodes that has been endorced
+--                -> ((Int,Int),[CCG.Node])   -- ^ With respect to a given entry (=e@((from,to),nodes)), 
+--                -> [((Int,Int),[CCG.Node])]
+-- punctFilter sep i charList e@((from,to),nodes) 
+--   | to == i = ((from,to+1),filter (CCG.isBunsetsu . CCG.cat) nodes):(e:charList) 
+--   | otherwise = e:charList
+--                 -- if from <= sep
+--                 --    then e:charList
+--                 --    else charList
+
+-- andCONJ :: T.Text -> CCG.Node
+-- andCONJ c = LT.lexicalitem c "punct" 100 CCG.CONJ LT.andSR
+
+-- emptyCM :: T.Text -> CCG.Node
+-- emptyCM c = LT.lexicalitem c "punct" 99 (((CCG.T True 1 LT.modifiableS) `CCG.SL` ((CCG.T True 1 LT.modifiableS) `CCG.BS` (CCG.NP [CCG.F[CCG.Ga,CCG.O]]))) `CCG.BS` (CCG.NP [CCG.F[CCG.Nc]])) LT.argumentCM
+
 

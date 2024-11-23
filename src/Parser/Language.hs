@@ -31,6 +31,7 @@ data LangOptions = LangOptions {
   , existDelimiter :: Bool
   , symbolsToIgnore :: T.Text
   , punctuations :: T.Text
+  , periods :: T.Text
   , longestWordLength :: Int64
   } deriving (Eq,Show)
 
@@ -38,8 +39,9 @@ jpOptions :: LangOptions
 jpOptions = LangOptions {
   name = Japanese
   , existDelimiter = False
-  , symbolsToIgnore = "！？!?…「」◎○●▲△▼▽■□◆◇★☆※†‡."
-  , punctuations = "，,-――?／＼"
+  , symbolsToIgnore = "！？!?…◎○●▲△▼▽■□◆◇★☆※†‡"
+  , punctuations = "、，,-――／＼"
+  , periods = "。．."
   , longestWordLength = 23
   } 
 
@@ -49,6 +51,7 @@ enOptions = LangOptions {
   , existDelimiter = True
   , symbolsToIgnore = ""
   , punctuations = ","
+  , periods = "."
   , longestWordLength = 23
   }
 

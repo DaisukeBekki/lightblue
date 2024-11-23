@@ -177,6 +177,8 @@ myLexicon :: [Node]
 myLexicon = concat $ [
   -- 格助詞
   -- argument:
+  mylex ["、","，"] "(punct)" PUNCT (id,[]),
+  mylex ["。","．"] "(punct)" PERIOD (id,[]),  
   mylex ["が"] "(524)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Ga]])) `BS` NP [F[Nc]]) argumentCM,
   mylex ["を"] "(524)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[O]])) `BS` NP [F[Nc]]) argumentCM,
   mylex ["に","へ"] "(524)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Ni]])) `BS` NP [F[Nc]]) argumentCM,
