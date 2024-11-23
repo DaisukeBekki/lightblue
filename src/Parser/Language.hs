@@ -14,6 +14,7 @@ module Parser.Language (
   , enOptions
   ) where
 
+import GHC.Int                          --base
 import qualified Data.Char as C         --base
 import qualified Data.Text.Lazy as T    --text
 
@@ -30,6 +31,7 @@ data LangOptions = LangOptions {
   , existDelimiter :: Bool
   , symbolsToIgnore :: T.Text
   , punctuations :: T.Text
+  , longestWordLength :: Int64
   } deriving (Eq,Show)
 
 jpOptions :: LangOptions
@@ -38,6 +40,7 @@ jpOptions = LangOptions {
   , existDelimiter = False
   , symbolsToIgnore = "！？!?…「」◎○●▲△▼▽■□◆◇★☆※†‡."
   , punctuations = "，,-――?／＼"
+  , longestWordLength = 23
   } 
 
 enOptions :: LangOptions
@@ -46,5 +49,6 @@ enOptions = LangOptions {
   , existDelimiter = True
   , symbolsToIgnore = ""
   , punctuations = ","
+  , longestWordLength = 23
   }
 

@@ -64,19 +64,16 @@ type Chart = M.Map (Int,Int) [CCG.Node]
 parse :: ParseSetting 
          -> T.Text    -- ^ A sentence to be parsed
          -> IO Chart  -- ^ A pair of the resulting CYK-chart and a list of CYK-charts for segments
-parse ParseSetting{..} sentence 
+parse parseSetting@ParseSetting{..} sentence 
   | sentence == T.empty = return M.empty -- returns an empty chart, otherwise foldl returns a runtime error when text is empty
   | otherwise = do
       let sentenceToParse = if ifPurify
                               then purifyText langOptions sentence
                               else sentence
-          nodeFilter = case ifFilterNode of
-                         Just filter -> filter
-                         Nothing -> (\_ _ -> id)
       lexicon <- case langOptions of
                    jpOptions -> L.setupLexicon lexicalResource sentenceToParse
                    enOptions -> EN.setupLexicon sentenceToParse
-      let (chart,_,_,_) = T.foldl' (chartAccumulator ifDebug beamWidth lexicon nodeFilter) 
+      let (chart,_,_,_) = T.foldl' (chartAccumulator parseSetting lexicon) 
                                    (M.empty,[0],0,T.empty)
                                    sentenceToParse
       return chart
@@ -99,14 +96,12 @@ purifyText langOptions text =
 type PartialChart = (Chart,[Int],Int,T.Text)
 
 -- | The 'chartAccumulator' function is the accumulator of the 'parse' function
-chartAccumulator :: Maybe (Int,Int)   -- ^ Debug mode: If Just (i,j), dump parse result of (i,j). 
-                    -> Int            -- ^ The beam width as the first parameter
+chartAccumulator :: ParseSetting 
                     -> L.LexicalItems -- ^ my lexicon as the second parameter
-                    -> (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ filter for CCG nodes
                     -> PartialChart   -- ^ The accumulated result, given
                     -> Char           -- ^ The next char of a unparsed text
                     -> PartialChart   -- ^ The accumulated result, updated
-chartAccumulator ifDebug beam lexicon filterNodes (chart,seplist@(sep:seps),i,stack) c 
+chartAccumulator ps@ParseSetting{..} lexicon (chart,seplist@(sep:seps),i,stack) c 
   -- The case where the next Char is a punctuation. Recall that each seperator is an end of a phase
   | c == '、' = let newchart = M.fromList $ ((i,i+1),[andCONJ (T.singleton c), emptyCM (T.singleton c)]):(foldl' (punctFilter sep i) [] $ M.toList chart);
                     newstack = T.cons c stack
@@ -116,7 +111,7 @@ chartAccumulator ifDebug beam lexicon filterNodes (chart,seplist@(sep:seps),i,st
                in (newchart, ((i+1):seplist), (i+1), newstack) --, (take 1 (sort (lookupChart sep (i+1) newchart)):parsed))
   | otherwise 
      = let newstack = (T.cons c stack);
-           (newchart,_,_,_) = T.foldl' (boxAccumulator ifDebug beam filterNodes lexicon) (chart,T.empty,i,i+1) newstack;
+           (newchart,_,_,_) = T.foldl' (boxAccumulator ps lexicon) (chart,T.empty,i,i+1) newstack;
            newseps | c `elem` ['「','『'] = (i+1:seplist)
                    | c `elem` ['」','』'] = seps
                    | otherwise = seplist 
@@ -142,37 +137,37 @@ andCONJ c = LT.lexicalitem c "punct" 100 CCG.CONJ LT.andSR
 emptyCM :: T.Text -> CCG.Node
 emptyCM c = LT.lexicalitem c "punct" 99 (((CCG.T True 1 LT.modifiableS) `CCG.SL` ((CCG.T True 1 LT.modifiableS) `CCG.BS` (CCG.NP [CCG.F[CCG.Ga,CCG.O]]))) `CCG.BS` (CCG.NP [CCG.F[CCG.Nc]])) LT.argumentCM
 
-type PartialBox = (Chart,T.Text,Int,Int)
+type PartialBox = (Chart,T.Text,Int,Int) -- (chard, word, i j)
 
 -- | The 'boxAccumulator' function
-boxAccumulator :: Maybe (Int,Int)   -- ^ Debug mode: If Just (i,j), dump parse result of (i,j). 
-                  -> Int            -- ^ beam width
-                  -> (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ filter for appropriate CCG nodes
-                  -> L.LexicalItems -- ^ my lexicon
+boxAccumulator :: ParseSetting
+                  -> L.LexicalItems -- ^ lexicon
                   -> PartialBox     -- ^ accumulated result (Chart, Text, Int, Int)
                   -> Char           -- ^ 
                   -> PartialBox
-boxAccumulator ifDebug beam filterNodes lexicon (chart,word,i,j) c = unsafePerformIO $ do
+boxAccumulator ParseSetting{..} lexicon (chart,word,i,j) c = unsafePerformIO $ do
   let newword = T.cons c word;
-      list0 = if (T.compareLength newword 23) == LT 
+      list0 = if (T.compareLength newword (longestWordLength langOptions)) == LT 
                 -- Does not execute lookup for a long word. Run "LongestWord" to check that the length of the longest word (=23).
                 then L.lookupLexicon newword lexicon
                 else [];
-      list1 = checkBinaryRules i j chart $ checkUnaryRules list0 
-      beforeFiltering = list1
-      afterFiltering = take beam $ L.sort $ checkEmptyCategories $ checkParenthesisRule i j chart $ checkCoordinationRule i j chart $ filterNodes i j $ beforeFiltering
+      nodeFilter = case ifFilterNode of
+                      Just filter -> filter
+                      Nothing -> (\_ _ -> id)
+      nodesBeforeFiltering = checkBinaryRules i j chart $ checkUnaryRules list0 
+      nodesAfterFiltering = take beamWidth $ L.sort $ checkEmptyCategories $ checkParenthesisRule i j chart $ checkCoordinationRule i j chart $ nodeFilter i j $ nodesBeforeFiltering
   case ifDebug of
     Just (x,y) ->
       if i >= x && j <= y
         then do
           putStr $ "\n------" ++ (show (i,j)) ++ "------"  
           putStrLn "\nBefore filtering: "
-          print beforeFiltering
+          print nodesBeforeFiltering
           putStrLn "\nAfter filtering: "
-          print afterFiltering
+          print nodesAfterFiltering
         else return ()
     Nothing -> return ()
-  return $ ((M.insert (i,j) afterFiltering chart), newword, i-1, j)
+  return $ ((M.insert (i,j) nodesAfterFiltering chart), newword, i-1, j)
   --((M.insert (i,j) (cutoff (max (beam+i-j) 24) list1) chart), newword, i-1, j)
 
 -- | take `beam` nodes from the top of `ndoes`.
