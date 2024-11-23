@@ -27,13 +27,12 @@ import Parser.CCG
 import qualified Parser.Language.Japanese.Templates as TPL
 --import Debug.Trace
 
-data MorphAnalyzerName = JUMAN | JUMANPP | KWJA | NLTK deriving (Eq,Show)
+data MorphAnalyzerName = JUMAN | JUMANPP | KWJA deriving (Eq,Show)
 instance Read MorphAnalyzerName where
   readsPrec _ r =
     [(JUMAN,s) | (x,s) <- lex r, map C.toLower x == "juman"]
     ++ [(JUMANPP,s) | (x,s) <- lex r, map C.toLower x == "jumanpp"]
     ++ [(KWJA,s) | (x,s) <- lex r, map C.toLower x == "kwja"]
-    ++ [(NLTK,s) | (x,s) <- lex r, map C.toLower x == "nltk"]
 
 -- | Main function: jumaCompoundNouns
 -- |   given a sentence, returns a list of compound nouns

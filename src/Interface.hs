@@ -18,8 +18,7 @@ module Interface (
   , footerOf
   , printNodes
   , posTagger
-  , printNumeration
-  --, treebankBuilder
+  , printLexicalItem
   ) where
 
 import qualified Data.Char as C           --base
@@ -28,6 +27,7 @@ import qualified Data.Text.Lazy.IO as T   --text
 import qualified System.IO as S           --base
 import qualified Parser.ChartParser as CP
 import qualified Parser.CCG as CCG
+import Parser.Language (LangOptions(..))
 import qualified Parser.Language.Japanese.Lexicon as LEX
 import qualified Parser.Language.Japanese.Juman.CallJuman as Juman
 import qualified Interface.Text as T
@@ -179,12 +179,6 @@ printLexicalItem style node = case style of
   HTML -> T.concat $ [HTML.startMathML, HTML.toMathML node, HTML.endMathML]
   XML  -> X.node2XML 0 0 True node
   SVG  -> SVG.node2svg node
-
--- | prints the numeration
-printNumeration :: S.Handle -> Style -> LEX.LexicalResource -> T.Text -> IO()
-printNumeration handle style lexicalResource sentence = do
-  numeration <- LEX.setupLexicon lexicalResource sentence
-  mapM_ ((T.hPutStrLn handle) . (printLexicalItem style)) numeration
 
 -- -- | Deprecated:
 -- -- | parses sentences in the given corpus and yields a list of SRs in HTML format.

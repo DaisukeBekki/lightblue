@@ -274,7 +274,7 @@ mannerAdverb op = ((Lam (Lamvec (Lam (App (Appvec 1 (Var 2)) (Lam (Sigma (App (C
 
 -- | N/N, N\N: \n.\x.\c. (nx (\s.(op x) × cs))
 nominalModifier :: T.Text -> (UDTTpreterm, Signature)
-nominalModifier op = ((Lam (Lam (Lam (App (App (Var 2) (Var 1)) (Lam (Sigma (App (Con op) (Var 0)) (App (Var 2) (Var 1)))))))), [(op, DTT.Pi DTT.Entity DTT.Type)])
+nominalModifier op = ((Lam (Lam (Lam (App (App (Var 2) (Var 1)) (Lam (Sigma (App (Con op) (Var 2)) (App (Var 2) (Var 1)))))))), [(op, DTT.Pi DTT.Entity DTT.Type)])
 
 -- | S\S: \p.\c.p(\e.(op e) X ce)
 eventModifier :: T.Text -> (UDTTpreterm, Signature)

@@ -12,10 +12,7 @@ A Japanese CCG lexicon.
 module Parser.Language.Japanese.Lexicon (
   --Node(..),
   LexicalItems
-  , LexicalResource(..)
   , lexicalResourceBuilder
-  --isCONJ,
-  , lookupLexicon
   , setupLexicon
   , LEX.emptyCategories
   , LEX.myLexicon
@@ -24,43 +21,38 @@ module Parser.Language.Japanese.Lexicon (
 import Prelude hiding (id)
 import qualified System.Environment as E --base
 import qualified Data.Text.Lazy as T     --text
-import qualified Data.Text.Lazy.IO as T --text
+import qualified Data.Text.Lazy.IO as T  --text
 import qualified Data.List as L          -- base
 import qualified Data.Map as M           -- base
-import Parser.CCG
-import qualified Parser.Language.Japanese.MyLexicon as LEX
-import Parser.Language.Japanese.Templates
-import qualified Parser.Language.Japanese.Juman.CallJuman as JU
-import DTS.UDTTdeBruijn as UDTT         --lightblue
-import qualified DTS.DTTdeBruijn as DTT --lightblue
+import Parser.CCG as CCG                                        --lightblue
+import Parser.Language (LangOptions(..),defaultJpOptions)       --lightblue
+import qualified Parser.Language.Japanese.MyLexicon as LEX      --lightblue
+import Parser.Language.Japanese.Templates                       --lightblue
+import qualified Parser.Language.Japanese.Juman.CallJuman as JU --lightblue
+import DTS.UDTTdeBruijn as UDTT                                 --lightblue
+import qualified DTS.DTTdeBruijn as DTT                         --lightblue
 
 type UDTTpreterm = UDTT.Preterm
 type Signature = DTT.Signature
 
 -- | Lexicon consists of a set of CCG Nodes
 type LexicalItems = [Node]
+type Token = T.Text
 
-data LexicalResource = 
-  JapaneseSetA {
-    baseLexicon :: [Node]
-    , jumanDic :: [[T.Text]]
-    , morphaName :: JU.MorphAnalyzerName
-  } deriving (Eq, Show)
-
-lexicalResourceBuilder :: JU.MorphAnalyzerName -> IO LexicalResource
+lexicalResourceBuilder :: JU.MorphAnalyzerName -> IO LangOptions
 lexicalResourceBuilder morphaName = do
   lightbluepath <- E.getEnv "LIGHTBLUE"
   jumandicData <- T.readFile $ lightbluepath ++ "src/Parser/Language/Japanese/Juman/Juman.dic"
-  let jumanDic = map (T.split (=='\t')) $ T.lines jumandicData
-  return $ JapaneseSetA LEX.myLexicon jumanDic morphaName
-
--- | This function takes a word and a lexicon and returns a set of CCG lexical entries whose PF is that word.
-lookupLexicon :: T.Text -> LexicalItems -> [Node]
-lookupLexicon word lexicon = filter (\l -> (pf l) == word) lexicon
+  let jumanDicData = map (T.split (=='\t')) $ T.lines jumandicData
+  return $ defaultJpOptions {
+    baseLexicon = LEX.myLexicon
+    , jumanDic = jumanDicData
+    , morphaName = morphaName
+    }
 
 -- | This function takes a sentence and returns a numeration needed to parse that sentence, i.e., a union of 
-setupLexicon :: LexicalResource -> T.Text -> IO LexicalItems
-setupLexicon JapaneseSetA{..} sentence = do
+setupLexicon :: [CCG.Node] -> [[T.Text]] -> JU.MorphAnalyzerName -> T.Text -> IO ([Token], LexicalItems)
+setupLexicon baseLexicon jumanDic morphaName sentence = do
   --  1. Setting up lexical items provided by JUMAN++
   let jumandicFiltered = filter (\l -> (head l) `T.isInfixOf` sentence) jumanDic
   let (jumandicParsed,(cn,pn)) = L.foldl' parseJumanLine ([],(M.empty,M.empty)) $ jumandicFiltered
@@ -74,7 +66,8 @@ setupLexicon JapaneseSetA{..} sentence = do
   let propernames = map (\(hyoki, (daihyo,score')) -> lexicalitem hyoki "(PN)" score' ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) (properNameSR daihyo)) $ M.toList pn
   --  5. 1+2+3+4
   let numeration = jumandicParsed ++ mylexiconFiltered ++ commonnouns ++ propernames ++ jumanCN
-  return $ numeration `seq` numeration
+      tokens = reverse $ T.foldl' (\tkns c -> (T.singleton c):tkns) [] sentence
+  return (tokens, numeration `seq` numeration)
 
 -- | Read each line in "Juman.dic" and convert it to a CCG lexical item
 -- | Meanwhile, common nouns and proper names that have a same phonetic form are to be bundled together into a single word.

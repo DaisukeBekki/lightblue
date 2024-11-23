@@ -24,7 +24,8 @@ import qualified Shelly as S             --shelly
 import qualified Data.Aeson            as A --aeson
 import qualified Data.ByteString.Char8 as B --bytestring 
 import qualified Data.Yaml             as Y --yaml
-import Parser.CCG                --lightblue
+import Parser.CCG                       --lightblue
+import Parser.Language 
 import Parser.Language.Japanese.Templates
 import qualified DTS.DTTdeBruijn as DTT --lightblue
 import DTS.UDTTdeBruijn as UDTT hiding (sig) --lightblue
@@ -32,10 +33,10 @@ import DTS.UDTTdeBruijn as UDTT hiding (sig) --lightblue
 type DTTpreterm = DTT.Preterm
 type UDTTpreterm = UDTT.Preterm
 type Signature = DTT.Signature
-
 type LexicalItems = [Node]
+type Token = T.Text
 
-setupLexicon :: T.Text -> IO LexicalItems
+setupLexicon :: T.Text -> IO ([Token], LexicalItems)
 setupLexicon sentence = do
   lightbluepath <- E.getEnv "LIGHTBLUE"
   let nltkScript = lightbluepath ++ "src/Parser/Language/English/nltk_pos_tagger.py"
@@ -43,10 +44,15 @@ setupLexicon sentence = do
   output <- S.shelly $ S.silently $ S.escaping False $ S.cmd $ S.fromText $ T.toStrict command 
   let nltkWords = (A.decode $ fromString $ StrictT.unpack output) :: Maybe [NLTKword]
   case nltkWords of
-    Just nltkWords' -> return $ concat $ map fromNLTKtoCCG nltkWords'
+    Just nltkWords' -> do
+      putStrLn $ show nltkWords'
+      let tokens = map word nltkWords'
+          lexicon = concat $ map fromNLTKtoCCG nltkWords'
+      -- putStrLn $ "Lexicon: " ++ (show lexicon)
+      return (tokens, lexicon)
     Nothing -> do
-               T.putStrLn $ T.concat ["Error in NLTK pos tagging: ", sentence]
-               return []
+      T.putStrLn $ T.concat ["Error in NLTK pos tagging: ", sentence]
+      return ([], [])
 
 data NLTKword = NLTKword {
   word :: T.Text
@@ -60,16 +66,17 @@ mylex wds num cat' (sem',sig') = [(lexicalitem wd num 100 cat' (sem',sig')) | wd
 
 fromNLTKtoCCG :: NLTKword -> [Node]
 fromNLTKtoCCG (NLTKword word pos) = case (word,pos) of
-  (w,"NNP") -> mylex [w] "NN" (N `SL` N) (nominalModifier w)
+  (w,"NNP") -> mylex [w] "NNP" (NP []) (properNameSR w)
   --NP [] -- john
-  (w,"DT") -> mylex [w] "NN" (N `SL` N) (nominalModifier w)
+  (w,"DT") -> mylex [w] "DT" (N `SL` N) (nominalModifier w)
   -- ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N)   -- every, a
   (w,"NN") -> mylex [w] "NN" (N `SL` N) (nominalModifier w)
-  (w,"WP") -> mylex [w] "NN" (N `SL` N) (nominalModifier w)
+  (w,"WP") -> mylex [w] "WP" (N `SL` N) (nominalModifier w)
   -- (N `BS` N) `SL` (S [] `BS` NP [] ) -- who
-  (w,"VBZ") -> mylex [w] "NN" (N `SL` N) (nominalModifier w)
+  (w,"NNS") -> mylex [w] "NNS" (S [] `BS` NP []) (predSR 2 w)
+  (w,"VBZ") -> mylex [w] "VBZ" (S [] `BS` NP [] `SL` NP []) (predSR 2 w)
   -- (S [] `BS` NP []) `SL` NP []  -- own
-  (w,"PRP") -> mylex [w] "NN" (N `SL` N) (nominalModifier w)
-  (w,".") -> mylex [w] "NN" (N `SL` N) (nominalModifier w)
-  (w,_) -> mylex [w] "NN" (N `SL` N) (nominalModifier w)
+  (w,"PRP") -> mylex [w] "PRP" (N `SL` N) (nominalModifier w)
+  (w,".") -> mylex [w] "." (N `SL` N) (nominalModifier w)
+  (w,_) -> mylex [w] "_" (N `SL` N) (nominalModifier w)
   -- mylex [w] "Error" N (commonNounSR w) 

@@ -23,7 +23,7 @@ import qualified Parser.Language.Japanese.Lexicon as LEX
 import qualified Parser.Language.Japanese.MyLexicon as LEX
 import qualified Parser.Language.Japanese.Juman.CallJuman as Juman
 import qualified Parser.Language.English.Lexicon as ELEX
-import Parser.Language (Language(..),jpOptions,enOptions)
+import Parser.Language (Language(..),LangOptions(..),defaultJpOptions,defaultEnOptions)
 import qualified Interface as I
 import qualified Interface.Text as T
 import qualified JSeM as J
@@ -147,15 +147,15 @@ optionParser =
       <> showDefault
       <> value "-" )
     <*> option auto
-      ( long "language"
+      ( long "lang"
         <> short 'l' 
         <> metavar "Japanese|English"
-        <> value Japanese
+        <> value English
         <> help "Specify language (default: Japanese)" )
     <*> option auto
       ( long "ma"
         <> short 'm' 
-        <> metavar "juman|jumanpp|kwja|nltk"
+        <> metavar "juman|jumanpp|kwja"
         <> value Juman.KWJA
         <> help "Specify morphological analyzer (default: KWJA)" )
     <*> option auto 
@@ -258,9 +258,12 @@ lightblueMain (Options commands style filepath lang morphaName beamW nParse nTyp
   contents <- case filepath of
     "-" -> T.getContents
     _   -> T.readFile filepath
-  lexicalResource <- LEX.lexicalResourceBuilder morphaName
+  langOptions <- case lang of
+                    Japanese -> LEX.lexicalResourceBuilder morphaName
+                    English -> return defaultEnOptions
+  let parseSetting = CP.ParseSetting langOptions beamW nParse nTypeCheck nProof Nothing Nothing noInference verbose
   -- | Main routine
-  lightblueMainLocal commands lexicalResource contents
+  lightblueMainLocal commands parseSetting contents
   -- | Show execution time
   stop <- Time.getCurrentTime
   let time = Time.diffUTCTime stop start
@@ -271,24 +274,20 @@ lightblueMain (Options commands style filepath lang morphaName beamW nParse nTyp
     -- |
     -- | Parse
     -- |
-    lightblueMainLocal (Parse output proverName) lr contents = do
+    lightblueMainLocal (Parse output proverName) parseSetting contents = do
       let handle = S.stdout
-          langOptions | lang == Japanese = jpOptions
-                      | lang == English = enOptions
-                      | otherwise = jpOptions
-          parseSetting = CP.ParseSetting langOptions lr beamW nParse nTypeCheck nProof True Nothing Nothing noInference verbose
           prover = NLI.getProver proverName $ QT.ProofSearchSetting (Just maxDepth) Nothing (Just QT.Intuitionistic)
           parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] $ T.lines contents
           posTagOnly = case output of 
                          I.TREE -> False
                          I.POSTAG -> True
       S.hPutStrLn handle $ I.headerOf style
-      NLI.printParseResult handle style 1 noTypeCheck posTagOnly "" parseResult
+      NLI.printParseResult handle style 1 noTypeCheck posTagOnly "input" parseResult
       S.hPutStrLn handle $ I.footerOf style
     --
     -- | JSeM Parser
     -- 
-    lightblueMainLocal (JSeM proverName jsemID nSample) lr contents = do
+    lightblueMainLocal (JSeM proverName jsemID nSample) parseSetting contents = do
       parsedJSeM <- J.xml2jsemData $ T.toStrict contents
       let parsedJSeM'
             | jsemID == "all" = parsedJSeM
@@ -297,7 +296,6 @@ lightblueMain (Options commands style filepath lang morphaName beamW nParse nTyp
             | nSample < 0 = parsedJSeM'
             | otherwise = take nSample parsedJSeM'
           handle = S.stdout
-          parseSetting = CP.ParseSetting jpOptions lr beamW nParse nTypeCheck nProof True Nothing Nothing noInference verbose
           prover = NLI.getProver proverName $ QT.ProofSearchSetting (Just maxDepth) Nothing (Just QT.Classical)
       S.hPutStrLn handle $ I.headerOf style
       pairs <- forM parsedJSeM'' $ \j -> do
@@ -322,19 +320,24 @@ lightblueMain (Options commands style filepath lang morphaName beamW nParse nTyp
     -- | 
     -- | Numeration
     -- | 
-    lightblueMainLocal Numeration lr contents = do
+    lightblueMainLocal Numeration parseSetting@CP.ParseSetting{..} contents = do
       let handle = S.stdout
           sentences = T.lines contents
       S.hPutStrLn handle $ I.headerOf style
-      mapM_ (\(sid,sentence) -> do
-        S.hPutStrLn handle $ I.interimOf style $ "[" ++ (show sid) ++ "]"
-        I.printNumeration handle style lr sentence
-        ) $ zip ([1..]::[Int]) sentences
+      case langOptions of
+        JpOptions _ _ _ _ _ _ baseLexicon jumanDic morphaName -> 
+          mapM_ (\(sid,sentence) -> do
+            (_,numeration) <- LEX.setupLexicon baseLexicon jumanDic morphaName sentence
+            S.hPutStrLn handle $ I.interimOf style $ "[" ++ (show sid) ++ "]"
+            mapM_ ((T.hPutStrLn handle) . (I.printLexicalItem style)) numeration
+            ) $ zip ([1..]::[Int]) sentences
+        EnOptions _ _ _ _ _ -> 
+          putStrLn "English version of printNumeration function will be implemented soon."
       S.hPutStrLn handle $ I.footerOf style
     -- |
     -- | Demo (sequential parsing of a given corpus)
     -- |
-    lightblueMainLocal Demo lr contents = processCorpus lr beamW $ T.lines contents
+    lightblueMainLocal Demo parseSetting contents = processCorpus parseSetting $ T.lines contents
     -- |
     -- | Other commands
     -- |
@@ -411,11 +414,11 @@ test = do
 
 -- | lightblue demo
 -- |
-processCorpus :: LEX.LexicalResource -> Int -> [T.Text] -> IO()
-processCorpus lr beamW contents = do
+processCorpus :: CP.ParseSetting -> [T.Text] -> IO()
+processCorpus ps@CP.ParseSetting{..} contents = do
     start <- Time.getCurrentTime
-    let parseSetting = CP.ParseSetting jpOptions lr beamW 1 1 1 True Nothing Nothing False False
-    (i,j,k,total) <- L.foldl' (parseSentence parseSetting beamW) (return (0,0,0,0)) $ filter isSentence contents
+    --let parseSetting = CP.ParseSetting langOptions beamW 1 1 1 True Nothing Nothing False False
+    (i,j,k,total) <- L.foldl' (parseSentence ps) (return (0,0,0,0)) $ filter isSentence contents
     stop <- Time.getCurrentTime
     let totaltime = Time.diffUTCTime stop start
     mapM_ (S.hPutStr S.stdout) [
@@ -441,16 +444,15 @@ processCorpus lr beamW contents = do
     where isSentence t = not (T.null t || "（" `T.isSuffixOf` t)
 
 parseSentence :: CP.ParseSetting
-                 -> Int                 -- ^ beam width
                  -> IO(Int,Int,Int,Int) -- ^ (The number of fully succeeded, partially succeeded, failed, and total parses)
                  -> T.Text              -- ^ A next sentence to parse
                  -> IO(Int,Int,Int,Int)
-parseSentence ps beamW score sentence = do
+parseSentence ps@CP.ParseSetting{..} score sentence = do
   (i,j,k,total) <- score
   S.putStr $ "[" ++ show (total+1) ++ "] "
   T.putStrLn sentence
   chart <- CP.parse ps sentence
-  case CP.extractParseResult beamW chart of
+  case CP.extractParseResult beamWidth chart of
     CP.Full nodes -> 
        do
        T.putStrLn $ T.toText $ head $ nodes
