@@ -958,7 +958,7 @@ parenthesisRule lnode@(Node {cat=LPAREN}) cnode rnode@(Node {cat=RPAREN}) prevli
     daughters = [lnode,cnode,rnode],
     score = score(cnode),
     source = "",
-    sig = sig(lnode) ++ sig(rnode)
+    sig = sig cnode
     }:prevlist
 parenthesisRule _ _ _ prevlist = prevlist
 
