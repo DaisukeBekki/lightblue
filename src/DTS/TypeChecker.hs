@@ -159,7 +159,9 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
     --   let termM = UDTTdB.toUDTT $ UDTTdB.trm $ node diagramQ
     --       termB' = UDTTdB.betaReduce $ UDTTdB.subst termB termM 0
     --   typeCheck' $ UDTTdB.Judgment sig ctx termB' UDTTdB.Type
-    -- | type inference fails
+    UDTTdB.Ann termM typeA -> 
+      typeCheck' $ UDTTdB.Judgment sig ctx termM typeA 
+    -- | When type inference fails
     termM -> do
              let msg = T.concat [toText termM, " is not an inferable term."]
              when verbose $ lift $ T.hPutStrLn S.stderr msg
