@@ -67,7 +67,9 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
     UDTTdB.App termM termN -> do
       diagramM <- typeInfer' $ UDTTdB.TypeInferQuery sig ctx termM
       let termM' = DTTdB.trm $ node diagramM
-          (DTTdB.Pi termA termB) = DTTdB.typ $ node diagramM
+          typeM  = DTTdB.typ $ node diagramM
+      guard $ case typeM of (DTTdB.Pi _ _) -> True; _ -> False
+      let (DTTdB.Pi termA termB) = typeM
       diagramN <- typeCheck' $ UDTTdB.Judgment sig ctx termN termA
       let termN' = DTTdB.trm $ node diagramN
           termB' = DTTdB.betaReduce $ DTTdB.subst termB termN' 0
@@ -81,12 +83,16 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
     UDTTdB.Proj UDTTdB.Fst termM -> do
       diagramM <- typeInfer' $ UDTTdB.TypeInferQuery sig ctx termM
       let termM' = DTTdB.trm $ node diagramM
-          (DTTdB.Sigma termA _) = DTTdB.typ $ node diagramM
+          typeM' = DTTdB.typ $ node diagramM
+      guard $ case typeM' of (DTTdB.Sigma _ _) -> True; _ -> False
+      let (DTTdB.Sigma termA _) = typeM'
       return $ Tree QT.SigmaE (DTTdB.Judgment sig ctx (DTTdB.Proj DTTdB.Fst termM') termA) [diagramM]
     UDTTdB.Proj UDTTdB.Snd termM -> do
       diagramM <- typeInfer' $ UDTTdB.TypeInferQuery sig ctx termM
       let termM' = DTTdB.trm $ node diagramM
-          (DTTdB.Sigma _ termB) = DTTdB.typ $ node diagramM
+          typeM' = DTTdB.typ $ node diagramM
+      guard $ case typeM' of (DTTdB.Sigma _ _) -> True; _ -> False
+      let (DTTdB.Sigma _ termB) = typeM'
           termB' = DTTdB.betaReduce $ DTTdB.subst termB (DTTdB.Proj DTTdB.Fst termM') 0
       return $ Tree QT.SigmaE (DTTdB.Judgment sig ctx (DTTdB.Proj DTTdB.Snd termM') termB') [diagramM]
     UDTTdB.Disj termA termB -> do
@@ -98,7 +104,9 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
     UDTTdB.Unpack termP termL termM termN -> do
       diagramL <- typeInfer' $ UDTTdB.TypeInferQuery sig ctx termL
       let termL' = DTTdB.trm $ node diagramL
-          (DTTdB.Disj termA termB) = DTTdB.typ $ node diagramL
+          typeL' = DTTdB.typ $ node diagramL
+      guard $ case typeL' of (DTTdB.Disj _ _) -> True; _ -> False
+      let (DTTdB.Disj termA termB) = typeL'
       diagramP <- typeCheck' $ UDTTdB.Judgment sig ctx termP (DTTdB.Pi (DTTdB.Disj termA termB) DTTdB.Type)
       let termP' = DTTdB.trm $ node diagramP
           termPL = DTTdB.betaReduce $ DTTdB.App termP' termL'
