@@ -37,6 +37,9 @@ import qualified DTS.DTTdeBruijn as DTT --lightblue
 type UDTTpreterm = UDTT.Preterm
 type Signature = DTT.Signature
 
+terminator :: UDTT.Preterm
+terminator = UDTT.Ann (UDTT.Lam UDTT.Top) (DTT.Pi DTT.Entity DTT.Type)
+
 -- | Lexicon consists of a set of CCG Nodes
 type LexicalItems = [Node]
 
@@ -180,12 +183,14 @@ constructConjunction daihyo =
   [
   (((T False 1 (S [F anyPos, F[Term,NTerm,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]]))
     `SL` (T False 1 (S [F anyPos, F[Term,NTerm,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]]))), 
-    ((Lam (Lam (Sigma (App (Var 1) (Lam Top)) ((App (App (Con daihyo) (Proj Snd $ Asp (Sigma Type (Var 0)))) (Var 0)))))), [(daihyo, DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]))
+    ((Lam (Lam (Sigma (App (Var 1) terminator) ((App (App (Con daihyo) (Proj Snd $ Asp (Sigma Type (Var 0)))) (Var 0)))))), [(daihyo, DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]))
     ]
 
+-- | S/S\S: λp.λq.λk.q（λe1.(p(λe2.c(e1,e2)))×k(e1))
 constructSubordinateConjunction :: T.Text -> [(Cat, (UDTTpreterm, Signature))]
 constructSubordinateConjunction daihyo = 
   [((modifiableS `SL` modifiableS) `BS` (S [F anyPos, F[Attr], SF 7 [P,M], SF 8 [P,M], SF 9 [P,M], F[M],F[M] ]), 
-    ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (Sigma (App (Var 2) (Var 1)) (App (App (Con daihyo) (Var 1)) (Var 0))))))),
+    (Lam (Lam (Lam (App (Var 1) (Lam (Sigma (App (Var 3) (Lam (App (App (Con daihyo) (Var 0)) (Var 1)))) (App (Var 2) (Var 1))))))),
+    --((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (Sigma (App (Var 2) (Var 1)) (App (App (Con daihyo) (Var 1)) (Var 0))))))),
      [(daihyo, DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]))
   ]

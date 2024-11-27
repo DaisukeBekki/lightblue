@@ -27,6 +27,9 @@ type DTTpreterm = DTT.Preterm
 type UDTTpreterm = UDTT.Preterm
 type Signature = DTT.Signature
 
+terminator :: UDTT.Preterm
+terminator = UDTT.Ann (UDTT.Lam UDTT.Top) (DTT.Pi DTT.Entity DTT.Type)
+
 -- | defines a lexical entry for an empty category
 ec :: T.Text -> T.Text -> Integer -> Cat -> (UDTTpreterm, Signature) -> Node
 ec word num r c (s,sg) = Node {rs=EC, pf=word, cat=c, sem=s, daughters=[], score=(r % 100), source=num, sig=sg}
@@ -97,17 +100,17 @@ emptyCategories = [
   --                \p.\q.\c.q(\e.(x:entity) × (＃様態(e,x) × (px(λx.T) × ce)))
   ec "\\emp" "(730)" 100
               ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (defS [Nemp] [NStem] `BS` NP [F[Ga]]))
-              ((Lam (Lam (Lam (App (Var 1) (Lam (Sigma Entity (Sigma (App (App (Con "＃様態") (Var 0)) (Var 1)) (Sigma (App (App (Var 5) (Var 1)) (Lam Top)) (App (Var 4) (Var 3)))))))))), 
+              ((Lam (Lam (Lam (App (Var 1) (Lam (Sigma Entity (Sigma (App (App (Con "＃様態") (Var 0)) (Var 1)) (Sigma (App (App (Var 5) (Var 1)) terminator) (App (Var 4) (Var 3)))))))))), 
               [("＃様態", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]),
   -- 形容詞の様態副詞用法: 
   ec "\\emp" "(730)+" 100
               ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (defS [Aauo,Ai,ANAS,ATII] [Cont] `BS` NP[F[Ga]]))
-              ((Lam (Lam (Lam (App (Var 1) (Lam (Sigma Entity (Sigma (App (App (Con "＃様態") (Var 0)) (Var 1)) (Sigma (App (App (Var 5) (Var 1)) (Lam Top)) (App (Var 4) (Var 3)))))))))), 
+              ((Lam (Lam (Lam (App (Var 1) (Lam (Sigma Entity (Sigma (App (App (Con "＃様態") (Var 0)) (Var 1)) (Sigma (App (App (Var 5) (Var 1)) terminator) (App (Var 4) (Var 3)))))))))), 
               [("＃様態", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]),
   -- 空冠詞（存在量化）
   ec "∃ " "(544)" 99
               ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N)
-              ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) (Lam Top))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[]),
+              ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[]),
   -- 空助詞 (as one of the last resorts)
   ec "cm" "(515)" 50
               (((T True 1 modifiableS) `SL` ((T True 1 modifiableS) `BS` (NP [F[Ga,O]]))) `BS` (NP [F[Nc]]))
@@ -127,10 +130,10 @@ emptyCategories = [
   -- 関係節化演算子(relativizer)
   ec "rel" "(670)" 99
               ((N `SL` N) `BS` (S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]] `BS` NP [F[Ga,O,Ni,To]]))
-              ((Lam (Lam (Lam (Lam (Sigma (App (App (Var 3) (Var 1)) (Lam Top)) (App (App (Var 3) (Var 2)) (Var 1))))))),[]),
+              ((Lam (Lam (Lam (Lam (Sigma (App (App (Var 3) (Var 1)) terminator) (App (App (Var 3) (Var 2)) (Var 1))))))),[]),
   ec "rel-ext" "(670)+" 96
               ((N `SL` N) `BS` (S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]]))
-              ((Lam (Lam (Lam (Lam (Sigma (App (App (Var 2) (Var 1)) (Var 0)) (Sigma (App (Var 4) (Lam Top)) (Sigma (Pi Entity (Pi Entity Type)) (App (App (Var 0) (Var 1)) (Var 4))))))))),[]),
+              ((Lam (Lam (Lam (Lam (Sigma (App (App (Var 2) (Var 1)) (Var 0)) (Sigma (App (Var 4) terminator) (Sigma (Pi Entity (Pi Entity Type)) (App (App (Var 0) (Var 1)) (Var 4))))))))),[]),
   -- 連用節、ヨウニ節、テ節
   ec "cont-mod" "new" 99
               ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F ([V5k, V5s, V5t, V5n, V5m, V5r, V5w, V5g, V5z, V5b, V5IKU, V5YUK, V5ARU, V5NAS, V5TOW, V1, VS, VSN, VZ]++adjective++nomPred), F[Cont], F[M],F[P,M],F[P,M],F[M],F[M]])) (conjunctionSR "cont"),
@@ -184,9 +187,9 @@ myLexicon = concat $ [
   mylex' ["の"] "(531)?" 80 ((T True 1 N `SL` (T True 1 N `BS` NP [F[No]])) `BS` NP [F[Nc]]) argumentCM,
   -- 格助詞（の） T/(T\NPnc)/N\NPnc: \x.\n.\p.\vec.Sigma y:entity (Sigma ny(λT) (Sigma の(x,y) (py vec)))
   mylex ["の"] "(531)+" (((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N) `BS` NP[F[Nc]])
-               ((Lam (Lam (Lam (Lamvec (Sigma Entity (Sigma (App (App (Var 3) (Var 0)) (Lam Top)) (Sigma (App (App (Con "＃ノ") (Var 5)) (Var 1)) (Appvec 3 (App (Var 4) (Var 2)))))))))) ,[("＃ノ", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]),
+               ((Lam (Lam (Lam (Lamvec (Sigma Entity (Sigma (App (App (Var 3) (Var 0)) terminator) (Sigma (App (App (Con "＃ノ") (Var 5)) (Var 1)) (Appvec 3 (App (Var 4) (Var 2)))))))))) ,[("＃ノ", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]),
   mylex' ["が"] "(531)+" 60 (((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N) `BS` NP[F[Nc]])
-               ((Lam (Lam (Lam (Lamvec (Sigma Entity (Sigma (App (App (Var 3) (Var 0)) (Lam Top)) (Sigma (App (App (Con "＃ノ") (Var 5)) (Var 1)) (Appvec 3 (App (Var 4) (Var 2)))))))))) ,[("＃ノ", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]),
+               ((Lam (Lam (Lam (Lamvec (Sigma Entity (Sigma (App (App (Var 3) (Var 0)) terminator) (Sigma (App (App (Con "＃ノ") (Var 5)) (Var 1)) (Appvec 3 (App (Var 4) (Var 2)))))))))) ,[("＃ノ", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]),
   -- adjunct:
   mylex ["と","とは","とも","とさえ","とすら"] "(524)+" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` NP [F[Nc]]) (adjunctCM "＃ト"),
   mylex ["へ","へは","へも","へさえ","へと"] "(516)" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` NP [F[Nc]]) (adjunctCM "＃へ"), -- 「へと」
@@ -587,7 +590,7 @@ myLexicon = concat $ [
   mylex ["見せ","みせ"] "(416)" (defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` defS verb [TeForm]) (eventModifier "＃テミセル"),
   mylex ["ちゃ","ちま"] "(426)" (defS [V5w] [Stem] `BS` defS verb [EuphT]) (eventModifier "＃テシマウ"),
   mylex ["じゃ","じま"] "(427)" (defS [V5w] [Stem] `BS` defS verb [EuphD]) (eventModifier "＃テシマウ"),
-  --mylex ["困","こま"] "(434a)" ((defS [V5r] [Stem] `BS` NP [F[Ga]]) `BS` S anyPos [TeForm]) (Lam p (Lam x (Lam c (Pi (App p (Lam Top)) (App (Con "困る") ()))))) -- ここまで
+  --mylex ["困","こま"] "(434a)" ((defS [V5r] [Stem] `BS` NP [F[Ga]]) `BS` S anyPos [TeForm]) (Lam p (Lam x (Lam c (Pi (App p terminator) (App (Con "困る") ()))))) -- ここまで
   --mylex ["拙","まず"] "(434b)" ((defS [Aauo] [Stem] `BS` NP [F[Ga]]) `BS` S anyPos [TeForm]) (Lam (Lam (Lam (Pi ))))
   -- 6.1.5 授受表現
   mylex ["上げ","あげ"] "(436)" ((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP [F[Ga]]) `BS` (defS verb [TeForm] `BS` NP [F[Ga]]))
@@ -649,9 +652,9 @@ myLexicon = concat $ [
   mylex ["ここ","そこ","あそこ","どこ"] "(586)" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) 
         ((Lam (App (Var 0) (Proj Fst (Asp (Sigma Entity (App (Con "＃場所") (Var 0))))))), [("＃場所", DTT.Pi DTT.Entity DTT.Type)]),
   mylex ["この","その","あの","どの"] "(589)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N)
-        ((Lam (Lam (Lamvec (Appvec 0 (App (Var 1) (Proj Fst (Asp (Sigma Entity (App (App (Var 3) (Var 0)) (Lam Top)))))))))), []),
+        ((Lam (Lam (Lamvec (Appvec 0 (App (Var 1) (Proj Fst (Asp (Sigma Entity (App (App (Var 3) (Var 0)) terminator))))))))), []),
   mylex ["こんな","そんな","あんな","どんな"] "(589)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N)
-        ((Lam (Lam (Lamvec (Appvec 0 (App (Var 1) (Proj Fst (Asp (Sigma Entity (App (App (Var 3) (Var 0)) (Lam Top)))))))))), []),
+        ((Lam (Lam (Lamvec (Appvec 0 (App (Var 1) (Proj Fst (Asp (Sigma Entity (App (App (Var 3) (Var 0)) terminator))))))))), []),
   mylex ["彼","かれ","カレ"] "new" (NP [F[Nc]]) 
         ((Proj Fst (Asp (Sigma Entity (App (Con "＃男") (Var 0))))), [("＃男", DTT.Pi DTT.Entity DTT.Type)]),
   mylex ["彼女","かのじょ","カノジョ"] "new" (NP [F[Nc]]) 
@@ -672,7 +675,7 @@ myLexicon = concat $ [
   -- カ節
   mylex ["か","かどうか"] "(603)" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]) `BS` defS anyPos [Term,NStem]) 
         --((Lam (Lam (App (Var 0) (App (Con "＃ドウカ") (Var 1))))),[("＃ドウカ",Pi entity Type)]), 
-        (Lam (Lam (Lamvec (Sigma Entity (Sigma (App (App (Con "＃ドウカ") (App (Var 3) (Lam Top))) (Var 0)) (Appvec 2 (App (Var 3) (Var 1))))))), [("＃ドウカ", DTT.Pi DTT.Entity (DTT.Pi DTT.Type DTT.Type))]),
+        (Lam (Lam (Lamvec (Sigma Entity (Sigma (App (App (Con "＃ドウカ") (App (Var 3) terminator)) (Var 0)) (Appvec 2 (App (Var 3) (Var 1))))))), [("＃ドウカ", DTT.Pi DTT.Entity (DTT.Pi DTT.Type DTT.Type))]),
   -- 受動態・使役態
   mylex ["れ"] "(607)" (((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) `BS` (defS anyPos [VoR] `BS` NP [F[Ga]])) 
         ((Lam (Lam (Lam (Lam (App (App (Var 3) (Var 2)) (Lam (Sigma Entity (Sigma (App (App (App (Con "＃迷惑") (Var 1)) (Var 3)) (Var 0)) (App (Var 3) (Var 2)))))))))),[("＃迷惑", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type)))]),
@@ -738,24 +741,24 @@ myLexicon = concat $ [
   -- より
   --（名詞：副詞的名詞？？）
   mylex ["まま"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
-        ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
+        ((Lam (Lam (Lam (Sigma (App (Var 2) terminator) (App (Var 2) (Var 1)))))),[]),
   -- きり,っきり（エントリなし）
   -- コントロール構文
   mylex ["ながら"] "new" (((T False 1 modifiableS `BS` NP[F[Ga]]) `SL` (T False 1 modifiableS `BS` NP[F[Ga]])) `BS` (S [F verb, F[Cont], F[M],F[M],F[M],F[M],F[M]] `BS` NP[F[Ga]])) 
-        ((Lam (Lam (Lam (Lam (Sigma (App (App (Var 3) (Var 1)) (Lam Top)) (App (App (Var 3) (Var 2)) (Var 1))))))), []),
+        ((Lam (Lam (Lam (Lam (Sigma (App (App (Var 3) (Var 1)) terminator) (App (App (Var 3) (Var 2)) (Var 1))))))), []),
   mylex ["でもって"] "new" (((T False 1 modifiableS `BS` NP[F[Ga]]) `SL` (T False 1 modifiableS `BS` NP[F[Ga]])) `BS` (defS nomPred [NStem] `BS` NP[F[Ga]]))
-        ((Lam (Lam (Lam (Lam (Sigma (App (App (Var 3) (Var 1)) (Lam Top)) (App (App (Var 3) (Var 2)) (Var 1))))))), []),
+        ((Lam (Lam (Lam (Lam (Sigma (App (App (Var 3) (Var 1)) terminator) (App (App (Var 3) (Var 2)) (Var 1))))))), []),
   -- つつ、がてら
   -- やいなや
   -- ど,ども
   -- きや
   -- 状詞の副詞用法
   mylex ["に"] "(728)" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (defS [Nni] [NStem] `BS` NP [F[Ga]])) 
-        ((Lam (Lam (Lam (App (Var 1) (Lam (Sigma Entity (Sigma (App (App (Con "＃様態") (Var 0)) (Var 1)) (Sigma (App (App (Var 5) (Var 1)) (Lam Top)) (App (Var 4) (Var 3)))))))))), [("＃様態", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]), -- これと「のに」の兼ね合い
+        ((Lam (Lam (Lam (App (Var 1) (Lam (Sigma Entity (Sigma (App (App (Con "＃様態") (Var 0)) (Var 1)) (Sigma (App (App (Var 5) (Var 1)) terminator) (App (Var 4) (Var 3)))))))))), [("＃様態", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]), -- これと「のに」の兼ね合い
   mylex ["と","とも","とだけ","とばかり"] "(731)" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (defS [Nto] [NStem] `BS` NP [F[Ga]])) 
-        ((Lam (Lam (Lam (App (Var 1) (Lam (Sigma Entity (Sigma (App (App (Con "＃様態") (Var 0)) (Var 1)) (Sigma (App (App (Var 5) (Var 1)) (Lam Top)) (App (Var 4) (Var 3)))))))))), [("＃様態", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]),
+        ((Lam (Lam (Lam (App (Var 1) (Lam (Sigma Entity (Sigma (App (App (Con "＃様態") (Var 0)) (Var 1)) (Sigma (App (App (Var 5) (Var 1)) terminator) (App (Var 4) (Var 3)))))))))), [("＃様態", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]),
   --mylex ["たる"] "(73x)" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (defS [Ntar] [NStem] `BS` NP [F[Ga]])) 
-  --      ((Lam (Lam (Lam (App (Var 1) (Lam (Sigma entity (Sigma (App (App (Con "＃様態") (Var 0)) (Var 1)) (Sigma (App (App (Var 5) (Var 1)) (Lam Top)) (App (Var 4) (Var 3)))))))))), [("＃様態",Pi entity (Pi event Type))]),
+  --      ((Lam (Lam (Lam (App (Var 1) (Lam (Sigma entity (Sigma (App (App (Con "＃様態") (Var 0)) (Var 1)) (Sigma (App (App (Var 5) (Var 1)) terminator) (App (Var 4) (Var 3)))))))))), [("＃様態",Pi entity (Pi event Type))]),
   --mylex ["が"] "(711)" ((T True 1 modifiableS `SL` T True 1 modifiableS) `BS` defS anyPos [Term]) 
   --      (Lam (Lam (Lamvec (Lamvec (Sigma (Appvec 0 (Var 3)) (Appvec 1 (Appvec 2 (Var 3)))))))),
   -- Wh句
@@ -769,38 +772,38 @@ myLexicon = concat $ [
   mylex ["ように","ようには","ようにも"] "new" (Sbar [F[YooniCL]] `BS` S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]]) (id,[]),
   mylex ["という","といわれる"] "toiu" (defS [V5w] [Term,Attr] `BS` S [F anyPos, F[Term,Pre,NStem,NTerm,Imper], F[P,M],F[P,M],F[P,M],F[M],F[M]]) (modalSR "＃トイウ"),
   --mylex ["という"] "toiu1" ((N `SL` N) `BS` S [F anyPos, F[Term,Pre,NStem,NTerm,Imper], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
-  --((Lam (Lam (Lam (Lam (Sigma (App (Var 3) (Lam Top)) (App (App (Var 3) (Var 2)) (Lam (Sigma (App (App (Con "＃内容") (Var 1)) (Var 3)) (App (Var 3) (Var 1)))))))))), [("＃内容",nPlaceEventType 1)]),
-  mylex ["という"] "toiu3" ((N `SL` N) `BS` N) (Lam (Lam (Lam (Lam (Sigma (App (App (Var 3) (Var 1)) (Lam Top)) (App (App (Var 3) (Var 2)) (Var 1)))))),[]),
-  mylex ["とともに"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Term,NTerm], F[P,M], F[P,M], F[P,M], F[M], F[M]]) ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 1) (Var 0)))))),[]),
+  --((Lam (Lam (Lam (Lam (Sigma (App (Var 3) terminator) (App (App (Var 3) (Var 2)) (Lam (Sigma (App (App (Con "＃内容") (Var 1)) (Var 3)) (App (Var 3) (Var 1)))))))))), [("＃内容",nPlaceEventType 1)]),
+  mylex ["という"] "toiu3" ((N `SL` N) `BS` N) (Lam (Lam (Lam (Lam (Sigma (App (App (Var 3) (Var 1)) terminator) (App (App (Var 3) (Var 2)) (Var 1)))))),[]),
+  mylex ["とともに"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Term,NTerm], F[P,M], F[P,M], F[P,M], F[M], F[M]]) ((Lam (Lam (Lam (Sigma (App (Var 2) terminator) (App (Var 1) (Var 0)))))),[]),
   mylex ["のを"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Attr], F[P,M], F[P,M], F[P,M], F[P,M], F[M]]) ((Lam (Lam (Lam (App (Var 2) (Lam (Sigma (App (Var 1) (Var 0)) (App (App (Con "＃トコロ") (Var 0)) (Var 1)))))))),[("＃トコロ", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]),
-  mylex ["だけで"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Attr], F[P,M], F[P,M], F[P,M], F[M], F[M]]) ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 1) (Var 0)))))),[]),
-  mylex ["ものの"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Attr], F[P,M], F[P,M], F[P,M], F[M], F[M]]) ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 1) (Var 0)))))),[]),
+  mylex ["だけで"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Attr], F[P,M], F[P,M], F[P,M], F[M], F[M]]) ((Lam (Lam (Lam (Sigma (App (Var 2) terminator) (App (Var 1) (Var 0)))))),[]),
+  mylex ["ものの"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Attr], F[P,M], F[P,M], F[P,M], F[M], F[M]]) ((Lam (Lam (Lam (Sigma (App (Var 2) terminator) (App (Var 1) (Var 0)))))),[]),
   -- 理由節
   mylex ["から"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Term,NTerm], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
         (conjunctionSR "kara"),
-        --((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (Sigma (App (Var 2) (Var 1)) ()))))),[]),
+        --((Lam (Lam (Lam (Sigma (App (Var 2) terminator) (Sigma (App (Var 2) (Var 1)) ()))))),[]),
   mylex ["ので"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
         (conjunctionSR "node"),
-        --((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
+        --((Lam (Lam (Lam (Sigma (App (Var 2) terminator) (App (Var 2) (Var 1)))))),[]),
   mylex ["ため","ために"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]]) 
         (conjunctionSR "tame"),
   -- 条件節
   mylex ["ば"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F anyPos,F[NegL,Hyp],F[P,M],F[P,M],F[P,M],F[M],F[M]])) 
-        ((Lam (Lam (Lam (Pi (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
+        ((Lam (Lam (Lam (Pi (App (Var 2) terminator) (App (Var 2) (Var 1)))))),[]),
   mylex ["ど"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F anyPos,F[Hyp],F[M],F[P,M],F[P,M],F[M],F[M]])) 
-        ((Lam (Lam (Lam (Pi (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
+        ((Lam (Lam (Lam (Pi (App (Var 2) terminator) (App (Var 2) (Var 1)))))),[]),
   mylex ["なら","ならば"] "(779a)" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F anyPos,F[Term,NStem],F[P,M],F[P,M],F[P,M],F[M],F[M]])) 
-        ((Lam (Lam (Lam (Pi (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
+        ((Lam (Lam (Lam (Pi (App (Var 2) terminator) (App (Var 2) (Var 1)))))),[]),
   mylex ["たら","たらば"] "(780)" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F anyPos,F[EuphT],F[M],F[P,M],F[P,M],F[M],F[M]])) 
-        ((Lam (Lam (Lam (Pi (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
+        ((Lam (Lam (Lam (Pi (App (Var 2) terminator) (App (Var 2) (Var 1)))))),[]),
   mylex ["だら","だらば"] "(781)" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F anyPos,F[EuphD],F[M],F[P,M],F[P,M],F[M],F[M]])) 
-        ((Lam (Lam (Lam (Pi (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
+        ((Lam (Lam (Lam (Pi (App (Var 2) terminator) (App (Var 2) (Var 1)))))),[]),
   mylex ["と"] "(785)" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F anyPos,F[Term,NTerm],F[M],F[P,M],F[P,M],F[M],F[M]])) 
-        ((Lam (Lam (Lam (Pi (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]), -- 非過去のみ
+        ((Lam (Lam (Lam (Pi (App (Var 2) terminator) (App (Var 2) (Var 1)))))),[]), -- 非過去のみ
   mylex ["にせよ"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F anyPos,F[Term,NStem],F[P,M],F[M],F[P,M],F[M],F[M]])) 
-        ((Lam (Lam (Lam (Pi (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
+        ((Lam (Lam (Lam (Pi (App (Var 2) terminator) (App (Var 2) (Var 1)))))),[]),
   mylex ["ても"] "new" ((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` (S [F adjective,F[Cont],F[M],F[M],F[P,M],F[M],F[M]])) 
-        ((Lam (Lam (Lam (Pi (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))),[]),
+        ((Lam (Lam (Lam (Pi (App (Var 2) terminator) (App (Var 2) (Var 1)))))),[]),
   -- 「走っても間に合わない」「飛んでも間に合わない」「学生でもいい」は？
   -- きゃ、しゃ、ちゃ、にゃ、みゃ、りゃ、や、ぎゃ、びゃ、来りゃ、くりゃ、すりゃ、ずりゃ、
   --- とする
@@ -828,26 +831,26 @@ myLexicon = concat $ [
   mylex ["(","[","−","-"] "new" LPAREN (Unit, []),
   mylex [")","]","−","-"] "new" RPAREN (Unit, []),
   -- 形式名詞
-  mylex ["こと","事"] "new" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `BS` (S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]])) ((Lam (Lam (Lamvec (Sigma Entity (Sigma (Sigma Entity (App (App (Con "＃コト") (Var 1 )) (Var 0))) (Sigma (App (App (Con "＃内容") (App (Var 4) (Lam Top))) (Var 1)) (Appvec 3 (App (Var 4) (Var 2))))))))),[("＃コト", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type)),("＃内容",DTT.Pi DTT.Type (DTT.Pi DTT.Entity DTT.Type))]),
-  mylex ["の"] "new" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `BS` (S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]])) ((Lam (Lam (Lamvec (Sigma Entity (Sigma (Sigma Entity (App (App (Con "＃ノ") (Var 1 )) (Var 0))) (Sigma (App (App (Con "＃内容") (App (Var 4) (Lam Top))) (Var 1)) (Appvec 3 (App (Var 4) (Var 2))))))))),[("＃ノ", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type)),("＃内容", DTT.Pi DTT.Type (DTT.Pi DTT.Entity DTT.Type))]),
-  mylex ["の"] "cleft" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `BS` (S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]] `BS` NP[F[Ga,O,Ni]])) ((Lam (Lam (Lamvec (Sigma Entity (Sigma (App (App (Var 3) (Var 0)) (Lam Top)) (Appvec 2 (App (Var 3) (Var 1)))))))),[]),
+  mylex ["こと","事"] "new" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `BS` (S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]])) ((Lam (Lam (Lamvec (Sigma Entity (Sigma (Sigma Entity (App (App (Con "＃コト") (Var 1 )) (Var 0))) (Sigma (App (App (Con "＃内容") (App (Var 4) terminator)) (Var 1)) (Appvec 3 (App (Var 4) (Var 2))))))))),[("＃コト", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type)),("＃内容",DTT.Pi DTT.Type (DTT.Pi DTT.Entity DTT.Type))]),
+  mylex ["の"] "new" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `BS` (S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]])) ((Lam (Lam (Lamvec (Sigma Entity (Sigma (Sigma Entity (App (App (Con "＃ノ") (Var 1 )) (Var 0))) (Sigma (App (App (Con "＃内容") (App (Var 4) terminator)) (Var 1)) (Appvec 3 (App (Var 4) (Var 2))))))))),[("＃ノ", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type)),("＃内容", DTT.Pi DTT.Type (DTT.Pi DTT.Entity DTT.Type))]),
+  mylex ["の"] "cleft" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `BS` (S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]] `BS` NP[F[Ga,O,Ni]])) ((Lam (Lam (Lamvec (Sigma Entity (Sigma (App (App (Var 3) (Var 0)) terminator) (Appvec 2 (App (Var 3) (Var 1)))))))),[]),
   mylex ["ことな","事な"] "new" (S [F[ANAS],F[Stem],F[M],F[M],F[P],F[M],F[M]] `BS` S [F anyPos,F [Attr],F[M],F[M],F[P,M],F[M],F[M]]) negOperator,
   --
   -- 量化表現：Q-no N
   mylex ["すべての","あらゆる","一人一人の","各","各々の","それぞれの"] "(534)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N) 
-        ((Lam (Lam (Lamvec (Pi (Sigma Entity (App (App (Var 3) (Var 0)) (Lam Top))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[]),
+        ((Lam (Lam (Lamvec (Pi (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[]),
   mylex ["一人の","或る","ある","何人かの","数人の"] "(534)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N) 
-        ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) (Lam Top))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[]),
+        ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[]),
   -- 量化表現：N-no Q
   mylex ["の一人一人","のそれぞれ","のすべて","の全員","の誰も"] "(535)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `BS` N) 
-        ((Lam (Lam (Lamvec (Pi (Sigma Entity (App (App (Var 3) (Var 0)) (Lam Top))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[]),
+        ((Lam (Lam (Lamvec (Pi (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[]),
   mylex ["の一人","の何人か","の数人","の誰か"] "(535)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `BS` N) 
-        ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) (Lam Top))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[]),
+        ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[]),
   -- 量化表現：N Q
   mylex ["全員"] "(536)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `BS` N) 
-        ((Lam (Lam (Lamvec (Pi (Sigma Entity (App (App (Var 3) (Var 0)) (Lam Top))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[]),
+        ((Lam (Lam (Lamvec (Pi (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[]),
   mylex ["一人"] "(536)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `BS` N) 
-        ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) (Lam Top))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[]),
+        ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[]),
   -- その他GQ
   mylex ["半数以上の","半数の"] "(GQ)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N) (generalizedQuantifierSR "半数"),  
   mylex ["の半数以上","の半数","半数","半数以上"] "(GQ)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `BS` N) (generalizedQuantifierSR "半数"),  
@@ -862,8 +865,8 @@ myLexicon = concat $ [
   --mylex ["い"] "new" ((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP[F[Ni]]) `BS` NP [F[Ga]]) ((Lam (Lam (Sigma entity (Sigma (Eq entity (Var 0) (Var 2)) (App (Var 2) (Var 0)))))),[]),
   --mylex ["あ"] "new" ((defS [V5ARU] [Stem] `BS` NP[F[Ni]]) `BS` NP [F[Ga]]) ((Lam (Lam (Sigma entity (Sigma (Eq entity (Var 0) (Var 2)) (App (Var 2) (Var 0)))))),[]),
   -- 存在の「いる」「ある」
-  mylex ["い"] "new" (defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP [F[Ga]]) ((Lam (Lam Top)),[]),
-  mylex ["あ"] "new" (defS [V5ARU] [Stem] `BS` NP [F[Ga]]) ((Lam (Lam Top)),[]),
+  mylex ["い"] "new" (defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP [F[Ga]]) ((Lam terminator),[]),
+  mylex ["あ"] "new" (defS [V5ARU] [Stem] `BS` NP [F[Ga]]) ((Lam terminator),[]),
   -- 場所の「いる」「ある」
   mylex ["い"] "new" ((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP[F[Ni]]) `BS` NP [F[Ga]]) 
         ((Lam (Lam (Lam (Sigma Entity (Sigma (App (App (Con "＃存在") (Var 3)) (Var 0)) (Sigma (App (App (Con "＃場所") (Var 3)) (Var 1)) (App (Var 3) (Var 2)))))))),[("＃存在", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type)),("＃場所", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]),
