@@ -15,11 +15,10 @@ module DTS.TypeChecker (
   --, sequentialTypeCheck
   ) where
 
-import Data.List (lookup)    --base
-import Control.Applicative (empty)   --base
-import Control.Monad (guard,when,sequence)    --base
+import Control.Applicative ((<|>)) --base
+import Control.Monad (guard,when)  --base
 import Control.Monad.State (lift)  
-import ListT (ListT(..),fromFoldable) --list-t
+import ListT (fromFoldable) --list-t
 import qualified System.IO as S           --base
 import qualified Data.Text.Lazy as T --text
 import qualified Data.Text.Lazy.IO as T --text
@@ -59,9 +58,11 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
           return $ Tree QT.Con (DTTdB.Judgment sig ctx (DTTdB.Con t) termA) []
     UDTTdB.Type -> return $ Tree QT.TypeF (DTTdB.Judgment sig ctx DTTdB.Type DTTdB.Kind) []
     UDTTdB.Pi termA termB -> do
-      diagramA <- typeCheck' (UDTTdB.Judgment sig ctx termA DTTdB.Type)  -- | diagramAs :: [Tree]
+      diagramA <- (typeCheck' (UDTTdB.Judgment sig ctx termA DTTdB.Type))  
+                  <|> (typeCheck' (UDTTdB.Judgment sig ctx termA DTTdB.Kind)) 
       let termA' = DTTdB.trm $ node diagramA
-      diagramB <- typeCheck' (UDTTdB.Judgment sig (termA':ctx) termB DTTdB.Type)
+      diagramB <- (typeCheck' (UDTTdB.Judgment sig (termA':ctx) termB DTTdB.Type))
+                  <|> (typeCheck' (UDTTdB.Judgment sig (termA':ctx) termB DTTdB.Kind))
       let termB' = DTTdB.trm $ node diagramB
       return $ Tree QT.PiF (DTTdB.Judgment sig ctx (DTTdB.Pi termA' termB') (DTTdB.typ $ node diagramB)) [diagramA,diagramB]
     UDTTdB.App termM termN -> do
@@ -75,7 +76,8 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
           termB' = DTTdB.betaReduce $ DTTdB.subst termB termN' 0
       return $ Tree QT.PiE (DTTdB.Judgment sig ctx (DTTdB.App termM' termN') termB') [diagramM, diagramN]
     UDTTdB.Sigma termA termB -> do
-      diagramA <- typeCheck' $ UDTTdB.Judgment sig ctx termA DTTdB.Type
+      diagramA <- (typeCheck' $ UDTTdB.Judgment sig ctx termA DTTdB.Type)
+                  <|> (typeCheck' $ UDTTdB.Judgment sig ctx termA DTTdB.Kind)
       let termA' = DTTdB.trm $ node diagramA
       diagramB <- typeCheck' $ UDTTdB.Judgment sig (termA':ctx) termB DTTdB.Type
       let termB' = DTTdB.trm $ node diagramB
@@ -111,7 +113,7 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
       let termP' = DTTdB.trm $ node diagramP
           termPL = DTTdB.betaReduce $ DTTdB.App termP' termL'
           termPM = DTTdB.betaReduce $ DTTdB.App termP' (DTTdB.Iota DTTdB.Fst (DTTdB.Var 0))
-          termPN = DTTdB.betaReduce $ DTTdB.App termP' (DTTdB.Iota DTTdB.Fst (DTTdB.Var 0))
+          termPN = DTTdB.betaReduce $ DTTdB.App termP' (DTTdB.Iota DTTdB.Snd (DTTdB.Var 0))
       diagramM <- typeCheck' $ UDTTdB.Judgment sig ctx termM (DTTdB.Pi termA termPM)
       diagramN <- typeCheck' $ UDTTdB.Judgment sig ctx termM (DTTdB.Pi termB termPN)
       let termM' = DTTdB.trm $ node diagramM
