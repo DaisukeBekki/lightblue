@@ -238,14 +238,14 @@ betaReduce preterm = case preterm of
   Lam m  -> Lam (betaReduce m)
   App m n -> case betaReduce m of
     Lam v -> betaReduce (shiftIndices (subst v (shiftIndices n 1 0) 0) (-1) 0)
+    (Ann (Lam v) _) -> betaReduce (shiftIndices (subst v (shiftIndices n 1 0) 0) (-1) 0)
     e -> App e (betaReduce n)
   Not a  -> Not (betaReduce a)
   Sigma a b -> Sigma (betaReduce a) (betaReduce b)
   Pair m n  -> Pair (betaReduce m) (betaReduce n)
   Proj s m  -> case betaReduce m of
-    Pair x y -> case s of
-                  Fst -> x
-                  Snd -> y
+    Pair x y -> case s of Fst -> x; Snd -> y
+    (Ann (Pair x y) _) -> case s of Fst -> x; Snd -> y
     e -> Proj s e
   Disj a b -> Disj (betaReduce a) (betaReduce b)
   Iota s m -> Iota s (betaReduce m)
@@ -287,14 +287,14 @@ strongBetaReduce t preterm = case preterm of
                else Lam (strongBetaReduce 0 m)
   App m n -> case strongBetaReduce (t+1) m of
     Lam v -> strongBetaReduce t (shiftIndices (subst v (shiftIndices n 1 0) 0) (-1) 0)
+    (Ann (Lam v) _) -> strongBetaReduce t (shiftIndices (subst v (shiftIndices n 1 0) 0) (-1) 0)
     e -> App e (strongBetaReduce 0 n)
   Not a  -> Not (strongBetaReduce 0 a)
   Sigma a b -> Sigma (strongBetaReduce 0 a) (strongBetaReduce 0 b)
   Pair m n  -> Pair (strongBetaReduce 0 m) (strongBetaReduce 0 n)
   Proj s m  -> case strongBetaReduce 0 m of
-    Pair x y -> case s of
-                  Fst -> x
-                  Snd -> y
+    Pair x y -> case s of Fst -> x; Snd -> y
+    (Ann (Pair x y) _) -> case s of Fst -> x; Snd -> y
     e -> Proj s e
   Disj a b -> Disj (strongBetaReduce 0 a) (strongBetaReduce 0 b)
   Iota s m -> Iota s (strongBetaReduce 0 m)
