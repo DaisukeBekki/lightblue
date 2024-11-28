@@ -39,6 +39,7 @@ import Data.List
 type ConjMap = M.Map (T.Text,T.Text) T.Text
 type OpenWordsMap = M.Map T.Text [(T.Text, S.Set T.Text)]
 
+
 myMapM :: Monad m => (t -> m a) -> [t] -> m [a]
 -- インデックスつきmap
 myMap _ [] = []
@@ -54,6 +55,7 @@ knpFilter text = do
     knp <- K.fromText text
     lb <- getEnv "LIGHTBLUE"
     katuyoulist <- JK.parseKatuyouFromPath $ concat [lb,"src/Parser/Language/Japanese/Juman/JUMAN.katuyou"]
+    U.uprint katuyoulist
     let knpData = map (K.knpParser) knp
         conjmap = getConjMap katuyoulist
         filterNode = createFilterFrom knpData conjmap
@@ -93,7 +95,7 @@ createFilterFrom ::
 createFilterFrom knpData conjMap _ _ ccgNodes = do
     -- knpDataから、名詞、動詞、副詞、助詞の表層形を取得
     let openWords = getOpenWordsMap knpData conjMap
-    trace ("createFilter: openwordsmap\n" ++ U.ushow openWords) createFilterFrom' openWords ccgNodes
+    createFilterFrom' openWords ccgNodes
 
 -- [("名詞"歌"),("動詞","歌")] -> toFilterNode -> FilteredNode
 createFilterFrom' :: OpenWordsMap -> [CCG.Node] -> [CCG.Node]
@@ -101,7 +103,7 @@ createFilterFrom' :: OpenWordsMap -> [CCG.Node] -> [CCG.Node]
 createFilterFrom' _ [] = []
 createFilterFrom' openWordsMap (c:cs) =
     -- フィルターする対象がない場合
-    if openWordsMap == M.empty then trace ("empty openWords") cs
+    if openWordsMap == M.empty then cs
     --　重複を扱うためにキーをリストにする
     else do
         -- LEXで、表層形が一致する単語がopenWordsにある
@@ -131,25 +133,25 @@ filterNodes (key, enkey) owmap node nodes = case M.lookup key owmap of
     Just xs ->
         -- xsの中にCCGNodeの表層形と格フレームが一致するものがあれば、nodeは残す
         if (CCG.pf node, S.fromList $ getCCGArg $ CCG.cat node) `elem` (map (\(word,caseframe) -> (TL.fromStrict word, caseframe)) xs) then
-            trace ("in " ++ T.unpack enkey ++  ": " ++ (U.ushow $ CCG.sig node) ++ "\n\t\t" ++ (U.ushow $ CCG.cat node)) node:createFilterFrom' owmap nodes
+            node:createFilterFrom' owmap nodes
         else
             --  表層系のみ一致する場合（格フレームが異なる場合）
             if CCG.pf node `elem` (map (\(word, _) -> TL.fromStrict word) xs) then do
                 let newCaseFrame = getCaseframe (TL.toStrict $ CCG.pf node) xs
                 -- ["行","い","逝"] "(103)" [V5IKU] [Stem] "行く/いく" "ガニ" event,
-                let (f1',f2') = trace (U.ushow $ CCG.sig node) LF.getFeatures (CCG.cat node)
+                let (f1',f2') =  LF.getFeatures (CCG.cat node)
                 case uncons $ CCG.sig node of
                     Just _ -> do
                         let (text,_) = head $ CCG.sig node
                         let newNode = LB.verblex [(CCG.pf node)] "(KNP)" f1' f2' (LF.getDaihyo text) (TL.fromStrict newCaseFrame) LB.event
-                        trace ("\t out " ++ T.unpack enkey ++  ": " ++ (U.ushow $ CCG.sig node) ++ ("\nnew Node " ++ (U.ushow $ map CCG.sig newNode) ++ "\n\t\t" ++ (U.ushow $ map CCG.cat newNode))) newNode ++ createFilterFrom' owmap nodes
+                        newNode ++ createFilterFrom' owmap nodes
                     Nothing -> do
                         let text = CCG.pf node
                         let newNode = LB.verblex [(CCG.pf node)] "(KNP)" f1' f2' (LF.getDaihyo text) (TL.fromStrict newCaseFrame) LB.event
-                        trace ("\t out " ++ T.unpack enkey ++  ": " ++ (U.ushow $  node) ++ ("\nnew Node " ++ (U.ushow $ map CCG.sig newNode) ++ "\n\t\t" ++ (U.ushow $ map CCG.cat newNode))) newNode ++ createFilterFrom' owmap nodes
+                        newNode ++ createFilterFrom' owmap nodes
             -- 表層系も一致しない場合
             else
-            trace ("\t out " ++ T.unpack enkey ++  ": " ++ (U.ushow $ CCG.sig node)) createFilterFrom' owmap nodes
+            createFilterFrom' owmap nodes
     -- そもそも key がない
     Nothing -> node:createFilterFrom' owmap nodes
     where
