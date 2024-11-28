@@ -18,6 +18,7 @@ module Parser.Language.Japanese.Filter.KNPFilter (
     myMapM
     ) where
 
+import System.Environment (getEnv)
 import qualified Text.KNP as K
 import qualified Text.Juman as J
 import qualified Parser.JumanKatuyou as JK
@@ -51,7 +52,8 @@ myMapM f as = sequence (myMap f as)
 knpFilter :: T.Text -> IO (Int -> Int -> [CCG.Node] -> [CCG.Node])
 knpFilter text = do
     knp <- K.fromText text
-    katuyoulist <- JK.parseKatuyouFromPath "../Juman/JUMAN.katuyou"
+    lb <- getEnv "LIGHTBLUE"
+    katuyoulist <- JK.parseKatuyouFromPath $ concat [lb,"src/Parser/Language/Japanese/Juman/JUMAN.katuyou"]
     let knpData = map (K.knpParser) knp
         conjmap = getConjMap katuyoulist
         filterNode = createFilterFrom knpData conjmap
