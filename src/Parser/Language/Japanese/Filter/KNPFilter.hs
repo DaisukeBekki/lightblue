@@ -38,16 +38,6 @@ import Data.List
 type ConjMap = M.Map (T.Text,T.Text) T.Text
 type OpenWordsMap = M.Map T.Text [(T.Text, S.Set T.Text)]
 
-
--- main :: IO ()
--- main = do
---     let text = "太郎が走る"
---     kf <- knpFilter text
---     setting <- LB.defaultParseSetting
---     let newSetting = setting {LB.ifFilterNode = Just kf}
---     nodes <- LB.simpleParse newSetting $ TL.fromStrict text
---     print nodes
-
 myMapM :: Monad m => (t -> m a) -> [t] -> m [a]
 -- インデックスつきmap
 myMap _ [] = []
@@ -67,29 +57,6 @@ knpFilter text = do
         filterNode = createFilterFrom knpData conjmap
     return filterNode
 
--- isJumanData :: K.KNPData -> Bool
--- isJumanData (K.Juman _) = True
--- isJumanData _ = False
-
--- isKNPNode :: K.KNPData -> Bool
--- isKNPNode (K.KNPNode _ _ _ _ _ _) = True
--- isKNPNode _ = False
-
--- | KNPDataから動詞の語幹とその項構造を取得
--- getKNPverbArg :: [K.KNPData] -> ConjMap -> [(T.Text, S.Set T.Text)]
--- getKNPverbArg knpdata conjmap = case knpdata of
---     [] -> []
---     -- knpNodeの一つ後ろのjumanwordから語幹を取得する必要がある
---     (K.KNPNode _ _ _ (Just cat) _ caseFrame):(K.Juman (J.JumanWord nyuryoku _ _ _ _ _ _ katuyogata _ katuyokei _ _)):xs ->
---         -- 用言のみ抽出
---         if T.isPrefixOf "用言" cat then do
---         -- 動詞の語幹を取得と、格フレームを返す
---             let stem = getStem nyuryoku katuyogata katuyokei conjmap
---                 -- ガ格は必ず必須格となる
---                 knpCaseFrame = "ガ" : getKNPArg caseFrame
---             (stem, S.fromList knpCaseFrame) : getKNPverbArg xs conjmap
---         else getKNPverbArg xs conjmap
---     _:xs -> getKNPverbArg xs conjmap
 
 getKNPArg :: Maybe [(T.Text, T.Text, Int)] -> [T.Text]
 getKNPArg x = case x of

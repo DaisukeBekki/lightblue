@@ -32,15 +32,6 @@ type ConjMap = M.Map (T.Text, T.Text) T.Text
 type OpenWordsMap = M.Map T.Text [(T.Text, S.Set T.Text)]
 
 
--- main :: IO ()
--- main = do
---     let text = "太郎が走る"
---     kf <- kwjaFilter text
---     setting <- LB.defaultParseSetting
---     let newSetting = setting {LB.ifFilterNode = Just kf}
---     nodes <- LB.simpleParse newSetting $ TL.fromStrict text
---     print nodes
-
 -- | kwjaを用いたフィルタリング関数を返す
 kwjaFilter :: T.Text -> IO (Int -> Int -> [CCG.Node] -> [CCG.Node])
 kwjaFilter text = do
