@@ -19,7 +19,7 @@ import qualified Data.Set as S
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import qualified Parser.CCG as CCG
-import qualified Parser.ChartParser as LB ()
+import qualified Parser.ChartParser as LB (simpleParse, defaultParseSetting, ParseSetting(..))
 import qualified Parser.JumanKatuyou as JK
 import qualified Parser.KWJA as KW
 import qualified Parser.Language.Japanese.MyLexicon as LB (verblex)
@@ -30,7 +30,6 @@ import qualified Parser.Language.Japanese.Filter.LightblueFilter as LF (getDaihy
 
 type ConjMap = M.Map (T.Text, T.Text) T.Text
 type OpenWordsMap = M.Map T.Text [(T.Text, S.Set T.Text)]
-
 
 -- | kwjaを用いたフィルタリング関数を返す
 kwjaFilter :: T.Text -> IO (Int -> Int -> [CCG.Node] -> [CCG.Node])
