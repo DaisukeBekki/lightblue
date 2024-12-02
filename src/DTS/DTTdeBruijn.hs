@@ -32,7 +32,7 @@ module DTS.DTTdeBruijn (
   ) where
 
 import qualified GHC.Generics as G    --base
-import qualified Data.Text.Lazy as TL  --text
+import qualified Data.Text.Lazy as TL  --text -- renamed
 import Data.Store (Store(..))         --store
 import Data.Store.TH (makeStore)      --store
 import Interface.Text                 --lightblue
