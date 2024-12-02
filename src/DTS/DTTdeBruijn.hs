@@ -32,7 +32,7 @@ module DTS.DTTdeBruijn (
   ) where
 
 import qualified GHC.Generics as G    --base
-import qualified Data.Text.Lazy as TL  --text
+import qualified Data.Text.Lazy as T  --text
 import Data.Store (Store(..))         --store
 import Data.Store.TH (makeStore)      --store
 import Interface.Text                 --lightblue
@@ -59,7 +59,7 @@ instance SimpleText Selector where
 data Preterm = 
   -- | Basic Preterms
   Var Int                       -- ^ Variables
-  | Con TL.Text                  -- ^ Constant symbols
+  | Con T.Text                  -- ^ Constant symbols
   | Type                        -- ^ The sort \"type\"
   | Kind                        -- ^ The sort \"kind\"
   -- | Pi Types
@@ -92,44 +92,43 @@ data Preterm =
   -- | ToDo: add First Universe
   deriving (Eq, G.Generic)
 
-makeStore ''TL.Text
-
 instance Store Preterm
 
+makeStore ''T.Text
 
 instance Show Preterm where
-  show = TL.unpack . toText
+  show = T.unpack . toText
 
 -- | translates a preterm into a simple text notation.
 instance SimpleText Preterm where
   toText preterm = case preterm of
-    Var i   -> TL.pack (show i)
+    Var i   -> T.pack (show i)
     Con c   -> c
     Type    -> "type"
     Kind    -> "kind"
     Pi a b  -> case b of
-                 Bot -> TL.concat["¬", toText a]
-                 b' -> TL.concat["(Π ", toText a, ")", toText b']
-    Lam m   -> TL.concat["λ.", toText m]
-    App m n -> TL.concat["(", toText m, " ", toText n, ")"]
-    Not m   -> TL.concat["¬", toText m]
-    Sigma a b  -> TL.concat["(Σ ", toText a, ")", toText b]
-    Pair m n   -> TL.concat["(", toText m, ",", toText n, ")"]
-    Proj s m   -> TL.concat["π", toText s, "(", toText m, ")"]
-    Disj a b -> TL.concat[toText a, " + ", toText b] 
-    Iota s m -> TL.concat["ι", toText s, "(", toText m, ")"]
-    Unpack p l m n -> TL.concat ["unpack(", toText p, ",", toText l, ",", toText m, ",", toText n, ")"]
+                 Bot -> T.concat["¬", toText a]
+                 b' -> T.concat["(Π ", toText a, ")", toText b']
+    Lam m   -> T.concat["λ.", toText m]
+    App m n -> T.concat["(", toText m, " ", toText n, ")"]
+    Not m   -> T.concat["¬", toText m]
+    Sigma a b  -> T.concat["(Σ ", toText a, ")", toText b]
+    Pair m n   -> T.concat["(", toText m, ",", toText n, ")"]
+    Proj s m   -> T.concat["π", toText s, "(", toText m, ")"]
+    Disj a b -> T.concat[toText a, " + ", toText b] 
+    Iota s m -> T.concat["ι", toText s, "(", toText m, ")"]
+    Unpack p l m n -> T.concat ["unpack(", toText p, ",", toText l, ",", toText m, ",", toText n, ")"]
     Bot   -> "⊥"
     Unit  -> "()"
     Top   -> "T"
     Entity -> "entity"
     Nat   -> "N"
     Zero  -> "0"
-    Succ n -> TL.concat ["s", toText n]
-    Natrec n e f -> TL.concat ["natrec(", toText n, ",", toText e, ",", toText f, ")"]
-    Eq a m n -> TL.concat [toText m, "=[", toText a, "]", toText n]
-    Refl a m -> TL.concat ["refl", toText a, "(", toText m, ")"]
-    Idpeel m n -> TL.concat ["idpeel(", toText m, ",", toText n, ")"]
+    Succ n -> T.concat ["s", toText n]
+    Natrec n e f -> T.concat ["natrec(", toText n, ",", toText e, ",", toText f, ")"]
+    Eq a m n -> T.concat [toText m, "=[", toText a, "]", toText n]
+    Refl a m -> T.concat ["refl", toText a, "(", toText m, ")"]
+    Idpeel m n -> T.concat ["idpeel(", toText m, ",", toText n, ")"]
 
 -- | translates a DTS preterm into a tex source code.
 instance Typeset Preterm where
@@ -236,7 +235,7 @@ betaReduce preterm = case preterm of
   Natrec n e f -> case betaReduce n of
                     Zero -> betaReduce e
                     Succ m -> betaReduce $ (App (App f m) (Natrec m e f))
-                    m -> Natrec m (betaReduce e) (betaReduce f) -- Con $ TL.concat ["Error in beta-reduction of Natrec: ", toText n]
+                    m -> Natrec m (betaReduce e) (betaReduce f) -- Con $ T.concat ["Error in beta-reduction of Natrec: ", toText n]
   Eq a m n -> Eq (betaReduce a) (betaReduce m) (betaReduce n)
   Refl a m -> Refl (betaReduce a) (betaReduce m)
   Idpeel m n -> case betaReduce m of
@@ -281,7 +280,7 @@ strongBetaReduce t preterm = case preterm of
   Natrec n e f -> case strongBetaReduce 0 n of
                     Zero -> strongBetaReduce 0 e
                     Succ m -> strongBetaReduce 0 $ (App (App f m) (Natrec m e f))
-                    m -> Natrec m (strongBetaReduce 0 e) (strongBetaReduce 0 f) -- Con $ TL.concat ["Error in beta-reduction of Natrec: ", toText n]
+                    m -> Natrec m (strongBetaReduce 0 e) (strongBetaReduce 0 f) -- Con $ T.concat ["Error in beta-reduction of Natrec: ", toText n]
   Eq a m n -> Eq (strongBetaReduce 0 a) (strongBetaReduce 0 m) (strongBetaReduce 0 n)
   Refl a m -> Refl (strongBetaReduce 0 a) (strongBetaReduce 0 m)
   Idpeel m n -> case strongBetaReduce 0 m of
@@ -324,24 +323,24 @@ multiply m n = Natrec m Zero (Lam (Lam (add n (Var 0))))
 
 -- | A type of an element of a type signature, that is, a list of pairs of a preterm and a type.
 -- ex. [entity:type, state:type, event:type, student:entity->type]
-type Signature = [(TL.Text, Preterm)]
+type Signature = [(T.Text, Preterm)]
 
 instance SimpleText Signature where
-  toText = (TL.intercalate ", ") . (map (\(nm,tm) -> TL.concat [nm, ":", toText tm])) . reverse
+  toText = (T.intercalate ", ") . (map (\(nm,tm) -> T.concat [nm, ":", toText tm])) . reverse
 instance Typeset Signature where
-  toTeX = (TL.intercalate ",") . (map (\(nm,tm) -> TL.concat [nm, ":", toTeX tm])) . reverse
+  toTeX = (T.intercalate ",") . (map (\(nm,tm) -> T.concat [nm, ":", toTeX tm])) . reverse
 instance MathML Signature where
-  toMathML = (TL.intercalate "<mo>,<mo>") . (map (\(nm,tm) -> TL.concat ["<mrow><mo>", nm, "</mo><mo>:</mo>", toMathML tm, "</mrow>"])) . reverse
+  toMathML = (T.intercalate "<mo>,<mo>") . (map (\(nm,tm) -> T.concat ["<mrow><mo>", nm, "</mo><mo>:</mo>", toMathML tm, "</mrow>"])) . reverse
 
 -- | A context is a list of preterms
 type Context = [Preterm]
 
 instance SimpleText Context where
-  toText = (TL.intercalate ", ") . (map toText) . reverse
+  toText = (T.intercalate ", ") . (map toText) . reverse
 instance Typeset Context where
-  toTeX = (TL.intercalate ",") . (map toTeX) . reverse
+  toTeX = (T.intercalate ",") . (map toTeX) . reverse
 instance MathML Context where
-  toMathML = (TL.intercalate "<mo>,</mo>") . (map toMathML). reverse
+  toMathML = (T.intercalate "<mo>,</mo>") . (map toMathML). reverse
 
 -- | The data type for a judgment
 data Judgment = Judgment {
@@ -355,7 +354,7 @@ embedJudgment :: Judgment -> GeneralTypeQuery Signature Context Preterm Preterm
 embedJudgment (Judgment sig cxt trm typ) = GeneralTypeQuery sig cxt (Term trm) (Term typ)
 
 instance Show Judgment where
-  show = TL.unpack . toText
+  show = T.unpack . toText
 instance SimpleText Judgment where
   toText = toText . embedJudgment
 instance Typeset Judgment where
@@ -375,7 +374,7 @@ embedTypeInferQuery :: TypeInferQuery -> GeneralTypeQuery Signature Context Pret
 embedTypeInferQuery (TypeInferQuery sig cxt trm) = GeneralTypeQuery sig cxt (Term trm) Question
 
 instance Show TypeInferQuery where
-  show = TL.unpack . toText
+  show = T.unpack . toText
 instance SimpleText TypeInferQuery where
   toText = toText . embedTypeInferQuery
 instance Typeset TypeInferQuery where
@@ -389,7 +388,7 @@ embedProofSearchQuery :: ProofSearchQuery -> GeneralTypeQuery Signature Context 
 embedProofSearchQuery (ProofSearchQuery sig cxt typ) = GeneralTypeQuery sig cxt Question (Term typ)
 
 instance Show ProofSearchQuery where
-  show = TL.unpack . toText
+  show = T.unpack . toText
 instance SimpleText ProofSearchQuery where
   toText = toText . embedProofSearchQuery
 instance Typeset ProofSearchQuery where
