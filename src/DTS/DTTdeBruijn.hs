@@ -92,9 +92,9 @@ data Preterm =
   -- | ToDo: add First Universe
   deriving (Eq, G.Generic)
 
-instance Store Preterm
-
 makeStore ''LazyT.Text
+
+instance Store Preterm
 
 instance Show Preterm where
   show = LazyT.unpack . toText
