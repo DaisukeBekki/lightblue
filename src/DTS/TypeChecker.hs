@@ -104,9 +104,9 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
     UDTTdB.Disj termA termB -> do
       diagramA <- typeCheck' $ UDTTdB.Judgment sig ctx termA DTTdB.Type
       let termA' = DTTdB.trm $ node diagramA
-      diagramB <- typeCheck' $ UDTTdB.Judgment sig (termA':ctx) termB DTTdB.Type
+      diagramB <- typeCheck' $ UDTTdB.Judgment sig ctx termB DTTdB.Type
       let termB' = DTTdB.trm $ node diagramB
-      return' verbose $ Tree QT.DisjF (DTTdB.Judgment sig ctx (DTTdB.Sigma termA' termB') (DTTdB.typ $ node diagramB)) [diagramA,diagramB]
+      return' verbose $ Tree QT.DisjF (DTTdB.Judgment sig ctx (DTTdB.Disj termA' termB') DTTdB.Type) [diagramA,diagramB]
     UDTTdB.Unpack termP termL termM termN -> do
       diagramL <- typeInfer' $ UDTTdB.TypeInferQuery sig ctx termL
       let termL' = DTTdB.trm $ node diagramL
