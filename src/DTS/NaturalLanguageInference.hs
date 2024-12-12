@@ -148,8 +148,8 @@ printParseResult h style sid noTypeCheck posTagOnly title (SentenceAndParseTrees
     -- | [ParseTreeAndFelicityChecks CCG.Node UDTT.TypeCheckQuery (ListT IO FelicityCheckAndMore) ]
     forM_ (zip parseTrees' ([1..]::[Int])) $ \((ParseTreeAndFelicityChecks node signtr tcQuery tcResults),ith) -> do
       let title'' = "Parse tree " ++ (show ith) ++ " of " ++ title'
-      S.hPutStrLn h $ interimOf style $ "[" ++ title'' ++ ": score=" ++ (T.unpack $ CCG.showScore node) ++ "]"
-      T.hPutStrLn h $ T.concat ["PF = ", CCG.pf node]
+      S.hPutStrLn h $ interimOf style $ "[" ++ title'' ++ "]"
+      T.hPutStrLn h $ T.concat ["PF = ", CCG.pf node, " / Score = ", CCG.showScore node]
       if posTagOnly
         then do
           posTagger h style node
