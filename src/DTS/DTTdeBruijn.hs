@@ -88,7 +88,7 @@ data Preterm =
   -- | Intensional Equality Types
   | Eq Preterm Preterm Preterm   -- ^ Intensional equality types
   | Refl Preterm Preterm         -- ^ refl
-  | Idpeel Preterm Preterm       -- ^ idpeel
+  | Idpeel Preterm Preterm -- ^ idpeel P E R
   -- | ToDo: add First Universe
   deriving (Eq, G.Generic)
 

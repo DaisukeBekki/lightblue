@@ -142,6 +142,16 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
       diagramM <- typeCheck' $ UDTTdB.Judgment sig ctx termM termA'
       let termM' = DTTdB.trm $ node diagramM
       return' verbose $ Tree QT.IqI (DTTdB.Judgment sig ctx (DTTdB.Refl termA' termM') (DTTdB.Eq termA' termM' termM')) [diagramA, diagramM]
+    UDTTdB.Idpeel termP termE termR -> do
+      diagramE <- typeInfer' $ UDTTdB.Judgment sig ctx termE 
+      let termE' = DTTdB.trm $ node diagramE
+          typeE' = DTTdB.typ $ node diagramE
+      guard $ case typeE' of (DTTdB.Eq _ _ _) -> True; _ -> False
+      let (DTTdB.Eq termM termA termM termN) = typeE'
+      diagramP <- typeCheck' $ UDTTdB.Judgment sig ctx termP (DTTdB.Pi termA (DTTdB.Pi termA (DTTdB.Pi (DTTdB.Eq termA (DTTdB.Var 1) (DTTdB.Var 0))) DTTdB.Type)))
+      let termP' = DTTdB.trm $ node diagramP
+          termPxxr = DTTdB.betaReduce $ DTTdB.Pi termP' -- | ToDo
+      diagramR <- typeCheck' $ UDTTdB.Judgment sig ctx termR (DTTdB.Pi termA ())
     --ToDo: add UDTTdB.Idpeel
     UDTTdB.Nat -> return' verbose $ Tree QT.NatF (DTTdB.Judgment sig ctx DTTdB.Nat DTTdB.Type) []
     UDTTdB.Zero -> return' verbose $ Tree QT.NatI (DTTdB.Judgment sig ctx DTTdB.Zero DTTdB.Nat) []
