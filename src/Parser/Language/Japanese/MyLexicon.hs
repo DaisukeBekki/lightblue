@@ -928,5 +928,6 @@ myLexicon = concat $ [
   -- PN
   mylex ["☎"] "PN" (NP [F[Nc]]) (properNameSR "電話番号"),
   -- ABCbank
-  mylex ["ところ"] "(ABC)" (defS [Nda,Nni,Nemp] [NStem] `BS` S [F anyPos,F[Attr],F[P,M],F[M],F[P,M],F[M],F[M]]) (modalSR "＃トコロ")
+  mylex ["ところ"] "(ABC)" (defS [Nda,Nni,Nemp] [NStem] `BS` S [F anyPos,F[Attr],F[P,M],F[M],F[P,M],F[M],F[M]]) (modalSR "＃トコロ"),
+  mylex ["イエス"] "PN" (NP [F[Nc]]) (properNameSR "イエス")
   ]
