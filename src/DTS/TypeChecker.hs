@@ -25,6 +25,7 @@ import qualified Data.Text.Lazy.IO as T --text
 import Interface.Text (SimpleText(..))
 import Interface.Tree (Tree(..),node)
 import qualified DTS.DTTdeBruijn as DTTdB
+import qualified DTS.DTTwithName as DTTwN
 import qualified DTS.UDTTdeBruijn as UDTTdB
 import qualified DTS.UDTTwithName as UDTTwN
 import qualified DTS.QueryTypes as QT
@@ -217,5 +218,5 @@ return' :: Bool -> QT.DTTProofDiagram -> ListT IO QT.DTTProofDiagram
 return' verbose tir = do 
   when verbose $ lift $ do
     T.hPutStr S.stderr "return: "
-    T.hPutStrLn S.stderr $ toText tir
+    T.hPutStrLn S.stderr $ toText $ DTTwN.fromDeBruijnJudgment $ node tir
   return tir
