@@ -596,7 +596,9 @@ myLexicon = concat $ [
   mylex ["上げ","あげ"] "(436)" ((defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` NP [F[Ga]]) `BS` (defS verb [TeForm] `BS` NP [F[Ga]]))
         ((Lam (Lam (Lam (App (App (Con "＃アゲル") (App (App (Var 2) (Var 1)) (Var 0))) (Var 1))))), [("＃アゲル", DTT.Pi DTT.Type (DTT.Pi DTT.Entity DTT.Type))]),  -- Signature直す
   mylex ["貰","もら"] "(436)" (((defS [V5w] [Stem] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) `BS` (defS verb [TeForm] `BS` NP [F[Ga]]))
-        ((Lam (Lam (Lam (Lam (App (App (App (Con "＃モラウ") (App (App (Var 3) (Var 2)) (Var 0))) (Var 2)) (Var 1)))))) , [("＃モラウ", DTT.Pi DTT.Type (DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type)))]),
+        ((Lam (Lam (Lam (Lam (App (App (Var 3) (Var 2)) (Lam (Sigma (App (App (App (Con "＃モラウ") (Var 0)) (Var 3)) (Var 2)) (App (Var 2) (Var 1))))))))), 
+        [("＃モラウ", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type)))]),
+        -- ((Lam (Lam (Lam (Lam (App (App (App (Con "＃モラウ") (App (App (Var 3) (Var 2)) (Var 0))) (Var 2)) (Var 1)))))) , [("＃モラウ", DTT.Pi DTT.Type (DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type)))]),
   mylex ["頂","いただ"] "new" (((defS [V5k] [Stem] `BS` NP [F[Ga]]) `BS` NP [F[Ni]]) `BS` (defS verb [TeForm] `BS` NP [F[Ga]]))
         ((Lam (Lam (Lam (Lam (App (App (App (Con "＃モラウ") (App (App (Var 3) (Var 2)) (Var 0))) (Var 2)) (Var 1)))))) , [("＃モラウ", DTT.Pi DTT.Type (DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type)))]),
   -- 6.1.6 −がる
