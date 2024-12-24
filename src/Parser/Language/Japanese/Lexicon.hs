@@ -66,15 +66,14 @@ setupLexicon :: LexicalResource -> T.Text -> IO LexicalItems
 setupLexicon JapaneseSetA{..} sentence = do
   --  1. Setting up lexical items provided by JUMAN++
   let jumandicFiltered = filter (\l -> (head l) `T.isInfixOf` sentence) jumanDic
-  let (jumandicParsed,(cn,pn)) = L.foldl' parseJumanLine ([],(M.empty,M.empty)) $ jumandicFiltered
+      (jumandicParsed,(cn,pn)) = L.foldl' parseJumanLine ([],(M.empty,M.empty)) $ jumandicFiltered
   --  2. Setting up private lexicon
   let mylexiconFiltered = filter (\l -> T.isInfixOf (pf l) sentence) baseLexicon
-  --  3. Setting up compound nouns (returned from an execution of JUMAN)
-  -- jumanCN <- JU.jumanCompoundNouns (T.replace "―" "、" sentence)
-  jumanCN <- JU.findCompoundNouns morphaName sentence
-  --  4. Accumulating common nons and proper names entries
+  --  3. Accumulating common nons and proper names entries
   let commonnouns = map (\(hyoki, (daihyo,score')) -> lexicalitem hyoki "(CN)" score' N (commonNounSR daihyo)) $ M.toList cn
-  let propernames = map (\(hyoki, (daihyo,score')) -> lexicalitem hyoki "(PN)" score' ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) (properNameSR daihyo)) $ M.toList pn
+      propernames = map (\(hyoki, (daihyo,score')) -> lexicalitem hyoki "(PN)" score' ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) (properNameSR daihyo)) $ M.toList pn
+  --  4. Setting up compound nouns (returned from an execution of JUMAN)
+  jumanCN <- JU.findCompoundNouns morphaName sentence
   --  5. 1+2+3+4
   let numeration = jumandicParsed ++ mylexiconFiltered ++ commonnouns ++ propernames ++ jumanCN
   return $ numeration `seq` numeration
@@ -87,16 +86,16 @@ parseJumanLine :: ([Node],(M.Map T.Text (T.Text,Integer), M.Map T.Text (T.Text,I
 parseJumanLine (lexicalitems, (commonnouns, propernames)) jumanline = 
   case jumanline of
     (hyoki:(score':(cat':(daihyo':(yomi':(source':(caseframe:_))))))) 
-      | T.isPrefixOf "名詞:普通名詞" cat' -> 
-          let commonnouns' = M.insertWith (\(t1,s1) (t2,s2) -> (T.intercalate ";" [t1,t2], max s1 s2)) hyoki ((T.concat [daihyo',"/",yomi']),(read (T.unpack score')::Integer)) commonnouns in
-          (lexicalitems, (commonnouns', propernames))
+      | T.isPrefixOf "名詞:普通名詞" cat' -> -- | Add nothing
+          -- let commonnouns' = M.insertWith (\(t1,s1) (t2,s2) -> (T.intercalate ";" [t1,t2], max s1 s2)) hyoki ((T.concat [daihyo',"/",yomi']),(read (T.unpack score')::Integer)) commonnouns in
+          (lexicalitems, (commonnouns, propernames))
       | T.isPrefixOf "名詞:固有名詞" cat' || T.isPrefixOf "名詞:人名" cat' || T.isPrefixOf "名詞:地名" cat' || T.isPrefixOf "名詞:組織名" cat' ->
           let propernames' = M.insertWith (\(t1,s1) (t2,s2) -> (T.intercalate ";" [t1,t2], max s1 s2)) hyoki ((T.concat [daihyo',"/",yomi']),(read (T.unpack score')::Integer)) propernames in
           (lexicalitems, (commonnouns, propernames'))
       | otherwise ->
-          let catsemlist = jumanPos2Cat (T.concat [daihyo',"/",yomi']) cat' caseframe in
-          ([(lexicalitem hyoki (T.concat ["(J",T.take 3 source',")"]) (read (T.unpack score')::Integer) cat2 semsig) | (cat2,semsig) <- catsemlist]++lexicalitems, (commonnouns,propernames))
-    _ -> (lexicalitems,(commonnouns,propernames))
+         let catsemlist = jumanPos2Cat (T.concat [daihyo',"/",yomi']) cat' caseframe in
+         ([(lexicalitem hyoki (T.concat ["(J",T.take 3 source',")"]) (read (T.unpack score')::Integer) cat2 semsig) | (cat2,semsig) <- catsemlist]++lexicalitems, (commonnouns, propernames))
+    _ -> (lexicalitems,(commonnouns, propernames))
 
 -- | Main function 1 "jumanPos2Cat" that converts Juman entries to lexical items
 jumanPos2Cat :: T.Text -> T.Text -> T.Text -> [(Cat,(UDTTpreterm,Signature))]
@@ -144,13 +143,14 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "接頭辞:イ形容詞接頭辞"     ct   = [((defS [Aauo] [Stem] `BS` NP [F[Ga]]) `SL` (defS [Aauo] [Stem] `BS` NP [F[Ga]]), (id, []))]
   | T.isPrefixOf "接頭辞:ナ形容詞接頭辞"     ct   = [((defS [Nda] [NStem] `BS` NP [F[Ga]]) `SL` (defS [Nda] [NStem] `BS` NP [F[Ga]]), (id, []))]
   | T.isPrefixOf "接尾辞:名詞性名詞助数辞"   ct  = constructNominalSuffix daihyo -- 例：ビット、ヘクトパスカル
-  -- T.isPrefixOf "接尾辞:名詞性名詞接尾辞"  ct  = constructNominalSuffix daihyo
+  | T.isPrefixOf "接尾辞:名詞性名詞接尾辞"   ct  = constructNominalSuffix daihyo
   | T.isPrefixOf "接尾辞:名詞性特殊接尾辞"   ct  = constructNominalSuffix daihyo
   | T.isPrefixOf "接尾辞:名詞性述語接尾辞"   ct  = constructNominalSuffix daihyo
   --  T.isPrefixOf "特殊:句点" ct =
   --  T.isPrefixOf "特殊:読点" ct =
   | T.isPrefixOf "特殊:括弧始"             ct = [(LPAREN, (Unit, []))]
   | T.isPrefixOf "特殊:括弧終"             ct = [(RPAREN, (Unit, []))]
+  | T.isPrefixOf "特殊:句点"              ct  = [(RPAREN, (Unit, []))]
   | T.isPrefixOf "数詞"                   ct = constructCommonNoun daihyo
   | T.isPrefixOf "感動詞"                 ct  = [(defS [Exp] [Term], (id, []))]
   | otherwise                                = [(defS [Exp] [Term], ((Con $ T.concat [T.pack "Juman Error: ", ct]), []))]
