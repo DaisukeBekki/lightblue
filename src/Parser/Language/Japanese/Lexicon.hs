@@ -150,7 +150,7 @@ jumanPos2Cat daihyo ct caseframe
   --  T.isPrefixOf "特殊:読点" ct =
   | T.isPrefixOf "特殊:括弧始"             ct = [(LPAREN, (Unit, []))]
   | T.isPrefixOf "特殊:括弧終"             ct = [(RPAREN, (Unit, []))]
-  | T.isPrefixOf "特殊:句点"              ct  = [(RPAREN, (Unit, []))]
+  | T.isPrefixOf "特殊:句点"              ct  = [(RPAREN, (Top, []))]
   | T.isPrefixOf "数詞"                   ct = constructCommonNoun daihyo
   | T.isPrefixOf "感動詞"                 ct  = [(defS [Exp] [Term], (id, []))]
   | otherwise                                = [(defS [Exp] [Term], ((Con $ T.concat [T.pack "Juman Error: ", ct]), []))]
