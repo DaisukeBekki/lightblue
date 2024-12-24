@@ -64,77 +64,7 @@ data Arrowterm =
   | ArrowLam Arrowterm -- ^ Lam型
   | Arrow AEnv  Arrowterm -- ^ Pi型
   | ArrowEq Arrowterm Arrowterm Arrowterm -- ^ 型 項1 項2 型
-  deriving (Eq)
--- | DTT.Preterm型に変換して得たテキストを加工している
-instance Show Arrowterm where
-  show term  = prestr2arrowstr ((filter (/= ' ') . show . arrow2DT) term) term
-
-allReplace :: T.Text -> [(T.Text,T.Text)] -> T.Text
-allReplace base=foldr (\(from,to) str' -> T.replace from to str') base
-
--- | DTT.Preterm型に変換して得たテキストとArrowtermを比較して加工している
-prestr2arrowstr :: String -> Arrowterm -> String
-prestr2arrowstr prestr aTerm =
-    case aTerm of 
-      (Conclusion p) -> dropWhile (not . (`elem` (['0'..'z']++['(',')','\8869']))) prestr 
-      (Arrow env r) ->
-        if null env
-        then
-          prestr2arrowstr  prestr r
-        else
-          let parentheses =  take (length env) (treatParentheses prestr  '(' ')' ) 
-          in "[ " ++
-              tail
-                (foldr (
-                  (\ a b -> ", "  ++ a  ++ b) .
-                    (\z ->
-                      let str = (snd $ snd z)
-                      in takeWhile (/= ':')  str ++":" ++  prestr2arrowstr (tail $ dropWhile (/= ':') str) (fst z)))
-                  "" (zip (reverse env) parentheses)) ++
-              " ] => " ++ prestr2arrowstr  (tail $ drop ((fst . last) parentheses) prestr) r
-      (ArrowSigma' env r) ->
-        if null env
-        then
-          prestr2arrowstr  prestr r
-        else
-          let parentheses =  take (length env) (treatParentheses prestr  '(' ')' )
-          in "[ " ++
-              tail
-                (foldr (
-                  (\ a b -> ", "  ++ a  ++ b) .
-                    (\z ->
-                      let str = (snd $ snd z)
-                      in takeWhile (/= ':')  str ++":" ++  prestr2arrowstr (tail $ dropWhile (/= ':') str) (fst z)))
-                  "" (zip (reverse env) parentheses)) ++
-              " ] × " ++ prestr2arrowstr  (tail $ drop ((fst . last) parentheses) prestr) r
-      (ArrowApp h t) -> 
-        case treatParentheses prestr '(' ')' of
-          [(cnt,st)] -> 
-            let tPst = treatParentheses st '(' ')' 
-                args' = S.splitOn "," $T.unpack $allReplace (T.pack st) (map (\(num,str) -> (T.pack str,T.pack $ "(" ++ show num ++ ")")) tPst)
-                (arg:args)  = map (\str -> T.unpack $ allReplace (T.pack str) (map (\(num,inSide) -> (T.pack $ "(" ++ (show num) ++ ")" ,T.pack $inSide)) tPst)) args'
-                f = takeWhile (\ch -> ch /= '(') prestr
-                result =  "" ++ prestr2arrowstr (f ++ (if null args then "" else "(" ++ drop (1 + length arg) st ++ ")"))  h ++ ("(" ++prestr2arrowstr arg t++")")
-            in result
-          _ -> "表示エラー : " ++ prestr
-      (ArrowProj s t) -> 
-        let parentheses = head (treatParentheses prestr '(' ')' )
-        in take 2 prestr ++"(" ++ prestr2arrowstr (snd parentheses) t ++ ")"
-      (ArrowLam t) -> 
-        takeWhile (/= '.') prestr ++ ".(" ++ prestr2arrowstr  (tail $ dropWhile (/= '.') prestr) t ++")"
-      (ArrowPair h t) ->
-        let contents = init $ tail $prestr
-            trCon = treatParentheses contents  '(' ')' 
-            strs = S.splitOn "," $ T.unpack $ allReplace (T.pack contents) (map (\(num,str) -> (T.pack str,T.pack $ "(" ++ (show num) ++ ")")) trCon)
-            hstr:tstr = map (\str' -> T.unpack $ allReplace (T.pack str') (map (\(num,str) -> (T.pack $ "(" ++ (show num) ++ ")",T.pack str)) trCon)) strs 
-        in
-          "("++prestr2arrowstr hstr h++","++prestr2arrowstr (head tstr) t++")"
-      (ArrowEq a b t) -> prestr
-
--- | tP input :(u1:A)→(u2:B(u1))×C(u2,u1) output : [(6,"(u1:A)"),(17,"(u2:B(u1))"),(26,"(u2,u1)")]
-treatParentheses :: String -> Char -> Char  -> [(Int,String)]
-treatParentheses str l r=
-  map snd $ filter (\((a,_),_)-> a /= 0) $ foldr (\ch (((num,cnt),(pl,st)) : lst) -> let num' = if ch == l then num - 1 else if ch ==  r then  num + 1 else num; in if (num == num' || (num > 0 &&num' >0)) then ((num',cnt+1),(pl,ch:st)):lst else ((num',cnt + 1),(length str - cnt,[])):((num,cnt),(pl,st)):lst) [((0,0),(0," "))] str
+  deriving (Eq,Show)
 
 aVar :: Int -> Arrowterm
 aVar num = Conclusion (DdB.Var num)
