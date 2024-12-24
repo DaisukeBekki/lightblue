@@ -3,7 +3,7 @@
 
 {-|
 Module      : Parser.Japanese.CallJuman
-Copyright   : (c) Daisuke Bekki, 2016
+Copyright   : (c) Daisuke Bekki, 2024
 Licence     : All right reserved
 Maintainer  : Daisuke Bekki <bekki@is.ocha.ac.jp>
 Stability   : beta
