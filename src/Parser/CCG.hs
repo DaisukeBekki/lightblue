@@ -1237,10 +1237,10 @@ category2type :: Cat -> UDTTpreterm
 category2type ct = case ct of
   SL x y -> Pi (category2type y) (category2type x)
   BS x y -> Pi (category2type y) (category2type x)
-  S _ -> Pi (Pi Entity Type) Top
+  S _ -> Pi (Pi Entity Type) Type
   NP _ -> Entity
-  N   -> Pi Entity (Pi (Pi Entity Type) Top)
-  Sbar _ -> Pi (Pi Entity Type) Top
+  N   -> Pi Entity (Pi (Pi Entity Type) Type)
+  Sbar _ -> Pi (Pi Entity Type) Type
   T _ _ c -> category2type c
   _ -> Unit
 
