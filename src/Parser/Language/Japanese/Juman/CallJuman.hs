@@ -34,7 +34,7 @@ instance Read MorphAnalyzerName where
 findCompoundNouns :: MorphAnalyzerName -> T.Text -> IO [Node]
 findCompoundNouns morphaName sentence = do
   jumanData <- callMorphologicalAnalyzer morphaName sentence
-  return $ jumanNouns2nodes $ findCompNouns [] jumanData
+  return $ map jumanNoun2Node $ findCompNouns [] jumanData
 
 type PhoneticForm = T.Text
 type POS = T.Text
@@ -67,7 +67,7 @@ callMorphologicalAnalyzer morphaName sentence = do
 
 data JumanCompNoun = 
   JumanCompCN [T.Text] 
-  | JumanCompNP [T.Text] 
+  -- | JumanCompNP [T.Text] 
   deriving (Eq,Show)
 
 isCNcomponent :: JumanData -> Bool
@@ -77,8 +77,8 @@ isCNcomponent (_,j2,j3,j4)
   | j3 == "名詞接頭辞" = True
   | "名詞性名詞" `T.isPrefixOf` j3 = True
   | "形容詞性名詞" `T.isPrefixOf` j3 = True
-  | j2 == "特殊" && j3 == "記号" = True
   | j2 == "動詞" && j4 == "基本連用形" = True
+  | j2 == "特殊" && j3 == "記号" = True
   | j2 == "未定義語" = True
   | otherwise = False
 
@@ -89,50 +89,36 @@ isCNsuffix (_,j2,j3,j4)
 
 isCNpostfix :: JumanData -> Bool
 isCNpostfix (_,j2,j3,j4) 
-  | j3 == "名詞接頭辞" = True
+  | j2 == "接尾辞" = True
   | otherwise = False
 
--- | usage: findCompNouns jumanPairs [] 
--- |   returns the list of pair (hyoso, predname)  
+-- | usage: findCompNouns jumanData [] 
 findCompNouns :: [JumanCompNoun] -> [JumanData] -> [JumanCompNoun]
-findCompNouns compNouns jumanPairs =
-  case jumanPairs of
+findCompNouns compNouns jumanData =
+  case jumanData of
     [] -> compNouns
-    (j1,j2,j3,j4):js | (j2 == "名詞" && j3 == "数詞") -> processingCompNoun compNouns js [j1] j3
-                     | (j2 == "動詞" && j4 == "基本連用形") -> processingCompNoun compNouns js [j1] j3
-                     | (j2 == "未定義語") -> processingCompNoun compNouns js [j1] j3
-                     | isCNcomponent (j1,j2,j3,j4) -> accepted1Noun compNouns js j1
-                     | otherwise -> findCompNouns compNouns js
+    j@(j1,_,_,_):js | isCNsuffix j    -> acceptedSuffix compNouns js j1
+                    | isCNcomponent j -> processingCompNoun compNouns js [j1]
+                    | otherwise       -> findCompNouns compNouns js
 
-accepted1Noun :: [JumanCompNoun] -> [JumanData] -> T.Text -> [JumanCompNoun]
-accepted1Noun compNouns jumanPairs oneNoun = 
-  case jumanPairs of
+acceptedSuffix :: [JumanCompNoun] -> [JumanData] -> T.Text -> [JumanCompNoun]
+acceptedSuffix compNouns jumanData suffix = 
+  case jumanData of
     [] -> compNouns
-    (j1,j2,j3,j4):js -> if isCNcomponent (j1,j2,j3,j4) || j2 == "未定義語"
-                           then processingCompNoun compNouns js [j1,oneNoun] j3
-                           else findCompNouns compNouns js
+    j@(j1,_,_,_):js | isCNcomponent j -> processingCompNoun compNouns js [j1,suffix]
+                    | otherwise       -> findCompNouns compNouns js
 
-processingCompNoun :: [JumanCompNoun] -> [JumanData] -> [T.Text] -> T.Text -> [JumanCompNoun]
-processingCompNoun compNouns jumanPairs compNoun compNounHead = 
-  let newCompNoun = if "名詞" `T.isSuffixOf` compNounHead || "名詞" `T.isPrefixOf` compNounHead || "*" ==  compNounHead
-                    then (JumanCompCN compNoun)
-                    else (JumanCompNP compNoun) in
-  case jumanPairs of 
-    [] -> newCompNoun:compNouns
-    (j1,j2,j3,j4):js -> if isCNcomponent (j1,j2,j3,j4) || j2 == "未定義語"
-                           then processingCompNoun (newCompNoun:compNouns) js (j1:compNoun) j3
-                           else findCompNouns (newCompNoun:compNouns) js
+processingCompNoun :: [JumanCompNoun] -> [JumanData] -> [T.Text] -> [JumanCompNoun]
+processingCompNoun compNouns jumanData compNounStack = 
+  case jumanData of 
+    [] -> (JumanCompCN compNounStack):compNouns
+    j@(j1,_,_,_):js | isCNcomponent j -> processingCompNoun compNouns js (j1:compNounStack)
+                    | isCNpostfix   j -> findCompNouns ((JumanCompCN (j1:compNounStack)):compNouns) js
+                    | otherwise       -> findCompNouns ((JumanCompCN compNounStack):compNouns) js
 
--- | Transforming juman pos-tags obtained from the given sentence 
--- | into a list of (possible) compound nouns
-jumanNouns2nodes :: [JumanCompNoun] -> [Node]
-jumanNouns2nodes jumancompnouns = 
-  let name = \j -> T.intercalate "~" $ reverse j in
-  case jumancompnouns of
-    [] -> []
-    ((JumanCompNP j):js) -> (TPL.lexicalitem (T.concat $ reverse j) "(CompN)" 97 (T True 1 TPL.modifiableS `SL` (T True 1 TPL.modifiableS `BS` NP [F [Nc]])) (TPL.properNameSR (name j)))
-                            :((TPL.lexicalitem (T.concat $ reverse j) "(CompN)" 95 (N) (TPL.commonNounSR (name j)))
-                              :(jumanNouns2nodes js))
-    ((JumanCompCN j):js) -> (TPL.lexicalitem (T.concat $ reverse j) "(CompN)" 97 (N) (TPL.commonNounSR (name j)))
-                              :(jumanNouns2nodes js)
-
+-- | Transforming juman pos-tags obtained from the given sentence into a compound nouns
+jumanNoun2Node :: JumanCompNoun -> Node
+jumanNoun2Node (JumanCompCN j) = 
+  let revj = reverse j in
+  TPL.lexicalitem (T.concat revj) "(CompN)" 98 (N) (TPL.commonNounSR $ T.intercalate "~" revj)
+                              
