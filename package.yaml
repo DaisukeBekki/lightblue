@@ -44,6 +44,9 @@ dependencies:
   - serialise >= 0.2.4
   - list-t >= 1.0.0.0
   - store >= 0.7.14
+  - witherable >= 0.4
+  - parserModules
+  - unicode-show >= 0.1
 
 library:
   source-dirs: src
@@ -58,11 +61,14 @@ library:
   - Parser.Language.Japanese.MyLexicon
   - Parser.Language.Japanese.Templates
   - Parser.Language.Japanese.Juman.CallJuman
-  - Parser.Language.Japanese.Juman.Config  
+  - Parser.Language.Japanese.Juman.Config
   - Parser.Language.Japanese.Juman.ParseJumanDic
   - Parser.Language.Japanese.Juman.ParseCaseFrame
   - Parser.Language.Japanese.Juman.ConvertJumanDic
   - Parser.Language.Japanese.Juman.ShowCaseFrame
+  - Parser.Language.Japanese.Filter.KWJAFilter
+  - Parser.Language.Japanese.Filter.KNPFilter
+  - Parser.Language.Japanese.Filter.LightblueFilter
   - Interface
   - Interface.Text
   - Interface.TeX
@@ -98,7 +104,7 @@ executables:
     main:         buildLexicon.hs
     ghc-options:  [-threaded, -rtsopts, -with-rtsopts=-N]
     dependencies: lightblue
-    
+
 tests:
   testJumanDicSettings:
     source-dirs:  test/Juman

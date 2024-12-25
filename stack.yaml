@@ -7,6 +7,9 @@ extra-deps:
   commit: c2cd39168e267007b4690dbf625329bac57a8185
 - git: http://github.com/DaisukeBekki/nlp-tools
   commit: e4bd3783f4e872b8df29538d9219e41f40378363
+# parserModule
+- git: https://github.com/morning85/parserModules.git
+  commit: 899aae39b8c57866148fb3b19a4ac2f393ffaabd
 # 1bf4e582c603c823a89c3dfd1fba0ab4d3d8899a
 #  - git: git@github.com:DaisukeBekki/hasktorch-tools.git
 #    commit: 936928cdee27e179a5e3775d146046b107b0eba1
