@@ -106,6 +106,7 @@ The global options are common to all commands.
 |```--ntypecheck <int>```                         |```-1```  |Search only N-best diagrams for each type checking of a logical form (A negative value means all diagrams) |
 |```--nproof <int>```                             |```-1```  |Search only N-best diagrams for each proof search (A negative value means all diagrams) |
 |```--maxdepth <int>```                           |```9```   |Set the maximum search depth in proof search (default: 9) |
+|```--maxtime <int>```                            |```10000``` |Set the maximum search time in proof search (default: 10000) |
 |```--noTypeCheck```                              |          |If specified, show no type checking diagram for each sentence.|
 |```--noInference```                              |          |If specified, execute no inference for each discourse.|
 |```--time```                                     |          |Show the execution time in stderr.|
