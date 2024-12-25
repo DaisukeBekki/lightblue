@@ -26,6 +26,7 @@ module Parser.Language.Japanese.Filter.LightblueFilter (
 import qualified Data.Text.Lazy as T --text
 import qualified Parser.CCG as CCG   --lightblue
 import qualified Parser.ChartParser as LB --lightblue
+import qualified Parser.PartialParsing as LB --lightblue
 import qualified Parser.Language.Japanese.Templates as CCG-- lightblue (verbSR,verbCat)
 import qualified Parser.Language.Japanese.MyLexicon as CCG
 import qualified Parser.Language.Japanese.Lexicon as CCG

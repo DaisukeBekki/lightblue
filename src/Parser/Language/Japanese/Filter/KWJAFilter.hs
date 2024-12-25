@@ -19,7 +19,8 @@ import qualified Data.Set as S
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import qualified Parser.CCG as CCG
-import qualified Parser.ChartParser as LB (simpleParse, defaultParseSetting, ParseSetting(..))
+import qualified Parser.ChartParser as LB (defaultParseSetting, ParseSetting(..))
+import qualified Parser.PartialParsing as LB (simpleParse)
 import qualified Parser.JumanKatuyou as JK
 import qualified Parser.KWJA as KW
 import qualified Parser.Language.Japanese.MyLexicon as LB (verblex)
