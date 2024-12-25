@@ -1256,7 +1256,7 @@ preterm2prop ct preterm = case ct of
   N -> Sigma Entity (App (App (shiftIndices preterm 1 0) (Var 0)) terminator)
   Sbar _ -> App preterm terminator
   T _ _ c -> preterm2prop c $ transvec c preterm
-  _ -> Unit
+  _ -> Top
 
 -- | receives a node and returns an Sbar node, whose SR is obtained by existentially quantifying all the missing arguments of the SR of a given node.
 wrapNode :: Node -> Node
