@@ -84,10 +84,6 @@ library:
   - DTS.Prover.Wani.Backward
   - DTS.Prover.Wani.Arrowterm
   - DTS.Prover.Wani.Prove
-#  - DTS.Prover.Coq.DTS2Coq
-#  - DTS.Prover.Diag.Prover
-#  - DTS.Prover.Diag.Judgement
-#  - DTS.Prover.Diag.TypeChecker
 
 executables:
   lightblue:
