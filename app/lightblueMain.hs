@@ -41,7 +41,7 @@ data Options =
   -- Version
   -- | Stat
   -- | Test
-  Options Command I.Style FilePath Juman.MorphAnalyzerName FilterName Int Int Int Int Int Bool Bool Bool Bool
+  Options Command I.Style FilePath Juman.MorphAnalyzerName FilterName Int Int Int Int Int Int Bool Bool Bool Bool
     deriving (Show, Eq)
 
 data Command =
@@ -199,6 +199,12 @@ optionParser =
       <> showDefault
       <> value 9
       <> metavar "INT" )
+    <*> option auto 
+      ( long "maxtime"
+      <> help "Set the maximum search time in proof search"
+      <> showDefault
+      <> value 100000
+      <> metavar "INT" )
     <*> switch 
       ( long "noTypeCheck"
       <> help "If True, execute no type checking for LFs" )
@@ -260,7 +266,7 @@ lightblueMain :: Options -> IO()
 -- lightblueMain Version = showVersion
 -- lightblueMain Stat = showStat
 -- lightblueMain Test = test
-lightblueMain (Options commands style filepath morphaName filterName beamW nParse nTypeCheck nProof maxDepth noTypeCheck noInference iftime verbose) = do
+lightblueMain (Options commands style filepath morphaName filterName beamW nParse nTypeCheck nProof maxDepth maxTime noTypeCheck noInference iftime verbose) = do
   start <- Time.getCurrentTime
   contents <- case filepath of
     "-" -> T.getContents
@@ -289,7 +295,7 @@ lightblueMain (Options commands style filepath morphaName filterName beamW nPars
     lightblueMainLocal (Parse output proverName) lr nodeFilter contents = do
       let handle = S.stdout
           parseSetting = CP.ParseSetting jpOptions lr beamW nParse nTypeCheck nProof True Nothing nodeFilter noInference verbose
-          prover = NLI.getProver proverName $ QT.ProofSearchSetting (Just maxDepth) Nothing (Just QT.Intuitionistic)
+          prover = NLI.getProver proverName $ QT.ProofSearchSetting (Just maxDepth) (Just maxTime) (Just QT.Intuitionistic)
           parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] $ T.lines contents
           posTagOnly = case output of 
                          I.TREE -> False
@@ -310,7 +316,7 @@ lightblueMain (Options commands style filepath morphaName filterName beamW nPars
             | otherwise = take nSample parsedJSeM'
           handle = S.stdout
           parseSetting = CP.ParseSetting jpOptions lr beamW nParse nTypeCheck nProof True Nothing nodeFilter noInference verbose
-          prover = NLI.getProver proverName $ QT.ProofSearchSetting (Just maxDepth) Nothing (Just QT.Classical)
+          prover = NLI.getProver proverName $ QT.ProofSearchSetting (Just maxDepth) (Just maxTime) (Just QT.Classical)
       S.hPutStrLn handle $ I.headerOf style
       pairs <- forM parsedJSeM'' $ \j -> do
         let title = "JSeM-ID " ++ (StrictT.unpack $ J.jsem_id j)
