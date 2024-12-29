@@ -272,14 +272,10 @@ lightblueMain (Options commands style filepath morphaName filterName beamW nPars
     "-" -> T.getContents
     _   -> T.readFile filepath
   lexicalResource <- LEX.lexicalResourceBuilder morphaName
-  nodeFilter <- case filterName of
-                  KNP -> do
-                         filter <- Filter.knpFilter $ T.toStrict contents 
-                         return $ Just filter
-                  KWJA -> do
-                          filter <- Filter.kwjaFilter $ T.toStrict contents
-                          return $ Just filter
-                  NONE -> return Nothing
+  let nodeFilter = case filterName of
+                     KNP  -> Just Filter.knpFilter
+                     KWJA -> Just Filter.kwjaFilter
+                     NONE -> Nothing
   -- | Main routine
   lightblueMainLocal commands lexicalResource nodeFilter contents
   -- | Show execution time

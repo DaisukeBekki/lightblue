@@ -33,9 +33,9 @@ type ConjMap = M.Map (T.Text, T.Text) T.Text
 type OpenWordsMap = M.Map T.Text [(T.Text, S.Set T.Text)]
 
 -- | kwjaを用いたフィルタリング関数を返す
-kwjaFilter :: T.Text -> IO (Int -> Int -> [CCG.Node] -> [CCG.Node])
+kwjaFilter :: TL.Text -> IO (Int -> Int -> [CCG.Node] -> [CCG.Node])
 kwjaFilter text = do
-    kwjaDatas <- KW.callKWJA text
+    kwjaDatas <- KW.callKWJA $ TL.toStrict text
     lb <- getEnv "LIGHTBLUE"
     katuyoulist <- JK.parseKatuyouFromPath $ concat [lb,"src/Parser/Language/Japanese/Juman/JUMAN.katuyou"]
     let conjmap = KF.getConjMap katuyoulist
