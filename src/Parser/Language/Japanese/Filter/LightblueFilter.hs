@@ -54,6 +54,9 @@ import Witherable(ordNub)
 -- MorphAnalyzerName = JUMAN | JUMANPP | KWJA
 morphAnalyzer = JU.JUMANPP
 
+nullFilter :: T.Text -> IO (Int -> Int -> [CCG.Node] -> [CCG.Node])
+nullFilter = \_ -> return (\_ _ -> id) 
+
 ifDebug :: Maybe (Int,Int)
 ifDebug = Nothing    -- No Dump
 -- ifDebug = (10,12) -- Dump Nodes in the box (10,12)
@@ -117,7 +120,7 @@ reforgeWithTimeOut compVerbs beam abcTree = do
     -- タイムアウトした場合
     Nothing -> do
       -- dummyNode <- LB.simpleParse beam "a"
-      (dummyN,dummyC) <- LB.simpleParse' ifDebug beam True  (\_ _ -> id) "a"
+      (dummyN,dummyC) <- LB.simpleParse' ifDebug beam True nullFilter "a"
       -- タイムアウトした場合は標準出力にsentenceを表示
       D.trace ("timeout: ") (putStrLn $ T.unpack $ T.fromStrict sentence)
       return ("", head dummyN,dummyC)
@@ -145,14 +148,14 @@ noReforgeWithTimeOut _ beam abcTree = do
       return (T.unpack $ T.fromStrict sentence, head $ nodes,c)
     -- タイムアウトした場合
     Nothing -> do
-      (dummyN,dummyC) <- LB.simpleParse' ifDebug beam True  (\_ _ -> id) "a"
+      (dummyN,dummyC) <- LB.simpleParse' ifDebug beam True nullFilter "a"
       -- タイムアウトした場合は標準出力にsentenceを表示
       D.trace ("timeout: ") (putStrLn $ T.unpack $ T.fromStrict sentence)
       return ("", head dummyN,dummyC)
   -- (nodes,_) <- D.trace ((U.ushow sentence)++ "\n") (LB.simpleParse' ifDebug beam False filter $ T.fromStrict sentence) -- | use chart for debug
   where
     sentence = ABC.abcTree2sentence abcTree
-    filterFunction = (\_ _ -> id)
+    filterFunction = nullFilter
 
 reforge ::
   [(T.Text,T.Text,T.Text)]
@@ -205,7 +208,7 @@ showIOUtcTime ioUtcTime = show $ unsafePerformIO ioUtcTime
 --   -> IO [CCG.Node] -- ^ output CCG trees
 -- reforge' compVerbList beam abcTree = do
 --   let sentence = ABC.abcTree2sentence abcTree
---   (nodes,chart) <- LB.simpleParse' ifDebug beam True (\_ _ -> id) $ T.fromStrict sentence -- | use chart for debug
+--   (nodes,chart) <- LB.simpleParse' ifDebug beam True nullFilter $ T.fromStrict sentence -- | use chart for debug
 --   return nodes
 
 -- reforgeC' :: Int     -- ^ beam width
@@ -213,7 +216,7 @@ showIOUtcTime ioUtcTime = show $ unsafePerformIO ioUtcTime
 --   -> IO LB.Chart -- ^ output CCG trees
 -- reforgeC' beam abcTree = do
 --   let sentence = ABC.abcTree2sentence abcTree
---   (_,chart) <- LB.simpleParse' ifDebug beam False (\_ _ -> id) $ T.fromStrict sentence -- | use chart for debug
+--   (_,chart) <- LB.simpleParse' ifDebug beam False nullFilter $ T.fromStrict sentence -- | use chart for debug
 --   return chart
 
 -- | Chartの(i,j)区間のccgNodeのうち、用言については、ABCTreebankから得られた同区間の用言リストに
@@ -221,19 +224,22 @@ showIOUtcTime ioUtcTime = show $ unsafePerformIO ioUtcTime
 createFilterFrom ::
  [(T.Text,T.Text,T.Text)]
   -> ABC.ABCTree
-  -> Int           -- ^ starting index of the span
-  -> Int           -- ^ ending index of the span
-  -> [CCG.Node]    -- ^ input nodes (to filter)
-  -> [CCG.Node]    -- ^ output nodes (filtered)
-createFilterFrom compVerbList abcTree i j ccgNodes = do
-  -- ABCの用言のリストのうち、Chartの(i,j)区間のみ取り出す
-  let abcVerbList = filter (\(_,_,start,end) -> if (start,end+1) == (i,j)
-    -- ABCの用言のリストのstartとendがChartの(i,j)区間と一致するならばTrueそうでなければFalse
-                                                  then True
-                                                  else False) $ ABC.abcTree2verbList abcTree in
-    -- createFilterFrom' (Chart(i,j)区間の用言のカテゴリーのリスト) (ccgNode)
-    -- D.trace (show(i,j)++"\n"++U.ushow(abcVerbList)) $ createFilterFrom' (map (\(abcPf,abcCat,_,_) -> (T.fromStrict abcPf, abcCat)) abcVerbList) ccgNodes
-   D.trace ("createFilterFrom'") createFilterFrom' compVerbList (map (\(abcPf,abcCat,_,_) -> (T.fromStrict abcPf, abcCat)) abcVerbList) ccgNodes
+  -> T.Text 
+  -> IO (Int           -- ^ starting index of the span
+        -> Int           -- ^ ending index of the span
+        -> [CCG.Node]    -- ^ input nodes (to filter)
+        -> [CCG.Node]    -- ^ output nodes (filtered)
+        )
+createFilterFrom compVerbList abcTree _ = -- i j ccgNodes = 
+  return $ \i j ccgNodes ->
+    -- ABCの用言のリストのうち、Chartの(i,j)区間のみ取り出す
+    let abcVerbList = filter (\(_,_,start,end) -> if (start,end+1) == (i,j)
+      -- ABCの用言のリストのstartとendがChartの(i,j)区間と一致するならばTrueそうでなければFalse
+                                                    then True
+                                                    else False) $ ABC.abcTree2verbList abcTree in
+      -- createFilterFrom' (Chart(i,j)区間の用言のカテゴリーのリスト) (ccgNode)
+      -- D.trace (show(i,j)++"\n"++U.ushow(abcVerbList)) $ createFilterFrom' (map (\(abcPf,abcCat,_,_) -> (T.fromStrict abcPf, abcCat)) abcVerbList) ccgNodes
+    D.trace ("createFilterFrom'") createFilterFrom' compVerbList (map (\(abcPf,abcCat,_,_) -> (T.fromStrict abcPf, abcCat)) abcVerbList) ccgNodes
 
 -- proなどを削除する
 removeEmptyCategory :: String -> String

@@ -50,9 +50,9 @@ myMapM f as = sequence (myMap f as)
 
 
 -- | テキストを受け取って、lightblueでパーズして返す
-knpFilter :: T.Text -> IO (Int -> Int -> [CCG.Node] -> [CCG.Node])
+knpFilter :: TL.Text -> IO (Int -> Int -> [CCG.Node] -> [CCG.Node])
 knpFilter text = do
-    knp <- K.fromText text
+    knp <- K.fromText $ TL.toStrict text
     lb <- getEnv "LIGHTBLUE"
     katuyoulist <- JK.parseKatuyouFromPath $ concat [lb,"src/Parser/Language/Japanese/Juman/JUMAN.katuyou"]
     U.uprint katuyoulist

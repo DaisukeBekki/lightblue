@@ -43,7 +43,7 @@ simpleParse ps@CP.ParseSetting{..} sentence = do
 simpleParse' :: Maybe (Int,Int)   -- ^ Debug mode: If Just (i,j), dump parse result of (i,j). 
             -> Int    -- ^ beam 
             -> Bool   -- ^ If purify
-            -> (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ filter for CCG nodes
+            -> (T.Text -> IO (Int -> Int -> [CCG.Node] -> [CCG.Node])) -- ^ filter for CCG nodes
             -> T.Text -- ^ an input text
             -> IO ([CCG.Node],CP.Chart)
 simpleParse' ifDebug beamW ifPurify filterNodes sentence = do

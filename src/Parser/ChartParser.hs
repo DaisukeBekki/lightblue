@@ -47,7 +47,7 @@ data ParseSetting = ParseSetting {
   , nProof :: Int              -- ^ Show N-best proof diagram for each proof search
   , ifPurify :: Bool           -- ^ If True, apply purifyText to the input text before parsing
   , ifDebug :: Maybe (Int,Int) -- ^ Debug mode: If Just (i,j), then debug mode and dump parse result of (i,j). If Nothing, then non-debug mode
-  , ifFilterNode :: Maybe (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ filter for CCG nodes.  Nothing: no filtering
+  , ifFilterNode :: Maybe (T.Text -> IO (Int -> Int -> [CCG.Node] -> [CCG.Node])) -- ^ filter for CCG nodes.  Nothing: no filtering
   , noInference :: Bool        -- ^ If True, it is an inference and execute proof search
   , verbose :: Bool            -- ^ If True, type checker and inferer dump logs
   } 
@@ -69,9 +69,9 @@ parse ParseSetting{..} sentence
       let sentenceToParse = if ifPurify
                               then purifyText langOptions sentence
                               else sentence
-          nodeFilter = case ifFilterNode of
-                         Just filter -> filter
-                         Nothing -> (\_ _ -> id)
+      nodeFilter <- case ifFilterNode of
+                      Just filter -> filter sentenceToParse
+                      Nothing -> return (\_ _ -> id)
       lexicon <- L.setupLexicon lexicalResource sentenceToParse
       let (chart,_,_,_) = T.foldl' (chartAccumulator ifDebug beamWidth lexicon nodeFilter) 
                                    (M.empty,[0],0,T.empty)
