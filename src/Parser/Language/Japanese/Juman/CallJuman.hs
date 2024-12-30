@@ -18,6 +18,7 @@ module Parser.Language.Japanese.Juman.CallJuman (
 import Prelude as P
 import qualified Data.Char as C           --base
 import qualified Data.Text.Lazy as T      --text
+import qualified Data.Text.Lazy.IO as T   --text
 import qualified Shelly as S              -- shelly
 import Parser.CCG
 import qualified Parser.Language.Japanese.Templates as TPL
@@ -34,6 +35,7 @@ instance Read MorphAnalyzerName where
 findCompoundNouns :: MorphAnalyzerName -> T.Text -> IO [Node]
 findCompoundNouns morphaName sentence = do
   jumanData <- callMorphologicalAnalyzer morphaName sentence
+  -- mapM_ printJumanData jumanData
   return $ map jumanNoun2Node $ findCompNouns [] jumanData
 
 type PhoneticForm = T.Text
@@ -41,6 +43,10 @@ type POS = T.Text
 type POSDetail = T.Text
 type ConjugationForm = T.Text
 type JumanData = (PhoneticForm, POS, POSDetail, ConjugationForm) -- (表層,品詞,品詞細分,（動詞なら）活用形)
+
+printJumanData :: JumanData -> IO()
+printJumanData (ph,pos,posd,conj) = do
+  T.putStrLn $ T.concat [ph, "/", pos, "/", posd, "/", conj]
 
 callMorphologicalAnalyzer :: MorphAnalyzerName -> T.Text -> IO [JumanData]
 callMorphologicalAnalyzer morphaName sentence = do
