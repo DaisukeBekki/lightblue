@@ -857,6 +857,9 @@ myLexicon = concat $ [
         ((Lam (Lam (Lamvec (Pi (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[]),
   mylex ["一人"] "(536)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `BS` N) 
         ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[]),
+  -- 量化表現：Q
+  mylex ["誰か"] "(GQ)" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) 
+        ((Lam (Lamvec (Sigma (Sigma Entity (App (App (Con "#人") (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0))))))),[]),
   -- その他GQ
   mylex ["半数以上の","半数の"] "(GQ)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N) (generalizedQuantifierSR "半数"),  
   mylex ["の半数以上","の半数","半数","半数以上"] "(GQ)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `BS` N) (generalizedQuantifierSR "半数"),  
