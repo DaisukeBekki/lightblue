@@ -111,7 +111,7 @@ data Preterm =
   -- | Intensional Equality Types
   | Eq Preterm Preterm Preterm            -- ^ Intensional equality types
   | Refl Preterm Preterm                  -- ^ refl
-  | Idpeel Preterm Preterm                -- ^ idpeel
+  | Idpeel Preterm Preterm Preterm        -- ^ idpeel
   -- | ToDo: add First Universe
   deriving (Eq, G.Generic)
 
@@ -166,7 +166,7 @@ toText' flag preterm = case preterm of
     Natrec n e f -> T.concat ["natrec(", toText' flag n, ",", toText' flag e, ",", toText' flag f, ")"]
     Eq a m n -> T.concat [toText' flag m, "=[", toText' flag a, "]", toText' flag n]
     Refl a m -> T.concat ["refl", toText' flag a, "(", toText' flag m, ")"]
-    Idpeel m n -> T.concat ["idpeel(", toText' flag m, ",", toText' flag n, ")"]
+    Idpeel p e r -> T.concat ["idpeel(", toText' flag p, ",", toText' flag e, ",", toText' flag r, ")"]
     _ -> "Error: The definition of DTS.DTTwithname.toText' is not exhaustive."
 
 -- | Each `Preterm` is translated by the `toTeX` method into a representation \"with variable names\" in a TeX source code.
@@ -205,7 +205,7 @@ instance Typeset Preterm where
     Natrec n e f -> T.concat ["\\type{natrec}\\left(", toTeX n, ",", toTeX e, ",", toTeX f, "\\right)"]
     Eq a m n  -> T.concat [toTeX m, "=_{", toTeX a,"}", toTeX n]
     Refl a m  -> T.concat ["\\type{refl}_{", toTeX a, "}\\left(", toTeX m,"\\right)"]
-    Idpeel m n -> T.concat ["\\type{idpeel}\\left(", toTeX m, ",", toTeX n, "\\right)"]
+    Idpeel p e r -> T.concat ["\\type{idpeel}^{", toTeX p, "}_{", toTeX e, "}\\left(", toTeX r, "\\right)"]
     _ -> "Error: The definition of DTS.DTTwithname.toTeX is not exhaustive."
 
 toTeXEmbedded :: Preterm -> T.Text
@@ -244,10 +244,10 @@ instance MathML Preterm where
     Nat    -> "<mi>N</mi>"
     Zero   -> "<mi>0</mi>"
     Succ n -> T.concat ["<mrow><mi>s</mi>", toMathML n, "</mrow>"]
-    Natrec n e f -> T.concat ["<mrow><mi>natrec</mi><mo>(</mo>", toMathML n, toMathML e, toMathML f, "<mo>)</mo></mrow>"]
+    Natrec n e f -> T.concat ["<mrow><msubsup><mi>natrec</mi><mn>", toMathML n, "</mn><mn>", toMathML n, "</mn><mn></mn></msubsup><mo>(</mo>", toMathML e, toMathML f, "<mo>)</mo></mrow>"]
     Eq a m n -> T.concat ["<mrow>", toMathML m, "<msub><mo>=</mo>", toMathML a, "</msub>", toMathML n, "</mrow>"]
     Refl a m -> T.concat ["<mrow><mi>refl</mi>", toMathML a, "<mo>(</mo>", toMathML m, "<mo>)</mo></mrow>"]
-    Idpeel m n -> T.concat ["<mrow><mi>idpeel</mi><mo>(</mo>", toMathML m, toMathML n, "<mo>)</mo></mrow>"]
+    Idpeel p e r -> T.concat ["<mrow><msubsup><mi>idpeel</mi><mn>", toMathML p, "</mn><mn>", toMathML e, "</mn></msubsup><mo>(</mo>", toMathML r, "<mo>)</mo></mrow>"]
     _ -> "Error: The definition of DTS.DTTwithname.toMathML is not exhaustive."
 
 -- | Conversion btw. de Bruijn notation and a variable name notation.
@@ -332,10 +332,11 @@ fromDeBruijnLoop vnames preterm = case preterm of
     a' <- fromDeBruijnLoop vnames a
     m' <- fromDeBruijnLoop vnames m
     return $ Refl a' m'
-  DTTdB.Idpeel m n -> do
-    m' <- fromDeBruijnLoop vnames m
-    n' <- fromDeBruijnLoop vnames n
-    return $ Idpeel m' n'
+  DTTdB.Idpeel p e r -> do
+    p' <- fromDeBruijnLoop vnames p
+    e' <- fromDeBruijnLoop vnames e
+    r' <- fromDeBruijnLoop vnames r
+    return $ Idpeel p' e' r'
 
 variableNameFor :: DTTdB.Preterm -> Indexed VarName
 variableNameFor preterm =
@@ -379,7 +380,7 @@ toDeBruijn vnames preterm = case preterm of
   Natrec n e f -> DTTdB.Natrec (toDeBruijn vnames n) (toDeBruijn vnames e) (toDeBruijn vnames f)
   Eq a m n -> DTTdB.Eq (toDeBruijn vnames a) (toDeBruijn vnames m) (toDeBruijn vnames n)
   Refl a m -> DTTdB.Refl (toDeBruijn vnames a) (toDeBruijn vnames m)
-  Idpeel m n -> DTTdB.Idpeel (toDeBruijn vnames m) (toDeBruijn vnames n)
+  Idpeel p e r -> DTTdB.Idpeel (toDeBruijn vnames p) (toDeBruijn vnames e) (toDeBruijn vnames r)
 
 {- Judgment -}
 type Signature = [(T.Text, Preterm)]

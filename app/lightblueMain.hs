@@ -28,11 +28,13 @@ import qualified Parser.Language.English.Lexicon as ELEX
 import Parser.Language (LangOptions(..),defaultJpOptions,defaultEnOptions)
 import qualified Interface as I
 import qualified Interface.Text as T
+import qualified Interface.HTML as I
 import qualified JSeM as J
 import qualified JSeM.XML as J
 import qualified DTS.UDTTdeBruijn as UDTT
 import qualified DTS.DTTdeBruijn as DTT
-import DTS.TypeChecker (typeInfer,nullProver)
+import qualified DTS.DTTwithName as DTTwN
+import DTS.TypeChecker (typeCheck,typeInfer,nullProver)
 import qualified DTS.QueryTypes as QT
 import qualified DTS.NaturalLanguageInference as NLI
 import qualified JSeM as JSeM                         --jsem
@@ -404,16 +406,20 @@ showStat = do
 -- | 
 test :: IO ()
 test = do
-  let signature = [("entity", DTT.Type), ("evt",DTT.Type), ("f", DTT.Pi (DTT.Con "entity") DTT.Type)]
-      context = [(DTT.Con "dog")]
-      termA = UDTT.Sigma (UDTT.Con "entity") (UDTT.App (UDTT.Con "f") (UDTT.Var 0))
-      -- typeA = DTS.Kind
-      tcq = UDTT.TypeInferQuery signature context termA 
-      pss = QT.ProofSearchSetting Nothing Nothing (Just QT.Classical)
-  typeCheckResults <- toList $ typeInfer (nullProver pss) False tcq
-  T.putStrLn $ T.toText $ head typeCheckResults
-  --T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 0) DTS.Type
-  --T.hPutStrLn S.stderr $ T.toText $ DTS.Judgment context (DTS.Var 2) DTS.Type
+  let signature = [("f", DTT.Pi DTT.Entity DTT.Type)]
+      context = []
+      termM = UDTT.Sigma UDTT.Entity (UDTT.App (UDTT.Con "f") (UDTT.Var 0))
+      typeA = DTT.Type
+      tcq = UDTT.Judgment signature context termM typeA
+      prover = NLI.getProver NLI.Wani $ QT.ProofSearchSetting Nothing Nothing (Just QT.Intuitionistic)
+  typeCheckResults <- toList $ typeCheck prover False tcq
+  T.putStrLn $ I.startMathML
+  T.putStrLn $ I.toMathML $ DTTwN.fromDeBruijnSignature signature
+  T.putStrLn $ I.endMathML
+  putStrLn $ I.interimOf I.HTML ""
+  T.putStrLn $ I.startMathML
+  T.putStrLn $ I.toMathML $ fmap DTTwN.fromDeBruijnJudgment $ head typeCheckResults
+  T.putStrLn $ I.endMathML
 
 -- | lightblue demo
 -- |
