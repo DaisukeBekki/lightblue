@@ -858,6 +858,8 @@ myLexicon = concat $ [
   mylex ["一人"] "(536)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `BS` N) 
         ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[]),
   -- 量化表現：Q
+  mylex ["誰も"] "(GQ)" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) 
+        ((Lam (Lamvec (Pi (Sigma Entity (App (Con "#人") (Var 0))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0))))))),[("#人", DTT.Pi DTT.Entity DTT.Type)]),
   mylex ["誰か"] "(GQ)" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) 
         ((Lam (Lamvec (Sigma (Sigma Entity (App (Con "#人") (Var 0))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0))))))),[("#人", DTT.Pi DTT.Entity DTT.Type)]),
   -- その他GQ
