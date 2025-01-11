@@ -127,6 +127,7 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
     UDTTdB.Top -> return' verbose $ Tree QT.EnumF (DTTdB.Judgment sig ctx DTTdB.Top DTTdB.Type) []
     UDTTdB.Unit -> return' verbose $ Tree QT.EnumI (DTTdB.Judgment sig ctx DTTdB.Unit DTTdB.Top) []
     UDTTdB.Entity -> return' verbose $ Tree QT.EnumF (DTTdB.Judgment sig ctx DTTdB.Entity DTTdB.Type) []
+    --ToDo: add DTTdB.Case
     UDTTdB.Eq termA termM termN -> do
       diagramA <- typeCheck' $ UDTTdB.Judgment sig ctx termA DTTdB.Type
       let termA' = DTTdB.trm $ node diagramA
@@ -157,13 +158,13 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
           termIdPeel = DTTdB.Idpeel termP' termE' termR'
           diagramCONV = Tree QT.IqE (DTTdB.Judgment sig ctx termIdPeel typePMNE) [diagramE,diagramP,diagramR]
       return' verbose $ Tree QT.Conv (DTTdB.Judgment sig ctx termIdPeel typeP'') [diagramCONV]
-    --ToDo: add UDTTdB.Idpeel
     UDTTdB.Nat -> return' verbose $ Tree QT.NatF (DTTdB.Judgment sig ctx DTTdB.Nat DTTdB.Type) []
     UDTTdB.Zero -> return' verbose $ Tree QT.NatI (DTTdB.Judgment sig ctx DTTdB.Zero DTTdB.Nat) []
     UDTTdB.Succ termN -> do
       diagramN <- typeCheck' $ UDTTdB.Judgment sig ctx termN DTTdB.Nat
       let termN' = DTTdB.trm $ node diagramN
       return' verbose $ Tree QT.NatI (DTTdB.Judgment sig ctx (DTTdB.Succ termN') DTTdB.Nat) [diagramN]
+    -- UDTTdB.Natrec termP termN termE termF -> do
     --ToDo: add UDTTdB.Natrec
     UDTTdB.Asp termA -> do  -- | Underspecified term
       diagramA <- typeCheck' $ UDTTdB.Judgment sig ctx termA DTTdB.Type

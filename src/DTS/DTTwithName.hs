@@ -107,7 +107,7 @@ data Preterm =
   | Nat                                   -- ^ Natural number type (Nat)
   | Zero                                  -- ^ 0 (of type Nat)
   | Succ Preterm                          -- ^ The successor function
-  | Natrec Preterm Preterm Preterm        -- ^ natrec
+  | Natrec Preterm Preterm Preterm Preterm -- ^ natrec
   -- | Intensional Equality Types
   | Eq Preterm Preterm Preterm            -- ^ Intensional equality types
   | Refl Preterm Preterm                  -- ^ refl
@@ -163,7 +163,7 @@ toText' flag preterm = case preterm of
     Nat    -> "N"
     Zero   -> "0"
     Succ n -> T.concat ["s", toText' flag n]
-    Natrec n e f -> T.concat ["natrec(", toText' flag n, ",", toText' flag e, ",", toText' flag f, ")"]
+    Natrec p n e f -> T.concat ["natrec(", toText' flag p, ",", toText' flag n, ",", toText' flag e, ",", toText' flag f, ")"]
     Eq a m n -> T.concat [toText' flag m, "=[", toText' flag a, "]", toText' flag n]
     Refl a m -> T.concat ["refl", toText' flag a, "(", toText' flag m, ")"]
     Idpeel p e r -> T.concat ["idpeel(", toText' flag p, ",", toText' flag e, ",", toText' flag r, ")"]
@@ -202,7 +202,7 @@ instance Typeset Preterm where
     Nat       -> "\\Set{N}"
     Zero      -> "0"
     Succ n    -> T.concat ["\\type{s}", toTeX n]
-    Natrec n e f -> T.concat ["\\type{natrec}\\left(", toTeX n, ",", toTeX e, ",", toTeX f, "\\right)"]
+    Natrec p n e f -> T.concat ["\\type{natrec}^{", toTeX p, "}_{", toTeX n, "}\\left(", toTeX e, ",", toTeX f, "\\right)"]
     Eq a m n  -> T.concat [toTeX m, "=_{", toTeX a,"}", toTeX n]
     Refl a m  -> T.concat ["\\type{refl}_{", toTeX a, "}\\left(", toTeX m,"\\right)"]
     Idpeel p e r -> T.concat ["\\type{idpeel}^{", toTeX p, "}_{", toTeX e, "}\\left(", toTeX r, "\\right)"]
@@ -244,7 +244,7 @@ instance MathML Preterm where
     Nat    -> "<mi>N</mi>"
     Zero   -> "<mi>0</mi>"
     Succ n -> T.concat ["<mrow><mi>s</mi>", toMathML n, "</mrow>"]
-    Natrec n e f -> T.concat ["<mrow><msubsup><mi>natrec</mi><mn>", toMathML n, "</mn><mn>", toMathML n, "</mn><mn></mn></msubsup><mo>(</mo>", toMathML e, toMathML f, "<mo>)</mo></mrow>"]
+    Natrec p n e f -> T.concat ["<mrow><msubsup><mi>natrec</mi><mn>", toMathML p, "</mn><mn>", toMathML n, "</mn><mn></mn></msubsup><mo>(</mo>", toMathML e, toMathML f, "<mo>)</mo></mrow>"]
     Eq a m n -> T.concat ["<mrow>", toMathML m, "<msub><mo>=</mo>", toMathML a, "</msub>", toMathML n, "</mrow>"]
     Refl a m -> T.concat ["<mrow><mi>refl</mi>", toMathML a, "<mo>(</mo>", toMathML m, "<mo>)</mo></mrow>"]
     Idpeel p e r -> T.concat ["<mrow><msubsup><mi>idpeel</mi><mn>", toMathML p, "</mn><mn>", toMathML e, "</mn></msubsup><mo>(</mo>", toMathML r, "<mo>)</mo></mrow>"]
@@ -318,11 +318,12 @@ fromDeBruijnLoop vnames preterm = case preterm of
   DTTdB.Succ n -> do
     n' <- fromDeBruijnLoop vnames n
     return $ Succ n'
-  DTTdB.Natrec n e f -> do
+  DTTdB.Natrec p n e f -> do
+    p' <- fromDeBruijnLoop vnames p
     n' <- fromDeBruijnLoop vnames n
     e' <- fromDeBruijnLoop vnames e
     f' <- fromDeBruijnLoop vnames f
-    return $ Natrec n' e' f'
+    return $ Natrec p' n' e' f'
   DTTdB.Eq a m n -> do
     a' <- fromDeBruijnLoop vnames a
     m' <- fromDeBruijnLoop vnames m
@@ -377,7 +378,7 @@ toDeBruijn vnames preterm = case preterm of
   Nat -> DTTdB.Nat
   Zero -> DTTdB.Zero
   Succ n -> DTTdB.Succ (toDeBruijn vnames n)
-  Natrec n e f -> DTTdB.Natrec (toDeBruijn vnames n) (toDeBruijn vnames e) (toDeBruijn vnames f)
+  Natrec p n e f -> DTTdB.Natrec (toDeBruijn vnames p) (toDeBruijn vnames n) (toDeBruijn vnames e) (toDeBruijn vnames f)
   Eq a m n -> DTTdB.Eq (toDeBruijn vnames a) (toDeBruijn vnames m) (toDeBruijn vnames n)
   Refl a m -> DTTdB.Refl (toDeBruijn vnames a) (toDeBruijn vnames m)
   Idpeel p e r -> DTTdB.Idpeel (toDeBruijn vnames p) (toDeBruijn vnames e) (toDeBruijn vnames r)

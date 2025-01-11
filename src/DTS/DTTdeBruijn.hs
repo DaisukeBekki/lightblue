@@ -84,7 +84,7 @@ data Preterm =
   | Nat                          -- ^ Natural number type (Nat)
   | Zero                         -- ^ 0 (of type Nat)
   | Succ Preterm                 -- ^ The successor function
-  | Natrec Preterm Preterm Preterm  -- ^ Natrec
+  | Natrec Preterm Preterm Preterm Preterm -- ^ Natrec
   -- | Intensional Equality Types
   | Eq Preterm Preterm Preterm     -- ^ Intensional equality types
   | Refl Preterm Preterm           -- ^ refl
@@ -125,7 +125,7 @@ instance SimpleText Preterm where
     Nat   -> "N"
     Zero  -> "0"
     Succ n -> LazyT.concat ["s", toText n]
-    Natrec n e f -> LazyT.concat ["natrec(", toText n, ",", toText e, ",", toText f, ")"]
+    Natrec p n e f -> LazyT.concat ["natrec(", toText p, ",", toText n, ",", toText e, ",", toText f, ")"]
     Eq a m n -> LazyT.concat [toText m, "=[", toText a, "]", toText n]
     Refl a m -> LazyT.concat ["refl", toText a, "(", toText m, ")"]
     Idpeel p e r -> LazyT.concat ["idpeel(", toText p, ",", toText e, ",", toText r, ")"]
@@ -167,7 +167,7 @@ subst preterm l i = case preterm of
   Nat        -> Nat
   Zero       -> Zero
   Succ n     -> Succ (subst n l i)
-  Natrec n e f -> Natrec (subst n l i) (subst e l i) (subst f l i)
+  Natrec p n e f -> Natrec (subst p l i) (subst n l i) (subst e l i) (subst f l i)
   Eq a m n   -> Eq (subst a l i) (subst m l i) (subst n l i)
   Refl a m   -> Refl (subst a l i) (subst m l i)
   Idpeel p e r -> Idpeel (subst p l i) (subst e l i) (subst r l i)
@@ -190,7 +190,7 @@ shiftIndices preterm d i = case preterm of
   Iota s m   -> Iota s (shiftIndices m d i)
   Unpack p l m n -> Unpack (shiftIndices p d i) (shiftIndices l d i) (shiftIndices m d i) (shiftIndices n d i)
   Succ n     -> Succ (shiftIndices n d i)
-  Natrec n e f -> Natrec (shiftIndices n d i) (shiftIndices e d i) (shiftIndices f d i)
+  Natrec p n e f -> Natrec (shiftIndices p d i) (shiftIndices n d i) (shiftIndices e d i) (shiftIndices f d i)
   Eq a m n   -> Eq (shiftIndices a d i) (shiftIndices m d i) (shiftIndices n d i)
   Refl a m   -> Refl (shiftIndices a d i) (shiftIndices m d i)
   Idpeel p e r -> Idpeel (shiftIndices p d i) (shiftIndices e d i) (shiftIndices r d i)
@@ -232,10 +232,10 @@ betaReduce preterm = case preterm of
   Nat  -> Nat
   Zero -> Zero
   Succ n -> Succ (betaReduce n)
-  Natrec n e f -> case betaReduce n of
-                    Zero -> betaReduce e
-                    Succ m -> betaReduce $ (App (App f m) (Natrec m e f))
-                    m -> Natrec m (betaReduce e) (betaReduce f) -- Con $ LazyT.concat ["Error in beta-reduction of Natrec: ", toText n]
+  Natrec p n e f -> case betaReduce n of
+                      Zero -> betaReduce e
+                      Succ m -> betaReduce $ (App (App f m) (Natrec (betaReduce p) m (betaReduce e) (betaReduce f)))
+                      m -> Natrec (betaReduce p) m (betaReduce e) (betaReduce f) -- Con $ LazyT.concat ["Error in beta-reduction of Natrec: ", toText n]
   Eq a m n -> Eq (betaReduce a) (betaReduce m) (betaReduce n)
   Refl a m -> Refl (betaReduce a) (betaReduce m)
   Idpeel p e r-> case betaReduce e of
@@ -277,10 +277,10 @@ strongBetaReduce t preterm = case preterm of
   Nat  -> Nat
   Zero -> Zero
   Succ n -> Succ (strongBetaReduce 0 n)
-  Natrec n e f -> case strongBetaReduce 0 n of
-                    Zero -> strongBetaReduce 0 e
-                    Succ m -> strongBetaReduce 0 $ (App (App f m) (Natrec m e f))
-                    m -> Natrec m (strongBetaReduce 0 e) (strongBetaReduce 0 f) -- Con $ LazyT.concat ["Error in beta-reduction of Natrec: ", toText n]
+  Natrec p n e f -> case strongBetaReduce 0 n of
+                      Zero -> strongBetaReduce 0 e
+                      Succ m -> strongBetaReduce 0 $ (App (App f m) (Natrec (strongBetaReduce 0 p) m (strongBetaReduce 0 e) (strongBetaReduce 0 f)))
+                      m -> Natrec (strongBetaReduce 0 p) m (strongBetaReduce 0 e) (strongBetaReduce 0 f) -- Con $ LazyT.concat ["Error in beta-reduction of Natrec: ", toText n]
   Eq a m n -> Eq (strongBetaReduce 0 a) (strongBetaReduce 0 m) (strongBetaReduce 0 n)
   Refl a m -> Refl (strongBetaReduce 0 a) (strongBetaReduce 0 m)
   Idpeel p e r -> case strongBetaReduce 0 e of
@@ -305,7 +305,7 @@ sigmaElimination preterm = case preterm of
   Iota s m   -> Iota s (sigmaElimination m)
   Unpack p l m n -> Unpack (sigmaElimination p) (sigmaElimination l) (sigmaElimination m) (sigmaElimination n)
   Succ n     -> Succ (sigmaElimination n)
-  Natrec n e f -> Natrec (sigmaElimination n) (sigmaElimination e) (sigmaElimination f)
+  Natrec p n e f -> Natrec (sigmaElimination p) (sigmaElimination n) (sigmaElimination e) (sigmaElimination f)
   Eq a m n   -> Eq (sigmaElimination a) (sigmaElimination m) (sigmaElimination n)
   Refl a m   -> Refl (sigmaElimination a) (sigmaElimination m)
   Idpeel p e r -> Idpeel (sigmaElimination p) (sigmaElimination e) (sigmaElimination r)
@@ -313,11 +313,11 @@ sigmaElimination preterm = case preterm of
 
 -- | adds two preterms (of type `Nat`).
 add :: Preterm -> Preterm -> Preterm
-add m n = Natrec m n (Lam (Lam (Succ (Var 0))))
+add m n = Natrec (Lam Nat) m n (Lam (Lam (Succ (Var 0))))
 
 -- | multiplies two preterms (of type `Nat').
 multiply :: Preterm -> Preterm -> Preterm
-multiply m n = Natrec m Zero (Lam (Lam (add n (Var 0))))
+multiply m n = Natrec (Lam Nat) m Zero (Lam (Lam (add n (Var 0))))
 
 {- Judgment of DTT in de Bruijn notation -}
 
