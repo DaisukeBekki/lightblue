@@ -49,6 +49,9 @@ import DTS.GeneralTypeQuery                 --lightblue
 -- | A variable name consists of Char (e.g. 'x') and Int (e.g. 1), which is displayed as $x_{1}$ in TeX and $x1$ in Text.
 data VarName = VarName Char Int deriving (Eq,Show)
 
+fromUDTTvarName :: VarName -> DTTwN.VarName
+fromUDTTvarName (VarName c i) = DTTwN.VarName c i
+
 toUDTTvarName :: DTTwN.VarName -> VarName
 toUDTTvarName (DTTwN.VarName c i) = VarName c i
 
@@ -115,6 +118,7 @@ data Preterm =
   | Asp Preterm                           -- ^ The underspesified term
   | Lamvec VarName Preterm                -- ^ Variable-length lambda abstraction
   | Appvec VarName Preterm                -- ^ Variable-length function application
+  | Ann Preterm DTTwN.Preterm             -- ^ Annotated term
   -- | ToDo: add First Universe
   deriving (Eq, G.Generic)
 
@@ -173,6 +177,7 @@ toText' flag preterm = case preterm of
     Asp m    -> T.concat ["@", toText' flag m]
     Lamvec vname m  -> T.concat ["λ", toText vname, "+.", toText' flag m]
     Appvec vname m -> T.concat ["(", toText' flag m, " ", toText vname, "+)"]
+    Ann m a -> T.concat ["(", toText m, "::", toText a, ")"]
     _ -> "Error: The definition of DTS.UDTTwithname.toText' is not exhaustive."
 
 -- | Each `Preterm` is translated by the `toTeX` method into a representation \"with variable names\" in a TeX source code.
@@ -216,6 +221,7 @@ instance Typeset Preterm where
     Asp m     -> T.concat ["@", toTeX m]
     Lamvec vname m   -> T.concat ["\\lambda\\vec{", toTeX vname, "}.", toTeX m]
     Appvec vname m -> T.concat ["\\APP{", toTeXEmbedded m, "}{\\vec{", toTeX vname, "}}"]
+    Ann m a -> T.concat ["(", toTeX m, "::", toTeX a, ")"]
     _ -> "Error: The definition of DTS.UDTTwithname.toTeX is not exhaustive."
 
 toTeXEmbedded :: Preterm -> T.Text
@@ -262,6 +268,7 @@ instance MathML Preterm where
     Asp m      -> T.concat["<mrow><mo>@</mo>", toMathML m, "</mrow>"]
     Lamvec vname m  -> T.concat ["<mrow><mi>&lambda;</mi><mover>", toMathML vname, "<mo>&rarr;</mo></mover><mo>.</mo>", toMathML m, "</mrow>"]
     Appvec vname m -> T.concat ["<mrow>", toMathML m, "<mo> </mo><mover>", toMathML vname, "<mo>&rarr;</mo></mover></mrow>"]
+    Ann m a -> T.concat ["<mrow><mo>(</mo>", toMathML m, "<mo>::</mo>", toMathML a, "<mo>)</mo></mrow>"]
     _ -> "Error: The definition of DTS.UDTTwithname.toMathML is not exhaustive."
   
 {- Conversion between UDTT and DTT -}
@@ -376,6 +383,7 @@ toDTT preterm = case preterm of
   Asp _   -> Nothing
   Lamvec _ _ -> Nothing
   Appvec _ _ -> Nothing
+  Ann _ _ -> Nothing
 
 -- | Conversion btw. de Bruijn notation and a variable name notation.
 fromDeBruijn :: [VarName] -> UDTTdB.Preterm -> Preterm
@@ -480,6 +488,10 @@ fromDeBruijnLoop vnames preterm = case preterm of
     let vname = vnames!!j
     m' <- fromDeBruijnLoop vnames m
     return $ Appvec vname m'
+  UDTTdB.Ann m a -> do
+    m' <- fromDeBruijnLoop vnames m
+    a' <- DTTwN.fromDeBruijnLoop (map fromUDTTvarName vnames) a
+    return $ Ann m' a'
 
 variableNameFor :: UDTTdB.Preterm -> Indexed VarName
 variableNameFor preterm =
@@ -542,6 +554,7 @@ toDeBruijn vnames preterm = case preterm of
   Appvec vname m -> case L.elemIndex vname vnames of
                         Just i -> UDTTdB.Appvec i (toDeBruijn vnames m)
                         Nothing -> UDTTdB.Con "Error: vname not found in toDeBruijn Appvec"
+  Ann m a -> UDTTdB.Ann (toDeBruijn vnames m) (DTTwN.toDeBruijn (map fromUDTTvarName vnames) a)
 
 -- | The data type for a judgment
 data Judgment = Judgment {

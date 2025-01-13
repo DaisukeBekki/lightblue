@@ -60,7 +60,7 @@ module Parser.Language.Japanese.Templates (
   conjunctionSR,
   ) where
 
-import Prelude hiding (id)
+import Prelude hiding (id,not)
 import qualified Data.Text.Lazy as T -- text
 import Data.Ratio
 import Parser.CCG
@@ -70,6 +70,9 @@ import DTS.UDTTdeBruijn as UDTT hiding (sig)
 type UDTTpreterm = UDTT.Preterm
 type DTTpreterm = DTT.Preterm
 type Signature = DTT.Signature
+
+not :: UDTT.Preterm -> UDTT.Preterm
+not t = UDTT.Pi t UDTT.Bot
 
 {- Some Macros for defining lexical items -}
 
@@ -283,12 +286,12 @@ eventModifier op = ((Lam (Lam (App (Var 1) (Lam (Sigma (App (Con op) (Var 0)) (A
 -- | negation operator
 -- S\S: \p.\c.not (pc)
 negOperator :: (UDTTpreterm, Signature)
-negOperator = ((Lam (Lam (Not (App (Var 1) (Var 0))))), [])
+negOperator = ((Lam (Lam (not (App (Var 1) (Var 0))))), [])
 
 -- | negation operator 2
 -- S\NP\(S\NP): \p.\x.\c.not ((px)c)
 negOperator2 :: (UDTTpreterm, Signature)
-negOperator2 = ((Lam (Lam (Lam (Not (App (App (Var 2) (Var 1)) (Var 0)))))), [])
+negOperator2 = ((Lam (Lam (Lam (not (App (App (Var 2) (Var 1)) (Var 0)))))), [])
 
 -- | argument case marker
 -- T/(T\NP[cm])\NP[nc]: \x.\p.px
@@ -311,7 +314,7 @@ andSR :: (UDTTpreterm, Signature)
 andSR = ((Lam (Lam (Sigma (Var 1) (Var 1)))), [])
 
 orSR :: (UDTTpreterm, Signature)
-orSR = ((Lam (Lam (Pi (Not (Var 1)) (Var 1)))), [])
+orSR = ((Lam (Lam (Pi (not (Var 1)) (Var 1)))), [])
 
 conjunctionSR :: T.Text -> (UDTTpreterm, Signature)
 conjunctionSR _ = ((Lam (Lam (Lam (Sigma (App (Var 2) (Lam Top)) (App (Var 2) (Var 1)))))), [])

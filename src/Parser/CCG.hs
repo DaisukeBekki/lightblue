@@ -1011,7 +1011,7 @@ parenthesisRule lnode@(Node {cat=LPAREN}) cnode rnode@(Node {cat=RPAREN}) prevli
     daughters = [lnode,cnode,rnode],
     score = score(cnode),
     source = "",
-    sig = sig(lnode) ++ sig(rnode)
+    sig = sig cnode
     }:prevlist
 parenthesisRule _ _ _ prevlist = prevlist
 
@@ -1297,16 +1297,19 @@ category2type ct = case ct of
   T _ _ c -> category2type c
   _ -> Unit
 
+terminator :: UDTTpreterm
+terminator = Ann (Lam Top) (DTTdB.Pi DTTdB.Entity DTTdB.Type)
+
 preterm2prop :: Cat -> UDTTpreterm -> UDTTpreterm
 preterm2prop ct preterm = case ct of
   SL x y -> Sigma (category2type y) (preterm2prop x (App (shiftIndices preterm 1 0) (Var 0)))
   BS x y -> Sigma (category2type y) (preterm2prop x (App (shiftIndices preterm 1 0) (Var 0)))
-  S _ -> App preterm (Lam Top)
+  S _ -> App preterm terminator
   NP _ -> Sigma (Pi Entity Type) (App (shiftIndices preterm 1 0) (Var 0))
-  N -> Sigma Entity (App (App (shiftIndices preterm 1 0) (Var 0)) (Lam Top))
-  Sbar _ -> App preterm (Lam Top)
+  N -> Sigma Entity (App (App (shiftIndices preterm 1 0) (Var 0)) terminator)
+  Sbar _ -> App preterm terminator
   T _ _ c -> preterm2prop c $ transvec c preterm
-  _ -> Unit
+  _ -> Top
 
 -- | receives a node and returns an Sbar node, whose SR is obtained by existentially quantifying all the missing arguments of the SR of a given node.
 wrapNode :: Node -> Node

@@ -16,7 +16,7 @@ module Parser.ChartParser (
   , CCG.Node(..)
   -- * Main parsing functions
   , ParseSetting(..)
-  , defaultParseSetting
+  --, defaultParseSetting
   , parse
   ) where
 
@@ -29,9 +29,9 @@ import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.Map as M         --container
 import qualified Parser.CCG as CCG --(Node, unaryRules, binaryRules, trinaryRules, isCONJ, cat, SimpleText)
 --import qualified Parser.PartialParsing as Partial --lightblue
-import Parser.Language (LangOptions(..),defaultJpOptions) --lightblue
+import Parser.Language (LangOptions(..)) --lightblue
 import qualified Parser.Language.Japanese.Juman.CallJuman as Juman
-import qualified Parser.Language.Japanese.Lexicon as JP (lexicalResourceBuilder, LexicalItems, setupLexicon, emptyCategories, myLexicon)
+import qualified Parser.Language.Japanese.Lexicon as JP (LexicalItems, setupLexicon, emptyCategories, myLexicon)
 import qualified Parser.Language.Japanese.Templates as LT
 import qualified Parser.Language.English.Lexicon as EN (setupLexicon)
 import qualified DTS.QueryTypes as QT
@@ -49,29 +49,29 @@ data ParseSetting = ParseSetting {
   , nParse :: Int              -- ^ Show N-best parse trees for each sentence
   , nTypeCheck :: Int          -- ^ Show N-best type check diagram for each logical form
   , nProof :: Int              -- ^ Show N-best proof diagram for each proof search
-  --, ifPurify :: Bool           -- ^ If True, apply purifyText to the input text before parsing
+  , ifPurify :: Bool           -- ^ If True, apply purifyText to the input text before parsing
   , ifDebug :: Maybe (Int,Int) -- ^ Debug mode: If Just (i,j), dump parse result of (i,j). 
-  , ifFilterNode :: Maybe (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ filter for CCG nodes.  Nothing: no filtering
+  --, nodeFilterBuilder :: T.Text -> IO (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ node filter
   , noInference :: Bool        -- ^ If True, it is an inference and execute proof search
   , verbose :: Bool            -- ^ If True, type checker and inferer dump logs
   } 
 
-defaultParseSetting :: IO ParseSetting
-defaultParseSetting = do
-  jpOptions <- JP.lexicalResourceBuilder Juman.KWJA
-  return $ ParseSetting jpOptions 32 (-1) (-1) (-1) Nothing Nothing True False
+-- defaultParseSetting :: IO ParseSetting
+-- defaultParseSetting = do
+--   jpOptions <- JP.lexicalResourceBuilder Juman.KWJA
+--   return $ ParseSetting jpOptions 32 (-1) (-1) (-1) Nothing Nothing True False (\_ _ -> id)
 
 type Chart = M.Map (Int,Int) [CCG.Node]
 type Token = T.Text
 
--- | removes occurrences of non-letters from an input text.
-purifyText :: T.Text -> T.Text -> T.Text
-purifyText symbolsToIgnore text = 
-  case T.uncons text of -- remove a non-literal symbol at the beginning of a sentence (if any)
-    Nothing -> T.empty
-    Just (c,t) | isSpace c                   -> purifyText symbolsToIgnore t -- ignore white spaces
-               | T.any (==c) symbolsToIgnore -> purifyText symbolsToIgnore t -- ignore meaningless symbols
-               | otherwise                   -> T.cons c $ purifyText symbolsToIgnore t
+-- -- | removes occurrences of non-letters from an input text.
+-- purifyText :: T.Text -> T.Text -> T.Text
+-- purifyText symbolsToIgnore text = 
+--   case T.uncons text of -- remove a non-literal symbol at the beginning of a sentence (if any)
+--     Nothing -> T.empty
+--     Just (c,t) | isSpace c                   -> purifyText symbolsToIgnore t -- ignore white spaces
+--                | T.any (==c) symbolsToIgnore -> purifyText symbolsToIgnore t -- ignore meaningless symbols
+--                | otherwise                   -> T.cons c $ purifyText symbolsToIgnore t
 
 -- | Main parsing function to parse a Japanees sentence that generates a CYK-chart.
 parse :: ParseSetting 
@@ -81,13 +81,15 @@ parse parseSetting@ParseSetting{..} sentence
   | sentence == T.empty = return M.empty -- returns an empty chart, otherwise foldl returns a runtime error when text is empty
   | otherwise = do
       (tokens,lexicon) <- case langOptions of
-        JpOptions _ _ s _ _ _ b j m -> JP.setupLexicon b j m $ purifyText s sentence
+        JpOptions _ _ _ _ _ _ _ _ _ -> JP.setupLexicon langOptions sentence
         EnOptions _ _ _ _ _         -> EN.setupLexicon sentence
+      nodeFilter <- nodeFilterBuilder langOptions $ T.concat tokens
       -- mapM_ T.putStrLn tokens
-      let (chart,_,_) = foldl' (chartAccumulator parseSetting lexicon) 
+      let (chart,_,_) = foldl' (chartAccumulator parseSetting lexicon nodeFilter) 
                                (M.empty,0,[])
                                tokens
       return chart
+
 
 -- | quadruples representing a state during parsing:
 -- the parsed result (Chart) of the left of the pivot,
@@ -98,12 +100,13 @@ type PartialChart = (Chart,Int,[Token])
 -- | The 'chartAccumulator' function is the accumulator of the 'parse' function
 chartAccumulator :: ParseSetting 
                     -> JP.LexicalItems -- ^ my lexicon as the second parameter
+                    -> (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ node filter
                     -> PartialChart    -- ^ The accumulated result, given
                     -> Token           -- ^ The next char of a unparsed text
                     -> PartialChart    -- ^ The accumulated result, updated
-chartAccumulator parseSetting@ParseSetting{..} lexicon (chart,i,stack) token = unsafePerformIO $ do
+chartAccumulator parseSetting@ParseSetting{..} lexicon nodeFilter (chart,i,stack) token = unsafePerformIO $ do
   let newstack = token:stack -- | :: [Token]
-      (newchart,_,_,_) = foldl' (boxAccumulator parseSetting lexicon) 
+      (newchart,_,_,_) = foldl' (boxAccumulator parseSetting lexicon nodeFilter) 
                                 (chart,T.empty,i,i+1)
                                 newstack
   return (newchart,i+1,newstack)
@@ -114,10 +117,11 @@ type PartialBox = (Chart,T.Text,Int,Int) -- (chard, word, i j)
 -- | The 'boxAccumulator' function
 boxAccumulator :: ParseSetting
                   -> JP.LexicalItems -- ^ lexicon
+                  -> (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ node filter
                   -> PartialBox      -- ^ accumulated result (Chart, Text, Int, Int)
                   -> Token           -- ^ 
                   -> PartialBox
-boxAccumulator ParseSetting{..} lexicon (chart,word,i,j) token = unsafePerformIO $ do
+boxAccumulator ParseSetting{..} lexicon nodeFilter (chart,word,i,j) token = unsafePerformIO $ do
   let newword = case existDelimiter langOptions of
                     True -> if T.null word 
                               then token
@@ -127,10 +131,7 @@ boxAccumulator ParseSetting{..} lexicon (chart,word,i,j) token = unsafePerformIO
                 -- Does not execute lookup for a long word. Run "LongestWord" to check that the length of the longest word (=23).
                 then lookupLexicon newword lexicon
                 else [];
-  let nodeFilter = case ifFilterNode of
-                      Just filter -> filter
-                      Nothing -> (\_ _ -> id)
-      nodesBeforeFiltering = checkUnaryRules list0 
+  let nodesBeforeFiltering = checkUnaryRules list0 
         .-> checkBinaryRules i j chart  
       nodesAfterFiltering = nodesBeforeFiltering
         .-> nodeFilter i j

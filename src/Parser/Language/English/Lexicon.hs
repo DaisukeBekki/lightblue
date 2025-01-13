@@ -26,16 +26,17 @@ import qualified Data.Aeson            as A --aeson
 import qualified Data.ByteString.Char8 as B --bytestring 
 import qualified Data.Yaml             as Y --yaml
 import Parser.CCG                       --lightblue
-import Parser.Language 
-import Parser.Language.Japanese.Templates
-import qualified DTS.DTTdeBruijn as DTT --lightblue
-import DTS.UDTTdeBruijn as UDTT hiding (sig) --lightblue
+--import Parser.Language 
+import Parser.Language.Japanese.Templates          --lightblue
+import qualified DTS.DTTdeBruijn as DTT            --lightblue
+import DTS.UDTTdeBruijn as UDTT hiding (sig)       --lightblue
 
 type DTTpreterm = DTT.Preterm
 type UDTTpreterm = UDTT.Preterm
 type Signature = DTT.Signature
 type LexicalItems = [Node]
 type Token = T.Text
+type Filter = Int -> Int -> [Node] -> [Node]
 
 setupLexicon :: T.Text -> IO ([Token], LexicalItems)
 setupLexicon sentence = do

@@ -70,8 +70,18 @@ $ ./lightblue jsem -f <jsemfile>
 ### Usage
 The syntax of the lightblue command is as follows:
 ```
-./lightblue <command> <local options> <global options>
+./lightblue <language> <command> <local options> <global options>
 ```
+
+|Lang    |                           |
+|:-------|:--------------------------|
+|```jp```|Japanese                   |
+|```en```|English (no local options) |
+
+|Local Options for ```jp```                   |Default   | Description                   |
+|:--------------------------------------------|:---------|:------------------------------|
+|```-m``` or ```--ma {juman\|jumanpp\|kwja}```|```kwja```|Specify morphological analyzer |
+|```--filter {knp\|kwja\|none}```             |```none```|Specify node filter            |
 
 |Command         |                                                                       |
 |:---------------|:----------------------------------------------------------------------|
@@ -86,11 +96,9 @@ Each of ```parse ``` and ```jsem``` commands has a set of local options.
 |Local Options for ```parse```                     |Default   |Description                                                    |  
 |:-------------------------------------------------|:---------|:--------------------------------------------------------------|
 |```-o``` or ```--output {tree\|postag}```         |```tree```|Specify the output content.<br>```tree```: Outputs parse trees and their type check results.<br> ```postag```: Outputs only lexical items (Use lightblue a part-of-speech tagger) |
-|```-p``` or ```--prover {Wani\|Null}```           |```Wani```|Choose a prover.<br>```Wani```: Use Wani prover (Daido and Bekki 2020)<br>```None```: Use the null prover (that always returns no diagrams).|
 
 |Local Options for ```jsem```                      |Default   |Description                           |  
 |:-------------------------------------------------|:---------|:-------------------------------------|
-|```-p``` or ```--prover {Wani\|Null}```           |```Wani```|Choose a prover.<br>```Wani```: Use Wani prover (Daido and Bekki 2020)<br>```None```: Use the null prover (that always returns no diagrams).|
 |```--jsemid <text>```                             |```all``` |Skip JSeM data the JSeM ID of which is not equial to this value.           |
 |```--nsample <int>```                             |```-1```  |Specify a number of JSeM data to process (A negative value means all data) |
 
@@ -99,13 +107,14 @@ The global options are common to all commands.
 |Global Options                                    |Default   |Description                                                     |
 |:------------------------------------------------|:---------|:---------------------------------------------------------------|
 |```-s``` or ```--style {text\|tex\|xml\|html}``` |```text```|Show results in the specified format.                     |
+|```-p``` or ```--prover {Wani\|Null}```          |```Wani```|Choose a prover.<br>```Wani```: Use Wani prover (Daido and Bekki 2020)<br>```None```: Use the null prover (that always returns no diagrams).|
 |```-f``` or ```--file <filepath>```              |          |Read input texts from <filepath><br>(Specify '-' to use stdin) |
-|```-m``` or ```--ma {juman\|jumanpp\|kwja}```    |```kwja```|Specify morphological analyzer (default: KWJA)                  |
 |```-b``` or ```--beam <int>```                   |```32```  |Set the beam width to <int>                                     |
 |```--nparse <int>```                             |```-1```  |Search only N-best parse trees for each sentence (A negative value means all trees) |                      |
 |```--ntypecheck <int>```                         |```-1```  |Search only N-best diagrams for each type checking of a logical form (A negative value means all diagrams) |
 |```--nproof <int>```                             |```-1```  |Search only N-best diagrams for each proof search (A negative value means all diagrams) |
 |```--maxdepth <int>```                           |```9```   |Set the maximum search depth in proof search (default: 9) |
+|```--maxtime <int>```                            |```10000``` |Set the maximum search time in proof search (default: 10000) |
 |```--noTypeCheck```                              |          |If specified, show no type checking diagram for each sentence.|
 |```--noInference```                              |          |If specified, execute no inference for each discourse.|
 |```--time```                                     |          |Show the execution time in stderr.|

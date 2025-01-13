@@ -202,20 +202,20 @@ piIntro' sig var aType depth setting =
     _ -> B.debugLog (sig,var) aType depth setting "piIntro2"  B.resultDef{B.rStatus = B.sStatus setting}
 
 
-arrowConclusionBs' :: [A.AJudgment] -> A.Arrowterm -> [(Int,UDT.Tree A.Arrowrule A.AJudgment)]
+arrowConclusionBs' :: [UDT.Tree A.Arrowrule A.AJudgment] -> A.Arrowterm -> [(Int,UDT.Tree A.Arrowrule A.AJudgment)]
 -- | arrowConclusionBs (Would the input be appropriate? Why this function uses not [J.Tree A.AJudgement] but [A.AJudgement]?)
 -- +------------------------+--------------------------------------------------------------+
 -- | input                  | \[ \Gamma \vdash a : A -> B, \Gamma \vdash a : A -> C \], B  |
 -- +========================+==============================================================+
 -- | output                 | \[(1,tree for \Gamma \vdash a : A -> B )\]                   |
 -- +------------------------+--------------------------------------------------------------+
-arrowConclusionBs' judgements b= 
-  let arrowConclusionB j b = (tailIsB (A.typefromAJudgment j) b,j) in
+arrowConclusionBs' trees b= 
+  let arrowConclusionB t b = (tailIsB (A.typefromAJudgment $ A.downSide' t) b,t) in
     map
-    (\((num ,b),j )-> (num,UDT.Tree QT.Var j [])) -- It is necessary to check if there is any problem with the certification tree being thrown away.
+    (\((num ,b),t )-> (num,t))
     $filter
       (snd . fst)
-      $map (`arrowConclusionB` b) judgements
+      $map (`arrowConclusionB` b) trees
 
 deduceEnv' :: A.SAEnv -> A.AEnv -> (Int,UDT.Tree A.Arrowrule A.AJudgment) -> Int -> B.Setting -> (UDT.Tree A.Arrowrule A.AJudgment,[[B.Result]])
 
@@ -350,7 +350,7 @@ piElim' :: B.DeduceRule
 piElim' sig var aType depth setting
   | otherwise = 
       let forwarded = F.forwardContext sig var
-          dAndaTrees = arrowConclusionBs' (map A.downSide' $B.trees forwarded) aType
+          dAndaTrees = arrowConclusionBs' (B.trees forwarded) aType
           asResults =  deduceEnvs' sig var dAndaTrees depth setting{B.sStatus = (B.sStatus setting)}
           result =
             foldl
