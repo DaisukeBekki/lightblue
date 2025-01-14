@@ -80,7 +80,7 @@ $ ./lightblue jp jsem -f <jsemfile>
 ### Usage
 The syntax of the lightblue command is as follows:
 ```
-./lightblue <language> <language's local options> <command> <command's local options> <global options>
+./lightblue <lang> <lang's local options> <command> <command's local options> <global options>
 ```
 
 |Lang    |                           |
