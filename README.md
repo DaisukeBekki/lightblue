@@ -1,8 +1,8 @@
 # README
 ## What is this repository for?
 
-* *lightblue* is a Japanese CCG parser with DTS representations
-* Copyright owner: Daisuke Bekki
+* *lightblue* is a multi-lingual CCG parser with DTS representations
+* Copyright owner: Daisuke Bekki and Bekki Laboratory
 
 ## Installing lightblue
 ### Prerequisite 1: Haskell Stack
@@ -16,7 +16,7 @@ $ brew install haskell-stack
 ```
 See https://docs/haskellstack.org/en/stable/README/#how-to-install for details.
 
-### Prerequisite 2: Installation of Japanese morphological analyzer (KWJA or Juman or Jumanpp)
+### Prerequisite 2: Installation of Japanese morphological analyzer
 One of the following Japanese morphological analyzers must be installed before executing *lightblue*.
 
 - [KWJA](https://github.com/ku-nlp/kwja)
@@ -25,7 +25,7 @@ One of the following Japanese morphological analyzers must be installed before e
 
 - [JUMAN++](https://nlp.ist.i.kyoto-u.ac.jp/?JUMAN%2B%2B) 
 
-### Prerequisite 3: Installation of English morphological analyzer (KWJA or Juman or Jumanpp)
+### Prerequisite 3: Installation of English morphological analyzer
 The following English morphological analyzers must be installed before executing *lightblue*.
 
 - [NLTK](https://www.nltk.org/install.html) & [NLTK data](https://www.nltk.org/data.html)
