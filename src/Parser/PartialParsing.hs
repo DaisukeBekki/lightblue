@@ -94,3 +94,5 @@ numberOfArgs node = case node of
   CCG.CONJ     -> 100
   CCG.LPAREN   -> 100
   CCG.RPAREN   -> 100
+  CCG.PUNCT    -> 100
+  CCG.PERIOD   -> 100
