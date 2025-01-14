@@ -16,7 +16,7 @@ $ brew install haskell-stack
 ```
 See https://docs/haskellstack.org/en/stable/README/#how-to-install for details.
 
-### Prerequisite 2: Installation of morphological analyzer (KWJA or Juman/Jumanpp)
+### Prerequisite 2: Installation of Japanese morphological analyzer (KWJA or Juman or Jumanpp)
 One of the following Japanese morphological analyzers must be installed before executing *lightblue*.
 
 - [KWJA](https://github.com/ku-nlp/kwja)
@@ -24,6 +24,11 @@ One of the following Japanese morphological analyzers must be installed before e
 - [JUMAN](http://nlp.ist.i.kyoto-u.ac.jp/EN/index.php?JUMAN) (>= version 7.0) 
 
 - [JUMAN++](https://nlp.ist.i.kyoto-u.ac.jp/?JUMAN%2B%2B) 
+
+### Prerequisite 3: Installation of English morphological analyzer (KWJA or Juman or Jumanpp)
+The following English morphological analyzers must be installed before executing *lightblue*.
+
+- [NLTK](https://www.nltk.org/install.html) & [NLTK data](https://www.nltk.org/data.html)
 
 ### Download lightblue
 Do the following in the directory under which you'd like to install *lightblue*.
@@ -49,22 +54,27 @@ $ chmod 755 lightblue
 
 To parse a Japanese sentence and get a parsing result in a text format, execute:
 ```
-$ echo 太郎がパンを食べた。 | ./lightblue parse -s text
+$ echo 太郎がパンを食べた。 | ./lightblue jp parse -s text
+```
+
+To parse an English sentence and get a parsing result, execute:
+```
+$ echo John loves Mary. | ./lightblue en parse -s text
 ```
 
 To see a parsing result in HTML formal, execute (choose your browser):
 ```
-$ echo 太郎がパンを食べた。 | ./lightblue parse -s html > result.html; firefox result.html
+$ echo 太郎がパンを食べた。 | ./lightblue jp parse -s html > result.html; firefox result.html
 ```
 
 If you have a text file (one sentence per line) &lt;corpusfile&gt;, then you can feed its path to *lightblue* by:
 ```
-$ ./lightblue parse -s html -f <corpusfile>
+$ ./lightblue jp parse -s html -f <corpusfile>
 ```
 
 To parse a JSeM file and execute inferences therein, then you can feed it to *lightblue* by:
 ```
-$ ./lightblue jsem -f <jsemfile>
+$ ./lightblue jp jsem -f <jsemfile>
 ```
 
 ### Usage
