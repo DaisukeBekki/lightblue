@@ -178,7 +178,10 @@ verbCat' caseframe ct = case T.uncons caseframe of
 -- i==2 -> S\NP\NP:       \y.\x.\c.(e:event)X(op(e,x,y)X(ce)
 -- i==3 -> S\NP\NP\NP: \z.\y.\x.\c.(e:event)X(op(e,x,y,z)X(ce)
 -- ...
-verbSR :: T.Text -> DTTpreterm -> T.Text -> (UDTTpreterm, Signature)
+verbSR :: T.Text         -- ^ 表層形（例；"思う"）
+          -> DTTpreterm  -- ^ EntityかEventであったが、現在はEntityに統一中
+          -> T.Text      -- ^ 格フレーム（例："ガニヲ"）
+          -> (UDTTpreterm, Signature)
 verbSR daihyo eventuality caseframe = 
   let predname = T.concat [daihyo, "/", caseframe] in
   (verbSR' predname caseframe caseframe, [(predname, nPlaceVerbType eventuality caseframe)])
