@@ -4,6 +4,7 @@
 import Options.Applicative hiding (style) --optparse-applicative
 import Control.Applicative (optional)     --base
 import Control.Monad (forM)               --base
+import System.Mem (performMinorGC)        --base
 import ListT (toList)                     --list-t
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
@@ -164,33 +165,33 @@ optionParser =
       -- <> short 'n'
       <> help "Show N-best parse trees for each sentence"
       <> showDefault
-      <> value (-1)
+      <> value 1
       <> metavar "INT" )
     <*> option auto 
       ( long "ntypecheck"
       -- <> short 'n'
       <> help "Show N-best type check diagram for each logical form"
       <> showDefault
-      <> value (-1)
+      <> value 1
       <> metavar "INT" )
     <*> option auto 
       ( long "nproof"
       -- <> short 'n'
       <> help "Show N-best proof diagram for each proof search"
       <> showDefault
-      <> value (-1)
+      <> value 1
       <> metavar "INT" )
     <*> option auto 
       ( long "maxdepth"
       <> help "Set the maximum search depth in proof search"
       <> showDefault
-      <> value 9
+      <> value 5
       <> metavar "INT" )
     <*> option auto 
       ( long "maxtime"
       <> help "Set the maximum search time in proof search"
       <> showDefault
-      <> value 100000
+      <> value 10000
       <> metavar "INT" )
     <*> switch 
       ( long "noTypeCheck"
@@ -304,6 +305,7 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
           prover = NLI.getProver proverName $ QT.ProofSearchSetting (Just maxDepth) (Just maxTime) (Just QT.Classical)
       S.hPutStrLn handle $ I.headerOf style
       pairs <- forM parsedJSeM'' $ \j -> do
+        performMinorGC
         let title = "JSeM-ID " ++ (StrictT.unpack $ J.jsem_id j)
         S.putStr $ "[" ++ title ++ "] "
         mapM_ StrictT.putStr $ J.premises j
