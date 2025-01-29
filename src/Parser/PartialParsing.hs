@@ -22,8 +22,8 @@ import qualified Data.Text.Lazy as T                  --text
 import qualified Data.Map as M              --container
 import qualified Parser.ChartParser as CP   --lightblue
 import qualified Parser.CCG as CCG --(Node, unaryRules, binaryRules, trinaryRules, isCONJ, cat, SimpleText)
-import Parser.Language (jpOptions)
-import Parser.Language.Japanese.Lexicon (lexicalResourceBuilder)
+--import Parser.Language (jpOptions)
+import Parser.Language (defaultJpOptions)
 import qualified Parser.Language.Japanese.Juman.CallJuman as Juman
 
 {- Partial Parsing -}
@@ -42,13 +42,13 @@ simpleParse ps@CP.ParseSetting{..} sentence = do
 -- | For the compatibility with ABCbanKParser
 simpleParse' :: Maybe (Int,Int)   -- ^ Debug mode: If Just (i,j), dump parse result of (i,j). 
             -> Int    -- ^ beam 
-            -> Bool   -- ^ If purify
-            -> (Int -> Int -> [CCG.Node] -> [CCG.Node]) -- ^ filter for CCG nodes
+            -> Bool   -- ^ If purify (deplicated)
+            -> (T.Text -> IO (Int -> Int -> [CCG.Node] -> [CCG.Node])) -- ^ filter for CCG nodes
             -> T.Text -- ^ an input text
             -> IO ([CCG.Node],CP.Chart)
 simpleParse' ifDebug beamW ifPurify filterNodes sentence = do
-  lexicalResource <- lexicalResourceBuilder Juman.KWJA
-  chart <- CP.parse (CP.ParseSetting jpOptions lexicalResource beamW 1 1 1 ifPurify ifDebug (Just filterNodes) True False) sentence
+  let ps = CP.ParseSetting defaultJpOptions beamW 1 1 1 ifPurify ifDebug True False
+  chart <- CP.parse ps sentence
   case extractParseResult beamW chart of
     Full nodes -> return (nodes,chart)
     Partial nodes -> return (nodes,chart)
@@ -94,3 +94,5 @@ numberOfArgs node = case node of
   CCG.CONJ     -> 100
   CCG.LPAREN   -> 100
   CCG.RPAREN   -> 100
+  CCG.PUNCT    -> 100
+  CCG.PERIOD   -> 100

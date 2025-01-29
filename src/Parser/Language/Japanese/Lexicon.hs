@@ -12,27 +12,26 @@ A Japanese CCG lexicon.
 module Parser.Language.Japanese.Lexicon (
   --Node(..),
   LexicalItems
-  , LexicalResource(..)
-  , lexicalResourceBuilder
-  --isCONJ,
-  , lookupLexicon
   , setupLexicon
   , LEX.emptyCategories
   , LEX.myLexicon
   ) where
 
 import Prelude hiding (id)
+import qualified Data.Char as C          --base
 import qualified System.Environment as E --base
 import qualified Data.Text.Lazy as T     --text
-import qualified Data.Text.Lazy.IO as T --text
+import qualified Data.Text.Lazy.IO as T  --text
 import qualified Data.List as L          -- base
 import qualified Data.Map as M           -- base
-import Parser.CCG
-import qualified Parser.Language.Japanese.MyLexicon as LEX
-import Parser.Language.Japanese.Templates
-import qualified Parser.Language.Japanese.Juman.CallJuman as JU
-import DTS.UDTTdeBruijn as UDTT         --lightblue
-import qualified DTS.DTTdeBruijn as DTT --lightblue
+import Parser.CCG as CCG                                        --lightblue
+import Parser.Language (LangOptions(..),defaultJpOptions)       --lightblue
+import qualified Parser.Language.Japanese.MyLexicon as LEX      --lightblue
+import Parser.Language.Japanese.Templates                       --lightblue
+import qualified Parser.Language.Japanese.Juman.CallJuman as JU --lightblue
+import qualified Parser.Language.Japanese.Filter as JFilter     --lightblue
+import DTS.UDTTdeBruijn as UDTT                                 --lightblue
+import qualified DTS.DTTdeBruijn as DTT                         --lightblue
 
 type UDTTpreterm = UDTT.Preterm
 type Signature = DTT.Signature
@@ -42,42 +41,47 @@ terminator = UDTT.Ann (UDTT.Lam UDTT.Top) (DTT.Pi DTT.Entity DTT.Type)
 
 -- | Lexicon consists of a set of CCG Nodes
 type LexicalItems = [Node]
-
-data LexicalResource = 
-  JapaneseSetA {
-    baseLexicon :: [Node]
-    , jumanDic :: [[T.Text]]
-    , morphaName :: JU.MorphAnalyzerName
-  } deriving (Eq, Show)
-
-lexicalResourceBuilder :: JU.MorphAnalyzerName -> IO LexicalResource
-lexicalResourceBuilder morphaName = do
-  lightbluepath <- E.getEnv "LIGHTBLUE"
-  jumandicData <- T.readFile $ lightbluepath ++ "src/Parser/Language/Japanese/Juman/Juman.dic"
-  let jumanDic = map (T.split (=='\t')) $ T.lines jumandicData
-  return $ JapaneseSetA LEX.myLexicon jumanDic morphaName
-
--- | This function takes a word and a lexicon and returns a set of CCG lexical entries whose PF is that word.
-lookupLexicon :: T.Text -> LexicalItems -> [Node]
-lookupLexicon word lexicon = filter (\l -> (pf l) == word) lexicon
+type Token = T.Text
 
 -- | This function takes a sentence and returns a numeration needed to parse that sentence, i.e., a union of 
-setupLexicon :: LexicalResource -> T.Text -> IO LexicalItems
-setupLexicon JapaneseSetA{..} sentence = do
+setupLexicon :: LangOptions -> T.Text -> IO ([Token], LexicalItems)
+setupLexicon langOptions sentence = do
+  let sentence' = purifyText langOptions sentence
   --  1. Setting up lexical items provided by JUMAN++
-  let jumandicFiltered = filter (\l -> (head l) `T.isInfixOf` sentence) jumanDic
-  let (jumandicParsed,(cn,pn)) = L.foldl' parseJumanLine ([],(M.empty,M.empty)) $ jumandicFiltered
+  let jumandicFiltered = filter (\l -> (head l) `T.isInfixOf` sentence') (jumanDic langOptions)
+      (jumandicParsed,(cn,pn)) = L.foldl' parseJumanLine ([],(M.empty,M.empty)) $ jumandicFiltered
   --  2. Setting up private lexicon
-  let mylexiconFiltered = filter (\l -> T.isInfixOf (pf l) sentence) baseLexicon
-  --  3. Setting up compound nouns (returned from an execution of JUMAN)
-  -- jumanCN <- JU.jumanCompoundNouns (T.replace "―" "、" sentence)
-  jumanCN <- JU.compoundNouns morphaName sentence
-  --  4. Accumulating common nons and proper names entries
+  let mylexiconFiltered = filter (\l -> T.isInfixOf (pf l) sentence') (baseLexicon langOptions)
+  --  3. Accumulating common nons and proper names entries
   let commonnouns = map (\(hyoki, (daihyo,score')) -> lexicalitem hyoki "(CN)" score' N (commonNounSR daihyo)) $ M.toList cn
-  let propernames = map (\(hyoki, (daihyo,score')) -> lexicalitem hyoki "(PN)" score' ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) (properNameSR daihyo)) $ M.toList pn
+      propernames = map (\(hyoki, (daihyo,score')) -> lexicalitem hyoki "(PN)" score' ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) (properNameSR daihyo)) $ M.toList pn
+  --  4. Setting up compound nouns (returned from an execution of JUMAN)
+  jumanCN <- JU.findCompoundNouns (morphaName langOptions) sentence'
   --  5. 1+2+3+4
   let numeration = jumandicParsed ++ mylexiconFiltered ++ commonnouns ++ propernames ++ jumanCN
-  return $ numeration `seq` numeration
+      tokens = reverse $ T.foldl' (\tkns c -> (T.singleton c):tkns) [] sentence'
+  return (tokens, numeration `seq` numeration)
+
+-- | removes occurrences of non-letters from an input text.
+purifyText :: LangOptions -> T.Text -> T.Text
+purifyText langOptions text = 
+  case T.uncons text of -- remove a non-literal symbol at the beginning of a sentence (if any)
+    Nothing -> T.empty
+    Just (c,t) | C.isSpace c                               -> purifyText langOptions t               -- ignore white spaces
+               | T.any (==c) (symbolsToIgnore langOptions) -> purifyText langOptions t               -- ignore meaningless symbols
+               | T.any (==c) (punctuations langOptions)    -> T.cons '、' $ purifyText langOptions t -- punctuations
+               | T.any (==c) "０１２３４５６７８９" 
+                   -> T.cons (case c of '０' -> '0'
+                                        '１' -> '1'
+                                        '２' -> '2'
+                                        '３' -> '3'
+                                        '４' -> '4'
+                                        '５' -> '5'
+                                        '６' -> '6'
+                                        '７' -> '7'
+                                        '８' -> '8'
+                                        '９' -> '9') $ purifyText langOptions t  
+               | otherwise                                 -> T.cons c $ purifyText langOptions t
 
 -- | Read each line in "Juman.dic" and convert it to a CCG lexical item
 -- | Meanwhile, common nouns and proper names that have a same phonetic form are to be bundled together into a single word.
@@ -87,16 +91,16 @@ parseJumanLine :: ([Node],(M.Map T.Text (T.Text,Integer), M.Map T.Text (T.Text,I
 parseJumanLine (lexicalitems, (commonnouns, propernames)) jumanline = 
   case jumanline of
     (hyoki:(score':(cat':(daihyo':(yomi':(source':(caseframe:_))))))) 
-      | T.isPrefixOf "名詞:普通名詞" cat' -> 
-          let commonnouns' = M.insertWith (\(t1,s1) (t2,s2) -> (T.intercalate ";" [t1,t2], max s1 s2)) hyoki ((T.concat [daihyo',"/",yomi']),(read (T.unpack score')::Integer)) commonnouns in
-          (lexicalitems, (commonnouns', propernames))
+      | T.isPrefixOf "名詞:普通名詞" cat' -> -- | Add nothing
+          -- let commonnouns' = M.insertWith (\(t1,s1) (t2,s2) -> (T.intercalate ";" [t1,t2], max s1 s2)) hyoki ((T.concat [daihyo',"/",yomi']),(read (T.unpack score')::Integer)) commonnouns in
+          (lexicalitems, (commonnouns, propernames))
       | T.isPrefixOf "名詞:固有名詞" cat' || T.isPrefixOf "名詞:人名" cat' || T.isPrefixOf "名詞:地名" cat' || T.isPrefixOf "名詞:組織名" cat' ->
           let propernames' = M.insertWith (\(t1,s1) (t2,s2) -> (T.intercalate ";" [t1,t2], max s1 s2)) hyoki ((T.concat [daihyo',"/",yomi']),(read (T.unpack score')::Integer)) propernames in
           (lexicalitems, (commonnouns, propernames'))
       | otherwise ->
-          let catsemlist = jumanPos2Cat (T.concat [daihyo',"/",yomi']) cat' caseframe in
-          ([(lexicalitem hyoki (T.concat ["(J",T.take 3 source',")"]) (read (T.unpack score')::Integer) cat2 semsig) | (cat2,semsig) <- catsemlist]++lexicalitems, (commonnouns,propernames))
-    _ -> (lexicalitems,(commonnouns,propernames))
+         let catsemlist = jumanPos2Cat (T.concat [daihyo',"/",yomi']) cat' caseframe in
+         ([(lexicalitem hyoki (T.concat ["(J",T.take 3 source',")"]) (read (T.unpack score')::Integer) cat2 semsig) | (cat2,semsig) <- catsemlist]++lexicalitems, (commonnouns, propernames))
+    _ -> (lexicalitems,(commonnouns, propernames))
 
 -- | Main function 1 "jumanPos2Cat" that converts Juman entries to lexical items
 jumanPos2Cat :: T.Text -> T.Text -> T.Text -> [(Cat,(UDTTpreterm,Signature))]
@@ -144,13 +148,14 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "接頭辞:イ形容詞接頭辞"     ct   = [((defS [Aauo] [Stem] `BS` NP [F[Ga]]) `SL` (defS [Aauo] [Stem] `BS` NP [F[Ga]]), (id, []))]
   | T.isPrefixOf "接頭辞:ナ形容詞接頭辞"     ct   = [((defS [Nda] [NStem] `BS` NP [F[Ga]]) `SL` (defS [Nda] [NStem] `BS` NP [F[Ga]]), (id, []))]
   | T.isPrefixOf "接尾辞:名詞性名詞助数辞"   ct  = constructNominalSuffix daihyo -- 例：ビット、ヘクトパスカル
-  -- T.isPrefixOf "接尾辞:名詞性名詞接尾辞"  ct  = constructNominalSuffix daihyo
+  | T.isPrefixOf "接尾辞:名詞性名詞接尾辞"   ct  = constructNominalSuffix daihyo
   | T.isPrefixOf "接尾辞:名詞性特殊接尾辞"   ct  = constructNominalSuffix daihyo
   | T.isPrefixOf "接尾辞:名詞性述語接尾辞"   ct  = constructNominalSuffix daihyo
   --  T.isPrefixOf "特殊:句点" ct =
   --  T.isPrefixOf "特殊:読点" ct =
   | T.isPrefixOf "特殊:括弧始"             ct = [(LPAREN, (Unit, []))]
   | T.isPrefixOf "特殊:括弧終"             ct = [(RPAREN, (Unit, []))]
+  | T.isPrefixOf "特殊:句点"              ct  = [(RPAREN, (Top, []))]
   | T.isPrefixOf "数詞"                   ct = constructCommonNoun daihyo
   | T.isPrefixOf "感動詞"                 ct  = [(defS [Exp] [Term], (id, []))]
   | otherwise                                = [(defS [Exp] [Term], ((Con $ T.concat [T.pack "Juman Error: ", ct]), []))]

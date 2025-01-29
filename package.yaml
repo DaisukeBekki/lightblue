@@ -1,5 +1,5 @@
 name:         lightblue
-version:      0.3.4
+version:      0.4.1
 description:  Please see the README on GitHub at <https://github.com/DaisukeBekki/lightblue#README.md>
 homepage:     https://github.com/DaisukeBekki/lightblue
 category:     CCG Parser, Dependent Type Prover
@@ -44,6 +44,9 @@ dependencies:
   - serialise >= 0.2.4
   - list-t >= 1.0.0.0
   - store >= 0.7.14
+  - witherable >= 0.4
+  - parserModules
+  - unicode-show >= 0.1
 
 library:
   source-dirs: src
@@ -58,11 +61,15 @@ library:
   - Parser.Language.Japanese.MyLexicon
   - Parser.Language.Japanese.Templates
   - Parser.Language.Japanese.Juman.CallJuman
-  - Parser.Language.Japanese.Juman.Config  
+  - Parser.Language.Japanese.Juman.Config
   - Parser.Language.Japanese.Juman.ParseJumanDic
   - Parser.Language.Japanese.Juman.ParseCaseFrame
   - Parser.Language.Japanese.Juman.ConvertJumanDic
   - Parser.Language.Japanese.Juman.ShowCaseFrame
+  - Parser.Language.Japanese.Filter
+  - Parser.Language.Japanese.Filter.KNPFilter
+  - Parser.Language.Japanese.Filter.KWJAFilter
+  - Parser.Language.English.Lexicon
   - Interface
   - Interface.Text
   - Interface.TeX
@@ -82,12 +89,10 @@ library:
   - DTS.Prover.Wani.WaniBase
   - DTS.Prover.Wani.Forward
   - DTS.Prover.Wani.Backward
+  - DTS.Prover.Wani.BackwardRules
+  - DTS.Prover.Wani.BackwardWithRules
   - DTS.Prover.Wani.Arrowterm
   - DTS.Prover.Wani.Prove
-#  - DTS.Prover.Coq.DTS2Coq
-#  - DTS.Prover.Diag.Prover
-#  - DTS.Prover.Diag.Judgement
-#  - DTS.Prover.Diag.TypeChecker
 
 executables:
   lightblue:
@@ -100,7 +105,7 @@ executables:
     main:         buildLexicon.hs
     ghc-options:  [-threaded, -rtsopts, -with-rtsopts=-N]
     dependencies: lightblue
-    
+
 tests:
   testJumanDicSettings:
     source-dirs:  test/Juman
