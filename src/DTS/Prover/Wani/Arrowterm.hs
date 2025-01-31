@@ -38,7 +38,7 @@ module DTS.Prover.Wani.Arrowterm
   canBeSame,
   canBeSame',
   addLam,
-  addLam',
+  addLam2,
   rmLam,
   addApp,
   thereIsVar,
@@ -438,9 +438,9 @@ addLam :: Int -> Arrowterm -> Arrowterm
 addLam num term =
   if num > 0 then ArrowLam $ addLam (num - 1) (shiftIndices term 1 ((minimum $ varsInaTerm term) -1)) else term
 
-addLam' :: Int -> Arrowterm -> Arrowterm
-addLam' 0 term = term
-addLam' num term = ArrowLam $ addLam' (num - 1) term
+addLam2 :: Int -> Arrowterm -> Arrowterm
+addLam2 0 term = term
+addLam2 num term = ArrowLam $ addLam2 (num - 1) term
 
 rmLam :: Int -> M.Maybe Arrowterm -> M.Maybe Arrowterm
 rmLam 0 term = term
