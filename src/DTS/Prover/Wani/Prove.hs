@@ -75,7 +75,7 @@ prove' QT.ProofSearchSetting{..} (DdB.ProofSearchQuery sig ctx typ) =  -- LiftT 
         WB.maxtime = case maxTime of
                         Just t -> t
                         Nothing -> 100000,
-        WB.debug = True,
+        WB.debug = False,
         WB.sStatus = WB.statusDef
         };
       result =  hojo ctx sig typ setting

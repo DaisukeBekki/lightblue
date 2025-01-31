@@ -209,7 +209,7 @@ forwardContext sig var =
                           _ -> aTree
                       )
                       varsigmaForwarded
-          in {--(eqForwards2' sigmaForwarded)  ++ --}sigmaForwarded
+          in (eqForwards2' sigmaForwarded)  ++ sigmaForwarded
     in B.resultDef{B.trees = trees}
 
 
