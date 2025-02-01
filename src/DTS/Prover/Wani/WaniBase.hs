@@ -187,7 +187,7 @@ generatedTempTerm :: A.Arrowterm -> T.Text -> A.Arrowterm
 generatedTempTerm origin id =
   let gen =  T.concat [(T.singleton substPrefix),id]
   in 
-    if origin == A.arrowSubst origin (A.aCon gen) (A.aCon "dummy")
+    if origin == A.arrowSubst origin (A.aCon gen) (A.aCon "dummyInGeneratedTempTerm")
     then A.aCon gen
     else generatedTempTerm origin gen
 
