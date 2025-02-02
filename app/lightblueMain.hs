@@ -310,7 +310,7 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
         S.putStr " ==> "
         StrictT.putStrLn $ J.hypothesis j
         S.putStr "\n"
-        let sentences = reverse $ (T.fromStrict $ J.hypothesis j):(map T.fromStrict $ J.premises j)
+        let sentences = postpend (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
             parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] sentences
         NLI.printParseResult handle style 1 noTypeCheck False title parseResult
         inferenceLabels <- toList $ NLI.trawlParseResult parseResult
@@ -373,6 +373,10 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
     -- --
     -- lightblueMainLocal Treebank contents = do
     --   I.treebankBuilder beamw $ T.lines contents
+
+postpend :: [a] -> a -> [a]
+postpend [] y = [y]
+postpend (x:xs) y = x:(postpend xs y)
 
 -- |
 -- | lightblue --version
