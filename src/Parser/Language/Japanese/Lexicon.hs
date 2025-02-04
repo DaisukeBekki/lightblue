@@ -149,6 +149,7 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "接頭辞:ナ形容詞接頭辞"     ct   = [((defS [Nda] [NStem] `BS` NP [F[Ga]]) `SL` (defS [Nda] [NStem] `BS` NP [F[Ga]]), (id, []))]
   | T.isPrefixOf "接尾辞:名詞性名詞助数辞"   ct  = constructNominalSuffix daihyo -- 例：ビット、ヘクトパスカル
   | T.isPrefixOf "接尾辞:名詞性名詞接尾辞"   ct  = constructNominalSuffix daihyo
+  | T.isPrefixOf "接尾辞:名詞性述語接尾辞"   ct  = constructNominalSuffix daihyo
   | T.isPrefixOf "接尾辞:名詞性特殊接尾辞"   ct  = constructNominalSuffix daihyo
   | T.isPrefixOf "接尾辞:名詞性述語接尾辞"   ct  = constructNominalSuffix daihyo
   --  T.isPrefixOf "特殊:句点" ct =
