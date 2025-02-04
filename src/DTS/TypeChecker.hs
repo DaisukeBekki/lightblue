@@ -171,6 +171,9 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
       diagramA <- typeCheck' $ UDTTdB.Judgment sig ctx termA DTTdB.Type
       let termA' = DTTdB.trm $ node diagramA
           psq = DTTdB.ProofSearchQuery sig ctx termA'
+      lift $ do
+             T.hPutStr S.stderr "Resoving anaphora/presupposition: "
+             T.hPutStrLn S.stderr $ toText $ DTTwN.fromDeBruijnProofSearchQuery psq
       diagramQ <- prover psq
       --lift $ T.putStrLn $ T.concat ["Proof search launched: ", toText psq]
       return diagramQ
