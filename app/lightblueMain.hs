@@ -164,14 +164,14 @@ optionParser =
       -- <> short 'n'
       <> help "Show N-best parse trees for each sentence"
       <> showDefault
-      <> value (-1)
+      <> value 1
       <> metavar "INT" )
     <*> option auto 
       ( long "ntypecheck"
       -- <> short 'n'
       <> help "Show N-best type check diagram for each logical form"
       <> showDefault
-      <> value (-1)
+      <> value 1
       <> metavar "INT" )
     <*> option auto 
       ( long "nproof"
@@ -184,7 +184,7 @@ optionParser =
       ( long "maxdepth"
       <> help "Set the maximum search depth in proof search"
       <> showDefault
-      <> value 9
+      <> value 5
       <> metavar "INT" )
     <*> option auto 
       ( long "maxtime"
