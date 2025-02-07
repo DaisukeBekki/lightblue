@@ -300,6 +300,10 @@ deduce' goal depth setting
             if arrowType == A.aType && WB.falsum setting
               then WB.resultDef{WB.trees = [UDT.Tree QT.Var (A.AJudgment sig var (A.Conclusion DdB.Bot) arrowType) []],WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}} -- if `B.falsum` is true, the type for `false` is `type`.
               else WB.resultDef{WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}}
+          M.Just (A.Conclusion DdB.Top) ->
+            if arrowType == A.aType && WB.falsum setting
+              then WB.resultDef{WB.trees = [UDT.Tree QT.Var (A.AJudgment sig var (A.Conclusion DdB.Top) arrowType) []],WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}} -- if `B.falsum` is true, the type for `true` is `type`.
+              else WB.resultDef{WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}}
           M.Just (A.Conclusion DdB.Type) ->
             if arrowType == A.Conclusion DdB.Kind
               then WB.resultDef{WB.trees = [UDT.Tree QT.Con (A.AJudgment sig var (A.Conclusion DdB.Type) arrowType) []],WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}}
