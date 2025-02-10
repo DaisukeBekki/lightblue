@@ -11,7 +11,6 @@ module DTS.Prover.Wani.BackwardRules
   membership,
   dne,
   efq,
-  topForm,
   topIntro
 ) where
 
@@ -388,23 +387,6 @@ piForm goal setting =
         term ->  -- if term is M.Nothing or M.Just `not Arrow type`, return WB.TermMisMatch
           ([],WB.exitMessage (WB.TermMisMatch term) QT.PiF)
 
--- | topForm
-topForm :: WB.Rule
-topForm goal setting = 
-  case WB.acceptableType QT.TopF goal True [(A.Conclusion DdB.Type)] of
-    (Nothing,message) -> -- point1 : typeMisMatch
-      ([],message)
-    (Just arrowType,_) -> 
-      case WB.termFromGoal goal of
-        M.Just (A.Conclusion DdB.Top) ->
-          let (sig,var) = WB.conFromGoal goal
-              subgoalset = 
-                let dside = A.AJudgment sig var (A.Conclusion DdB.Top) arrowType
-                    subgoals = []
-                in WB.SubGoalSet QT.TopF M.Nothing [] dside
-          in ([subgoalset],"")
-        term ->  -- if term is M.Nothing or M.Just `not Arrow type`, return WB.TermMisMatch
-          ([],WB.exitMessage (WB.TermMisMatch term) QT.TopF)
 
 -- | sigmaIntro
 -- 
