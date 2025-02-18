@@ -403,6 +403,11 @@ canBeSame lim (  ArrowApp a1 a2) (  ArrowApp a1' a2')=
    canBeSame lim a1 a1' && canBeSame lim a2 a2'
 canBeSame lim (  ArrowProj s a) (  ArrowProj s' a') =
   s == s' && canBeSame lim a a'
+canBeSame lim ( ArrowProj _ _) a = 
+  case a of 
+    ArrowEq _ _ _ -> False
+    _ -> True
+  -- anum <= lim
 canBeSame lim (  ArrowPair a1 a2) (  ArrowPair a1' a2')=
   canBeSame lim a1 a1' && canBeSame lim a2 a2'
 canBeSame lim (  ArrowLam a) (  ArrowLam a') = canBeSame lim a a'
