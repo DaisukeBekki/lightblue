@@ -298,7 +298,7 @@ piElim goal setting =
                         dSide =
                           let
                             arrowTerm = M.maybe (A.betaReduce $ foldl A.ArrowApp (A.termfromAJudgment functionJudgment) (reverse $ map A.aVar [(-argNum)..(-1)])) id maybeTerm
-                            arrowType' = foldl (\r (old,newNegate) -> A.arrowSubst r (A.aVar $ negate newNegate) (A.aVar old)) (A.shiftIndices result (negate $ length args) 0) (zip (reverse [0..(argNum-1)]) [1..])
+                            arrowType' = A.shiftIndices (foldl (\r (old,newNegate) -> A.arrowSubst r (A.aVar $ negate newNegate) (A.aVar old)) result (zip (reverse [0..(argNum-1)]) [1..argNum])) (negate argNum) argNum
                           in A.AJudgment sig var arrowTerm arrowType'
                         subgoals =
                           let
