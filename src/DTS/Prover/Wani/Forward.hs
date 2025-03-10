@@ -234,10 +234,11 @@ sigmaForward2 aType sig var =
           -> let
               aTree = aTreef (A.Conclusion $DdB.Var 0)
               (A.AJudgment sig var aTerm aType) = A.downSide' aTree
+              baseCon' = if length var > 0 then A.Conclusion $ DdB.Var 0 else (A.aCon $fst $ last sig)
               newJ = A.AJudgment
                       sig var
-                      (A.arrowSubst (A.shiftIndices aTerm 1 0) (A.Conclusion $ DdB.Var 0) baseCon)
-                      (A.arrowSubst (A.shiftIndices aType 1 0) (A.Conclusion $  DdB.Var 0) baseCon)
+                      (A.arrowSubst (A.shiftIndices aTerm 1 0) baseCon' baseCon)
+                      (A.arrowSubst (A.shiftIndices aType 1 0) baseCon' baseCon)
               in A.changeDownSide' aTree newJ)
         forwarded'
   in trees
