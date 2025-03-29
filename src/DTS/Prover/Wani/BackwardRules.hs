@@ -496,7 +496,6 @@ sigmaIntro goal setting =
                             substLst = map (\num ->  (WB.SubstSet [] (WB.generatedTempTerm origin (T.pack $ show (idInLstFromOld-1-num))) num)) parentLst'
                             targetMem = A.shiftIndices (foldl (\target (WB.SubstSet lst term num) -> A.arrowSubst target term (A.aVar num)) origin substLst) (-idInLstFromOld) 0
                             goal' = WB.Goal sig var (if isDeduce then M.Nothing else M.Just$ termsInProofTerm !! idInLstFromOld) [targetMem]
--- ここ
                             clues = --
                               M.mapMaybe 
                                 (\(argIdFromOld,parentLst) -> 
