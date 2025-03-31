@@ -111,9 +111,9 @@ deduce sig var arrowType depth setting
         in 
           if null (B.trees result) -- for debug
             then
-              (if B.debug setting then B.debugLog (sig,var) arrowType depth setting "deduce failed " else id) result
+              (if depth < B.debug setting then B.debugLog (sig,var) arrowType depth setting "deduce failed " else id) result
             else
-              (if B.debug setting then D.trace (L.replicate (2*depth) ' ' ++  show depth ++ " deduced:  " ++ show (map A.downSide' (B.trees result))) else id) result
+              (if depth < B.debug setting then D.trace (L.replicate (2*depth) ' ' ++  show depth ++ " deduced:  " ++ show (map A.downSide' (B.trees result))) else id) result
 
 -- | Execute typecheck
 typecheck' :: B.TypecheckRule
@@ -146,7 +146,7 @@ typecheck' sig var arrowTerm arrowType depth setting
           failedlst = if null (B.trees result) then ((sig,var),arrowTerm,arrowType):(B.failedlst resultStatus) else B.failedlst resultStatus
           status = resultStatus{B.failedlst =failedlst}
       in 
-        (if B.debug setting then D.trace (L.replicate (2*depth) ' ' ++  show depth ++ " termFound :  " ++ show (map A.downSide' $L.nub $ B.trees result)) else id) result{B.rStatus = status}{B.trees = L.nub $B.trees result}
+        (if depth < B.debug setting then D.trace (L.replicate (2*depth) ' ' ++  show depth ++ " termFound :  " ++ show (map A.downSide' $L.nub $ B.trees result)) else id) result{B.rStatus = status}{B.trees = L.nub $B.trees result}
 
 -- | This function refers to the results of forward inference using sigmaElim and eqElim and returns a list of proof trees with matching type parts.
 membership' :: B.DeduceRule
