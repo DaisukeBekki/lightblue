@@ -31,7 +31,7 @@ import qualified DTS.UDTTdeBruijn as UDTTdB
 import DTS.GeneralTypeQuery (GeneralTypeQuery(..))
 
 -- BOTF?
-data DTTrule = Var | Con | TypeF | Conv | WK | PiF | PiI | PiE | SigmaF | SigmaI | SigmaE | DisjF | DisjI | DisjE | EnumF | EnumI | EnumE | IqF | IqI | IqE | NatF | NatI | NatE deriving (Eq, Show, Read, G.Generic, Store, Enum, Bounded, Ord)
+data DTTrule = Var | Con | TypeF | Conv | WK | PiF | PiI | PiE | SigmaF | SigmaI | SigmaE | DisjF | DisjI | DisjE | BotF | TopF | TopI | EnumF | EnumI | EnumE | IqF | IqI | IqE | NatF | NatI | NatE deriving (Eq, Show, Read, G.Generic, Store, Enum, Bounded, Ord)
 
 instance SimpleText DTTrule where
   toText = T.pack . show
@@ -50,6 +50,9 @@ instance MathML DTTrule where
       DisjF -> "+F"
       DisjI -> "+I"
       DisjE -> "+E"
+      BotF  -> "⊥F"
+      TopF  -> "TF"
+      TopI  -> "TI"
       EnumF -> "{}F"
       EnumI -> "{}I"
       EnumE -> "{}E"

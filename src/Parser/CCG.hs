@@ -120,6 +120,11 @@ data Cat =
   | SL Cat Cat       -- ^ X/Y
   | BS Cat Cat       -- ^ X\\Y
   | T Bool Int Cat   -- ^ Category variables, where Int is an index, Cat is a restriction for its head. 
+  -- | T True i cat は、戸次(2010)でT[i]と書かれている範疇変数で、catは無視される。
+  -- | T[i]自体は様々な統語範疇にinstanciateされ得るが、iが同じT[i]同士は構造共有される
+  -- | （つまり、含まれる統語範疇の統語素性はuniftyされる）。
+  -- | T False i catは、戸次(2010)で統語素性の共有がある統語範疇を指す。
+  -- | たとえばS<1>/S<1>となっていたら左右のSは同じ統語素性を持つが、これをlightblueでは (T False 1 S) `SL` (T False 1 S)と書く。
 
 -- | checks if given two categories can be coordinated.
 instance Eq Cat where

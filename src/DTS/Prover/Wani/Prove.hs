@@ -78,5 +78,5 @@ prove' QT.ProofSearchSetting{..} (DdB.ProofSearchQuery sig ctx typ) =  -- LiftT 
         WB.debug = False,
         WB.sStatus = WB.statusDef
         };
-      result =  hojo ctx sig typ setting
+      result =  hojo ctx ((A.aEntityName,DdB.Type):sig) typ setting
   in ListT.fromFoldable $ map A.aTreeTojTree' $ WB.trees result

@@ -120,10 +120,10 @@ The global options are common to all commands.
 |```-p``` or ```--prover {Wani\|Null}```          |```Wani```|Choose a prover.<br>```Wani```: Use Wani prover (Daido and Bekki 2020)<br>```None```: Use the null prover (that always returns no diagrams).|
 |```-f``` or ```--file <filepath>```              |          |Read input texts from <filepath><br>(Specify '-' to use stdin) |
 |```-b``` or ```--beam <int>```                   |```32```  |Set the beam width to <int>                                     |
-|```--nparse <int>```                             |```-1```  |Search only N-best parse trees for each sentence (A negative value means all trees) |                      |
-|```--ntypecheck <int>```                         |```-1```  |Search only N-best diagrams for each type checking of a logical form (A negative value means all diagrams) |
+|```--nparse <int>```                             |```1```  |Search only N-best parse trees for each sentence (A negative value means all trees) |                      |
+|```--ntypecheck <int>```                         |```1```  |Search only N-best diagrams for each type checking of a logical form (A negative value means all diagrams) |
 |```--nproof <int>```                             |```-1```  |Search only N-best diagrams for each proof search (A negative value means all diagrams) |
-|```--maxdepth <int>```                           |```9```   |Set the maximum search depth in proof search (default: 9) |
+|```--maxdepth <int>```                           |```5```   |Set the maximum search depth in proof search (default: 9) |
 |```--maxtime <int>```                            |```10000``` |Set the maximum search time in proof search (default: 10000) |
 |```--noTypeCheck```                              |          |If specified, show no type checking diagram for each sentence.|
 |```--noInference```                              |          |If specified, execute no inference for each discourse.|

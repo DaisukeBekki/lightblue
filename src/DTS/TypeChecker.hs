@@ -124,9 +124,9 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
       let termM' = DTTdB.trm $ node diagramM
           termN' = DTTdB.trm $ node diagramN
       return' verbose $ Tree QT.DisjE (DTTdB.Judgment sig ctx (DTTdB.Unpack termP' termL' termM' termN') termPL) [diagramL,diagramP,diagramM,diagramN]
-    UDTTdB.Bot -> return' verbose $ Tree QT.EnumF (DTTdB.Judgment sig ctx DTTdB.Bot DTTdB.Type) []
-    UDTTdB.Top -> return' verbose $ Tree QT.EnumF (DTTdB.Judgment sig ctx DTTdB.Top DTTdB.Type) []
-    UDTTdB.Unit -> return' verbose $ Tree QT.EnumI (DTTdB.Judgment sig ctx DTTdB.Unit DTTdB.Top) []
+    UDTTdB.Bot -> return' verbose $ Tree QT.BotF (DTTdB.Judgment sig ctx DTTdB.Bot DTTdB.Type) []
+    UDTTdB.Top -> return' verbose $ Tree QT.TopF (DTTdB.Judgment sig ctx DTTdB.Top DTTdB.Type) []
+    UDTTdB.Unit -> return' verbose $ Tree QT.TopI (DTTdB.Judgment sig ctx DTTdB.Unit DTTdB.Top) []
     UDTTdB.Entity -> return' verbose $ Tree QT.EnumF (DTTdB.Judgment sig ctx DTTdB.Entity DTTdB.Type) []
     --ToDo: add DTTdB.Case
     UDTTdB.Eq termA termM termN -> do
@@ -171,6 +171,9 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
       diagramA <- typeCheck' $ UDTTdB.Judgment sig ctx termA DTTdB.Type
       let termA' = DTTdB.trm $ node diagramA
           psq = DTTdB.ProofSearchQuery sig ctx termA'
+      when verbose $ lift $ do
+                            T.hPutStr S.stderr "Resoving anaphora/presupposition: "
+                            T.hPutStrLn S.stderr $ toText $ DTTwN.fromDeBruijnProofSearchQuery psq
       diagramQ <- prover psq
       --lift $ T.putStrLn $ T.concat ["Proof search launched: ", toText psq]
       return diagramQ

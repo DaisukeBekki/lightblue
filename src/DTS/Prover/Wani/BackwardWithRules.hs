@@ -298,7 +298,11 @@ deduce' goal depth setting
         case justTerm of
           M.Just (A.Conclusion DdB.Bot) ->
             if arrowType == A.aType && WB.falsum setting
-              then WB.resultDef{WB.trees = [UDT.Tree QT.Var (A.AJudgment sig var (A.Conclusion DdB.Bot) arrowType) []],WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}} -- if `B.falsum` is true, the type for `false` is `type`.
+              then WB.resultDef{WB.trees = [UDT.Tree QT.BotF (A.AJudgment sig var (A.Conclusion DdB.Bot) arrowType) []],WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}} -- if `B.falsum` is true, the type for `false` is `type`.
+              else WB.resultDef{WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}}
+          M.Just (A.Conclusion DdB.Top) ->
+            if arrowType == A.aType
+              then WB.resultDef{WB.trees = [UDT.Tree QT.TopF (A.AJudgment sig var (A.Conclusion DdB.Top) arrowType) []],WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}}
               else WB.resultDef{WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}}
           M.Just (A.Conclusion DdB.Type) ->
             if arrowType == A.Conclusion DdB.Kind
@@ -315,7 +319,7 @@ deduce' goal depth setting
                       map
                         (\rule -> rule goal setting)
                         ( -- Because of `sortSubGoalSets`, there is no need to care about rule order. (Before `sortSubGoalSets`, The stronger the rule, the later to be set. For example, `dne` can be used for any term, thus turning the execution later. This setting takes effect in combination with the rounding up of proof search using `B.allProof`.)
-                          [BR.piForm,BR.sigmaForm,BR.eqForm,BR.membership,BR.piIntro,BR.sigmaIntro,BR.piElim] 
+                          [BR.piForm,BR.sigmaForm,BR.eqForm,BR.membership,BR.piIntro,BR.sigmaIntro,BR.piElim,BR.topIntro] 
                           ++ [BR.dne | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithDNE]
                           ++ [BR.efq | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithEFQ]
                         )

@@ -10,7 +10,8 @@ module DTS.Prover.Wani.BackwardRules
   eqForm,
   membership,
   dne,
-  efq
+  efq,
+  topIntro
 ) where
 
 import qualified DTS.DTTdeBruijn as DdB   -- DTT
@@ -105,6 +106,19 @@ piIntro goal setting =
               in [WB.SubGoalSet QT.PiI M.Nothing [subgoal1,subgoal2] dSide]
         in (subgoalsets,"")
       _ -> ([],WB.exitMessage (WB.TypeMisMatch arrowType) QT.PiI)
+
+-- | topIntro
+topIntro :: WB.Rule
+topIntro goal setting = 
+  case WB.acceptableType QT.TopI goal True [(A.Conclusion DdB.Top)] of
+  (Nothing,message) -> ([],message)
+  (Just _,_) -> 
+    case WB.termFromGoal goal of
+      M.Just (A.Conclusion DdB.Unit) -> 
+        let (sig,var) = WB.conFromGoal goal
+            subgoalsets = [WB.SubGoalSet QT.TopI M.Nothing [] (A.AJudgment sig var (A.Conclusion DdB.Unit) (A.Conclusion DdB.Top))]
+        in (subgoalsets,"")
+      term ->([],WB.exitMessage (WB.TermMisMatch term) QT.TopI)
 
 -- | piElim rule
 --
@@ -372,6 +386,7 @@ piForm goal setting =
           in ([subgoalset],"")
         term ->  -- if term is M.Nothing or M.Just `not Arrow type`, return WB.TermMisMatch
           ([],WB.exitMessage (WB.TermMisMatch term) QT.PiF)
+
 
 -- | sigmaIntro
 -- 

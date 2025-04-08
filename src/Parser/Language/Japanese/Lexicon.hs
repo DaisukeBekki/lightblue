@@ -149,6 +149,7 @@ jumanPos2Cat daihyo ct caseframe
   | T.isPrefixOf "接頭辞:ナ形容詞接頭辞"     ct   = [((defS [Nda] [NStem] `BS` NP [F[Ga]]) `SL` (defS [Nda] [NStem] `BS` NP [F[Ga]]), (id, []))]
   | T.isPrefixOf "接尾辞:名詞性名詞助数辞"   ct  = constructNominalSuffix daihyo -- 例：ビット、ヘクトパスカル
   | T.isPrefixOf "接尾辞:名詞性名詞接尾辞"   ct  = constructNominalSuffix daihyo
+  | T.isPrefixOf "接尾辞:名詞性述語接尾辞"   ct  = constructNominalSuffix daihyo
   | T.isPrefixOf "接尾辞:名詞性特殊接尾辞"   ct  = constructNominalSuffix daihyo
   | T.isPrefixOf "接尾辞:名詞性述語接尾辞"   ct  = constructNominalSuffix daihyo
   --  T.isPrefixOf "特殊:句点" ct =
@@ -185,11 +186,14 @@ constructNominalSuffix daihyo = [(N `BS` N, nominalModifier daihyo)]
 
 constructConjunction :: T.Text -> [(Cat, (UDTTpreterm, Signature))]
 constructConjunction daihyo = 
-  [
-  (((T False 1 (S [F anyPos, F[Term,NTerm,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]]))
-    `SL` (T False 1 (S [F anyPos, F[Term,NTerm,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]]))), 
-    ((Lam (Lam (Sigma (App (Var 1) terminator) ((App (App (Con daihyo) (Proj Snd $ Asp (Sigma Type (Var 0)))) (Var 0)))))), [(daihyo, DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]))
-    ]
+  -- [
+  -- (((T False 1 (S [F anyPos, F[Term,NTerm,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]]))
+  --   `SL` (T False 1 (S [F anyPos, F[Term,NTerm,Pre,Imper], SF 2 [P,M], SF 3 [P,M], SF 4 [P,M], F[M], F[M]]))), 
+  --   ((Lam (Lam (Sigma (App (Var 1) terminator) ((App (App (Con daihyo) (Proj Snd $ Asp (Sigma Type (Var 0)))) (Var 0)))))), [(daihyo, DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]))
+  --   ]
+  [(((T False 1 modifiableS `SL` T False 1 modifiableS) `BS` S [F anyPos, F[Term], F[P,M],F[P,M],F[P,M],F[M],F[M]]) ,
+     (conjunctionSR daihyo))
+     ]
 
 -- | S/S\S: λp.λq.λk.q（λe1.(p(λe2.c(e1,e2)))×k(e1))
 constructSubordinateConjunction :: T.Text -> [(Cat, (UDTTpreterm, Signature))]
