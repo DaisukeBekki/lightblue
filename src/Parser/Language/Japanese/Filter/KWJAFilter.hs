@@ -29,6 +29,9 @@ import qualified Text.Juman as J
 import qualified Parser.Language.Japanese.Filter.KNPFilter as KF
 import qualified Parser.Language.Japanese.Filter.LightblueFilter as LF (getDaihyo, getFeatures)
 
+import qualified Debug.Trace as D
+import qualified Text.Show.Unicode as U
+
 type ConjMap = M.Map (T.Text, T.Text) T.Text
 type OpenWordsMap = M.Map T.Text [(T.Text, S.Set T.Text)]
 
@@ -80,25 +83,31 @@ createFilterFrom ::
 createFilterFrom kwjaDatas conjMap _ _ ccgNodes =
     -- knpDataから、名詞、動詞、副詞、助詞の表層形を取得
     let openWords = getOpenWordsMap kwjaDatas conjMap
-    in createFilterFrom' openWords ccgNodes
+    in D.trace (U.ushow openWords) createFilterFrom' openWords ccgNodes
 
 -- [("名詞"歌"),("動詞","歌")] -> toFilterNode -> FilteredNode
 createFilterFrom' :: OpenWordsMap -> [CCG.Node] -> [CCG.Node]
 -- CCGnodeが空の場合は空
 createFilterFrom' _ [] = []
 createFilterFrom' openWordsMap (c : cs)
-    -- フィルターする対象がない場合
-    | M.null openWordsMap = cs
     -- LEX以外はそのまま
     | CCG.rs c /= CCG.LEX =
         c : createFilterFrom' openWordsMap cs
+    -- フィルターする対象がない場合
+    | M.null openWordsMap = c:cs 
     --　CompNは残す
     | CCG.source c == "(CompN)" =
         c : createFilterFrom' openWordsMap cs
     -- 名詞のフィルタリング
     | isNoun (CCG.cat c) =
         filterNodes ("名詞", "noun") openWordsMap c cs
-    -- 述語のフィルタリング
+    -- 用言がopenWordsMapに含まれていないときの処理
+    | not $ isPredicatesInOpenWordsMap openWordsMap  = 
+        -- catが動詞・形容詞・形容動詞なら削除
+        if isPredicates ["verb","adj","nom"] (CCG.cat c) then
+            D.trace ("\t out: " ++ (U.ushow $ CCG.sig c) ++ "\t" ++ (U.ushow $ CCG.cat c)) createFilterFrom' openWordsMap cs
+        -- 用言でないなら削除しない
+        else c : createFilterFrom' openWordsMap cs
     | isPredicate "verb" (CCG.cat c) =
         filterNodes ("動詞", "verb") openWordsMap c cs
     -- 形容詞のフィルタリング
@@ -111,6 +120,12 @@ createFilterFrom' openWordsMap (c : cs)
     | otherwise =
         c : createFilterFrom' openWordsMap cs
 
+-- | openWordsMapに用言(動詞、形容詞)が含まれているかどうかを判定する
+isPredicatesInOpenWordsMap :: OpenWordsMap -> Bool
+isPredicatesInOpenWordsMap owmap =
+    let pos = M.keys owmap
+    in any (\p -> p == "動詞" || p == "形容詞") pos
+
 -- ("動詞", "verb") -> openwords ->  node -> nodes
 filterNodes :: (T.Text, T.Text) -> OpenWordsMap -> CCG.Node -> [CCG.Node] -> [CCG.Node]
 filterNodes (key, _) owmap node nodes = case M.lookup key owmap of
@@ -119,7 +134,7 @@ filterNodes (key, _) owmap node nodes = case M.lookup key owmap of
         -- xsの中にCCGNodeの表層形と格フレームが一致するものがあれば、nodeは残す
         | (CCG.pf node, S.fromList $ getCCGArg $ CCG.cat node) `elem` map toPair xs ->
             node : createFilterFrom' owmap nodes
-        -- 表層形のみ一致し、格フレームが異なる場合
+        -- 表層形のみ一致し、格フレームが異なる場合は、残して、追加する
         | CCG.pf node `elem` map (TL.fromStrict . fst) xs ->
             let newCaseFrame = getCaseframe (TL.toStrict $ CCG.pf node) xs
                 (f1', f2') = LF.getFeatures (CCG.cat node)
@@ -128,8 +143,8 @@ filterNodes (key, _) owmap node nodes = case M.lookup key owmap of
                                    in LB.verblex [(CCG.pf node)] "(KWJA)" f1' f2' (LF.getDaihyo text) (TL.fromStrict newCaseFrame) LB.event
                     Nothing -> let text = CCG.pf node
                                in LB.verblex [(CCG.pf node)] "(KWJA)" f1' f2' (LF.getDaihyo text) (TL.fromStrict newCaseFrame) LB.event
-            in newNode ++ createFilterFrom' owmap nodes
-        -- 表層形も格フレームも一致しない場合
+            in newNode ++ node:createFilterFrom' owmap nodes
+        -- 表層形も格フレームも一致しない場合は削除する
         | otherwise -> createFilterFrom' owmap nodes
     -- キーが存在しない場合
     Nothing -> node : createFilterFrom' owmap nodes
@@ -182,6 +197,10 @@ isPredicate' fvs cat = case cat of
                 then False
                 else isPredicate'' s
         _ -> False
+
+-- | 指定した品詞リストのいずれかに一致するかどうかを判定
+isPredicates :: [T.Text] -> CCG.Cat -> Bool
+isPredicates posList cat = any (\pos -> isPredicate pos cat) posList
 
 -- CCG.Catの素性を見てfeatureValueに入っているかを判定
 isNaAdj :: [CCG.FeatureValue] -> CCG.Cat -> Bool
