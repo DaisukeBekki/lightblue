@@ -57,6 +57,7 @@ library:
   - Parser.CCG
   - Parser.PartialParsing
   - Parser.Language
+  - Parser.LangOptions
   - Parser.Language.Japanese.Lexicon
   - Parser.Language.Japanese.MyLexicon
   - Parser.Language.Japanese.Templates

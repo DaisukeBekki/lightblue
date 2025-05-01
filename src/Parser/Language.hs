@@ -8,10 +8,7 @@ Stability   : beta
 Language settings
 -}
 module Parser.Language (
-  --Language(..)
   LangOptions(..)
-  , defaultJpOptions
-  , defaultEnOptions
   ) where
 
 import GHC.Int                          --base
@@ -48,27 +45,3 @@ data LangOptions = JpOptions {
   , longestWordLength :: Int64
   , nodeFilterBuilder :: T.Text -> IO JFilter.Filter -- ^ filter for CCG nodes
   } 
-
-defaultJpOptions :: LangOptions
-defaultJpOptions = JpOptions {
-  --name = Japanese
-  existDelimiter = False
-  , symbolsToIgnore = "！？!?…◎○●▲△▼▽■□◆◇★☆※†‡"
-  , punctuations = "、，,-――／＼"
-  , periods = "。．."
-  , longestWordLength = 23
-  , baseLexicon = []
-  , jumanDic = []
-  , morphaName = JU.JUMANPP
-  , nodeFilterBuilder = \_ -> return (\_ _ -> id)
-  } 
-
-defaultEnOptions :: LangOptions
-defaultEnOptions = EnOptions {
-  --name = English
-  existDelimiter = True
-  , punctuations = ","
-  , periods = "."
-  , longestWordLength = 23
-  , nodeFilterBuilder = \_ -> return (\_ _ -> id)
-  }
