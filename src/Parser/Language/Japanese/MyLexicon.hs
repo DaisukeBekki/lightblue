@@ -570,6 +570,7 @@ myLexicon = concat $ [
   --mylex ["どころ"]
   -- 6.1.3 補助動詞（連用形接続）
   mylex ["始め","はじめ"] "(412)" (defS [V1] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` defS verb [Cont]) (eventModifier "始める"),
+  mylex ["終わ","おわ"] "(412)" (defS [V5r] [Stem,Neg,Cont,ModM,NegL,EuphT] `BS` defS verb [Cont]) (eventModifier "終わる"),
   mylex ["込","こ"] "(412)" (defS [V5m] [Stem] `BS` defS verb [Cont])                         (eventModifier "込む"),
   mylex ["出","だ"] "(412)" (defS [V5s] [Stem] `BS` defS verb [Cont])                         (eventModifier "出す"),
   mylex ["合","あ"] "(412)" (defS [V5w] [Stem] `BS` defS verb [Cont])                         (eventModifier "合う"),

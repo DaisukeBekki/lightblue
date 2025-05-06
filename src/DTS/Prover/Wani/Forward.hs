@@ -234,10 +234,11 @@ sigmaForward2 aType sig var =
           -> let
               aTree = aTreef (A.Conclusion $DdB.Var 0)
               (A.AJudgment sig var aTerm aType) = A.downSide' aTree
+              baseCon' = if length var > 0 then A.Conclusion $ DdB.Var 0 else (A.aCon $fst $ last sig)
               newJ = A.AJudgment
                       sig var
-                      (A.arrowSubst (A.shiftIndices aTerm 1 0) (A.Conclusion $ DdB.Var 0) baseCon)
-                      (A.arrowSubst (A.shiftIndices aType 1 0) (A.Conclusion $  DdB.Var 0) baseCon)
+                      (A.arrowSubst (A.shiftIndices aTerm 1 0) baseCon' baseCon)
+                      (A.arrowSubst (A.shiftIndices aType 1 0) baseCon' baseCon)
               in A.changeDownSide' aTree newJ)
         forwarded'
   in trees
@@ -247,34 +248,38 @@ sigmaForward2' originType baseTerm aType sig var = case A.arrowNotat aType of
   A.ArrowSigma' [h] t ->
     let fstbase =  A.ArrowProj A.ArrowFst baseTerm
         sndbase =  A.ArrowProj A.ArrowSnd baseTerm
-        t' = A.shiftIndices (A.arrowSubst t  fstbase (A.Conclusion $ DdB.Var 0)) (-1) 0
+        t0 = A.shiftIndices (A.arrowSubst t baseTerm (A.Conclusion $ DdB.Var 0)) (-1) 0
+        t' = A.arrowSubst t0 fstbase baseTerm
         hForward = sigmaForward2' originType fstbase h sig var
         tForward = sigmaForward2' originType sndbase t' sig var
         hTree term' = UDT.Tree QT.SigmaE (A.AJudgment sig var fstbase h) [UDT.Tree QT.Var (A.AJudgment sig var term' originType ) []]
         tTree term'=  UDT.Tree QT.SigmaE (A.AJudgment sig var sndbase t') [UDT.Tree QT.Var (A.AJudgment sig var term' originType ) []]
-    in (if null tForward then [tTree] else tForward) ++ (if null hForward  then [hTree] else hForward)
+    in ({--if null tForward then [tTree] else--} (tTree:tForward)) ++ ({--if null hForward  then [hTree] else--} (hTree:hForward))
   A.ArrowSigma' hs tLast ->
     let fstbase =  A.ArrowProj A.ArrowFst baseTerm
         sndbase =  A.ArrowProj A.ArrowSnd baseTerm
         h:hrest = reverse hs
         t = A.ArrowSigma' (reverse hrest) tLast
-        t' =  A.shiftIndices (A.arrowSubst t  fstbase (A.Conclusion $ DdB.Var 0)) (-1) 0
+        t0 = A.shiftIndices (A.arrowSubst t baseTerm (A.Conclusion $ DdB.Var 0)) (-1) 0
+        t' = A.arrowSubst t0 fstbase baseTerm
         hForward = sigmaForward2' originType fstbase h sig var
         tForward = sigmaForward2' originType sndbase t' sig var
         hTree term' = UDT.Tree QT.SigmaE (A.AJudgment sig var fstbase h) [UDT.Tree QT.Var (A.AJudgment sig var term' originType ) []]
-    in tForward ++ (if null hForward  then [hTree] else hForward)
+    in tForward ++ ({--if null hForward  then [hTree] else--} (hTree:hForward))
   A.Arrow env (A.ArrowSigma' [h] t) ->
     let lenEnv = length env
         term1 = A.ArrowProj A.ArrowFst $ A.addApp lenEnv baseTerm
         term2 = A.addLam' lenEnv $ A.ArrowProj A.ArrowSnd $ A.addApp lenEnv baseTerm
-        t' = A.shiftIndices (A.arrowSubst t (A.shiftIndices term1 lenEnv 0) (A.Conclusion $ DdB.Var 0)) (-1) 0
+        baseTerm' = A.genFreeCon aType "base2"
+        t0 = A.shiftIndices (A.arrowSubst t baseTerm' (A.Conclusion $ DdB.Var 0)) (-1) 0
+        t' = A.arrowSubst t0 term1 baseTerm'
         type1 = case h of (A.Arrow henv hcon) -> A.Arrow (henv ++ env) hcon ; _ -> A.Arrow env h
         type2 = case t' of (A.Arrow tenv tcon) -> A.Arrow (tenv ++ env) tcon; _ ->A.Arrow env t'
         hForward = sigmaForward2' originType (A.addLam' lenEnv $  term1) type1 sig var
         tForward = sigmaForward2' originType term2 type2 sig var
         tTree term'= UDT.Tree QT.SigmaE (A.AJudgment sig var term2 type2) [UDT.Tree QT.Var (A.AJudgment sig var term' $ A.Arrow env originType) []]
         hTree term'= UDT.Tree QT.SigmaE (A.AJudgment sig var (A.addLam' lenEnv $  term1) type1) [UDT.Tree QT.Var (A.AJudgment sig var term' $ A.Arrow env originType) []]
-        result = (if null tForward  then [tTree] else tForward) ++ (if null hForward  then [hTree] else hForward)
+        result = ({--if null tForward  then [tTree] else--} (tTree:tForward)) ++ ({--if null hForward  then [hTree] else--} (hTree:hForward))
     in
       result
   A.Arrow env (A.ArrowSigma' hs tLast) -> 
@@ -283,13 +288,14 @@ sigmaForward2' originType baseTerm aType sig var = case A.arrowNotat aType of
         term2 = A.addLam' lenEnv $ A.ArrowProj A.ArrowSnd $ A.addApp lenEnv baseTerm
         h:hrest = reverse hs
         t = A.ArrowSigma' (reverse hrest) tLast
-        t' = A.shiftIndices (A.arrowSubst t (A.shiftIndices term1 lenEnv 0) (A.Conclusion $ DdB.Var 0)) (-1) 0
+        t0 = A.shiftIndices (A.arrowSubst t baseTerm (A.Conclusion $ DdB.Var 0)) (-1) 0
+        t' = A.arrowSubst t0 (A.shiftIndices term1 lenEnv 0) baseTerm
         type1 = case h of (A.Arrow henv hcon) -> A.Arrow (henv ++ env) hcon ; _ -> A.Arrow env h
         type2 = A.Arrow env t'
         hForward = sigmaForward2' originType (A.addLam' lenEnv $  term1) type1 sig var
         tForward = sigmaForward2' originType term2 type2 sig var
         hTree term'= UDT.Tree QT.SigmaE (A.AJudgment sig var (A.addLam' lenEnv $  term1) type1) [UDT.Tree QT.Var (A.AJudgment sig var term' $ A.Arrow env originType ) []]
-        result = tForward ++ (if null hForward  then [hTree] else hForward)
+        result = tForward ++ ({--if null hForward  then [hTree] else--} (hTree:hForward))
     in
       result
   _ ->  []
