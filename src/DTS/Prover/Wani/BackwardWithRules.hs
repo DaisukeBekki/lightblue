@@ -125,10 +125,10 @@ constructResultWithResultsets rule maybeTree resultsets dSide setting resultDef 
         let resultBase = foldl WB.mergeResult resultDef resultset
             downside = 
               let gijiGoal = (WB.Goal sig var (M.Just aTerm) [aType])
-                  WB.Goal _ _ (M.Just aTerm') [aType'] = {-- D.trace ("gijigoal : "++(show gijiGoal)++ " resultset "++(show resultset) ++ " bound "++(show $A.varsInaTerm aType)) $--}  maybe gijiGoal id $
+                  WB.Goal _ _ (M.Just aTerm') [aType'] = D.trace ("            gijigoal : "++(show gijiGoal)++ " resultset "++(show resultset) ++ " bound "++(show $A.varsInaTerm aType)) $  maybe gijiGoal id $
                         snd $
                             foldl
-                            (\(targetId,maybeGoal') result ->
+                            (\(targetId,maybeGoal') result -> D.trace ("             maybeGoal'"++(show maybeGoal')) $
                                 maybe
                                 (targetId-1,M.Nothing)
                                 (\goal' -> (targetId-1,updateGoalWithAntecedent targetId result setting (targetId,goal')))
@@ -137,17 +137,17 @@ constructResultWithResultsets rule maybeTree resultsets dSide setting resultDef 
                             (-1,M.Just gijiGoal)
                             (resultset)
               in A.AJudgment sig var aTerm' aType'
-            trees = map (head . WB.trees) resultset
+            trees = D.trace ("            downside "++(show downside)) $ map (head . WB.trees) resultset
             tree = UDT.Tree rule downside (maybe trees (\tree -> tree:trees) maybeTree)
         in resultBase{WB.trees = [tree]}
     resultsets' = map (constructResultWithResultset dSide) resultsets
-  in foldl WB.mergeResult resultDef resultsets'
+  in D.trace ("            resultsets' "++ (show resultsets')) $foldl WB.mergeResult resultDef resultsets'
 
 updateGoalWithAntecedent :: Int -> WB.Result -> WB.Setting -> (Int,WB.Goal) -> M.Maybe WB.Goal
 updateGoalWithAntecedent myId result setting (targetId,(WB.Goal sig var maybeTerm arrowTypes))
-  | targetId > (-1) = M.Nothing
-  | ((length (WB.trees result)) > 1) = M.Nothing
-  | otherwise = 
+  | targetId > (-1) = D.trace ("-1 in updateGoalWithAntecedent") M.Nothing
+  | ((length (WB.trees result)) > 1) = D.trace ("length in updateGoalWithAntecedent") M.Nothing
+  | otherwise = D.trace ("            updateGoal : " ++ (show (result, (WB.Goal sig var maybeTerm arrowTypes)))) $
       let before = A.aVar targetId  -- num2SubHojoCon targetId setting
           resultDownSide = A.downSide' (head (WB.trees result))
           envDiff =  A.contextLen (sig,var) - A.contextLen (A.envfromAJudgment resultDownSide)
@@ -248,15 +248,15 @@ deduceWithSubGoalsets subgoalsets depth setting resultDef justTerm arrowType =
     let result' = 
             foldl
                 (\rs subgoalset -> 
-                if (WB.allProof (WB.sStatus setting)) || (null $ WB.trees rs)
+                if D.trace ("               l251"++(show rs)) $ (WB.allProof (WB.sStatus setting)) || (null $ WB.trees rs)
                     then 
                     let result = deduceWithSubGoalset subgoalset depth setting{WB.sStatus = WB.mergeStatus (WB.rStatus rs) WB.statusDef{WB.allProof = True}} resultDef
-                    in WB.mergeResult rs result
+                    in D.trace ("            l254 result :"++(show result)) $ WB.mergeResult rs result
                     else rs
                 )
                 resultDef
                 subgoalsets
-        trees =
+        trees = D.trace ("              l259 result :"++ (show result'))
             filter 
             (\tree -> 
                 let A.AJudgment sig' var' term' type' = A.downSide' tree 
@@ -319,7 +319,7 @@ deduce' goal depth setting
                       map
                         (\rule -> rule goal setting)
                         ( -- Because of `sortSubGoalSets`, there is no need to care about rule order. (Before `sortSubGoalSets`, The stronger the rule, the later to be set. For example, `dne` can be used for any term, thus turning the execution later. This setting takes effect in combination with the rounding up of proof search using `B.allProof`.)
-                          [BR.piForm,BR.sigmaForm,BR.eqForm,BR.membership,BR.piIntro,BR.sigmaIntro,BR.piElim,BR.topIntro] 
+                          [BR.piForm,BR.sigmaForm,BR.eqForm,BR.membership,BR.piIntro,BR.sigmaIntro,BR.piElim,BR.topIntro,BR.disjIntro,BR.disjElim,BR.disjForm] 
                           ++ [BR.dne | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithDNE]
                           ++ [BR.efq | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithEFQ]
                         )

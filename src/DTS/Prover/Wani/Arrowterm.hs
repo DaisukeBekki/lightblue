@@ -232,7 +232,7 @@ varsInaTerm' base aTerm =
     ArrowEq ar ar' ar2 -> concatMap (varsInaTerm' base) [ar,ar',ar2]  
     ArrowDisj a b -> concatMap (varsInaTerm' base) [a,b]
     ArrowIota h t -> varsInaTerm' base t
-    ArrowUnpack a b c d -> concatMap (varsInaTerm' base) [a,b,c,d]
+    ArrowUnpack a b c d -> concatMap (varsInaTerm' base) [a,b,c,d]  -- ^ Unpack P L M N
 
 
 -- | 入力された(DdB.Preterm)をArrowTermに変換する
@@ -288,7 +288,11 @@ betaReduce aterm = case aterm of
     ArrowEq ar ar' ar2 ->  ArrowEq (betaReduce ar) (betaReduce ar') (betaReduce ar2)
     ArrowDisj a b -> ArrowDisj (betaReduce a) (betaReduce b)
     ArrowIota h t -> ArrowIota h (betaReduce t)
-    ArrowUnpack a b c d -> ArrowUnpack (betaReduce a) (betaReduce b) (betaReduce c) (betaReduce d)
+    ArrowUnpack p m n1 n2 -> 
+      case m of
+        ArrowIota ArrowFst m' -> betaReduce $ ArrowApp n1 m'
+        ArrowIota ArrowSnd m' -> betaReduce $ ArrowApp n2 m'
+        _ -> ArrowUnpack (betaReduce p) (betaReduce m) (betaReduce n1) (betaReduce n2)
 
 --  In `fromDT2A`, I use `DdB.toDTT` and `DdB.toUDTT` and the term convert into `(DdB.Preterm)` -> `(DdB.Preterm DdB.UDTT)` -> `(DdB.Preterm)`.
 --  This implementation let me using existed function, `DdB.betaReduce`.
