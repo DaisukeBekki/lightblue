@@ -29,6 +29,9 @@ import qualified Text.Juman as J
 import qualified Parser.Language.Japanese.Filter.KNPFilter as KF
 import qualified Parser.Language.Japanese.Filter.LightblueFilter as LF (getDaihyo, getFeatures)
 
+import qualified Debug.Trace as D
+import Text.Show.Unicode (ushow)
+
 type ConjMap = M.Map (T.Text, T.Text) T.Text
 type OpenWordsMap = M.Map T.Text [(T.Text, S.Set T.Text)]
 
@@ -80,7 +83,7 @@ createFilterFrom ::
 createFilterFrom kwjaDatas conjMap _ _ ccgNodes =
     -- knpDataから、名詞、動詞、副詞、助詞の表層形を取得
     let openWords = getOpenWordsMap kwjaDatas conjMap
-    in createFilterFrom' openWords ccgNodes
+    in D.trace (ushow openWords) createFilterFrom' openWords ccgNodes
 
 -- [("名詞"歌"),("動詞","歌")] -> toFilterNode -> FilteredNode
 createFilterFrom' :: OpenWordsMap -> [CCG.Node] -> [CCG.Node]
@@ -129,6 +132,8 @@ filterNodes (key, _) owmap node nodes = case M.lookup key owmap of
                     Nothing -> let text = CCG.pf node
                                in LB.verblex [(CCG.pf node)] "(KWJA)" f1' f2' (LF.getDaihyo text) (TL.fromStrict newCaseFrame) LB.event
             in newNode ++ createFilterFrom' owmap nodes
+        -- 表層形が部分一致する場合は残す
+        | isPartialMatch (CCG.pf node) xs -> node : createFilterFrom' owmap nodes        
         -- 表層形も格フレームも一致しない場合
         | otherwise -> createFilterFrom' owmap nodes
     -- キーが存在しない場合
@@ -142,6 +147,11 @@ filterNodes (key, _) owmap node nodes = case M.lookup key owmap of
             if pf == word
                 then T.concat $ S.toList caseframe
                 else getCaseframe pf xs
+    -- | 文字列がリスト内のいずれかの単語と部分一致するかを判定
+    isPartialMatch :: TL.Text -> [(T.Text, S.Set T.Text)] -> Bool
+    isPartialMatch nodePf openWordList = 
+        any (\(word, _) -> TL.isInfixOf (TL.fromStrict word) nodePf || 
+                        TL.isInfixOf nodePf (TL.fromStrict word)) openWordList
 
 --CCGが名詞どうかの判定
 isNoun :: CCG.Cat -> Bool
