@@ -27,6 +27,7 @@ import qualified Data.Map as M           -- base
 import Parser.CCG as CCG                                        --lightblue
 import Parser.Language (LangOptions(..),defaultJpOptions)       --lightblue
 import qualified Parser.Language.Japanese.MyLexicon as LEX      --lightblue
+import qualified Parser.Language.Japanese.JsemLexicon as JLEX   --lughtblue
 import Parser.Language.Japanese.Templates                       --lightblue
 import qualified Parser.Language.Japanese.Juman.CallJuman as JU --lightblue
 import qualified Parser.Language.Japanese.Filter as JFilter     --lightblue
@@ -57,8 +58,8 @@ setupLexicon langOptions sentence = do
       propernames = map (\(hyoki, (daihyo,score')) -> lexicalitem hyoki "(PN)" score' ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]]))) (properNameSR daihyo)) $ M.toList pn
   --  4. Setting up compound nouns (returned from an execution of JUMAN)
   jumanCN <- JU.findCompoundNouns (morphaName langOptions) sentence'
-  --  5. 1+2+3+4
-  let numeration = jumandicParsed ++ mylexiconFiltered ++ commonnouns ++ propernames ++ jumanCN
+  --  5. 1+2+3+4+lexicon for JSeM verbs
+  let numeration = jumandicParsed ++ mylexiconFiltered ++ commonnouns ++ propernames ++ jumanCN ++ JLEX.verbLexicon
       tokens = reverse $ T.foldl' (\tkns c -> (T.singleton c):tkns) [] sentence'
   return (tokens, numeration `seq` numeration)
 
