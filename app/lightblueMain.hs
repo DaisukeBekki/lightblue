@@ -311,7 +311,16 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
         StrictT.putStrLn $ J.hypothesis j
         S.putStr "\n"
         let sentences = postpend (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
-            parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity), ("ma1",DTT.Pi (DTT.Entity) (DTT.Pi (DTT.Entity) (DTT.Pi (DTT.Entity) (DTT.Pi (DTT.App (DTT.App (DTT.App (DTT.Con "破く/やぶく/ガヲ") (DTT.Var 0)) (DTT.Var 1)) (DTT.Var 2)) (DTT.Sigma (DTT.Entity) (DTT.App (DTT.App (DTT.Con "破れる/やぶれる/ガ") (DTT.Var 2)) (DTT.Var 0)))))))] [] sentences
+            -- 公理を追加していない
+            parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] sentences
+            -- 727の公理（本来の公理）
+            -- parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity), ("ma1",DTT.Pi (DTT.Entity) (DTT.Pi (DTT.Entity) (DTT.Pi (DTT.Entity) (DTT.Pi (DTT.App (DTT.App (DTT.App (DTT.Con "破く/やぶく/ガヲ") (DTT.Var 0)) (DTT.Var 1)) (DTT.Var 2)) (DTT.Sigma (DTT.Entity) (DTT.App (DTT.App (DTT.Con "破れる/やぶれる/ガ") (DTT.Var 2)) (DTT.Var 0)))))))] [] sentences
+            -- 727の公理（破れるのeventを変更している）
+            -- parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity), ("ma1",DTT.Pi (DTT.Entity) (DTT.Pi (DTT.Entity) (DTT.Pi (DTT.Entity) (DTT.Pi (DTT.App (DTT.App (DTT.App (DTT.Con "破く/やぶく/ガヲ") (DTT.Var 0)) (DTT.Var 1)) (DTT.Var 2)) (DTT.App (DTT.App (DTT.Con "破れる/やぶれる/ガ") (DTT.Var 1)) (DTT.Var 3))))))] [] sentences
+            -- 728の公理（本来の公理）
+            -- parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity), ("ma2",DTT.Pi (DTT.Entity) (DTT.Pi (DTT.Entity) (DTT.Pi (DTT.Entity) (DTT.Pi (DTT.App (DTT.App (DTT.App (DTT.Con "閉める/しめる/ガヲ") (DTT.Var 0)) (DTT.Var 1)) (DTT.Var 2)) (DTT.Sigma (DTT.Entity) (DTT.App (DTT.App (DTT.Con "閉まる/しまる/ガ") (DTT.Var 2)) (DTT.Var 0)))))))] [] sentences
+            -- 728の公理（破れるのeventを変更している）
+            -- parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity), ("ma2",DTT.Pi (DTT.Entity) (DTT.Pi (DTT.Entity) (DTT.Pi (DTT.Entity) (DTT.Pi (DTT.App (DTT.App (DTT.App (DTT.Con "閉める/しめる/ガヲ") (DTT.Var 0)) (DTT.Var 1)) (DTT.Var 2)) (DTT.App (DTT.App (DTT.Con "閉まる/しまる/ガ") (DTT.Var 1)) (DTT.Var 3))))))] [] sentences       
         NLI.printParseResult handle style 1 noTypeCheck False title parseResult
         inferenceLabels <- toList $ NLI.trawlParseResult parseResult
         let groundTruth = J.jsemLabel2YesNo $ J.answer j
