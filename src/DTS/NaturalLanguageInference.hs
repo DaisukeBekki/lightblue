@@ -212,12 +212,3 @@ trawlParseResult (InferenceResults (QueryAndDiagrams _ resultPos) (QueryAndDiagr
                | otherwise -> JSeM.Unk
 trawlParseResult NoSentence = fromFoldable []
 
-{-- Parallel processing --}
-
-parallelM :: ListT IO a -> (a -> b) -> ListT IO b
-parallelM lst f = case uncons lst of
-  Nothing -> fromFoldable []
-  Just (x, xs) -> fx `par` fxs `pseq` (cons fx fxs)
-                  where fx = f x
-                        fxs = parallelM xs f
-
