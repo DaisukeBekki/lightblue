@@ -944,4 +944,6 @@ myLexicon = concat $ [
   -- ABCbank
   mylex ["ところ"] "(ABC)" (defS [Nda,Nni,Nemp] [NStem] `BS` S [F anyPos,F[Attr],F[P,M],F[M],F[P,M],F[M],F[M]]) (modalSR "＃トコロ"),
   mylex ["イエス"] "PN" (NP [F[Nc]]) (properNameSR "イエス")
+  -- Sakuma
+  verblex ["思","おも"] "Sakuma" [V5w] [Stem] "思う/おもう" "ガヲ" entity, -- 二次アスペクトは規則で生成？
   ]
