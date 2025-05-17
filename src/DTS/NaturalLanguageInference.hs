@@ -34,7 +34,7 @@ import qualified Data.Char as C           --base
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.List as L           --base
-import ListT (ListT(..),fromFoldable,toList,take,null,uncons,cons) --list-t
+import ListT (ListT(..),fromFoldable,toList,toReverseList,take,null,uncons,cons) --list-t
 import qualified Parser.ChartParser as CP      --lightblue
 import qualified Parser.PartialParsing as Partial --lightblue
 import qualified Parser.CCG as CCG             --lightblue
@@ -215,9 +215,9 @@ trawlParseResult NoSentence = fromFoldable []
 {-- Parallel processing --}
 
 parallelM :: ListT IO a -> (a -> b) -> ListT IO b
-parallelM lst f = case uncons lst of
-  Nothing -> fromFoldable []
-  Just (x, xs) -> fx `par` fxs `pseq` (cons fx fxs)
+parallelM lst f = case toReverseList lst of
+  []     -> fromFoldable []
+  (x:xs) -> fx `par` fxs `pseq` (fx:fxs)
                   where fx = f x
-                        fxs = parallelM xs f
+                        fxs = toReverseList $ parallelM xs f
 
