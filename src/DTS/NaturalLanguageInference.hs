@@ -117,21 +117,23 @@ parseWithTypeCheck ps prover signtr (typ:contxt) [] = -- ^ Context is given and 
              resultNeg = takeNbest (CP.nProof ps) $ prover psqNeg
          in InferenceResults (QueryAndDiagrams psqPos resultPos) (QueryAndDiagrams psqNeg resultNeg)
 parseWithTypeCheck ps prover signtr contxt (text:texts) = 
-  SentenceAndParseTrees text $ do
+  SentenceAndParseTrees text $ 
     --lift $ S.putStrLn $ "nParse = " ++ (show $ CP.nParse ps)
     -- | IO [CCG.node] =lift=>           ListT IO [CCG.node] 
     -- |               =fmap(foldable)=> ListT IO (ListT IO CCG.Node)
     -- |               =join=>           ListT IO CCG.Node
     -- |               =take n=>         ListT IO CCG.Node
-    node <- takeNbest (CP.nParse ps) $ join $ fmap fromFoldable $ lift $ Partial.simpleParse ps text 
-    let signtr' = L.nub $ (CCG.sig node) ++ signtr
-        tcQueryType = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
-        tcQueryKind = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Kind
-    return $ ParseTreeAndFelicityChecks node signtr' tcQueryType $ do
-               tcDiagram <- takeNbest (CP.nTypeCheck ps) $ (TY.typeCheck prover (CP.verbose ps) tcQueryType)
-                                                           <|> (TY.typeCheck prover (CP.verbose ps) tcQueryKind)
-               let contxt' = (DTT.trm $ Tree.node tcDiagram):contxt
-               return (tcDiagram, parseWithTypeCheck ps prover signtr' contxt' texts)
+    let nodes = takeNbest (CP.nParse ps) $ join $ fmap fromFoldable $ lift $ Partial.simpleParse ps text 
+    in parallelM nodes $ \node -> 
+         let signtr' = L.nub $ (CCG.sig node) ++ signtr
+             tcQueryType = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
+             tcQueryKind = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Kind
+         in ParseTreeAndFelicityChecks node signtr' tcQueryType $ 
+              let tcDiagrams = takeNbest (CP.nTypeCheck ps) $ (TY.typeCheck prover (CP.verbose ps) tcQueryType)
+                                                              <|> (TY.typeCheck prover (CP.verbose ps) tcQueryKind)
+              in parallelM tcDiagrams $ \tcDiagram -> 
+                   let contxt' = (DTT.trm $ Tree.node tcDiagram):contxt
+                   in (tcDiagram, parseWithTypeCheck ps prover signtr' contxt' texts)
 
 -- | Take n element from the top of the list.
 -- | If n < 0, it returns all the elements.
