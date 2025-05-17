@@ -47,6 +47,7 @@ dependencies:
   - witherable >= 0.4
   - parserModules
   - unicode-show >= 0.1
+  - parallel >= 3.2.2
 
 library:
   source-dirs: src
