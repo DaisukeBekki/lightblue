@@ -215,9 +215,11 @@ trawlParseResult NoSentence = fromFoldable []
 {-- Parallel processing --}
 
 parallelM :: ListT IO a -> (a -> b) -> ListT IO b
-parallelM lst f = case toReverseList lst of
-  []     -> fromFoldable []
-  (x:xs) -> fx `par` fxs `pseq` (fx:fxs)
-                  where fx = f x
-                        fxs = toReverseList $ parallelM xs f
+parallelM lst f = join $ lift $ do
+  unc <- uncons lst -- Maybe (a, ListT IO a)
+  case unc of
+    Nothing -> return $ fromFoldable []
+    Just (x,mxs) -> return $ fx `par` mfxs `pseq` (cons fx mfxs)
+                    where fx   = f x
+                          mfxs = parallelM mxs f
 
