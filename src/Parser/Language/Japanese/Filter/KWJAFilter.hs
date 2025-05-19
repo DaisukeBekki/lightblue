@@ -135,7 +135,9 @@ filterNodes (key, _) owmap node nodes = case M.lookup key owmap of
         -- 表層形が部分一致する場合は残す
         | isPartialMatch (CCG.pf node) xs -> node : createFilterFrom' owmap nodes        
         -- 表層形も格フレームも一致しない場合
-        | otherwise -> createFilterFrom' owmap nodes
+        | otherwise -> 
+            let newNode = node{CCG.score = CCG.score node - 20}
+            in newNode : createFilterFrom' owmap nodes
     -- キーが存在しない場合
     Nothing -> node : createFilterFrom' owmap nodes
     where
