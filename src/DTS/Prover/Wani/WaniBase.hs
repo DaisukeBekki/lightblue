@@ -100,7 +100,7 @@ mergeStatus st1 st2 =
   Status {failedlst = L.nub(concatMap failedlst [st1,st2]),usedMaxDepth = maximum (map usedMaxDepth [st1,st2]),deduceNgLst=L.nub(concatMap deduceNgLst [st1,st2]),allProof = (allProof st1) || (allProof st2)}
 
 statusDef :: Status
-statusDef = Status{failedlst=[],usedMaxDepth = 0,deduceNgLst=[],allProof = False}
+statusDef = Status{failedlst=[],usedMaxDepth = 0,deduceNgLst=[],allProof = True}
 
 settingDef :: Setting
 settingDef = Setting{mode = Plain,falsum = True,maxdepth = 9,maxtime = 100000,debug = 0,sStatus = statusDef,ruleConHojo = "sub"}
