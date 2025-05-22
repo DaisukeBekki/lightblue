@@ -97,8 +97,9 @@ piIntro goal setting =
       A.Arrow l t ->
         let (sig,var) = WB.conFromGoal goal
             subgoalsets = let
-                canBeConclusionTerm = A.rmLam (length l) (WB.termFromGoal goal)-- maybe M.Nothing (\term -> (A.rmLam (length l) term)) (WB.termFromGoal goal)
-                dSideterm = maybe (A.betaReduce $ A.addLam (length l) (A.aVar (-1))) id  canBeConclusionTerm
+                justTerm = (WB.termFromGoal goal)
+                canBeConclusionTerm = A.rmLam (length l) justTerm-- maybe M.Nothing (\term -> (A.rmLam (length l) term)) (WB.termFromGoal goal)
+                dSideterm = maybe (A.betaReduce $ A.addLam (length l) (A.aVar (-1))) id  justTerm
                 dSide = A.AJudgment sig var dSideterm arrowType
                 subgoal1 = let
                     goal1 = WB.Goal sig (l ++ var) canBeConclusionTerm [t]
@@ -382,7 +383,7 @@ piForm goal setting =
                                   sig 
                                   ((drop ((length con) +1 - idInLstFromOld) (res:con)) ++ var) 
                                   (M.Just ((reverse $res:con) !! idInLstFromOld))
-                                  [A.aType,A.Conclusion DdB.Kind]
+                                  (if idInLstFromOld == 0 then [arrowType] else [A.aType,A.Conclusion DdB.Kind])
                             in WB.SubGoal goal [] ([],M.Nothing)
                       in map subgoalForMem [0..(length con)]
                 in WB.SubGoalSet QT.PiF M.Nothing subgoals dside
@@ -885,8 +886,9 @@ disjElim goal setting =
         else
           let
             forwardedTree = WB.trees $ F.forwardContext sig var
-            disjTrees = filter (\tree -> case A.typefromAJudgment $ A.downSide' tree of A.ArrowDisj a b -> True; _ -> False) forwardedTree
-            disjArrowTrees = filter (\tree -> case A.typefromAJudgment $ A.downSide' tree of A.Arrow _ (A.ArrowDisj a b) -> True; _ -> False) forwardedTree
+            usedDisJointLst = WB.usedDisJoint $ WB.sStatus setting
+            disjTrees = filter (\tree -> case A.typefromAJudgment $ A.downSide' tree of A.ArrowDisj a b -> (A.ArrowDisj a b) `notElem` usedDisJointLst ; _ -> False) forwardedTree
+            disjArrowTrees = filter (\tree -> case A.typefromAJudgment $ A.downSide' tree of A.Arrow c (A.ArrowDisj a b) -> (A.Arrow c (A.ArrowDisj a b)) `notElem` usedDisJointLst; _ -> False) forwardedTree
             pTerm = A.ArrowLam arrowType
             dSide = A.AJudgment sig var (A.ArrowUnpack (A.aVar (-1)) (A.aVar (-2)) (A.aVar (-3)) (A.aVar (-4))) arrowType
             subgoalsForDisj mType =

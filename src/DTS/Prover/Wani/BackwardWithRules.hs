@@ -125,10 +125,10 @@ constructResultWithResultsets rule maybeTree resultsets dSide setting resultDef 
         let resultBase = foldl WB.mergeResult resultDef resultset
             downside = 
               let gijiGoal = (WB.Goal sig var (M.Just aTerm) [aType])
-                  WB.Goal _ _ (M.Just aTerm') [aType'] = D.trace ("            gijigoal : "++(show gijiGoal)++ " resultset "++(show resultset) ++ " bound "++(show $A.varsInaTerm aType)) $  maybe gijiGoal id $
+                  WB.Goal _ _ (M.Just aTerm') [aType'] = {--D.trace ("            gijigoal : "++(show gijiGoal)++ " resultset "++(show resultset) ++ " bound "++(show $A.varsInaTerm aType)) $ --} maybe gijiGoal id $
                         snd $
                             foldl
-                            (\(targetId,maybeGoal') result -> D.trace ("             maybeGoal'"++(show maybeGoal')) $
+                            (\(targetId,maybeGoal') result -> -- D.trace ("             maybeGoal'"++(show maybeGoal')) $
                                 maybe
                                 (targetId-1,M.Nothing)
                                 (\goal' -> (targetId-1,updateGoalWithAntecedent targetId result setting (targetId,goal')))
@@ -137,17 +137,17 @@ constructResultWithResultsets rule maybeTree resultsets dSide setting resultDef 
                             (-1,M.Just gijiGoal)
                             (resultset)
               in A.AJudgment sig var aTerm' aType'
-            trees = D.trace ("            downside "++(show downside)) $ map (head . WB.trees) resultset
+            trees = {--D.trace ("            downside "++(show downside)) $--} map (head . WB.trees) resultset
             tree = UDT.Tree rule downside (maybe trees (\tree -> tree:trees) maybeTree)
         in resultBase{WB.trees = [tree]}
     resultsets' = map (constructResultWithResultset dSide) resultsets
-  in D.trace ("            resultsets' "++ (show resultsets')) $foldl WB.mergeResult resultDef resultsets'
+  in {--D.trace ("            resultsets' "++ (show resultsets')) $--}foldl WB.mergeResult resultDef resultsets'
 
 updateGoalWithAntecedent :: Int -> WB.Result -> WB.Setting -> (Int,WB.Goal) -> M.Maybe WB.Goal
 updateGoalWithAntecedent myId result setting (targetId,(WB.Goal sig var maybeTerm arrowTypes))
-  | targetId > (-1) = D.trace ("-1 in updateGoalWithAntecedent") M.Nothing
+  | targetId > (-1) = {-- D.trace ("-1 in updateGoalWithAntecedent")--} M.Nothing
   | ((length (WB.trees result)) > 1) = D.trace ("length in updateGoalWithAntecedent") M.Nothing
-  | otherwise = D.trace ("            updateGoal : " ++ (show (result, (WB.Goal sig var maybeTerm arrowTypes)))) $
+  | otherwise = -- D.trace ("            updateGoal : " ++ (show (result, (WB.Goal sig var maybeTerm arrowTypes)))) $
       let before = A.aVar targetId  -- num2SubHojoCon targetId setting
           resultDownSide = A.downSide' (head (WB.trees result))
           envDiff =  A.contextLen (sig,var) - A.contextLen (A.envfromAJudgment resultDownSide)
@@ -226,8 +226,11 @@ deduceWithSubGoalset :: WB.SubGoalSet -> WB.Depth -> WB.Setting -> WB.Result -> 
 deduceWithSubGoalset (WB.SubGoalSet rule maybeTree subgoals dSide) depth setting resultDef = 
     let deduceWithAntecedentsAndSubGoal subgoal results= 
             case subgoalToGoalWithAntecedents results subgoal depth setting of
-                M.Just goal -> let newResult = deduce' goal depth setting in  
-                    (map (\tree -> (newResult{WB.trees = [tree]}):results) (L.nub $ WB.trees newResult))
+                M.Just goal -> let 
+                        disjUsed = if rule /= QT.DisjE then [] else (maybe [] (\tree -> [A.typefromAJudgment $ A.downSide' tree]) maybeTree)
+                        newResult = deduce' goal depth (setting{WB.sStatus = (WB.sStatus setting){WB.usedDisJoint = disjUsed++(WB.usedDisJoint$WB.sStatus setting)}})
+                      in  
+                        (map (\tree -> (newResult{WB.trees = [tree]}):results) (L.nub $ WB.trees newResult))
                 M.Nothing -> []
         deduceWithAntecedentsetAndSubGoal resultset subgoal = concatMap (deduceWithAntecedentsAndSubGoal subgoal) resultset
         resultset = (if depth < WB.debug setting then (D.trace (L.replicate (2*depth) ' ' ++ "with " ++ (show rule) ++ ", want to prove "  ++ (show subgoals)) ) else id) $
@@ -248,15 +251,15 @@ deduceWithSubGoalsets subgoalsets depth setting resultDef justTerm arrowType =
     let result' = 
             foldl
                 (\rs subgoalset -> 
-                if D.trace ("               l251"++(show rs)) $ (WB.allProof (WB.sStatus setting)) || (null $ WB.trees rs)
+                if {--D.trace ("               l251"++(show rs)++" subgoalset: " ++(show subgoalset) ++ " subgoalsets: "++(show subgoalsets)) $--} (WB.allProof (WB.sStatus setting)) || (null $ WB.trees rs)
                     then 
                     let result = deduceWithSubGoalset subgoalset depth setting{WB.sStatus = WB.mergeStatus (WB.rStatus rs) WB.statusDef{WB.allProof = True}} resultDef
-                    in D.trace ("            l254 result :"++(show result)) $ WB.mergeResult rs result
+                    in {--D.trace ("            l254 result :"++(show result)) $--} WB.mergeResult rs result
                     else rs
                 )
                 resultDef
                 subgoalsets
-        trees = D.trace ("              l259 result :"++ (show result'))
+        trees = {--D.trace ("              l259 result :"++ (show result'))--}
             filter 
             (\tree -> 
                 let A.AJudgment sig' var' term' type' = A.downSide' tree 
@@ -312,16 +315,17 @@ deduce' goal depth setting
             WB.debugLogWithTerm (sig,var) (A.Conclusion DdB.Kind) arrowType depth setting "kind cannot be a term."  WB.resultDef{WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}}
           _ -> -- M.Nothing or M.Just term
             case arrowType of 
-              A.Conclusion DdB.Kind -> -- The only term for `kind` is `type`. but the term is not `type` due to the antecedent
-                debugLog goal depth setting "the only term for `kind` is `type`" WB.resultDef{WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}}
+              -- A.Conclusion DdB.Kind -> -- The only term for `kind` is `type`. but the term is not `type` due to the antecedent
+              --   debugLog goal depth setting "the only term for `kind` is `type`" WB.resultDef{WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}}
               _ -> 
                 let subgoalsets = sortSubGoalSets $ (ruleResultToSubGoalsets depth $ depth < WB.debug setting) $
                       map
                         (\rule -> rule goal setting)
                         ( -- Because of `sortSubGoalSets`, there is no need to care about rule order. (Before `sortSubGoalSets`, The stronger the rule, the later to be set. For example, `dne` can be used for any term, thus turning the execution later. This setting takes effect in combination with the rounding up of proof search using `B.allProof`.)
-                          [BR.piForm,BR.sigmaForm,BR.eqForm,BR.membership,BR.piIntro,BR.sigmaIntro,BR.piElim,BR.topIntro,BR.disjIntro,BR.disjElim,BR.disjForm] 
-                          ++ [BR.dne | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithDNE]
-                          ++ [BR.efq | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithEFQ]
+                          [BR.piForm]
+                          ++ (if arrowType /= (A.Conclusion DdB.Kind) then [BR.sigmaForm,BR.eqForm,BR.membership,BR.piIntro,BR.sigmaIntro,BR.piElim,BR.topIntro,BR.disjIntro,BR.disjElim,BR.disjForm] else [])
+                          ++ [BR.dne | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithDNE && (arrowType /= (A.Conclusion DdB.Kind))]
+                          ++ [BR.efq | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithEFQ && (arrowType /= (A.Conclusion DdB.Kind))]
                         )
                     result = 
                         let resultDef = -- update `deduceNgLst` and `failedlst` to be used in deeper search
