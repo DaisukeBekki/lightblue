@@ -164,9 +164,8 @@ updateGoalWithAntecedent' (WB.SubstSet _ before _) result setting (targetId,(WB.
   | otherwise = 
       let resultDownSide = A.downSide' (head (WB.trees result))
           envDiff =  A.contextLen (sig,var) - A.contextLen (A.envfromAJudgment resultDownSide)
-          after = A.shiftIndices (A.termfromAJudgment $ A.downSide' (head (WB.trees result))) ({--targetId-myId+--}envDiff) 0
-          beforeIsBoundInArrowType arrowTerm = (targetId > (A.boundUpLim arrowTerm))--(A.shiftIndices arrowTerm 1 targetId) /= arrowTerm
-          arrowTypes' =  map (\arrowType -> if beforeIsBoundInArrowType arrowType then arrowType  else A.betaReduce $ A.arrowSubst arrowType after before) arrowTypes
+          after = A.shiftIndices (A.termfromAJudgment $ A.downSide' (head (WB.trees result))) (envDiff) 0
+          arrowTypes' =  map (\arrowType -> A.betaReduce $ A.arrowSubst arrowType after before) arrowTypes
           maybeTerm' = maybe M.Nothing (\term -> M.Just (A.betaReduce $ A.arrowSubst term after before)) maybeTerm
       in M.Just $ WB.Goal sig var maybeTerm' arrowTypes'
 
