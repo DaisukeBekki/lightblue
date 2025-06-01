@@ -25,7 +25,7 @@ import qualified Data.Text.Lazy.IO as T  --text
 import qualified Data.List as L          -- base
 import qualified Data.Map as M           -- base
 import Parser.CCG as CCG                                        --lightblue
-import Parser.Language (LangOptions(..),defaultJpOptions)       --lightblue
+import Parser.Language (LangOptions(..))       --lightblue
 import qualified Parser.Language.Japanese.MyLexicon as LEX      --lightblue
 import qualified Parser.Language.Japanese.JsemLexicon as JLEX   --lughtblue
 import Parser.Language.Japanese.Templates                       --lightblue

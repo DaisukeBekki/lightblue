@@ -47,6 +47,7 @@ dependencies:
   - witherable >= 0.4
   - parserModules
   - unicode-show >= 0.1
+  - parallel >= 3.2.2
 
 library:
   source-dirs: src
@@ -57,6 +58,7 @@ library:
   - Parser.CCG
   - Parser.PartialParsing
   - Parser.Language
+  - Parser.LangOptions
   - Parser.Language.Japanese.Lexicon
   - Parser.Language.Japanese.MyLexicon
   - Parser.Language.Japanese.Templates
