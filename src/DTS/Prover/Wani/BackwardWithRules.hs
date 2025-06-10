@@ -266,6 +266,22 @@ deduceWithSubGoalsets subgoalsets depth setting resultDef justTerm arrowType =
             L.nub$ WB.trees result'
     in result'{WB.rStatus = (WB.rStatus result'){WB.deduceNgLst = WB.deduceNgLst$WB.sStatus setting}}{WB.trees = trees}
 
+thereIsBottomInTerm :: A.Arrowterm -> Bool
+thereIsBottomInTerm term =
+  case term of
+    A.Conclusion dTerm -> dTerm == DdB.Bot
+    A.ArrowSigma' aEnv aTerm -> any thereIsBottomInTerm (aTerm:aEnv)
+    A.ArrowApp aTerm1 aTerm2 -> any thereIsBottomInTerm [aTerm1,aTerm2]
+    A.ArrowPair aTerm1 aTerm2 -> any thereIsBottomInTerm [aTerm1,aTerm2]
+    A.ArrowProj _ aTerm -> thereIsBottomInTerm aTerm
+    A.ArrowLam aTerm -> thereIsBottomInTerm aTerm
+    A.Arrow aEnv aTerm -> any thereIsBottomInTerm (aTerm:aEnv)
+    A.ArrowEq aTerm1 aTerm2 aTerm3 -> any thereIsBottomInTerm [aTerm1,aTerm2,aTerm3]
+
+thereIsBottomInGoal :: WB.Goal -> Bool
+thereIsBottomInGoal (WB.Goal sig var term arrowTypes) =
+  any thereIsBottomInTerm $ (maybe arrowTypes (\t -> t:arrowTypes) term) ++ var ++ (map snd sig)
+
 
 -- | deduce'
 -- | summary : search or check proof terms for a type in input `goal`
@@ -320,8 +336,8 @@ deduce' goal depth setting
                         (\rule -> rule goal setting)
                         ( -- Because of `sortSubGoalSets`, there is no need to care about rule order. (Before `sortSubGoalSets`, The stronger the rule, the later to be set. For example, `dne` can be used for any term, thus turning the execution later. This setting takes effect in combination with the rounding up of proof search using `B.allProof`.)
                           [BR.piForm,BR.sigmaForm,BR.eqForm,BR.membership,BR.piIntro,BR.sigmaIntro,BR.piElim,BR.topIntro] 
-                          ++ [BR.dne | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithDNE]
-                          ++ [BR.efq | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithEFQ]
+                          ++ [BR.dne | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithDNE && thereIsBottomInGoal goal]
+                          ++ [BR.efq | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithEFQ && thereIsBottomInGoal goal]
                         )
                     result = 
                         let resultDef = -- update `deduceNgLst` and `failedlst` to be used in deeper search
