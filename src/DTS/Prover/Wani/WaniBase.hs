@@ -82,7 +82,7 @@ data Setting = Setting
    falsum :: Bool,
    maxdepth :: Depth,
    maxtime :: Int,
-   debug :: Bool,
+   debug :: Int,
    sStatus :: Status,
    ruleConHojo :: String} deriving (Show,Eq)
 
@@ -100,10 +100,10 @@ mergeStatus st1 st2 =
   Status {failedlst = L.nub(concatMap failedlst [st1,st2]),usedMaxDepth = maximum (map usedMaxDepth [st1,st2]),deduceNgLst=L.nub(concatMap deduceNgLst [st1,st2]),allProof = (allProof st1) || (allProof st2)}
 
 statusDef :: Status
-statusDef = Status{failedlst=[],usedMaxDepth = 0,deduceNgLst=[],allProof = False}
+statusDef = Status{failedlst=[],usedMaxDepth = 0,deduceNgLst=[],allProof = True}
 
 settingDef :: Setting
-settingDef = Setting{mode = Plain,falsum = True,maxdepth = 9,maxtime = 100000,debug = False,sStatus = statusDef,ruleConHojo = "sub"}
+settingDef = Setting{mode = Plain,falsum = True,maxdepth = 9,maxtime = 100000,debug = 0,sStatus = statusDef,ruleConHojo = "sub"}
 
 resultDef :: Result
 resultDef = Result{trees = [],errMsg = "",rStatus = statusDef}
@@ -113,7 +113,7 @@ debugLog con = debugLogWithTerm con (A.Conclusion $ DdB.Con $T.pack "?")
 
 debugLogWithTerm :: A.Context -> ATerm -> AType -> Depth -> Setting -> T.Text -> a -> a
 debugLogWithTerm (sig,var) term target depth setting label answer=
-  if debug setting
+  if depth < debug setting
     then
       D.trace
         (L.replicate (2*depth) ' ' ++ show depth ++ " " ++(if allProof (sStatus setting) then "all " else "")++   T.unpack label ++ " " ++ show (A.AJudgment sig var term target)++ " ")

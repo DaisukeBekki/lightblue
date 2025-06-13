@@ -51,9 +51,9 @@ printJumanData (ph,pos,posd,conj) = do
 callMorphologicalAnalyzer :: MorphAnalyzerName -> T.Text -> IO [JumanData]
 callMorphologicalAnalyzer morphaName sentence = do
   let command = case morphaName of
-        JUMAN   -> \s -> T.concat ["echo ", s, " | juman"]
-        JUMANPP -> \s -> T.concat ["echo ", s, " | jumanpp"]
-        KWJA    -> \s -> T.concat ["kwja --text ", s]
+        JUMAN   -> \s -> T.concat ["echo \"", s, "\" | juman"]
+        JUMANPP -> \s -> T.concat ["echo \"", s, "\" | jumanpp"]
+        KWJA    -> \s -> T.concat ["kwja --text \"", s, "\""]
   maOutput <- S.shelly $ S.silently $ S.escaping False $ S.cmd $ S.fromText $ T.toStrict $ command sentence
   return $ map toJumanData $ excludeCommentLines morphaName $ T.lines $ T.fromStrict maOutput
   where 

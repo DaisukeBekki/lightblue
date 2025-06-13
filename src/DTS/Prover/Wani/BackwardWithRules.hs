@@ -26,7 +26,7 @@ debugLog (WB.Goal sig var maybeTerm proofTypes) depth setting =
 
 debugLogSubGoalSet :: WB.SubGoalSet -> WB.Depth -> WB.Setting  -> QT.DTTrule -> a -> a
 debugLogSubGoalSet subGoalSet depth setting label answer =
-  if WB.debug setting 
+  if depth < WB.debug setting
     then
       D.trace
         ({--(if WB.allProof (WB.sStatus setting) then "all " else "")++ --} L.replicate (2*depth) ' ' ++ show depth ++ " " ++ (show label) ++ " subgoals are(is) ..." ++ (show subGoalSet))
@@ -164,9 +164,8 @@ updateGoalWithAntecedent' (WB.SubstSet _ before _) result setting (targetId,(WB.
   | otherwise = 
       let resultDownSide = A.downSide' (head (WB.trees result))
           envDiff =  A.contextLen (sig,var) - A.contextLen (A.envfromAJudgment resultDownSide)
-          after = A.shiftIndices (A.termfromAJudgment $ A.downSide' (head (WB.trees result))) ({--targetId-myId+--}envDiff) 0
-          beforeIsBoundInArrowType arrowTerm = (targetId > (A.boundUpLim arrowTerm))--(A.shiftIndices arrowTerm 1 targetId) /= arrowTerm
-          arrowTypes' =  map (\arrowType -> if beforeIsBoundInArrowType arrowType then arrowType  else A.betaReduce $ A.arrowSubst arrowType after before) arrowTypes
+          after = A.shiftIndices (A.termfromAJudgment $ A.downSide' (head (WB.trees result))) (envDiff) 0
+          arrowTypes' =  map (\arrowType -> A.betaReduce $ A.arrowSubst arrowType after before) arrowTypes
           maybeTerm' = maybe M.Nothing (\term -> M.Just (A.betaReduce $ A.arrowSubst term after before)) maybeTerm
       in M.Just $ WB.Goal sig var maybeTerm' arrowTypes'
 
@@ -186,8 +185,8 @@ subgoalToGoalWithAntecedents results (WB.SubGoal goal substLst (pos,res)) depth 
             let clueLst = L.nub $ filter ((A.aVar (-1) ==) . fst) (map (\(fst_,snd_) ->(A.betaReduce $ A.arrowNotat fst_,A.betaReduce $ A.arrowNotat snd_) ) $ A.canBeSame' 0 before after)
                 justMyTerm = if length clueLst == 1 then M.Just (snd $ head clueLst) else M.Nothing
             in case goal of
-              WB.Goal sig var M.Nothing proofTypes -> maybe ((if WB.debug setting then debugLog goal depth setting (T.pack ("remove this goal due to the clue " ++ (show clueLst) ++ " : ")) else id) (M.Nothing)) (\myTerm -> let newGoal = WB.Goal sig var (M.Just myTerm) proofTypes in (if WB.debug setting then debugLog newGoal depth setting (T.pack ("update" ++ (show goal) ++  " with clue " ++ (show (pos,res)) ++ " : ")) else id) (M.Just newGoal)) justMyTerm
-              WB.Goal sig var _ proofTypes -> (if WB.debug setting then D.trace ("it already has a term so I won't update the term with clue") else id) (M.Just goal)
+              WB.Goal sig var M.Nothing proofTypes -> maybe ((if depth < WB.debug setting then debugLog goal depth setting (T.pack ("remove this goal due to the clue " ++ (show clueLst) ++ " : ")) else id) (M.Nothing)) (\myTerm -> let newGoal = WB.Goal sig var (M.Just myTerm) proofTypes in (if depth < WB.debug setting then debugLog newGoal depth setting (T.pack ("update" ++ (show goal) ++  " with clue " ++ (show (pos,res)) ++ " : ")) else id) (M.Just newGoal)) justMyTerm
+              WB.Goal sig var _ proofTypes -> (if depth < WB.debug setting then D.trace ("it already has a term so I won't update the term with clue") else id) (M.Just goal)
           )
           res
       resultsLen = length results
@@ -230,7 +229,7 @@ deduceWithSubGoalset (WB.SubGoalSet rule maybeTree subgoals dSide) depth setting
                     (map (\tree -> (newResult{WB.trees = [tree]}):results) (L.nub $ WB.trees newResult))
                 M.Nothing -> []
         deduceWithAntecedentsetAndSubGoal resultset subgoal = concatMap (deduceWithAntecedentsAndSubGoal subgoal) resultset
-        resultset = (if WB.debug setting then (D.trace (L.replicate (2*depth) ' ' ++ "with " ++ (show rule) ++ ", want to prove "  ++ (show subgoals)) ) else id) $
+        resultset = (if depth < WB.debug setting then (D.trace (L.replicate (2*depth) ' ' ++ "with " ++ (show rule) ++ ", want to prove "  ++ (show subgoals)) ) else id) $
             map (reverse .init ) $ foldl deduceWithAntecedentsetAndSubGoal [[resultDef]] subgoals 
     in 
       constructResultWithResultsets rule maybeTree resultset dSide setting resultDef
@@ -287,8 +286,8 @@ deduce' goal depth setting
       debugLog goal depth setting "depth @ deduce : " WB.resultDef{WB.errMsg = "depth @ deduce",WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}} -- Set `B.rStatus` to update the maximum depth used.
   | (let WB.Goal _ _ _ typeLst = goal in length typeLst /= 1) =
       debugLog goal depth setting "typeLst has 0 or more than 2 elements : " WB.resultDef{WB.errMsg = "typeLst has 0 or more than 2 elements.",WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}}
-  | maybe (let WB.Goal sig var term [arrowType] = goal in any (\(con,aType) -> A.contextLen (sig,var) == (A.contextLen con) && A.sameCon (sig,var) con && A.sameTerm ((sig,var),arrowType) (con,aType)) (WB.deduceNgLst (WB.sStatus setting))) (\arrowTerm -> False) (WB.termFromGoal goal) = 
-      debugLog goal depth setting (T.concat ["avoidloop(ng) : ",(T.pack $ show (WB.deduceNgLst (WB.sStatus setting)))]) WB.resultDef{WB.errMsg = "avoid loop.",WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}}
+  -- | maybe (let WB.Goal sig var term [arrowType] = goal in any (\(con,aType) -> A.contextLen (sig,var) == (A.contextLen con) && A.sameCon (sig,var) con && A.sameTerm ((sig,var),arrowType) (con,aType)) (WB.deduceNgLst (WB.sStatus setting))) (\arrowTerm -> False) (WB.termFromGoal goal) = 
+  --     debugLog goal depth setting (T.concat ["avoidloop(ng) : ",(T.pack $ show (WB.deduceNgLst (WB.sStatus setting)))]) WB.resultDef{WB.errMsg = "avoid loop.",WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}}
   | maybe False (\arrowTerm -> let WB.Goal sig var _ [arrowType] = goal in any (\(con,aType,aTerm) -> A.contextLen (sig,var) == (A.contextLen con) && A.sameCon (sig,var) con && A.sameTerm ((sig,var),arrowType) (con,aType) && A.sameTerm ((sig,var),arrowTerm) (con,aTerm)) (WB.failedlst (WB.sStatus setting))) (WB.termFromGoal goal) = 
       debugLog goal depth setting (T.concat ["avoidloop(failed) : ",(T.pack $ show (WB.failedlst (WB.sStatus setting)))]) WB.resultDef{WB.errMsg = "avoid loop.",WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}}
   | otherwise =
@@ -315,7 +314,7 @@ deduce' goal depth setting
               A.Conclusion DdB.Kind -> -- The only term for `kind` is `type`. but the term is not `type` due to the antecedent
                 debugLog goal depth setting "the only term for `kind` is `type`" WB.resultDef{WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}}
               _ -> 
-                let subgoalsets = sortSubGoalSets $ (ruleResultToSubGoalsets depth $ WB.debug setting) $
+                let subgoalsets = sortSubGoalSets $ (ruleResultToSubGoalsets depth $ depth < WB.debug setting) $
                       map
                         (\rule -> rule goal setting)
                         ( -- Because of `sortSubGoalSets`, there is no need to care about rule order. (Before `sortSubGoalSets`, The stronger the rule, the later to be set. For example, `dne` can be used for any term, thus turning the execution later. This setting takes effect in combination with the rounding up of proof search using `B.allProof`.)
@@ -330,13 +329,13 @@ deduce' goal depth setting
                 in 
                   if null (WB.trees result)
                     then
-                      (if WB.debug setting then WB.debugLog (sig,var) arrowType depth setting "deduce failed " else id) result{WB.rStatus = (WB.rStatus result){WB.failedlst = maybe (WB.failedlst $WB.sStatus setting) (\arrowTerm -> (((sig,var),arrowTerm,arrowType) : (WB.failedlst $WB.sStatus setting))) justTerm}}
+                      (if depth < WB.debug setting then WB.debugLog (sig,var) arrowType depth setting "deduce failed " else id) result{WB.rStatus = (WB.rStatus result){WB.failedlst = maybe (WB.failedlst $WB.sStatus setting) (\arrowTerm -> (((sig,var),arrowTerm,arrowType) : (WB.failedlst $WB.sStatus setting))) justTerm}}
                     else
-                      (if WB.debug setting then D.trace (L.replicate (2*depth) ' ' ++  show depth ++ " deduced:  " ++ show (map A.downSide' (WB.trees result))) else id) result
+                      (if depth < WB.debug setting then D.trace (L.replicate (2*depth) ' ' ++  show depth ++ " deduced:  " ++ show (map A.downSide' (WB.trees result))) else id) result
 
 -- | deduce
 -- | summary : deduce' wrapper
 deduce :: WB.DeduceRule
 deduce sig var arrowType depth setting = 
   let result = deduce' (WB.Goal sig var M.Nothing [arrowType]) depth setting
-  in (if WB.debug setting then (D.trace ("result :" ++ (show result))) else id ) result
+  in (if depth < WB.debug setting then (D.trace ("result :" ++ (show result))) else id ) result

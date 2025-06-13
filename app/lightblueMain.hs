@@ -25,7 +25,8 @@ import qualified Parser.Language.Japanese.Filter as JFilter
 import Parser.Language.Japanese.Filter.KNPFilter (knpFilter)    --lightblue
 import Parser.Language.Japanese.Filter.KWJAFilter (kwjaFilter)  --lightblue
 import qualified Parser.Language.English.Lexicon as ELEX
-import Parser.Language (LangOptions(..),defaultJpOptions,defaultEnOptions)
+import Parser.Language (LangOptions(..))
+import Parser.LangOptions (defaultJpOptions,defaultEnOptions)
 import qualified Interface as I
 import qualified Interface.Text as T
 import qualified Interface.HTML as I
@@ -249,18 +250,14 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
   start <- Time.getCurrentTime
   langOptions <- case lang of
                    JP morphaName filterName -> do
-                      lightbluepath <- E.getEnv "LIGHTBLUE"
-                      jumandicData <- T.readFile $ lightbluepath ++ "src/Parser/Language/Japanese/Juman/Juman.dic"
-                      let jumanDicData = map (T.split (=='\t')) $ T.lines jumandicData
-                      return $ defaultJpOptions {
-                        baseLexicon = JLEX.myLexicon
-                        , jumanDic = jumanDicData
-                        , morphaName = morphaName
-                        , nodeFilterBuilder = case filterName of
+                        jpo <- defaultJpOptions
+                        return $ jpo {
+                          morphaName = morphaName,
+                          nodeFilterBuilder = case filterName of
                                                 JFilter.KNP  -> knpFilter
                                                 JFilter.KWJA -> kwjaFilter
                                                 JFilter.NONE -> \_ -> return (\_ _ -> id) 
-                        }
+                          }
                    EN -> return defaultEnOptions
   contents <- case filepath of
                 "-" -> T.getContents
@@ -301,7 +298,7 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
             | nSample < 0 = parsedJSeM'
             | otherwise = take nSample parsedJSeM'
           handle = S.stdout
-          prover = NLI.getProver proverName $ QT.ProofSearchSetting (Just maxDepth) (Just maxTime) (Just QT.Classical)
+          prover = NLI.getProver proverName $ QT.ProofSearchSetting (Just maxDepth) (Just maxTime) (Just QT.Intuitionistic)
       S.hPutStrLn handle $ I.headerOf style
       pairs <- forM parsedJSeM'' $ \j -> do
         let title = "JSeM-ID " ++ (StrictT.unpack $ J.jsem_id j)

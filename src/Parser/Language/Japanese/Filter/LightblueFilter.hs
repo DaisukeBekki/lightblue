@@ -27,7 +27,7 @@ import qualified Data.Text.Lazy as T --text
 import qualified Parser.CCG as CCG   --lightblue
 import qualified Parser.ChartParser as LB --lightblue
 import qualified Parser.PartialParsing as LB --lightblue
-import Parser.Language (defaultJpOptions)
+import Parser.LangOptions (defaultJpOptions)
 import qualified Parser.Language.Japanese.Templates as CCG-- lightblue (verbSR,verbCat)
 import qualified Parser.Language.Japanese.MyLexicon as CCG
 import qualified Parser.Language.Japanese.Lexicon as CCG
@@ -300,7 +300,8 @@ createFilterFrom' compVerbList abcVerbList (c:cs) =
 getVerbPosConjDaihyo :: T.Text -> T.Text -> IO (T.Text)
 getVerbPosConjDaihyo fstverb sndverb = do
   --lexResource <- CCG.lexicalResourceBuilder morphAnalyzer
-  (_,lexicon) <- CCG.setupLexicon defaultJpOptions sndverb
+  langOptions <- defaultJpOptions
+  (_,lexicon) <- CCG.setupLexicon langOptions sndverb
   -- let lexicon = CCG.lookupLexicon sndverb lexicon'
   if null lexicon then D.trace ("Empty lexicon") (return $ (""))
   else do
