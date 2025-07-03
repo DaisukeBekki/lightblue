@@ -72,6 +72,8 @@ headerOf :: Style -> String
 headerOf style = case style of
   HTML -> HTML.htmlHeader4MathML
   TEXT -> replicate 100 '-'
+  -- todo: あとで仕様を考える
+  EXPRESS -> replicate 100 '-'
   XML  -> "<?xml version='1.0' encoding='UTF-8'?><root><document id='d0'><sentences>"
   TEX  -> ""
   SVG  -> SVG.svgHeader
@@ -81,6 +83,8 @@ interimOf :: Style -> String -> String
 interimOf style text = case style of
   HTML -> "<hr size='15' />"
   TEXT -> "------" ++ text ++ (replicate (94-(length text)) '-')
+  -- todo: あとで仕様を考える
+  EXPRESS -> "------" ++ text ++ (replicate (94-(length text)) '-')
   XML  -> ""
   TEX  -> ""
   SVG  -> ""
@@ -90,6 +94,8 @@ footerOf :: Style -> String
 footerOf style = case style of
   HTML -> HTML.htmlFooter4MathML
   TEXT -> "□"
+  -- todo: あとで仕様を考える
+  EXPRESS -> replicate 100 '-'
   XML  -> "</sentences></document></root>"
   TEX  -> ""
   SVG  -> SVG.svgFooter
