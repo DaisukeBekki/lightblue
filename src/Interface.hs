@@ -182,6 +182,8 @@ printLexicalItem :: Style -> CCG.Node -> T.Text
 printLexicalItem style node = case style of
   TEXT -> T.concat [CCG.pf node, "\t", T.toText (CCG.cat node), " \t", T.toText $ UDTTwN.fromDeBruijn [] $ CCG.sem node, "\t", CCG.source node, "\t[", CCG.showScore node, "]"]
   TEX  -> TEX.toTeX node
+  -- todo: あとで仕様を考える
+  EXPRESS -> TEX.toTeX node
   HTML -> T.concat $ [HTML.startMathML, HTML.toMathML node, HTML.endMathML]
   XML  -> X.node2XML 0 0 True node
   SVG  -> SVG.node2svg node
