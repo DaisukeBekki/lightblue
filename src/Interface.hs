@@ -49,10 +49,10 @@ readerBuilder :: [(a,String)] -> Int -> ReadS a
 readerBuilder list _ r = concat $ map (\(constructor,string) -> [(constructor,s) | (x,s) <- lex r, map C.toLower x == string]) list
 
 -- | values of lightblue -s option
-data Style = HTML | TEXT | XML | TEX | SVG deriving (Eq,Show)
+data Style = HTML | TEXT | EXPRESS | XML | TEX | SVG deriving (Eq,Show)
 
 instance Read Style where
-  readsPrec = readerBuilder [(HTML,"html"),(TEXT,"text"),(TEX,"tex"),(XML,"xml"),(SVG,"svg")]
+  readsPrec = readerBuilder [(HTML,"html"),(TEXT,"text"),(EXPRESS,"express"),(TEX,"tex"),(XML,"xml"),(SVG,"svg")]
   --readsPrec _ r = 
     -- [(HTML,s) | (x,s) <- lex r, map C.toLower x == "html"]
     -- ++ [(TEXT,s) | (x,s) <- lex r, map C.toLower x == "text"]

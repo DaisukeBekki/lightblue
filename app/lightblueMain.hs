@@ -135,7 +135,7 @@ optionParser =
     <*> option auto
       ( long "style"
       <> short 's'
-      <> metavar "text|tex|xml|html"
+      <> metavar "text|tex|xml|html|express"
       <> help "Print results in the specified format"
       <> showDefault
       <> value I.HTML )
