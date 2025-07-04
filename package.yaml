@@ -93,6 +93,7 @@ library:
   - Interface.TeX
   - Interface.XML
   - Interface.HTML
+  - Interface.Express.Express
   - Interface.SVG
   - Interface.Tree
   - DTS.Index

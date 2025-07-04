@@ -2,7 +2,7 @@
 {-# LANGUAGE TemplateHaskell       #-}
 
 module Interface.Express.Express (
-    main
+    printExpressInterface
   ) where
 
 import Prelude
@@ -20,12 +20,13 @@ import qualified Interface.Express.Yesod.Application as A
 import qualified Data.Text.Lazy.IO as TL
 -- import Application (appMain)
 
-main :: IO ()
-main = do
+printExpressInterface :: IO ()
+printExpressInterface = do
   -- getParsing :: Handler Html
   html <- A.handler $ getParsing
   -- renderHtml :: Html -> Data.Text.Lazy.Texts
 --   TL.writeFile "output6.html" (renderHtml html)
+  -- T.hPutStrLn html みたいなことをしたい
   putStrLn "Express application started successfully."
 
 getParsing :: Handler Html

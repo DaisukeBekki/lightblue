@@ -30,6 +30,7 @@ import Parser.LangOptions (defaultJpOptions,defaultEnOptions)
 import qualified Interface as I
 import qualified Interface.Text as T
 import qualified Interface.HTML as I
+import qualified Interface.Express.Express as Express
 import qualified JSeM as J
 import qualified JSeM.XML as J
 import qualified DTS.UDTTdeBruijn as UDTT
@@ -283,9 +284,17 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
           posTagOnly = case output of 
                          I.TREE -> False
                          I.POSTAG -> True
-      S.hPutStrLn handle $ I.headerOf style
-      NLI.printParseResult handle style 1 noTypeCheck posTagOnly "input" parseResult
-      S.hPutStrLn handle $ I.footerOf style
+
+      if style == I.EXPRESS
+        then do
+          Express.printExpressInterface
+          S.hPutStrLn S.stderr $ "Express Succeeded"
+          return ()
+
+        else do
+          S.hPutStrLn handle $ I.headerOf style
+          NLI.printParseResult handle style 1 noTypeCheck posTagOnly "input" parseResult
+          S.hPutStrLn handle $ I.footerOf style
     --
     -- | JSeM command
     -- 
