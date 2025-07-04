@@ -149,29 +149,37 @@ printParseResult h style sid noTypeCheck posTagOnly title (SentenceAndParseTrees
     T.hPutStrLn h $ T.concat["[", T.pack title', " of ", T.pack title, ": ", sentence, "]\n"]
     parseTrees' <- toList parseTrees 
     -- | [ParseTreeAndFelicityChecks CCG.Node UDTT.TypeCheckQuery (ListT IO FelicityCheckAndMore) ]
-    forM_ (zip parseTrees' ([1..]::[Int])) $ \((ParseTreeAndFelicityChecks node signtr tcQuery tcResults),ith) -> do
-      let title'' = "Parse tree " ++ (show ith) ++ " of " ++ title'
-      S.hPutStrLn h $ interimOf style $ "[" ++ title'' ++ "]"
-      T.hPutStrLn h $ T.concat ["PF = ", CCG.pf node, " / Score = ", CCG.showScore node]
-      if posTagOnly
-        then do
-          posTagger h style node
-        else do
-          T.hPutStrLn h $ printer style node
-          S.hPutStrLn h $ interimOf style $ "[Signature for " ++ title'' ++ "]"
-          T.hPutStrLn h $ printer style $ DTTwN.fromDeBruijnSignature signtr
-          S.hPutStrLn h "\n"
-          S.hPutStrLn h $ interimOf style $ "[Type check query for " ++ title'' ++ "]"
-          T.hPutStrLn h $ printer style $ UDTTwN.fromDeBruijnJudgment tcQuery
-      tcResults' <- toList tcResults
-      --S.putStrLn $ (show $ length tcResults') ++ " results."
-      forM_ (zip tcResults' ([1..]::[Int])) $ \((tcDiagram, moreResult),jth) -> do
-        when (not (noTypeCheck || posTagOnly)) $ do
-          let title''' = "Type check diagram " ++ (show jth) ++ " of " ++ title''
-          S.hPutStrLn h "\n"
-          S.hPutStrLn h $ interimOf style $ "[" ++ title''' ++ "]"
-          T.hPutStrLn h $ printer style $ fmap DTTwN.fromDeBruijnJudgment tcDiagram
-        printParseResult h style (sid+1) noTypeCheck posTagOnly title moreResult
+    if style == EXPRESS
+      then do 
+        -- 適当に何か出力してテスト
+        -- ParseResultからhtml出力する
+        T.hPutStrLn h $ T.concat ["[Express Output]\n"]
+        return ()
+      else do
+        forM_ (zip parseTrees' ([1..]::[Int])) $ \((ParseTreeAndFelicityChecks node signtr tcQuery tcResults),ith) -> do
+          let title'' = "Parse tree " ++ (show ith) ++ " of " ++ title'
+          S.hPutStrLn h $ interimOf style $ "[" ++ title'' ++ "]"
+          T.hPutStrLn h $ T.concat ["PF = ", CCG.pf node, " / Score = ", CCG.showScore node]
+          if posTagOnly
+            then do
+              posTagger h style node
+              else do
+                T.hPutStrLn h $ printer style node
+                S.hPutStrLn h $ interimOf style $ "[Signature for " ++ title'' ++ "]"
+                T.hPutStrLn h $ printer style $ DTTwN.fromDeBruijnSignature signtr
+                S.hPutStrLn h "\n"
+                S.hPutStrLn h $ interimOf style $ "[Type check query for " ++ title'' ++ "]"
+                T.hPutStrLn h $ printer style $ UDTTwN.fromDeBruijnJudgment tcQuery
+
+          tcResults' <- toList tcResults
+          --S.putStrLn $ (show $ length tcResults') ++ " results."
+          forM_ (zip tcResults' ([1..]::[Int])) $ \((tcDiagram, moreResult),jth) -> do
+            when (not (noTypeCheck || posTagOnly)) $ do
+              let title''' = "Type check diagram " ++ (show jth) ++ " of " ++ title''
+              S.hPutStrLn h "\n"
+              S.hPutStrLn h $ interimOf style $ "[" ++ title''' ++ "]"
+              T.hPutStrLn h $ printer style $ fmap DTTwN.fromDeBruijnJudgment tcDiagram
+            printParseResult h style (sid+1) noTypeCheck posTagOnly title moreResult
 printParseResult h style _ _ _ title (InferenceResults (QueryAndDiagrams psqPos proofDiagramsPos) (QueryAndDiagrams psqNeg proofDiagramsNeg)) = do
   S.hPutStrLn h $ interimOf style $ "[Positive proof search query for " ++ title ++ "]"
   T.hPutStrLn h $ printer style $ DTTwN.fromDeBruijnProofSearchQuery psqPos
