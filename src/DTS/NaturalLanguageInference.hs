@@ -202,9 +202,6 @@ printParseResult _ _ _ _ _ _ NoSentence = return () -- S.hPutStrLn h $ interimOf
 printer :: (SimpleText a, Typeset a, MathML a) => Style -> a -> T.Text
 printer TEXT = toText
 printer TEX  = toTeX
--- todo: ここをtoExpressみたいにすると思う
--- todo: あとで仕様を考える
-printer EXPRESS = toTeX
 printer HTML = \obj -> T.concat [HTML.startMathML, toMathML obj, HTML.endMathML]
 printer _    = toText
 
