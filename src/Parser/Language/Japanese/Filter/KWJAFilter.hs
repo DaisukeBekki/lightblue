@@ -29,6 +29,9 @@ import qualified Text.Juman as J
 import qualified Parser.Language.Japanese.Filter.KNPFilter as KF
 import qualified Parser.Language.Japanese.Filter.LightblueFilter as LF (getDaihyo, getFeatures)
 
+import qualified Text.Show.Unicode as U 
+import qualified Debug.Trace as D
+
 type ConjMap = M.Map (T.Text, T.Text) T.Text
 type OpenWordsMap = M.Map T.Text [(T.Text, S.Set T.Text)]
 
@@ -40,7 +43,7 @@ kwjaFilter text = do
     katuyoulist <- JK.parseKatuyouFromPath $ concat [lb,"src/Parser/Language/Japanese/Juman/JUMAN.katuyou"]
     let conjmap = KF.getConjMap katuyoulist
         -- openWordsMap = getOpenWordsMap kwjaDatas conjmap
-        filterNode = createFilterFrom kwjaDatas conjmap
+        filterNode = createFilterFrom text kwjaDatas conjmap
     return filterNode
 
 getKWJAargs :: Maybe [KW.Arg] -> [T.Text]
@@ -67,6 +70,7 @@ getCCGArg cat = case cat of
     _ -> []
 
 createFilterFrom ::
+    TL.Text -> 
     [KW.KWJAData] ->
     ConjMap ->
     -- | starting index of the span
@@ -77,10 +81,34 @@ createFilterFrom ::
     [CCG.Node] ->
     -- | output nodes (filtered)
     [CCG.Node]
-createFilterFrom kwjaDatas conjMap _ _ ccgNodes =
-    -- knpDataから、名詞、動詞、副詞、助詞の表層形を取得
+createFilterFrom text kwjaDatas conjMap i j ccgNodes =
+    -- kwjaDataから、名詞、動詞、副詞、助詞の表層形を取得
     let openWords = getOpenWordsMap kwjaDatas conjMap
-    in createFilterFrom' openWords ccgNodes
+    -- 最後のマスのインデックスを取得
+        startIndex = fromIntegral (TL.length text - 1)
+        endIndex = fromIntegral $ TL.length text
+    in 
+        -- i j が 最後のマスのときは動詞語幹をフィルターアウト
+        if (i,j) == (startIndex, endIndex)
+            then createFilterFrom' openWords (filterStemEndParse ccgNodes)
+        else createFilterFrom' openWords ccgNodes
+
+
+filterStemEndParse :: [CCG.Node] -> [CCG.Node]
+filterStemEndParse [] = []
+filterStemEndParse (c:cs) =
+    -- featureを取得
+    let (f1', f2') = LF.getFeatures (CCG.cat c) --  ([v:1],[stem,neg,cont,neg+l,euph:t])
+    -- LEXかつverbかつstemをフィルターアウト
+    in if (CCG.rs c == CCG.LEX) && (hasCommonElements f1' LB.verb) && (CCG.Stem `elem` f2')
+        -- then D.trace ("filterStemEnd: " ++ (U.ushow $ CCG.sig c)) filterStemEndParse cs
+        then filterStemEndParse cs
+    else
+        -- それ以外はそのまま
+        c : filterStemEndParse cs
+    where 
+        hasCommonElements :: Eq a => [a] -> [a] -> Bool
+        hasCommonElements list1 list2 = not (null (list1 `intersect` list2))
 
 -- [("名詞"歌"),("動詞","歌")] -> toFilterNode -> FilteredNode
 createFilterFrom' :: OpenWordsMap -> [CCG.Node] -> [CCG.Node]
