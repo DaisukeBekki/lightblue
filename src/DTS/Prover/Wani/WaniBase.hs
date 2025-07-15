@@ -183,13 +183,13 @@ type SubstLst = [SubstSet]
 substPrefix :: Char
 substPrefix = 's'
 
-generatedTempTerm :: A.Arrowterm -> T.Text -> A.Arrowterm
-generatedTempTerm origin id =
+generatedTempTerm :: (A.SAEnv,A.Arrowterm) -> T.Text -> A.Arrowterm
+generatedTempTerm (sig,origin) id =
   let gen =  T.concat [(T.singleton substPrefix),id]
   in 
-    if origin == A.arrowSubst origin (A.aCon gen) (A.aCon "dummyInGeneratedTempTerm")
+    if origin == A.arrowSubst origin (A.aCon gen) (A.aCon "dummyInGeneratedTempTerm") || M.isNothing (lookup gen sig)
     then A.aCon gen
-    else generatedTempTerm origin gen
+    else generatedTempTerm (sig,origin) gen
 
 {-|
   The clue \(([(a,b)],\text{Maybe } (c,d)) \) in 1 `SubGoal` means the following.
@@ -212,7 +212,7 @@ data SubGoalSet =
     QT.DTTrule -- ^ label of rule
     (Maybe (UDT.Tree QT.DTTrule A.AJudgment))  -- ^ forwardedTree; a tree for function in `piElim` or the upside tree for `membership`
     [SubGoal]  -- ^ list of subgoals; Proofsearch is performed starting with the one in the front
-    A.AJudgment -- ^ judgement for the downside; The part that needs to be updated based on the upside is indicated as `A.aVar` num. The left-most proofterm in the upside is `A.aVar` -1, the second proof term from the left is `A.aVar` -2, and so on, decreasing in number.
+    (A.AJudgment,SubstLst) -- ^ judgement for the downside; The part that needs to be updated based on the upside is indicated as `A.aVar` num. The left-most proofterm in the upside is `A.aVar` -1, the second proof term from the left is `A.aVar` -2, and so on, decreasing in number.
   deriving (Eq,Show)
 
 labelFromSubGoalSet :: SubGoalSet -> QT.DTTrule
@@ -225,7 +225,7 @@ subGoalsFromSubGoalSet :: SubGoalSet -> [SubGoal]
 subGoalsFromSubGoalSet subGoalSet = case subGoalSet of SubGoalSet _ tree subgoals dside -> subgoals
 
 dsideFromSubGoalSet :: SubGoalSet -> A.AJudgment
-dsideFromSubGoalSet subGoalSet = case subGoalSet of SubGoalSet _ tree subgoals dside -> dside
+dsideFromSubGoalSet subGoalSet = case subGoalSet of SubGoalSet _ tree subgoals (dside,substLst) -> dside
 
 exitMessage :: ExitReason -> QT.DTTrule ->T.Text
 exitMessage reasonCode label = 
