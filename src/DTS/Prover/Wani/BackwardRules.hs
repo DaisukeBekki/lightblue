@@ -95,7 +95,9 @@ piIntro goal setting =
         let (sig,var) = WB.conFromGoal goal
             subgoalsets = let
                 canBeConclusionTerm = A.rmLam (length l) (WB.termFromGoal goal)-- maybe M.Nothing (\term -> (A.rmLam (length l) term)) (WB.termFromGoal goal)
-                dSideterm = maybe (A.betaReduce $ A.addLam (length l) (A.aVar (-1))) id  canBeConclusionTerm
+                dSideSubstTerm = ((WB.generatedTempTerm (sig,A.aCon "dummyInDside") (T.pack $ show 0)))
+                dSideterm = maybe (A.betaReduce $ A.addLam (length l) dSideSubstTerm) id  canBeConclusionTerm
+                dSideSubstLst = [WB.SubstSet [] dSideSubstTerm 0]
                 dSide = A.AJudgment sig var dSideterm arrowType
                 subgoal1 = let
                     goal1 = WB.Goal sig (l ++ var) canBeConclusionTerm [t]
@@ -103,7 +105,7 @@ piIntro goal setting =
                 subgoal2 = let
                     goal2 = WB.Goal sig var (M.Just arrowType) [A.aType,A.Conclusion DdB.Kind]
                   in WB.SubGoal goal2 [] ([],M.Nothing)
-              in [WB.SubGoalSet QT.PiI M.Nothing [subgoal1,subgoal2] dSide]
+              in [WB.SubGoalSet QT.PiI M.Nothing [subgoal1,subgoal2] (dSide,dSideSubstLst)]
         in (subgoalsets,"")
       _ -> ([],WB.exitMessage (WB.TypeMisMatch arrowType) QT.PiI)
 
@@ -116,7 +118,7 @@ topIntro goal setting =
     case WB.termFromGoal goal of
       M.Just (A.Conclusion DdB.Unit) -> 
         let (sig,var) = WB.conFromGoal goal
-            subgoalsets = [WB.SubGoalSet QT.TopI M.Nothing [] (A.AJudgment sig var (A.Conclusion DdB.Unit) (A.Conclusion DdB.Top))]
+            subgoalsets = [WB.SubGoalSet QT.TopI M.Nothing [] (A.AJudgment sig var (A.Conclusion DdB.Unit) (A.Conclusion DdB.Top), [])]
         in (subgoalsets,"")
       term ->([],WB.exitMessage (WB.TermMisMatch term) QT.TopI)
 
@@ -295,11 +297,12 @@ piElim goal setting =
                               let A.Arrow formerLst latter = A.typefromAJudgment functionJudgment
                                   notArgFormerNum = length formerLst - argNum
                               in A.Arrow (drop notArgFormerNum formerLst) (A.arrowNotat $ A.Arrow (take notArgFormerNum formerLst) latter)  
-                        dSide =
+                        (dSide,dSideSubstLst) =
                           let
-                            arrowTerm = M.maybe (A.betaReduce $ foldl A.ArrowApp (A.termfromAJudgment functionJudgment) (reverse $ map A.aVar [(-argNum)..(-1)])) id maybeTerm
-                            arrowType' = A.shiftIndices (foldl (\r (old,newNegate) -> A.arrowSubst r (A.aVar $ negate newNegate) (A.aVar old)) result (zip (reverse [0..(argNum-1)]) [1..argNum])) (negate argNum) argNum
-                          in A.AJudgment sig var arrowTerm arrowType'
+                            dSideSubstLst = map (\num -> WB.SubstSet [] (WB.generatedTempTerm (sig,arrowType) (T.pack $ show num)) num) [0..(argNum-1)]
+                            arrowTerm = M.maybe (A.betaReduce $ foldl A.ArrowApp (A.termfromAJudgment functionJudgment) (reverse $ map (\(WB.SubstSet _ term _) -> term)  dSideSubstLst)) id maybeTerm
+                            arrowType' = A.shiftIndices (foldl (\r (old,new) -> A.arrowSubst r new old) result (map (\(WB.SubstSet _ term num) -> (A.aVar num,term)) dSideSubstLst)) (negate argNum) argNum
+                          in (A.AJudgment sig var arrowTerm arrowType',dSideSubstLst)
                         subgoals =
                           let
                             parentLsts = -- ex : [(4,[1,3]),(3,[1,3]),(2,[]),(1,[0,1]),(0,[])] for [ y0:entity, y1:var 1(var 0),y2:entity ->type,y3:var3(var 1)] => var 1(var 3) 
@@ -307,7 +310,7 @@ piElim goal setting =
                             subgoalForArg idInLstFromOld = 
                               let origin = (reverse args) !! idInLstFromOld
                                   parentLst' = M.maybe [] (\parentIds -> filter (< idInLstFromOld) $ L.sort parentIds) (lookup idInLstFromOld parentLsts)
-                                  substLst = map (\num -> (WB.SubstSet [] (WB.generatedTempTerm origin (T.pack $ show num)) num)) $ filter (0<=) parentLst'
+                                  substLst = map (\num -> (WB.SubstSet [] (WB.generatedTempTerm (sig,origin) (T.pack $ show num)) num)) $ filter (0<=) parentLst'
                                   targetArg = A.shiftIndices (foldl (\target (WB.SubstSet lst term num) -> A.arrowSubst target term (A.aVar num)) origin substLst) (-idInLstFromOld) 0
                                   goal' = WB.Goal sig var (if isDeduce then M.Nothing else (M.Just $ (reverse $ init termsInProofTerm) !! idInLstFromOld)) [targetArg]
                                   (substLstForResult,clueWithResult) = -- Maybe (ProofTerm,ProofTerm)
@@ -319,7 +322,7 @@ piElim goal setting =
                                     M.mapMaybe (\(argIdFromOld,parentLst) -> if any (==argIdFromOld-idInLstFromOld-1) parentLst && ( argIdFromOld < argNum ) then M.Just (WB.convertToSubstableTerm ((reverse args) !! argIdFromOld,argIdFromOld) idInLstFromOld,A.aVar (-1+idInLstFromOld-argIdFromOld)) else M.Nothing) parentLsts
                                 in WB.SubGoal goal' (L.nub $ substLstForResult ++ substLst) (clueWithArg,clueWithResult)
                           in map subgoalForArg [0..(argNum-1)] 
-                    in WB.SubGoalSet QT.PiE (M.Just functionTree) subgoals dSide
+                    in WB.SubGoalSet QT.PiE (M.Just functionTree) subgoals (dSide,dSideSubstLst)
               in map subgoalsetForFunction argNumAndFunctions
       in (subgoalsetForFunctions,"")
 
@@ -382,7 +385,7 @@ piForm goal setting =
                                   [A.aType,A.Conclusion DdB.Kind]
                             in WB.SubGoal goal [] ([],M.Nothing)
                       in map subgoalForMem [0..(length con)]
-                in WB.SubGoalSet QT.PiF M.Nothing subgoals dside
+                in WB.SubGoalSet QT.PiF M.Nothing subgoals (dside,[])
           in ([subgoalset],"")
         term ->  -- if term is M.Nothing or M.Just `not Arrow type`, return WB.TermMisMatch
           ([],WB.exitMessage (WB.TermMisMatch term) QT.PiF)
@@ -483,17 +486,19 @@ sigmaIntro goal setting =
         then ([],WB.exitMessage (WB.TermMisMatch maybeTerm) QT.SigmaI)
         else
           let subgoalset =  let 
-                dSide = let
+                (dSide,dSideSubstLst) = let
                   memNum = length $ lat:for
-                  arrowTerm = maybe (foldr A.ArrowPair (A.aVar (- memNum)) (map A.aVar (reverse $ [(-(memNum-1))..(-1)]))) id maybeTerm
-                  in A.AJudgment sig var arrowTerm (A.ArrowSigma' for lat)
+                  substTerm varId = WB.generatedTempTerm (sig,A.aCon "dummyInSigmaIntro") (T.pack $ show varId)
+                  substLst = map (\num -> WB.SubstSet [] (substTerm num) num) [0..memNum-1]
+                  arrowTerm = maybe (foldr A.ArrowPair (substTerm 0) (map substTerm (reverse [1..(memNum-1)]))) id maybeTerm
+                  in (A.AJudgment sig var arrowTerm (A.ArrowSigma' for lat),substLst)
                 subgoals =
                   let parentLsts = -- ex : [(4,[1,3]),(3,[1,3]),(2,[]),(1,[0,1]),(0,[])] for [ y0:entity, y1:var 1(var 0),y2:entity ->type,y3:var3(var 1),var 1(var 3)] 
                           reverse $ zipWith (\term num -> (num,A.varsInaTerm term)) (reverse (lat:for)) [0..]
                       subgoalForMem idInLstFromOld = 
                         let origin = (reverse $ lat:for) !! idInLstFromOld
                             parentLst' = M.maybe [] (\parentIds -> filter (\num -> 0 <= num && num < idInLstFromOld) $ L.sort parentIds) (lookup idInLstFromOld parentLsts)
-                            substLst = map (\num ->  (WB.SubstSet [] (WB.generatedTempTerm origin (T.pack $ show (idInLstFromOld-1-num))) num)) parentLst'
+                            substLst = map (\num ->  (WB.SubstSet [] (WB.generatedTempTerm (sig,origin) (T.pack $ show (idInLstFromOld-1-num))) num)) parentLst'
                             targetMem = A.shiftIndices (foldl (\target (WB.SubstSet lst term num) -> A.arrowSubst target term (A.aVar num)) origin substLst) (-idInLstFromOld) 0
                             goal' = WB.Goal sig var (if isDeduce then M.Nothing else M.Just$ termsInProofTerm !! idInLstFromOld) [targetMem]
                             clues = --
@@ -507,7 +512,7 @@ sigmaIntro goal setting =
                                 parentLsts
                         in WB.SubGoal goal' substLst (clues,M.Nothing)
                   in map subgoalForMem [0..(length for)]
-                in WB.SubGoalSet QT.SigmaI M.Nothing subgoals dSide
+                in WB.SubGoalSet QT.SigmaI M.Nothing subgoals (dSide,dSideSubstLst)
             in ([subgoalset],"")
     (Just a,message) -> -- point3 : typeMisMatch
       ([],WB.exitMessage (WB.TypeMisMatch a) QT.SigmaI)
@@ -573,7 +578,7 @@ sigmaForm goal setting =
                                   [A.aType,A.Conclusion DdB.Kind]
                             in WB.SubGoal goal [] ([],M.Nothing)
                       in (WB.SubGoal ( WB.Goal sig (con ++ var) (M.Just res) [A.aType]) [] ([],M.Nothing)):map subgoalForMem [0..((length con)-1)]
-                in WB.SubGoalSet QT.SigmaF M.Nothing subgoals dside
+                in WB.SubGoalSet QT.SigmaF M.Nothing subgoals (dside,[])
           in ([subgoalset],"")
         term -> -- if term is M.Nothing or M.Just `not Arrow type`, return WB.TermMisMatch
           ([],WB.exitMessage (WB.TermMisMatch term) QT.SigmaF)
@@ -629,7 +634,7 @@ eqForm goal setting=
                     subgoalForB =
                       let goal = WB.Goal sig var (M.Just b) [t]
                       in WB.SubGoal goal [] ([],M.Nothing)
-                in WB.SubGoalSet QT.IqF M.Nothing [subgoalForT,subgoalForA,subgoalForB] dside
+                in WB.SubGoalSet QT.IqF M.Nothing [subgoalForT,subgoalForA,subgoalForB] (dside,[])
           in ([subgoalset],"")
         term -> -- if term is M.Nothing or M.Just `not Arrow type`, return WB.TermMisMatch
           ([],WB.exitMessage (WB.TermMisMatch term) QT.IqF)
@@ -713,7 +718,7 @@ membership goal setting =
               (\tree ->
                 let
                   dSide = A.downSide' tree
-                in WB.SubGoalSet QT.Var (M.Just tree) [] dSide
+                in WB.SubGoalSet QT.Var (M.Just tree) [] (dSide,[])
               )
               trees
       in (subgoalsets,"")
@@ -761,8 +766,10 @@ dne goal setting =
     (M.Just arrowType,_) ->
       let (sig,var) = WB.conFromGoal goal
           subgoalsets = let
-              dSideTerm = A.ArrowApp (A.aCon $T.pack " dne ") (A.aVar (-2))
+              targetTerm = WB.generatedTempTerm (sig,A.aCon "dummyInDNE") (T.pack $show 0)
+              dSideTerm = A.ArrowApp (A.aCon $T.pack " dne ") (targetTerm)
               dSide = A.AJudgment sig var dSideTerm arrowType
+              dSideSubstLst = [WB.SubstSet [] targetTerm 0]
               subgoal1 = -- arrowType の型が Type であるかを確認する
                 WB.SubGoal
                   ( WB.Goal sig var (M.Just arrowType) [A.aType])
@@ -771,7 +778,7 @@ dne goal setting =
               subgoal2 = let
                   goal = WB.Goal sig var M.Nothing [A.Arrow [A.Arrow [arrowType] (A.Conclusion DdB.Bot)] (A.Conclusion DdB.Bot)]
                 in WB.SubGoal goal [] ([],M.Nothing)
-            in [WB.SubGoalSet QT.PiI M.Nothing [subgoal1,subgoal2] dSide]
+            in [WB.SubGoalSet QT.PiI M.Nothing [subgoal1,subgoal2] (dSide,dSideSubstLst)]
         in (subgoalsets,"")
 
 efq goal setting = 
@@ -781,8 +788,10 @@ efq goal setting =
     (M.Just arrowType,_) ->
       let (sig,var) = WB.conFromGoal goal
           subgoalsets = let
-              dSideTerm = A.ArrowApp (A.aCon $T.pack " efq ") (A.aVar (-2))
+              targetTerm = WB.generatedTempTerm (sig,A.aCon "dummyInEFQ") (T.pack $show 0)
+              dSideTerm = A.ArrowApp (A.aCon $T.pack " efq ") targetTerm
               dSide = A.AJudgment sig var dSideTerm arrowType
+              dSideSubstLst = [WB.SubstSet [] targetTerm 0]
               subgoal1 = -- arrowType の型が Type であるかを確認する
                 WB.SubGoal
                   ( WB.Goal sig var (M.Just arrowType) [A.aType])
@@ -791,5 +800,5 @@ efq goal setting =
               subgoal2 = let
                   goal = WB.Goal sig var M.Nothing [A.Conclusion DdB.Bot]
                 in WB.SubGoal goal [] ([],M.Nothing)
-            in [WB.SubGoalSet QT.PiI M.Nothing [subgoal1,subgoal2] dSide]
+            in [WB.SubGoalSet QT.PiI M.Nothing [subgoal1,subgoal2] (dSide,dSideSubstLst)]
         in (subgoalsets,"")
