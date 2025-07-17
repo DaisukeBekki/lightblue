@@ -332,7 +332,7 @@ subst preterm l i =
     case preterm of
       DdB.Pi a b -> DdB.Pi (subst a l i) (subst b (DdB.shiftIndices l 1 0)  (DdB.shiftIndices i 1 0))
       DdB.Not m -> DdB.Not (subst m l i)
-      DdB.Lam m -> DdB.Lam (subst m (DdB.shiftIndices l 1 0) (DdB.shiftIndices i 1 0))
+      DdB.Lam m -> DdB.Lam (subst m (DdB.shiftIndices l 1 (-1)) (DdB.shiftIndices i 1 (-1)))
       DdB.App m n    -> DdB.App (subst m l i) (subst n l i)
       DdB.Sigma a b  -> DdB.Sigma (subst a l i) (subst b (DdB.shiftIndices l 1 0) (DdB.shiftIndices i 1 0))
       DdB.Pair m n   -> DdB.Pair (subst m l i) (subst n l i)

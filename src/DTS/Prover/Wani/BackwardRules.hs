@@ -95,17 +95,25 @@ piIntro goal setting =
         let (sig,var) = WB.conFromGoal goal
             subgoalsets = let
                 canBeConclusionTerm = A.rmLam (length l) (WB.termFromGoal goal)-- maybe M.Nothing (\term -> (A.rmLam (length l) term)) (WB.termFromGoal goal)
-                dSideSubstTerm = ((WB.generatedTempTerm (sig,A.aCon "dummyInDside") (T.pack $ show 0)))
+                dSideSubstTerm = ((WB.generatedTempTerm (sig,A.aCon "dummyInDside") (T.pack $ show (length l))))
                 dSideterm = maybe (A.betaReduce $ A.addLam (length l) dSideSubstTerm) id  canBeConclusionTerm
-                dSideSubstLst = [WB.SubstSet [] dSideSubstTerm 0]
+                dSideSubstLst = [WB.SubstSet [] dSideSubstTerm (length l)]
                 dSide = A.AJudgment sig var dSideterm arrowType
                 subgoal1 = let
                     goal1 = WB.Goal sig (l ++ var) canBeConclusionTerm [t]
                   in WB.SubGoal goal1 [] ([],M.Nothing)
-                subgoal2 = let
-                    goal2 = WB.Goal sig var (M.Just arrowType) [A.aType,A.Conclusion DdB.Kind]
-                  in WB.SubGoal goal2 [] ([],M.Nothing)
-              in [WB.SubGoalSet QT.PiI M.Nothing [subgoal1,subgoal2] (dSide,dSideSubstLst)]
+                subgoal2s = 
+                  let subgoalForMem idInLstFromOld = 
+                        let
+                          goal = 
+                            WB.Goal 
+                              sig 
+                              ((drop ((length l) +1 - idInLstFromOld) (t:l)) ++ var) 
+                              (M.Just ((reverse $t:l) !! idInLstFromOld))
+                              [A.aType,A.Conclusion DdB.Kind]
+                        in WB.SubGoal goal [] ([],M.Nothing)
+                  in map subgoalForMem [0..(length l - 1)]
+              in [WB.SubGoalSet QT.PiI M.Nothing (subgoal1:subgoal2s) (dSide,dSideSubstLst)]
         in (subgoalsets,"")
       _ -> ([],WB.exitMessage (WB.TypeMisMatch arrowType) QT.PiI)
 
