@@ -108,7 +108,7 @@ widgetFile = (if appReloadTemplates compileTimeAppSettings
 
 -- | Raw bytes at compile time of @config/settings.yml@
 configSettingsYmlBS :: ByteString
-configSettingsYmlBS = $(embedFile "src/Interface/Express/Yesod/config/settings.yml")
+configSettingsYmlBS = $(embedFile "config/settings.yml")
 
 -- | @config/settings.yml@, parsed to a @Value@.
 configSettingsYmlValue :: Value
