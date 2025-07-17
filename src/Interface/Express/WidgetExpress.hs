@@ -376,6 +376,14 @@ instance Widgetizable UDWN.Preterm where
         <mo>@
         ^{widgetize m}
       |]
+    UDWN.Ann m a   -> [whamlet|
+      <mrow>
+        <mo>(
+        ^{widgetize m}
+        <mo>::
+        ^{widgetize a}
+        <mo>)
+      |]
     UDWN.Nat    -> [whamlet|<mi>N|]
     UDWN.Zero   -> [whamlet|<mi>0|]
     UDWN.Succ n -> [whamlet|
@@ -383,13 +391,13 @@ instance Widgetizable UDWN.Preterm where
         <mi>s
         ^{widgetize n}
         |]
-    -- todo: ここ後で確認する！
-    UDWN.Natrec n e f x -> [whamlet|
+    UDWN.Natrec p n e f -> [whamlet|
       <mrow>
-        <mi>natrec
+        <msubsup>
+          <mi>natrec
+          <mn>^{widgetize p}
+          <mn>^{widgetize n}
         <mo>(
-        ^{widgetize n}
-        <mo>,
         ^{widgetize e}
         <mo>,
         ^{widgetize f}
@@ -411,14 +419,14 @@ instance Widgetizable UDWN.Preterm where
         ^{widgetize m}
         <mo>)
         |]
-    -- todo: ここ後で確認する！
-    UDWN.Idpeel m n x -> [whamlet|
+    UDWN.Idpeel p e r -> [whamlet|
       <mrow>
-        <mi>idpeel
+        <msubsup>
+          <mi>idpeel
+          <mn>^{widgetize p}
+          <mn>^{widgetize e}
         <mo>(
-        ^{widgetize m}
-        <mo>,
-        ^{widgetize n}
+        ^{widgetize r}
         <mo>)
         |]
 
@@ -578,15 +586,14 @@ instance Widgetizable DWN.Preterm where
         <mi>s
         ^{widgetize n}
         |]
-    -- todo: ここ後で確認する！
-    DWN.Natrec n e f x -> [whamlet|
+    DWN.Natrec p n e f -> [whamlet|
       <mrow>
-        <mi>natrec
+        <msubsup>
+          <mi>natrec
+          <mn>^{widgetize p}
+          <mn>^{widgetize n}
         <mo>(
-        ^{widgetize n}
-        <mo>,
         ^{widgetize e}
-        <mo>,
         ^{widgetize f}
         <mo>)
         |]
@@ -606,14 +613,14 @@ instance Widgetizable DWN.Preterm where
         ^{widgetize m}
         <mo>)
         |]
-    -- todo: ここ後で確認する！
-    DWN.Idpeel m n x -> [whamlet|
+    DWN.Idpeel p e r -> [whamlet|
       <mrow>
-        <mi>idpeel
+        <msubsup>
+          <mi>idpeel
+          <mn>^{widgetize p}
+          <mn>^{widgetize e}
         <mo>(
-        ^{widgetize m}
-        <mo>,
-        ^{widgetize n}
+        ^{widgetize r}
         <mo>)
         |]
 
@@ -633,6 +640,9 @@ instance Widgetizable QT.DTTrule where
     QT.DisjF -> [whamlet| <mi>+F|]
     QT.DisjI -> [whamlet| <mi>+I|]
     QT.DisjE -> [whamlet| <mi>+E|]
+    QT.BotF -> [whamlet| <mi>⊥F|]
+    QT.TopF -> [whamlet| <mi>TF|]
+    QT.TopI -> [whamlet| <mi>TI|]
     QT.EnumF ->[whamlet| <mi>{}F|]
     QT.EnumI -> [whamlet| <mi>{}I|]
     QT.EnumE -> [whamlet| <mi>{}E|]
