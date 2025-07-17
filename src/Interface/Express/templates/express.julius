@@ -1,0 +1,22 @@
+console.log("JavaScript file loaded");
+
+const checkbox = document.getElementById('toggle-node');
+
+const tabNode = document.querySelector('.tab-node');
+
+checkbox.addEventListener('change', () => {
+  if (checkbox.checked) {
+    console.log("Yesです");
+    tabNode.style.display = 'block'; // 表示する
+    console.log("現在のスタイル: ", tabNode.style.display);
+  } else {
+    console.log("Noです");
+    tabNode.style.display = 'none'; // 非表示にする
+    console.log("現在のスタイル: ", tabNode.style.display);
+  }
+});
+
+//$( '.parsing-input' ).on('input', function() {
+//    const allFilled = $('.parsing-input').toArray().every(input => $(input).val().trim() !== '');
+//    $('.btn_parse').prop('disabled', !allFilled);
+//});

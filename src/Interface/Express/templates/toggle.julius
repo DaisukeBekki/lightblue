@@ -1,0 +1,67 @@
+
+function toggle(id){
+            var objID1 = document.getElementById( id + "layerA" );
+            var objID2 = document.getElementById( id + "layerB" );
+            var buttonID = document.getElementById( id + "button" );
+            if(objID1.className=='close') {
+              objID1.style.display = 'block';
+              objID1.className = 'open';
+              objID2.style.display = 'none';
+              objID2.className = 'close';
+              buttonID.innerHTML = "-";
+            }else{
+              objID1.style.display = 'none';
+              objID1.className = 'close';
+              objID2.style.display = 'block';
+              objID2.className = 'open';
+              buttonID.innerHTML = "+";
+            }
+};
+
+var stage = new createjs.Stage("canvas");
+var shapeList = [];
+var senList = [];
+var size = 50;
+var offsetX = size;
+var offsetY = size;
+
+function drawDiamond(x, y, color = "white") {
+    var shape = new createjs.Shape();
+    shape.graphics
+                         .beginStroke("#0067C0")
+                         .setStrokeStyle(3)
+                         .beginFill(color)
+                         .moveTo(x, y - size)
+                         .lineTo(x + size, y)
+                         .lineTo(x, y + size)
+                         .lineTo(x - size, y)
+                         .closePath();
+                    stage.addChild(shape);
+                    return shape;
+}               
+
+               function drawDiamondGrid(rows, sentence) {
+                    for (let row = 0; row < rows; row++) {
+                         for (let col = 0; col <= row; col++) {
+                         const x = stage.canvas.width / 2 - row * offsetX + offsetX * 2 * col;
+                         const y = stage.canvas.height / 2 + row * offsetY;
+                         const shape = drawDiamond(x, y);
+                         shapeList.push(shape);
+                         const s = sentence.substring(row, col + 1);
+                         senList.push({ sentence: s, start: row, end: col });
+                         shape.addEventListener("click", handleClick);
+                         }
+                    }
+                    stage.update();
+               }
+
+               function handleClick(event) {
+                    var shape = event.currentTarget;
+                    for (var i = 0; i < shapeList.length; i++) {
+                         if (shapeList[i] === shape) {
+                         console.log("Clicked:", senList[i]);
+                         }
+                    }
+               }
+
+     
