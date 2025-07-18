@@ -96,6 +96,7 @@ library:
   - Interface.Express.Express
   - Interface.SVG
   - Interface.Tree
+  - Interface.PrintParseResult
   - DTS.Index
   - DTS.GeneralTypeQuery
   - DTS.UDTTdeBruijn
