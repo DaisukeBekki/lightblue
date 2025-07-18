@@ -23,7 +23,7 @@ module DTS.NaturalLanguageInference (
   , trawlParseResult
   ) where
 
-import Control.Monad (when,forM_,join)    --base
+import Control.Monad (join)    --base
 import Control.Monad.State (lift)         --mtl
 import Control.Monad.IO.Class (liftIO)    --base
 import Control.Applicative ((<|>))        --base
@@ -33,20 +33,14 @@ import qualified Data.Char as C           --base
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.List as L           --base
-import ListT (ListT(..),fromFoldable,toList,toReverseList,take,null,uncons,cons) --list-t
+import ListT (ListT(..),fromFoldable,toReverseList,take,null,uncons,cons) --list-t
 import qualified Parser.ChartParser as CP      --lightblue
 import qualified Parser.PartialParsing as Partial --lightblue
 import qualified Parser.CCG as CCG             --lightblue
-import Interface                               --lightblue
-import Interface.Text                          --lightblue
-import Interface.HTML as HTML                  --lightblue
-import Interface.TeX                           --lightblue
 import Interface.Tree as Tree                  --lightblue
 --import Parser.Language (LangOptions(..),jpOptions)
 import qualified DTS.UDTTdeBruijn as UDTT      --lightblue
-import qualified DTS.UDTTwithName as UDTTwN    --lightblue
 import qualified DTS.DTTdeBruijn as DTT        --lightblue
-import qualified DTS.DTTwithName as DTTwN      --lightblue
 import qualified DTS.QueryTypes as QT          --lightblue
 import qualified DTS.TypeChecker as TY         --lightblue
 import qualified DTS.Prover.Wani.Prove as Wani --lightblue
