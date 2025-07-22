@@ -97,45 +97,29 @@ ruleResultToSubGoalsets depth debugEnabled ruleResults =
         )
         subgoalsets
 
-constructResultWithResultset :: QT.DTTrule -> (M.Maybe (UDT.Tree QT.DTTrule A.AJudgment)) -> WB.Result -> A.AJudgment -> WB.Setting -> [WB.Result] -> WB.Result
-constructResultWithResultset rule maybeTree resultDef (A.AJudgment sig var aTerm aType) setting resultset = 
-  let resultBase = foldl WB.mergeResult resultDef resultset
-      downside = 
-        let gijiGoal = (WB.Goal sig var (M.Just aTerm) [aType])
-            WB.Goal _ _ (M.Just aTerm') [aType'] = {-- D.trace ("gijigoal : "++(show gijiGoal)++ " resultset "++(show resultset) ++ " bound "++(show $A.varsInaTerm aType)) $--}  maybe gijiGoal id $
-                  snd $
-                      foldl
-                      (\(targetId,maybeGoal') result ->
-                          maybe
-                          (targetId-1,M.Nothing)
-                          (\goal' -> (targetId-1,updateGoalWithAntecedent targetId result setting (targetId,goal')))
-                          maybeGoal'
-                      )
-                      (-1,M.Just gijiGoal)
-                      (resultset)
-        in A.AJudgment sig var aTerm' aType'
-      trees = map (head . WB.trees) resultset
-      tree = UDT.Tree rule downside (maybe trees (\tree -> tree:trees) maybeTree)
-  in resultBase{WB.trees = [tree]}
-
-constructResultWithResultsets :: QT.DTTrule -> (M.Maybe (UDT.Tree QT.DTTrule A.AJudgment)) -> [[WB.Result]] -> A.AJudgment -> WB.Setting -> WB.Result -> WB.Result
+constructResultWithResultsets :: QT.DTTrule -> (M.Maybe (UDT.Tree QT.DTTrule A.AJudgment)) -> [[WB.Result]] -> (A.AJudgment,WB.SubstLst)  -> WB.Setting -> WB.Result -> WB.Result
 constructResultWithResultsets rule maybeTree resultsets dSide setting resultDef = 
   let 
-    constructResultWithResultset (A.AJudgment sig var aTerm aType) resultset = 
+    constructResultWithResultset ((A.AJudgment sig var aTerm aType),substLstForDside) resultset = 
         let resultBase = foldl WB.mergeResult resultDef resultset
             downside = 
               let gijiGoal = (WB.Goal sig var (M.Just aTerm) [aType])
+                  resultsLen = length resultset
                   WB.Goal _ _ (M.Just aTerm') [aType'] = {-- D.trace ("gijigoal : "++(show gijiGoal)++ " resultset "++(show resultset) ++ " bound "++(show $A.varsInaTerm aType)) $--}  maybe gijiGoal id $
                         snd $
                             foldl
-                            (\(targetId,maybeGoal') result ->
+                            (\(targetId,maybeGoal') (WB.SubstSet lst target num) -> -- D.trace ("maybeGoal "++(show maybeGoal') ++ " / " ++ (show $ WB.SubstSet lst target num)) $
                                 maybe
                                 (targetId-1,M.Nothing)
-                                (\goal' -> (targetId-1,updateGoalWithAntecedent targetId result setting (targetId,goal')))
+                                (\goal' -> (
+                                  targetId-1, 
+                                  if resultsLen > num then  updateGoalWithAntecedent (WB.SubstSet lst target num) ((reverse resultset) !! num) setting (targetId,goal') else (D.trace ("error in constructResultWithResultset : num-" ++ (show num) ++ " resulstset "++(show resultset)) M.Nothing)
+                                  )
+                                )
                                 maybeGoal'
                             )
-                            (-1,M.Just gijiGoal)
-                            (resultset)
+                            (-1, M.Just gijiGoal)
+                            (reverse $ L.sortOn (\(WB.SubstSet _ _ num) -> num) substLstForDside)
               in A.AJudgment sig var aTerm' aType'
             trees = map (head . WB.trees) resultset
             tree = UDT.Tree rule downside (maybe trees (\tree -> tree:trees) maybeTree)
@@ -143,22 +127,8 @@ constructResultWithResultsets rule maybeTree resultsets dSide setting resultDef 
     resultsets' = map (constructResultWithResultset dSide) resultsets
   in foldl WB.mergeResult resultDef resultsets'
 
-updateGoalWithAntecedent :: Int -> WB.Result -> WB.Setting -> (Int,WB.Goal) -> M.Maybe WB.Goal
-updateGoalWithAntecedent myId result setting (targetId,(WB.Goal sig var maybeTerm arrowTypes))
-  | targetId > (-1) = M.Nothing
-  | ((length (WB.trees result)) > 1) = M.Nothing
-  | otherwise = 
-      let before = A.aVar targetId  -- num2SubHojoCon targetId setting
-          resultDownSide = A.downSide' (head (WB.trees result))
-          envDiff =  A.contextLen (sig,var) - A.contextLen (A.envfromAJudgment resultDownSide)
-          after = A.shiftIndices (A.termfromAJudgment $ A.downSide' (head (WB.trees result))) ({--targetId-myId+--}envDiff) 0
-          beforeIsBoundInArrowType arrowTerm = (targetId > (A.boundUpLim arrowTerm))--(A.shiftIndices arrowTerm 1 targetId) /= arrowTerm
-          arrowTypes' =   map (\arrowType -> if beforeIsBoundInArrowType arrowType then arrowType  else (A.arrowSubst arrowType after before)) arrowTypes
-          maybeTerm' = maybe M.Nothing (\term -> M.Just (A.arrowSubst term after before)) maybeTerm
-      in M.Just $ WB.Goal sig var maybeTerm' arrowTypes'
-
-updateGoalWithAntecedent' :: WB.SubstSet -> WB.Result -> WB.Setting -> (Int,WB.Goal) -> M.Maybe WB.Goal
-updateGoalWithAntecedent' (WB.SubstSet _ before _) result setting (targetId,(WB.Goal sig var maybeTerm arrowTypes))
+updateGoalWithAntecedent :: WB.SubstSet -> WB.Result -> WB.Setting -> (Int,WB.Goal) -> M.Maybe WB.Goal
+updateGoalWithAntecedent (WB.SubstSet _ before _) result setting (targetId,(WB.Goal sig var maybeTerm arrowTypes))
   | targetId > (-1) = M.Nothing
   | ((length (WB.trees result)) > 1) = M.Nothing
   | otherwise = 
@@ -190,16 +160,6 @@ subgoalToGoalWithAntecedents results (WB.SubGoal goal substLst (pos,res)) depth 
           )
           res
       resultsLen = length results
-  -- in snd $
-  --     foldl
-  --     (\(targetId,maybeGoal') result ->
-  --         maybe
-  --         (targetId-1,M.Nothing)
-  --         (\goal' -> (targetId-1,updateGoalWithAntecedent myId result setting (targetId,goal')))
-  --         maybeGoal'
-  --     )
-  --     (-1, goalWithClue)
-  --     (reverse $ init $ results)
   in snd $
       foldl
       (\(targetId,maybeGoal') (WB.SubstSet lst target num) -> -- D.trace ("maybeGoal "++(show maybeGoal') ++ " / " ++ (show $ WB.SubstSet lst target num)) $
@@ -207,7 +167,7 @@ subgoalToGoalWithAntecedents results (WB.SubGoal goal substLst (pos,res)) depth 
           (targetId-1,M.Nothing)
           (\goal' -> (
             targetId-1, 
-            if resultsLen > num then  updateGoalWithAntecedent' (WB.SubstSet lst target num) (results !! num) setting (targetId,goal') else (D.trace "error in subgoalToGoalWithAntecedents" M.Nothing)
+            if resultsLen > num then  updateGoalWithAntecedent (WB.SubstSet lst target num) (results !! num) setting (targetId,goal') else (D.trace "error in subgoalToGoalWithAntecedents" M.Nothing)
             )
           )
           maybeGoal'
