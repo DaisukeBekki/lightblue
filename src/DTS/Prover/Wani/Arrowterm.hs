@@ -1,4 +1,4 @@
-{-# LANGUAGE  TypeSynonymInstances, FlexibleInstances  #-}
+{-# LANGUAGE  TypeSynonymInstances, FlexibleInstances, DeriveGeneric, DeriveAnyClass  #-}
 
 module DTS.Prover.Wani.Arrowterm
 (
@@ -58,8 +58,10 @@ import qualified Debug.Trace as D
 import qualified Interface.Tree as UDT
 import qualified DTS.QueryTypes as QT
 import qualified Data.Maybe as M
+import Data.Store (Store(..))
+import qualified GHC.Generics as G
 
-data ArrowSelector = ArrowFst | ArrowSnd deriving (Eq, Show)
+data ArrowSelector = ArrowFst | ArrowSnd deriving (Eq, Show, G.Generic, Store)
 -- | Arrowterm
 data Arrowterm =
   Conclusion DdB.Preterm -- ^ 末尾の部分
@@ -70,7 +72,7 @@ data Arrowterm =
   | ArrowLam Arrowterm -- ^ Lam型
   | Arrow AEnv  Arrowterm -- ^ Pi型
   | ArrowEq Arrowterm Arrowterm Arrowterm -- ^ 型 項1 項2 型
-  deriving (Eq)
+  deriving (Eq, G.Generic, Store)
 -- | DTT.Preterm型に変換して得たテキストを加工している
 instance Show Arrowterm where
   show term  = show $ arrow2DT term -- prestr2arrowstr ((filter (/= ' ') . show . arrow2DT) term) term
@@ -330,7 +332,7 @@ subst preterm l i =
     case preterm of
       DdB.Pi a b -> DdB.Pi (subst a l i) (subst b (DdB.shiftIndices l 1 0)  (DdB.shiftIndices i 1 0))
       DdB.Not m -> DdB.Not (subst m l i)
-      DdB.Lam m -> DdB.Lam (subst m (DdB.shiftIndices l 1 0) (DdB.shiftIndices i 1 0))
+      DdB.Lam m -> DdB.Lam (subst m (DdB.shiftIndices l 1 ((boundUpLim . dt2Arrow) preterm)) (DdB.shiftIndices i 1 ((boundUpLim .dt2Arrow) preterm)))
       DdB.App m n    -> DdB.App (subst m l i) (subst n l i)
       DdB.Sigma a b  -> DdB.Sigma (subst a l i) (subst b (DdB.shiftIndices l 1 0) (DdB.shiftIndices i 1 0))
       DdB.Pair m n   -> DdB.Pair (subst m l i) (subst n l i)

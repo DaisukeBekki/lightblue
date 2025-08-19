@@ -298,7 +298,7 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
             | nSample < 0 = parsedJSeM'
             | otherwise = take nSample parsedJSeM'
           handle = S.stdout
-          prover = NLI.getProver proverName $ QT.ProofSearchSetting (Just maxDepth) (Just maxTime) (Just QT.Classical)
+          prover = NLI.getProver proverName $ QT.ProofSearchSetting (Just maxDepth) (Just maxTime) (Just QT.Intuitionistic)
       S.hPutStrLn handle $ I.headerOf style
       pairs <- forM parsedJSeM'' $ \j -> do
         let title = "JSeM-ID " ++ (StrictT.unpack $ J.jsem_id j)
