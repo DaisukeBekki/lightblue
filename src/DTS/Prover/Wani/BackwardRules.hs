@@ -88,7 +88,7 @@ import qualified Debug.Trace as D
 piIntro :: WB.Rule
 piIntro goal setting = 
   case WB.acceptableType QT.PiI goal False [] of
-  (Nothing,message) -> ([],message)
+  (Nothing,message) -> return ([],message)
   (Just arrowType,_) -> 
     case arrowType of
       A.Arrow l t ->
@@ -114,21 +114,21 @@ piIntro goal setting =
                         in WB.SubGoal goal [] ([],M.Nothing)
                   in map subgoalForMem [0..(length l - 1)]
               in [WB.SubGoalSet QT.PiI M.Nothing (subgoal1:subgoal2s) (dSide,dSideSubstLst)]
-        in (subgoalsets,"")
-      _ -> ([],WB.exitMessage (WB.TypeMisMatch arrowType) QT.PiI)
+        in return (subgoalsets,"")
+      _ -> return ([],WB.exitMessage (WB.TypeMisMatch arrowType) QT.PiI)
 
 -- | topIntro
 topIntro :: WB.Rule
 topIntro goal setting = 
   case WB.acceptableType QT.TopI goal True [(A.Conclusion DdB.Top)] of
-  (Nothing,message) -> ([],message)
+  (Nothing,message) -> return ([],message)
   (Just _,_) -> 
     case WB.termFromGoal goal of
       M.Just (A.Conclusion DdB.Unit) -> 
         let (sig,var) = WB.conFromGoal goal
             subgoalsets = [WB.SubGoalSet QT.TopI M.Nothing [] (A.AJudgment sig var (A.Conclusion DdB.Unit) (A.Conclusion DdB.Top), [])]
-        in (subgoalsets,"")
-      term ->([],WB.exitMessage (WB.TermMisMatch term) QT.TopI)
+        in return (subgoalsets,"")
+      term -> return ([],WB.exitMessage (WB.TermMisMatch term) QT.TopI)
 
 -- | piElim rule
 --
@@ -256,7 +256,7 @@ piElim :: WB.Rule
 piElim goal setting =
   case WB.acceptableType QT.PiE goal False [(A.Conclusion DdB.Kind)] of
     (Nothing,message) -> -- point1 : typeMisMatch
-      ([],message)
+      return ([],message)
     (Just arrowType,_) -> 
       let (sig,var) = WB.conFromGoal goal
           maybeTerm = WB.termFromGoal goal
@@ -271,7 +271,7 @@ piElim goal setting =
           isDeduce = null termsInProofTerm
           (env',b') = case arrowType of A.Arrow env b -> (env,b) ; _ -> ([],arrowType)
       in if termIsNotAppType -- point2 : termMisMatch
-        then ([],WB.exitMessage (WB.TermMisMatch maybeTerm) QT.PiE)
+        then return ([],WB.exitMessage (WB.TermMisMatch maybeTerm) QT.PiE)
         else
           let
             argNumAndFunctions = -- return [(the num of args,functionTree) pair]
@@ -298,19 +298,19 @@ piElim goal setting =
                         _ -> M.Nothing
               in
                 M.mapMaybe argNumAndFunction (WB.trees forwarded)
-            subgoalsetForFunctions =
+            subgoalsetForFunctionsIO =
               let subgoalsetForFunction (argNum,functionTree) = 
                     let functionJudgment = A.downSide' functionTree
                         A.Arrow args result = -- format the function ; if the (function,result) is ([a,b]->c,b->c), the term will be ([a]->([b]->c))
                               let A.Arrow formerLst latter = A.typefromAJudgment functionJudgment
                                   notArgFormerNum = length formerLst - argNum
                               in A.Arrow (drop notArgFormerNum formerLst) (A.arrowNotat $ A.Arrow (take notArgFormerNum formerLst) latter)  
-                        (dSide,dSideSubstLst) =
+                        dSideSet =
                           let
-                            dSideSubstLst = map (\num -> WB.SubstSet [] (WB.generatedTempTerm (sig,arrowType) (T.pack $ show num)) num) [0..(argNum-1)]
-                            arrowTerm = M.maybe (A.betaReduce $ foldl A.ArrowApp (A.termfromAJudgment functionJudgment) (reverse $ map (\(WB.SubstSet _ term _) -> term)  dSideSubstLst)) id maybeTerm
-                            arrowType' = A.shiftIndices (foldl (\r (old,new) -> A.arrowSubst r new old) result (map (\(WB.SubstSet _ term num) -> (A.aVar num,term)) dSideSubstLst)) (negate argNum) argNum
-                          in (A.AJudgment sig var arrowTerm arrowType',dSideSubstLst)
+                            dSideSubstLst' = map (\num -> WB.SubstSet [] (WB.generatedTempTerm (sig,arrowType) (T.pack $ show num)) num) [0..(argNum-1)]
+                            arrowTerm = M.maybe (A.betaReduce $ foldl A.ArrowApp (A.termfromAJudgment functionJudgment) (reverse $ map (\(WB.SubstSet _ term _) -> term)  dSideSubstLst')) id maybeTerm
+                            arrowType' = A.shiftIndices (foldl (\r (old,new) -> A.arrowSubst r new old) result (map (\(WB.SubstSet _ term num) -> (A.aVar num,term)) dSideSubstLst')) (negate argNum) argNum
+                          in (A.AJudgment sig var arrowTerm arrowType',dSideSubstLst')
                         subgoals =
                           let
                             parentLsts = -- ex : [(4,[1,3]),(3,[1,3]),(2,[]),(1,[0,1]),(0,[])] for [ y0:entity, y1:var 1(var 0),y2:entity ->type,y3:var3(var 1)] => var 1(var 3) 
@@ -330,9 +330,9 @@ piElim goal setting =
                                     M.mapMaybe (\(argIdFromOld,parentLst) -> if any (==argIdFromOld-idInLstFromOld-1) parentLst && ( argIdFromOld < argNum ) then M.Just (WB.convertToSubstableTerm ((reverse args) !! argIdFromOld,argIdFromOld) idInLstFromOld,A.aVar (-1+idInLstFromOld-argIdFromOld)) else M.Nothing) parentLsts
                                 in WB.SubGoal goal' (L.nub $ substLstForResult ++ substLst) (clueWithArg,clueWithResult)
                           in map subgoalForArg [0..(argNum-1)] 
-                    in WB.SubGoalSet QT.PiE (M.Just functionTree) subgoals (dSide,dSideSubstLst)
-              in map subgoalsetForFunction argNumAndFunctions
-      in (subgoalsetForFunctions,"")
+                    in return (WB.SubGoalSet QT.PiE (M.Just functionTree) subgoals dSideSet)
+              in sequence $ map subgoalsetForFunction argNumAndFunctions
+      in subgoalsetForFunctionsIO >>= \subgoalsetForFunctions -> return (subgoalsetForFunctions,"")
 
 -- | piForm
 -- 
@@ -375,7 +375,7 @@ piForm :: WB.Rule
 piForm goal setting = 
   case WB.acceptableType QT.PiF goal True [(A.Conclusion DdB.Type),(A.Conclusion DdB.Kind)] of
     (Nothing,message) -> -- point1 : typeMisMatch
-      ([],message)
+      return ([],message)
     (Just arrowType,_) -> 
       case WB.termFromGoal goal of
         M.Just (A.Arrow con res) ->
@@ -394,9 +394,9 @@ piForm goal setting =
                             in WB.SubGoal goal [] ([],M.Nothing)
                       in map subgoalForMem [0..(length con)]
                 in WB.SubGoalSet QT.PiF M.Nothing subgoals (dside,[])
-          in ([subgoalset],"")
+          in return ([subgoalset],"")
         term ->  -- if term is M.Nothing or M.Just `not Arrow type`, return WB.TermMisMatch
-          ([],WB.exitMessage (WB.TermMisMatch term) QT.PiF)
+          return ([],WB.exitMessage (WB.TermMisMatch term) QT.PiF)
 
 
 -- | sigmaIntro
@@ -477,7 +477,7 @@ sigmaIntro :: WB.Rule
 sigmaIntro goal setting = 
   case WB.acceptableType QT.SigmaI goal False [] of
     (Nothing,message) -> -- point1 : typeMisMatch
-      ([],message)
+      return ([],message)
     (Just (A.ArrowSigma' for lat),_) -> 
       let (sig,var) = WB.conFromGoal goal
           maybeTerm = WB.termFromGoal goal
@@ -491,7 +491,7 @@ sigmaIntro goal setting =
           termIsNotPairType = (length termsInProofTerm == 1) -- When termsInProofTerm is a list with one element, the term is not appType
           isDeduce = null termsInProofTerm
       in if termIsNotPairType -- point2 : termMisMatch
-        then ([],WB.exitMessage (WB.TermMisMatch maybeTerm) QT.SigmaI)
+        then return ([],WB.exitMessage (WB.TermMisMatch maybeTerm) QT.SigmaI)
         else
           let subgoalset =  let 
                 (dSide,dSideSubstLst) = let
@@ -521,9 +521,9 @@ sigmaIntro goal setting =
                         in WB.SubGoal goal' substLst (clues,M.Nothing)
                   in map subgoalForMem [0..(length for)]
                 in WB.SubGoalSet QT.SigmaI M.Nothing subgoals (dSide,dSideSubstLst)
-            in ([subgoalset],"")
+            in return ([subgoalset],"")
     (Just a,message) -> -- point3 : typeMisMatch
-      ([],WB.exitMessage (WB.TypeMisMatch a) QT.SigmaI)
+      return ([],WB.exitMessage (WB.TypeMisMatch a) QT.SigmaI)
 
 
 -- | sigmaForm
@@ -568,7 +568,7 @@ sigmaForm :: WB.Rule
 sigmaForm goal setting = 
   case WB.acceptableType QT.SigmaF goal True [(A.Conclusion DdB.Type)] of
     (Nothing,message) -> -- point1 : typeMisMatch
-      ([],message)
+      return ([],message)
     (Just arrowType,_) ->
       case WB.termFromGoal goal of
         M.Just (A.ArrowSigma' con res) -> 
@@ -587,9 +587,9 @@ sigmaForm goal setting =
                             in WB.SubGoal goal [] ([],M.Nothing)
                       in (WB.SubGoal ( WB.Goal sig (con ++ var) (M.Just res) [A.aType]) [] ([],M.Nothing)):map subgoalForMem [0..((length con)-1)]
                 in WB.SubGoalSet QT.SigmaF M.Nothing subgoals (dside,[])
-          in ([subgoalset],"")
+          in return ([subgoalset],"")
         term -> -- if term is M.Nothing or M.Just `not Arrow type`, return WB.TermMisMatch
-          ([],WB.exitMessage (WB.TermMisMatch term) QT.SigmaF)
+          return ([],WB.exitMessage (WB.TermMisMatch term) QT.SigmaF)
 
 -- | eqForm
 -- 
@@ -626,7 +626,7 @@ eqForm :: WB.Rule
 eqForm goal setting= 
   case WB.acceptableType QT.IqF goal True [(A.Conclusion DdB.Type),(A.Conclusion DdB.Kind)] of
     (Nothing,message) -> -- point1 : typeMisMatch
-      ([],message)
+      return ([],message)
     (Just arrowType,_) -> 
       case WB.termFromGoal goal of
         M.Just (A.ArrowEq t a b) ->
@@ -643,9 +643,9 @@ eqForm goal setting=
                       let goal = WB.Goal sig var (M.Just b) [t]
                       in WB.SubGoal goal [] ([],M.Nothing)
                 in WB.SubGoalSet QT.IqF M.Nothing [subgoalForT,subgoalForA,subgoalForB] (dside,[])
-          in ([subgoalset],"")
+          in return ([subgoalset],"")
         term -> -- if term is M.Nothing or M.Just `not Arrow type`, return WB.TermMisMatch
-          ([],WB.exitMessage (WB.TermMisMatch term) QT.IqF)
+          return ([],WB.exitMessage (WB.TermMisMatch term) QT.IqF)
 
 -- | membership
 -- 
@@ -705,7 +705,7 @@ eqForm goal setting=
 membership :: WB.Rule
 membership goal setting = 
   case WB.acceptableType QT.Var goal False [] of
-    (Nothing,message) -> ([],message)
+    (Nothing,message) -> return ([],message)
     (Just arrowType,_) -> 
       let (sig,var) = WB.conFromGoal goal
           forwardedTrees = WB.trees $ F.forwardContext sig var
@@ -729,7 +729,7 @@ membership goal setting =
                 in WB.SubGoalSet QT.Var (M.Just tree) [] (dSide,[])
               )
               trees
-      in (subgoalsets,"")
+      in return (subgoalsets,"")
 
 
 -- | dne
@@ -768,9 +768,9 @@ dne :: WB.Rule
 dne goal setting = 
   case WB.acceptableType QT.PiE goal False [(A.Conclusion DdB.Kind),A.aType ] of
     (M.Nothing,message) -> -- point1 : typeMisMatch
-      ([],T.append "dne- " message)
+      return ([],T.append "dne- " message)
     (M.Just (A.Arrow [A.Arrow _ (A.Conclusion DdB.Bot)] (A.Conclusion DdB.Bot)),_) -> 
-      ([],"duplicate DNE")
+      return ([],"duplicate DNE")
     (M.Just arrowType,_) ->
       let (sig,var) = WB.conFromGoal goal
           subgoalsets = let
@@ -787,12 +787,12 @@ dne goal setting =
                   goal = WB.Goal sig var M.Nothing [A.Arrow [A.Arrow [arrowType] (A.Conclusion DdB.Bot)] (A.Conclusion DdB.Bot)]
                 in WB.SubGoal goal [] ([],M.Nothing)
             in [WB.SubGoalSet QT.PiI M.Nothing [subgoal1,subgoal2] (dSide,dSideSubstLst)]
-        in (subgoalsets,"")
+        in return (subgoalsets,"")
 
 efq goal setting = 
    case WB.acceptableType QT.PiE goal False [(A.Conclusion DdB.Bot)] of
     (M.Nothing,message) -> -- point1 : typeMisMatch
-      ([],T.append "efq- " message)
+      return([],T.append "efq- " message)
     (M.Just arrowType,_) ->
       let (sig,var) = WB.conFromGoal goal
           subgoalsets = let
@@ -809,4 +809,4 @@ efq goal setting =
                   goal = WB.Goal sig var M.Nothing [A.Conclusion DdB.Bot]
                 in WB.SubGoal goal [] ([],M.Nothing)
             in [WB.SubGoalSet QT.PiI M.Nothing [subgoal1,subgoal2] (dSide,dSideSubstLst)]
-        in (subgoalsets,"")
+        in return (subgoalsets,"")
