@@ -13,6 +13,7 @@ module DTS.DTTdeBruijn (
   -- * Terms and Types
   Selector(..)
   , Preterm(..)
+  , ConName
   -- * General Syntactic Operations
   , subst
   , shiftIndices
@@ -47,6 +48,8 @@ data Selector = Fst | Snd deriving (Eq, Show, G.Generic, Store)
 instance SimpleText Selector where
   toText Fst = "1"
   toText Snd = "2"
+
+type ConName = LazyT.Text
 
 -- instance Typeset Selector where
 --   toTeX = toText
