@@ -65,7 +65,7 @@ type ATerm = A.Arrowterm
 type AType = A.Arrowterm
 type Depth = Int
 
-type DeduceRule = A.SAEnv -> A.AEnv -> AType -> Depth -> Setting -> Result
+type DeduceRule = A.SAEnv -> A.AEnv -> AType -> Depth -> Setting -> IO Result
 type TypecheckRule = A.SAEnv -> A.AEnv -> ATerm -> AType -> Depth -> Setting -> Result
 
 data ProofMode = Plain | WithDNE | WithEFQ deriving (Show,Eq)
@@ -150,7 +150,7 @@ termFromGoal (Goal _ _ maybeProofTerm _ ) = maybeProofTerm
 typesFromGoal :: Goal -> [ProofType]
 typesFromGoal (Goal _ _ _ proofTypes) = proofTypes
 
-type Rule = Goal -> Setting -> ([SubGoalSet],T.Text)
+type Rule = Goal -> Setting -> IO ([SubGoalSet],T.Text)
 
 data SubGoal = 
   SubGoal 

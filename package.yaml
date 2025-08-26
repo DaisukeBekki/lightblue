@@ -48,6 +48,7 @@ dependencies:
   - parserModules
   - unicode-show >= 0.1
   - parallel >= 3.2.2
+  - transformers >= 0.5.6.2
 
 library:
   source-dirs: src
@@ -90,7 +91,6 @@ library:
   - DTS.NaturalLanguageInference
   - DTS.Prover.Wani.WaniBase
   - DTS.Prover.Wani.Forward
-  - DTS.Prover.Wani.Backward
   - DTS.Prover.Wani.BackwardRules
   - DTS.Prover.Wani.BackwardWithRules
   - DTS.Prover.Wani.Arrowterm
