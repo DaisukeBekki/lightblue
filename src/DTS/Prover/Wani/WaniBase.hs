@@ -61,6 +61,8 @@ import qualified Data.List as L
 import qualified Data.Maybe as M
 import qualified Debug.Trace as D
 
+import qualified Data.Time.Clock as Time
+
 type ATerm = A.Arrowterm
 type AType = A.Arrowterm
 type Depth = Int
@@ -84,7 +86,8 @@ data Setting = Setting
    maxtime :: Int,
    debug :: Int,
    sStatus :: Status,
-   ruleConHojo :: String} deriving (Show,Eq)
+   ruleConHojo :: String,
+   timeLimit :: M.Maybe Time.UTCTime} deriving (Show,Eq)
 
 data Result = Result
   {trees :: [UDT.Tree A.Arrowrule A.AJudgment],
