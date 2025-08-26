@@ -258,7 +258,7 @@ deduce' goal depth setting
                           map
                             (\rule -> rule goal setting)
                             ( -- Because of `sortSubGoalSets`, there is no need to care about rule order. (Before `sortSubGoalSets`, The stronger the rule, the later to be set. For example, `dne` can be used for any term, thus turning the execution later. This setting takes effect in combination with the rounding up of proof search using `B.allProof`.)
-                              [BR.piForm,BR.sigmaForm,BR.eqForm,BR.membership,BR.piIntro,BR.sigmaIntro,BR.piElim,BR.topIntro] 
+                              [BR.piForm,BR.sigmaForm,BR.eqForm,BR.membership,BR.askOracle,BR.piIntro,BR.sigmaIntro,BR.piElim,BR.topIntro] 
                               ++ [BR.dne | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithDNE]
                               ++ [BR.efq | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithEFQ]
                             )

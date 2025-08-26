@@ -81,6 +81,7 @@ data ProofSearchSetting = ProofSearchSetting {
   maxDepth :: Maybe Int
   , maxTime :: Maybe Int
   , logicSystem :: Maybe LogicSystem
+  , neuralDTS :: Bool
   } deriving (Eq, Show)
 
 type Prover = DTTdB.ProofSearchQuery -> ListT IO DTTProofDiagram

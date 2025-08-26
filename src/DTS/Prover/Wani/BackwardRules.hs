@@ -11,7 +11,8 @@ module DTS.Prover.Wani.BackwardRules
   membership,
   dne,
   efq,
-  topIntro
+  topIntro,
+  askOracle
 ) where
 
 import qualified DTS.DTTdeBruijn as DdB   -- DTT
@@ -19,6 +20,7 @@ import qualified DTS.UDTTdeBruijn as UDdB
 import qualified DTS.Prover.Wani.Arrowterm as A -- Aterm
 import qualified Interface.Tree as UDT
 import qualified DTS.QueryTypes as QT
+import qualified DTS.Prover.Oracle as O
 
 import qualified DTS.Prover.Wani.WaniBase as WB 
 import qualified DTS.Prover.Wani.Forward as F
@@ -27,6 +29,8 @@ import qualified Data.Text.Lazy as T
 import qualified Data.List as L 
 import qualified Data.Maybe as M
 import qualified Debug.Trace as D
+
+import qualified Control.Monad as CM
 
 
 -- | piIntro rule
@@ -730,6 +734,37 @@ membership goal setting =
               )
               trees
       in return (subgoalsets,"")
+
+askOracle :: WB.Rule
+askOracle goal setting =
+  if WB.enableneuralDTS setting 
+    then
+      case WB.acceptableType QT.Con goal False [] of
+        (Just (A.ArrowApp (A.Conclusion (DdB.Con big)) target),_) -> 
+          let (sig,var) = WB.conFromGoal goal
+              forwardedTrees = WB.trees $ F.forwardContext sig var
+              filteredTreesIO =  -- (Monad m) => (a -> m Bool) -> [a] -> m [a]
+                          CM.filterM 
+                            (\tree ->
+                                case A.typefromAJudgment (A.downSide' tree) of
+                                  (A.ArrowApp (A.Conclusion (DdB.Con small)) target') -> {--D.trace ("askOracle" ++" target : "++(show target)++" "++(show target')++" "++"small : "++(show small)++ " big :" ++(show big)) $--}
+                                    if target == target' then O.oracle (small,big) else return False
+                                  _ -> return False
+                            )
+                            forwardedTrees
+              subgoalsetsIO = filteredTreesIO >>= \filteredTrees -> return $ 
+                                map 
+                                  (\tree ->
+                                    let
+                                      term = A.termfromAJudgment $ A.downSide' tree
+                                    in WB.SubGoalSet QT.Con (M.Just tree) [] (A.AJudgment sig var (A.ArrowApp (A.Conclusion $ DdB.Con "oracle") term) (A.ArrowApp (A.Conclusion $ DdB.Con big) target), [])
+                                  )
+                                  (L.nub filteredTrees)
+          in subgoalsetsIO >>= \subgoalsets -> return (subgoalsets,"")
+        (Nothing,message) -> return ([],message)
+        _ -> return ([],"not oracle target")
+      else return ([],"oracle Disabled")
+
 
 
 -- | dne
