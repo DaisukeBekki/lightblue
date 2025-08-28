@@ -316,15 +316,15 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
             -- parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity), ("yabuku", DTT.Pi (DTT.Entity) (DTT.Pi (DTT.Entity) (DTT.Pi (DTT.Sigma (DTT.Entity) (DTT.App (DTT.App (DTT.App (DTT.Con "破く/やぶく/ガヲ") (DTT.Var 1)) (DTT.Var 2)) (DTT.Var 0))) (DTT.Sigma (DTT.Entity) (DTT.App (DTT.App (DTT.Con "破れる/やぶれる/ガ") (DTT.Var 2)) (DTT.Var 0))))))] [] sentences
             -- 728の公理(閉めるー閉まる)
             -- parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity), ("shimeru",DTT.Pi (DTT.Entity) (DTT.Pi (DTT.Entity) (DTT.Pi (DTT.Entity) (DTT.Pi (DTT.App (DTT.App (DTT.App (DTT.Con "閉める/しめる/ガヲ") (DTT.Var 0)) (DTT.Var 1)) (DTT.Var 2)) (DTT.App (DTT.App (DTT.Con "閉まる/しまる/ガ") (DTT.Var 1)) (DTT.Var 3))))))] [] sentences       
-            -- 519の公理
+            -- 519の公理(小さなー大きな)
             -- parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity), ("chiisana", DTT.Pi (DTT.Entity) (DTT.Pi (DTT.App (DTT.Con "小さな/ちいさな") (DTT.Var 0)) (DTT.Pi (DTT.App (DTT.Con "大きな/おおきな") (DTT.Var 1)) (DTT.Bot))))] [] sentences
-            -- 520の公理
+            -- 520の公理(大きなー小さな)
             -- parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity), ("ookina", DTT.Pi (DTT.Entity) (DTT.Pi (DTT.App (DTT.Con "大きな/おおきな") (DTT.Var 0)) (DTT.Pi (DTT.App (DTT.Con "小さな/ちいさな") (DTT.Var 1)) (DTT.Bot))))] [] sentences
-            -- 523の公理
+            -- 523の公理(開くー閉まる)
             -- parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity), ("hiraku",DTT.Pi (DTT.Entity) (DTT.Pi (DTT.Entity) (DTT.Pi (DTT.App (DTT.App (DTT.Con "開く/ひらく/ガ") (DTT.Var 1)) (DTT.Var 0)) (DTT.Pi (DTT.App (DTT.App (DTT.Con "閉まる/しまる/ガ") (DTT.Var 2)) (DTT.Var 1)) (DTT.Bot)))))] [] sentences
-            -- 524の公理
+            -- 524の公理(閉まるー開く)
             -- parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity), ("shimaru",DTT.Pi (DTT.Entity) (DTT.Pi (DTT.Entity) (DTT.Pi (DTT.App (DTT.App (DTT.Con "閉まる/しまる/ガ") (DTT.Var 1)) (DTT.Var 0)) (DTT.Pi (DTT.App (DTT.App (DTT.Con "開く/あく/ガ") (DTT.Var 2)) (DTT.Var 1)) (DTT.Bot)))))] [] sentences
-            -- 開くの公理2
+            -- 開くの公理2(開くー閉まる)
             -- parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity), ("hitraku2", DTT.Pi(DTT.Entity) (DTT.Pi (DTT.Sigma (DTT.Entity) (DTT.App (DTT.App (DTT.Con "開く/ひらく/ガ") (DTT.Var 1)) (DTT.Var 0))) (DTT.Pi (DTT.Sigma (DTT.Entity) (DTT.App (DTT.App (DTT.Con "閉まる/しまる/ガ") (DTT.Var 2)) (DTT.Var 0))) (DTT.Bot))))] [] sentences     
         NLI.printParseResult handle style 1 noTypeCheck False title parseResult
         inferenceLabels <- toList $ NLI.trawlParseResult parseResult
