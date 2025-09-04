@@ -98,9 +98,10 @@ piIntro goal setting =
       A.Arrow l t ->
         let (sig,var) = WB.conFromGoal goal
             subgoalsets = let
-                canBeConclusionTerm = A.rmLam (length l) (WB.termFromGoal goal)-- maybe M.Nothing (\term -> (A.rmLam (length l) term)) (WB.termFromGoal goal)
+                maybeTerm = WB.termFromGoal goal
+                canBeConclusionTerm = A.rmLam (length l) maybeTerm-- maybe M.Nothing (\term -> (A.rmLam (length l) term)) (WB.termFromGoal goal)
                 dSideSubstTerm = ((WB.generatedTempTerm (sig,A.aCon "dummyInDside") (T.pack $ show (length l))))
-                dSideterm = maybe (A.betaReduce $ A.addLam (length l) dSideSubstTerm) id  canBeConclusionTerm
+                dSideterm = maybe (A.betaReduce $ A.addLam (length l) dSideSubstTerm) id maybeTerm
                 dSideSubstLst = [WB.SubstSet [] dSideSubstTerm (length l)]
                 dSide = A.AJudgment sig var dSideterm arrowType
                 subgoal1 = let
