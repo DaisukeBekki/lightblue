@@ -822,7 +822,7 @@ dne goal setting =
               subgoal2 = let
                   goal = WB.Goal sig var M.Nothing [A.Arrow [A.Arrow [arrowType] (A.Conclusion DdB.Bot)] (A.Conclusion DdB.Bot)]
                 in WB.SubGoal goal [] ([],M.Nothing)
-            in [WB.SubGoalSet QT.PiI M.Nothing [subgoal1,subgoal2] (dSide,dSideSubstLst)]
+            in [WB.SubGoalSet QT.DNE M.Nothing [subgoal1,subgoal2] (dSide,dSideSubstLst)]
         in return (subgoalsets,"")
 
 efq goal setting = 
@@ -844,5 +844,5 @@ efq goal setting =
               subgoal2 = let
                   goal = WB.Goal sig var M.Nothing [A.Conclusion DdB.Bot]
                 in WB.SubGoal goal [] ([],M.Nothing)
-            in [WB.SubGoalSet QT.PiI M.Nothing [subgoal1,subgoal2] (dSide,dSideSubstLst)]
+            in [WB.SubGoalSet QT.EFQ M.Nothing [subgoal1,subgoal2] (dSide,dSideSubstLst)]
         in return (subgoalsets,"")
