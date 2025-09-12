@@ -159,7 +159,10 @@ deduceWithSubGoalset (WB.SubGoalSet rule maybeTree subgoals dSide) depth setting
     let deduceWithAntecedentsAndSubGoal subgoal results= 
             case subgoalToGoalWithAntecedents results subgoal depth setting of
                 M.Just goal -> 
-                    deduce' goal depth setting >>= \newResult -> return (map (\tree -> (newResult{WB.trees = [tree]}):results) (L.nub $ WB.trees newResult))
+                    let disjUsed = if rule /= QT.DisjE then [] else (maybe [] (\tree -> [A.typefromAJudgment $ A.downSide' tree]) maybeTree)
+                        setting' = setting{WB.sStatus = (WB.sStatus setting){WB.usedDisJoint = disjUsed++(WB.usedDisJoint$WB.sStatus setting)}}
+                    in 
+                    deduce' goal depth setting' >>= \newResult -> return (map (\tree -> (newResult{WB.trees = [tree]}):results) (L.nub $ WB.trees newResult))
                 M.Nothing -> return []
         -- deduceWithAntecedentsetAndSubGoal :: IO [[WB.Result]] -> Subgoal -> IO [[WB.Result]]
         deduceWithAntecedentsetAndSubGoal resultsetIOs subgoal = resultsetIOs >>= \resultset -> foldMap (deduceWithAntecedentsAndSubGoal subgoal) resultset
@@ -250,32 +253,29 @@ deduce' goal depth setting
               M.Just (A.Conclusion DdB.Kind) ->
                 return $ WB.debugLogWithTerm (sig,var) (A.Conclusion DdB.Kind) arrowType depth setting "kind cannot be a term."  WB.resultDef{WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}}
               _ -> -- M.Nothing or M.Just term
-                case arrowType of 
-                  A.Conclusion DdB.Kind -> -- The only term for `kind` is `type`. but the term is not `type` due to the antecedent
-                    return $ debugLog goal depth setting "the only term for `kind` is `type`" WB.resultDef{WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}}
-                  _ -> 
-                    let subgoalsetsIO = sortSubGoalSets $ (ruleResultToSubGoalsets depth $ depth < WB.debug setting) $ sequence $ 
-                          map
-                            (\rule -> rule goal setting)
-                            ( -- Because of `sortSubGoalSets`, there is no need to care about rule order. (Before `sortSubGoalSets`, The stronger the rule, the later to be set. For example, `dne` can be used for any term, thus turning the execution later. This setting takes effect in combination with the rounding up of proof search using `B.allProof`.)
-                              [BR.piForm,BR.sigmaForm,BR.eqForm,BR.membership,BR.askOracle,BR.piIntro,BR.sigmaIntro,BR.piElim,BR.topIntro] 
-                              ++ [BR.dne | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithDNE]
-                              ++ [BR.efq | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithEFQ]
-                            )
-                        resultIO = 
-                            let resultDef = -- update `deduceNgLst` and `failedlst` to be used in deeper search
-                                    WB.resultDef{WB.rStatus = WB.mergeStatus (WB.sStatus setting) (WB.statusDef{WB.usedMaxDepth = depth,WB.deduceNgLst = ((sig,var),arrowType) : (WB.deduceNgLst $WB.sStatus setting),WB.failedlst = maybe (WB.failedlst $WB.sStatus setting) (\arrowTerm -> (((sig,var),arrowTerm,arrowType) : (WB.failedlst $WB.sStatus setting))) justTerm})} -- Currently, `arrowType` proof search is performed under environment `con`, and to prevent infinite loops, it is set to round up when `arrowType` proof search is needed under environment `con`(★).
-                            in subgoalsetsIO >>= \subgoalsets -> deduceWithSubGoalsets subgoalsets (depth+1) setting resultDef justTerm arrowType
-                    in resultIO >>= \result ->
-                      if null (WB.trees result)
-                        then
-                          return $ (if depth < WB.debug setting then WB.debugLog (sig,var) arrowType depth setting "deduce failed " else id) result{WB.rStatus = (WB.rStatus result){WB.failedlst = maybe (WB.failedlst $WB.sStatus setting) (\arrowTerm -> (((sig,var),arrowTerm,arrowType) : (WB.failedlst $WB.sStatus setting))) justTerm}}
-                        else
-                          return $ (if depth < WB.debug setting then D.trace (L.replicate (2*depth) ' ' ++  show depth ++ " deduced:  " ++ show (map A.downSide' (WB.trees result))) else id) result
+                let subgoalsetsIO = sortSubGoalSets $ (ruleResultToSubGoalsets depth $ depth < WB.debug setting) $ sequence $ 
+                      map
+                        (\rule -> rule goal setting)
+                        ( -- Because of `sortSubGoalSets`, there is no need to care about rule order. (Before `sortSubGoalSets`, The stronger the rule, the later to be set. For example, `dne` can be used for any term, thus turning the execution later. This setting takes effect in combination with the rounding up of proof search using `B.allProof`.)
+                          [BR.piForm]
+                          ++ (if arrowType /= (A.Conclusion DdB.Kind) then [BR.sigmaForm,BR.eqForm,BR.membership,BR.askOracle,BR.piIntro,BR.sigmaIntro,BR.piElim,BR.topIntro,BR.disjIntro,BR.disjElim,BR.disjForm] else [])
+                          ++ [BR.dne | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithDNE && (arrowType /= (A.Conclusion DdB.Kind))]
+                          ++ [BR.efq | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithEFQ && (arrowType /= (A.Conclusion DdB.Kind))]
+                        )
+                    resultIO = 
+                        let resultDef = -- update `deduceNgLst` and `failedlst` to be used in deeper search
+                                WB.resultDef{WB.rStatus = WB.mergeStatus (WB.sStatus setting) (WB.statusDef{WB.usedMaxDepth = depth,WB.deduceNgLst = ((sig,var),arrowType) : (WB.deduceNgLst $WB.sStatus setting),WB.failedlst = maybe (WB.failedlst $WB.sStatus setting) (\arrowTerm -> (((sig,var),arrowTerm,arrowType) : (WB.failedlst $WB.sStatus setting))) justTerm})} -- Currently, `arrowType` proof search is performed under environment `con`, and to prevent infinite loops, it is set to round up when `arrowType` proof search is needed under environment `con`(★).
+                        in subgoalsetsIO >>= \subgoalsets -> deduceWithSubGoalsets subgoalsets (depth+1) setting resultDef justTerm arrowType
+                in resultIO >>= \result ->
+                  if null (WB.trees result)
+                    then
+                      return $ (if depth < WB.debug setting then WB.debugLog (sig,var) arrowType depth setting "deduce failed " else id) result{WB.rStatus = (WB.rStatus result){WB.failedlst = maybe (WB.failedlst $WB.sStatus setting) (\arrowTerm -> (((sig,var),arrowTerm,arrowType) : (WB.failedlst $WB.sStatus setting))) justTerm}}
+                    else
+                      return $ (if depth < WB.debug setting then D.trace (L.replicate (2*depth) ' ' ++  show depth ++ " deduced:  " ++ show (map A.downSide' (WB.trees result))) else id) result
 
 -- | deduce
 -- | summary : deduce' wrapper
 deduce :: WB.DeduceRule
 deduce sig var arrowType depth setting = 
   deduce' (WB.Goal sig var M.Nothing [arrowType]) depth setting
-    >>= \result ->  (if depth < WB.debug setting then (D.trace ("result :" ++ (show result))) else id ) (return result)
+    >>= \result ->  (if depth < WB.debug setting then (D.trace ("result :" ++ (show result))) else id ) (return result) -- (if {--depth < WB.debug setting--} not (null (WB.trees result) )then (D.trace ("result :" ++ (show (map (A.downSide') $ WB.trees result)))) else D.trace "not found" ) (return result)
