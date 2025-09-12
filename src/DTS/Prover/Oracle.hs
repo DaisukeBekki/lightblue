@@ -14,4 +14,7 @@ import qualified Debug.Trace as D
 
 oracle :: (DdB.ConName,DdB.ConName) -> IO Bool
 oracle ("udon","noodle") = return True
+oracle ("customer","human") = return True
+oracle ("prof","female") = return True
+oracle ("aProf","female") = return True
 oracle (small,big) = return False
