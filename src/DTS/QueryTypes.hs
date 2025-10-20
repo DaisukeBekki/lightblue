@@ -81,6 +81,10 @@ data ProofSearchSetting = ProofSearchSetting {
   maxDepth :: Maybe Int
   , maxTime :: Maybe Int
   , logicSystem :: Maybe LogicSystem
+  , debugDepth :: Int -- Default = -1
+  , enableEquality :: Bool -- Default = True
+  , oracle :: Maybe (DTTdB.ConName -> DTTdB.ConName -> Float) -- Default = Nothing
+  -- , neuralWani :: Maybe ()
   } deriving (Eq, Show)
 
 type Prover = DTTdB.ProofSearchQuery -> ListT IO DTTProofDiagram
