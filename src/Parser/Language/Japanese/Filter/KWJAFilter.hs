@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings, DeriveGeneric, BlockArguments #-}
 
 -- {-|
 -- Module      : KWJAFilter
@@ -15,7 +15,7 @@ module Parser.Language.Japanese.Filter.KWJAFilter (
 import Data.List
 import System.Environment (getEnv)
 import qualified Data.Map.Strict as M
-import qualified Data.Set as S
+import Data.Char (ord)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import qualified Parser.CCG as CCG
@@ -30,7 +30,8 @@ import qualified Parser.Language.Japanese.Filter.KNPFilter as KF
 import qualified Parser.Language.Japanese.Filter.LightblueFilter as LF (getDaihyo, getFeatures)
 
 type ConjMap = M.Map (T.Text, T.Text) T.Text
-type OpenWordsMap = M.Map T.Text [(T.Text, S.Set T.Text)]
+-- type OpenWordsMap = M.Map T.Text [(T.Text, S.Set T.Text)]
+type OpenWordsMap = M.Map T.Text [(T.Text, [T.Text])]
 
 -- | kwjaを用いたフィルタリング関数を返す
 kwjaFilter :: TL.Text -> IO (Int -> Int -> [CCG.Node] -> [CCG.Node])
@@ -48,7 +49,14 @@ getKWJAargs args = case args of
     Nothing -> []
     Just arg -> case arg of
         [] -> []
-        (x : xs) -> (T.pack $ KW.argType x) : getKWJAargs (Just xs)
+        (x : xs) -> normalizeArgType (KW.argType x) : getKWJAargs (Just xs)
+
+-- | 全角数字を取り除く関数
+normalizeArgType :: String -> T.Text
+normalizeArgType input = 
+  T.pack . filter (not . isFullwidthDigit) $ input
+  where
+    isFullwidthDigit c = let code = ord c in code >= 0xFF10 && code <= 0xFF19
 
 -- 動詞のCCGカテゴリーから項構造を取得
 getCCGArg :: CCG.Cat -> [T.Text]
@@ -117,10 +125,10 @@ filterNodes (key, _) owmap node nodes = case M.lookup key owmap of
     -- [("歌","歌う"",["ガ","ヲ"]),("歌","歌う",["ガ"])]
     Just xs
         -- xsの中にCCGNodeの表層形と格フレームが一致するものがあれば、nodeは残す
-        | (CCG.pf node, S.fromList $ getCCGArg $ CCG.cat node) `elem` map toPair xs ->
+        | (CCG.pf node, getCCGArg $ CCG.cat node) `elem` map toPair xs ->
             node : createFilterFrom' owmap nodes
         -- 表層形のみ一致し、格フレームが異なる場合
-        | CCG.pf node `elem` map (TL.fromStrict . fst) xs ->
+        | CCG.pf node `elem` map (TL.fromStrict . fst) xs -> 
             let newCaseFrame = getCaseframe (TL.toStrict $ CCG.pf node) xs
                 (f1', f2') = LF.getFeatures (CCG.cat node)
                 newNode = case uncons (CCG.sig node) of
@@ -134,13 +142,13 @@ filterNodes (key, _) owmap node nodes = case M.lookup key owmap of
     -- キーが存在しない場合
     Nothing -> node : createFilterFrom' owmap nodes
     where
-    toPair (word, caseframe) = (TL.fromStrict word, caseframe)
-    getCaseframe :: T.Text -> [(T.Text, S.Set T.Text)] -> T.Text
+    toPair (word, caseframe) = (TL.fromStrict word, sortJapanese caseframe)
+    getCaseframe :: T.Text -> [(T.Text, [T.Text])] -> T.Text
     getCaseframe pf openWords = case openWords of
         [] -> ""
         (word, caseframe) : xs ->
             if pf == word
-                then T.concat $ S.toList caseframe
+                then T.concat $ sortJapanese $ caseframe
                 else getCaseframe pf xs
 
 --CCGが名詞どうかの判定
@@ -210,7 +218,8 @@ isNaAdj fvs cat = case cat of
 getOpenWordsMap :: [KW.KWJAData] -> ConjMap -> OpenWordsMap
 getOpenWordsMap kwjas conjmap =
     let openWords = getOpenWords kwjas conjmap
-     in M.fromListWith (++) $ map (\(pos, (stem, caseframes)) -> (pos, [(stem, S.fromList caseframes)])) openWords
+     in M.fromListWith (++) $ map (\(pos, (stem, caseframes)) -> (pos, [(stem, caseframes)])) openWords
+    --  in M.fromListWith (++) $ map (\(pos, (stem, caseframes)) -> (pos, [(stem, S.fromList caseframes)])) openWords
 
 -- KWJADataからopenWordsとその項構造を抽出 -- [("動詞", ("歌", ["ガ","ヲ"]))]
 getOpenWords :: [KW.KWJAData] -> ConjMap -> [(T.Text, (T.Text, [T.Text]))]
@@ -276,3 +285,7 @@ getOpenWords kwjaData conjmap = case kwjaData of
                 else False
         _ -> False
     isCV _ _ = False
+
+-- | 五十音順（濁点・半濁点を正規化して比較）
+sortJapanese :: [T.Text] -> [T.Text]
+sortJapanese t = sort t
