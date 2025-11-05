@@ -156,6 +156,11 @@ termFromGoal (Goal _ _ maybeProofTerm _ ) = maybeProofTerm
 typesFromGoal :: Goal -> [ProofType]
 typesFromGoal (Goal _ _ _ proofTypes) = proofTypes
 
+judgmentFromGoal :: Goal -> DdB.Judgment
+judgmentFromGoal (Goal sig var maybeTerm proofTypes) =
+  A.a2dtJudgment $ A.AJudgment sig var term (head proofTypes)
+  where term = maybe (A.Conclusion $ DdB.Con "?") id maybeTerm
+
 type Rule = Goal -> Setting -> IO ([SubGoalSet],T.Text)
 
 data SubGoal = 
