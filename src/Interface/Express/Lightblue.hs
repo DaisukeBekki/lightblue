@@ -2,7 +2,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Interface.Express.Lightblue (
-  -- parseSentence,
   parseSentence',
   parse,
   parseWithTypeCheck,
@@ -16,55 +15,34 @@ module Interface.Express.Lightblue (
 import Control.Monad (forM_,forM)
 import qualified Data.Text.Lazy as T
 import qualified Parser.ChartParser as CP
--- import qualified Parser.PartialParsing as PP 
 import qualified Parser.CCG as CCG
-import qualified Interface.HTML as HTML
-import qualified Parser.Language.Japanese.Juman.CallJuman as Juman
 import qualified Parser.LangOptions as PL (defaultJpOptions)
 import qualified DTS.NaturalLanguageInference as NLI
 import qualified DTS.QueryTypes as QT
 import qualified DTS.DTTdeBruijn as DTT
 import qualified DTS.UDTTdeBruijn as UDTT
 import  System.IO.Unsafe (unsafePerformIO)
+import System.IO (hPutStrLn, stderr)
 import ListT (ListT(..),fromFoldable,toList,take,null) --list-t
 import Debug.Trace 
 
--- simpleParseじゃなくてparseWithTypeCheckでやる
--- ビーム数と文を用いてパーズし、上位nbest個のノードを抽出してMathMLタグで囲んだT.Textを返す
--- parseSentence :: Int -> Int -> T.Text -> IO(T.Text)
--- parseSentence beam nbest sentence = do
---   -- useOnlybeamParseSetting :: CP.ParseSetting
---   useOnlybeamParseSetting <- defaultParseSetting' beam 
---   nodes <- CP.simpleParse useOnlybeamParseSetting sentence -- パーズしてnodeを得る, nodes :: [CCG.Node]
---   let nbestnodes = Prelude.take nbest nodes
---   -- startMathML = "<math xmlns='http://www.w3.org/1998/Math/MathML'>"
---   -- endMathML = "</math>"
---   -- toMathML :: a -> T.Text
---   return $ T.concat $ [HTML.startMathML] ++ (map HTML.toMathML nbestnodes) ++ [HTML.endMathML]
-
--- simpleParseじゃなくてparseWithTypeCheckでやる
--- parseWithTypeCheck :: Int -> T.Text -> IO NLI.ParseResult
--- ビーム数と文を用いてパーズし、上位 nbest 個のノードを抽出してリストとして返す
-parseSentence' :: Int -> Int -> T.Text -> IO ([CCG.Node])
-parseSentence' beam nbest sentence = do
-  -- parseResult :: NLI.ParseResult
-  parseResult <- parseWithTypeCheck beam sentence
+parseSentence' :: NLI.ParseResult -> IO ([CCG.Node])
+parseSentence' parseResult = do
   -- ParseResult から Nodeを取り出す
   -- getNodes :: NLI.ParseResult -> [CCG.Node]
   nodes <- getNodes parseResult
-  return $ Prelude.take nbest nodes
+  System.IO.hPutStrLn stderr $ "Number of nodes in parseSentence': " ++ show (length nodes) -- 1となる
+  return nodes
 
-parseSentenceForQuery :: Int -> Int -> T.Text -> IO ([UDTT.TypeCheckQuery])
-parseSentenceForQuery beam nbest sentence = do
-  parseResult <- parseWithTypeCheck beam sentence
+parseSentenceForQuery :: NLI.ParseResult -> IO ([UDTT.TypeCheckQuery])
+parseSentenceForQuery parseResult = do
   tcqs <- getTypeCheckQuery parseResult
-  return $ Prelude.take nbest tcqs
+  return tcqs
 
-parseSentenceForDiagram :: Int -> Int -> T.Text -> IO ([[QT.DTTProofDiagram]])
-parseSentenceForDiagram beam nbest sentence = do
-  parseResult <- parseWithTypeCheck beam sentence
+parseSentenceForDiagram :: NLI.ParseResult -> IO ([[QT.DTTProofDiagram]])
+parseSentenceForDiagram parseResult = do
   let tcdsList = getTypeCheckDiagram2 parseResult
-  return $ Prelude.take nbest tcdsList
+  return tcdsList
 
 getNodes :: NLI.ParseResult -> IO [CCG.Node]
 getNodes NLI.NoSentence = do
@@ -92,14 +70,12 @@ getTypeCheckQuery (NLI.InferenceResults _ _) = do
 defaultParseSetting' :: Int -> IO CP.ParseSetting
 defaultParseSetting' beam = do
   jpOptions <- PL.defaultJpOptions
---   lr <- L.lexicalResourceBuilder Juman.KWJA
   return $ CP.ParseSetting jpOptions beam (-1) (-1) (-1) True Nothing True False
 
 
 defaultParseSettingForInference :: IO CP.ParseSetting
 defaultParseSettingForInference = do
   jpOptions <- PL.defaultJpOptions
---   lr <- L.lexicalResourceBuilder Juman.KWJA
   return $ CP.ParseSetting jpOptions 24 1 1 5 True Nothing False False
 
 

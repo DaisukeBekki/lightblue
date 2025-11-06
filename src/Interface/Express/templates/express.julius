@@ -1,0 +1,36 @@
+console.log("JavaScript file loaded");
+
+const checkbox = document.getElementById('toggle-node');
+
+const tabNode = document.querySelector('.tab-node');
+
+checkbox.addEventListener('change', () => {
+  if (checkbox.checked) {
+    console.log("Yesです");
+    tabNode.style.display = 'block'; // 表示する
+    console.log("現在のスタイル: ", tabNode.style.display);
+  } else {
+    console.log("Noです");
+    tabNode.style.display = 'none'; // 非表示にする
+    console.log("現在のスタイル: ", tabNode.style.display);
+  }
+});
+
+function toggle(id){
+            var objID1 = document.getElementById( id + "layerA" );
+            var objID2 = document.getElementById( id + "layerB" );
+            var buttonID = document.getElementById( id + "button" );
+            if(objID1.className=='close') {
+              objID1.style.display = 'block';
+              objID1.className = 'open';
+              objID2.style.display = 'none';
+              objID2.className = 'close';
+              buttonID.innerHTML = "-";
+            }else{
+              objID1.style.display = 'none';
+              objID1.className = 'close';
+              objID2.style.display = 'block';
+              objID2.className = 'open';
+              buttonID.innerHTML = "+";
+            }
+};
