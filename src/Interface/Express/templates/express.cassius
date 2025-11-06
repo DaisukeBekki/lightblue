@@ -76,8 +76,7 @@
           .cathide
             display: block;
           #cat-toggle:checked ~ * .cathide
-            display: none;      
-
+            display: none;
           #toggle-node: checked ~ * .tab-node
             display: none;
           #catbtn
@@ -91,9 +90,9 @@
             display: inline-block;
             width: 20pt;
             height: 20pt;
-            border: 3px solid #ffd700;
+            border: 3px solid #002b5c;
             color: #ffffff;
-            background: #ffd700;
+            background: #002b5c;
             content: "ON";
             font-weight: bold;
             font-size: 10pt;
@@ -123,9 +122,9 @@
             display: inline-block;
             width: 20pt;
             height: 20pt;
-            border: 3px solid #ffd700;
+            border: 3px solid #002b5c;
             color: #ffffff;
-            background: #ffd700;
+            background: #002b5c;
             content: "ON";
             font-weight: bold;
             font-size: 10pt;
@@ -400,7 +399,25 @@
             padding: 30px;
 
           .cathide
-            color: red
+            color: red;
 
           .sf
-            color: green
+            color: green;
+
+/* 横表示 */
+          .tab-leaves
+            margin-top: 12px;
+            padding: 6px 0;
+            border-top: 1px solid #aaa;
+
+          .leaf-node-list
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 4px;
+
+          .leaf-node-item
+            padding: 3px 6px;
+            border: 1px solid #bbb;
+            border-radius: 4px;
+            background-color: #f5f5f5;

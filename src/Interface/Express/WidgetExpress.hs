@@ -44,8 +44,12 @@ instance Widgetizable T.Text where
 
 -- WidgetizableクラスのインスタンスにNode型を定義
 instance Widgetizable Node where
+  widgetize = widgetizeDepth 0
+
+widgetizeDepth :: Int -> Node -> WidgetT b IO ()
+widgetizeDepth depth node = case Parser.CCG.daughters node of
   -- 子ノードなかったら
-  widgetize node = case Parser.CCG.daughters node of
+  -- widgetize node = case Parser.CCG.daughters node of
     [] -> do
       -- newIdent 関数で一意のidを得る
       id <- newIdent
@@ -73,15 +77,16 @@ instance Widgetizable Node where
       -- 子の数*２
       let len = (length dtrs)*2
       id <- newIdent
+      let (styleA, classA, styleB, classB, buttonLabel) = if depth < 2 then ("display:block" :: StrictT.Text, "open" :: StrictT.Text, "display:none" :: StrictT.Text, "close" :: StrictT.Text, "-" :: StrictT.Text) else ("display:none" :: StrictT.Text, "close" :: StrictT.Text, "display:block" :: StrictT.Text, "open" :: StrictT.Text, "+" :: StrictT.Text)
       [whamlet|
          <table>
           <tr valign="bottom">
             <td valign="baseline">
-              <div id=#{StrictT.concat [id, "layerA"]} style="display: none" class="close">
+              <div id=#{id}layerA style=#{styleA} class=#{classA}>
                 <table border="1" rules="rows" frame="void" cellpadding="2">
                   <tr valign="bottom">
                     $forall dtr <- dtrs
-                      <td align="center" valign="bottom">^{widgetize dtr}&nbsp;
+                      <td align="center" valign="bottom">^{widgetizeDepth (depth + 1) dtr}&nbsp;
                   <tr>
                     <td align="center" colspan=#{len}>
                       <table border="0" cellpadding="0">
@@ -91,7 +96,7 @@ instance Widgetizable Node where
                         <tr class="semhide">
                           <td>
                             <math xmlns='http://www.w3.org/1998/Math/MathML'>^{widgetize $ sem node}
-              <div id=#{StrictT.concat [id, "layerB"]} style="display: block" class="open">
+              <div id=#{id}layerB style=#{styleB} class=#{classB}>
                 <table border="2" rules="rows" cellpadding="5" border="3px solid #808080">
                   <tr>
                     <td align="center" bgcolor="#002b5c" style="color: #ffffff;">^{widgetize $ pf node}
@@ -108,7 +113,7 @@ instance Widgetizable Node where
               <table border="1" rules="rows" frame="void" cellpadding="5">
                 <tr>
                   <td>
-                   <button type="button" class="btn-design" id=#{StrictT.concat [id, "button"]} onclick=toggle('#{id}')>+
+                   <button type="button" id=#{id}button onclick=toggle('#{id}')>#{buttonLabel}
                   <span>^{widgetize $ rs node}
         |]
 
