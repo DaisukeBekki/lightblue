@@ -404,18 +404,19 @@
           .sf
             color: green;
 
-/* 横表示 */
+/* 葉ノードの表示設定 */
           .tab-leaves
             margin-top: 12px;
             padding: 6px 0;
             border-top: 1px solid #aaa;
-
           .leaf-node-list
             display: flex;
             flex-wrap: wrap;
             gap: 6px;
             margin-top: 4px;
-
+          .leaf-node-list.vertical
+            flex-direction: column;
+            flex-wrap: nowrap;
           .leaf-node-item
             padding: 3px 6px;
             border: 1px solid #bbb;

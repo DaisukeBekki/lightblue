@@ -43,7 +43,7 @@ import qualified DTS.NaturalLanguageInference as NLI
 import qualified JSeM as JSeM                         --jsem
 import qualified ML.Exp.Classification.Bounded as NLP --nlp-tools
 
-data Options = Options Lang Command I.Style NLI.ProverName FilePath Int Int Int Int Int Int Bool Bool Bool Bool (Maybe Int) Bool Bool
+data Options = Options Lang Command I.Style NLI.ProverName FilePath Int Int Int Int Int Int Bool Bool Bool Bool (Maybe Int) Bool Bool Bool
 
 data Command =
   Parse I.ParseOutput
@@ -217,6 +217,9 @@ optionParser =
     <*> switch
       ( long "noShowSem"
       <> help "If True, hide semantics in Express view" )
+    <*> switch
+      ( long "leafVertical"
+      <> help "If True, list leaf nodes vertically in Express view" )
 
 parseOptionParser :: Parser Command
 parseOptionParser = Parse
@@ -258,7 +261,7 @@ main = customExecParser p opts >>= lightblueMain
         p = prefs showHelpOnEmpty
 
 lightblueMain :: Options -> IO ()
-lightblueMain (Options lang commands style proverName filepath beamW nParse nTypeCheck nProof maxDepth maxTime noTypeCheck noInference ifTime verbose mDepth noShowCat noShowSem) = do
+lightblueMain (Options lang commands style proverName filepath beamW nParse nTypeCheck nProof maxDepth maxTime noTypeCheck noInference ifTime verbose mDepth noShowCat noShowSem leafVertical) = do
   start <- Time.getCurrentTime
   langOptions <- case lang of
                    JP morphaName filterName -> do
@@ -302,6 +305,7 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
             Nothing -> return ()
           Env.setEnv "LB_EXPRESS_NOSHOWCAT" (if noShowCat then "1" else "0")
           Env.setEnv "LB_EXPRESS_NOSHOWSEM" (if noShowSem then "1" else "0")
+          Env.setEnv "LB_EXPRESS_LEAFVERTICAL" (if leafVertical then "1" else "0")
         _ -> return ()
       S.hPutStrLn handle $ I.headerOf style
       PPR.printParseResult handle style 1 noTypeCheck posTagOnly "input" parseResult

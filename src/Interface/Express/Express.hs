@@ -44,12 +44,13 @@ setDisplaySetting :: WE.DisplaySetting -> IO ()
 setDisplaySetting dsp = atomicWriteIORef currentDisplaySettingRef dsp
 
 -- | Helper: set by CLI options without importing WidgetExpress from caller
-setDisplayOptions :: Maybe Int -> Bool -> Bool -> IO ()
-setDisplayOptions mDepth noShowCat noShowSem = do
+setDisplayOptions :: Maybe Int -> Bool -> Bool -> Bool -> IO ()
+setDisplayOptions mDepth noShowCat noShowSem leafVert = do
   let base = WE.defaultDisplaySetting
       base' = maybe base (\d -> base { WE.defaultExpandDepth = d }) mDepth
       base'' = if noShowCat then base' { WE.showCat = False } else base'
-      dsp = if noShowSem then base'' { WE.showSem = False } else base''
+      base''' = if noShowSem then base'' { WE.showSem = False } else base''
+      dsp = base''' { WE.leafVertical = leafVert }
   setDisplaySetting dsp
 
 data App = App
@@ -93,13 +94,16 @@ applyEnvDisplayOptions = do
   let mDepth = mDepthStr >>= readMaybe
   mNoShowCat <- lookupEnv "LB_EXPRESS_NOSHOWCAT"
   mNoShowSem <- lookupEnv "LB_EXPRESS_NOSHOWSEM"
+  mLeafVertical <- lookupEnv "LB_EXPRESS_LEAFVERTICAL"
   let toBool v = case v of { Just "1" -> True; Just "true" -> True; Just "True" -> True; _ -> False }
       noShowCat = toBool mNoShowCat
       noShowSem = toBool mNoShowSem
+      leafVert = toBool mLeafVertical
       base = WE.defaultDisplaySetting
       base' = maybe base (\d -> base { WE.defaultExpandDepth = d }) mDepth
       base'' = if noShowCat then base' { WE.showCat = False } else base'
-      dsp = if noShowSem then base'' { WE.showSem = False } else base''
+      base''' = if noShowSem then base'' { WE.showSem = False } else base''
+      dsp = base''' { WE.leafVertical = leafVert }
   atomicWriteIORef currentDisplaySettingRef dsp
 
 getParsingR :: Handler Html
@@ -170,7 +174,7 @@ getParsingR = do
                       <div class="tab-content">
                         <div class="tab-leaves">
                           <h2>Leaf Nodes
-                          <div .leaf-node-list>
+                          <div .leaf-node-list :WE.leafVertical dsp:.vertical>
                             $forall leaf <- leafNodes
                               <div .leaf-node-item>^{WE.widgetizeWith dsp leaf}
                         <div class="tab-node">

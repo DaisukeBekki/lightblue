@@ -38,6 +38,7 @@ data DisplaySetting = DisplaySetting
   { defaultExpandDepth :: Int   -- ^ 何段までデフォルト展開するか
   , showCat :: Bool             -- ^ 統語範疇を初期表示するか
   , showSem :: Bool             -- ^ 意味表示を初期表示するか
+  , leafVertical :: Bool        -- ^ 葉ノードを縦並び表示にするか
   }
 
 defaultDisplaySetting :: DisplaySetting
@@ -45,6 +46,7 @@ defaultDisplaySetting = DisplaySetting
   { defaultExpandDepth = 2
   , showCat = True
   , showSem = True
+  , leafVertical = False
   }
 
 -- Widgetizableクラスを定義、widgetizeという関数を持つ
