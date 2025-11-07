@@ -131,11 +131,9 @@ getParsingR = do
 
           let scores = Prelude.map CCG.showScore nodes
 
-          -- nodesの長さをbeamとする
-          let beam = 24 :: Int
-          -- Number of nodes (beam): 1 ???
-          -- liftIO $ hPutStrLn stderr $ "Number of nodes (beam): " ++ show beam
-          let tabs = [1..beam]
+          -- タブ数はノード数に合わせる
+          let numTabs = Prelude.length nodes
+          let tabs = [1..numTabs]
 
           -- tabs個のType Check Query
           -- parseSentenceForQuery :: NLI.ParseResult -> IO ([UDTT.TypeCheckQuery])
