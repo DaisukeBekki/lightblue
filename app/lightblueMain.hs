@@ -28,6 +28,7 @@ import qualified Parser.Language.English.Lexicon as ELEX
 import Parser.Language (LangOptions(..))
 import Parser.LangOptions (defaultJpOptions,defaultEnOptions)
 import qualified Interface as I
+import qualified System.Environment as Env
 import qualified Interface.Text as T
 import qualified Interface.HTML as I
 import qualified Interface.PrintParseResult as PPR
@@ -42,7 +43,7 @@ import qualified DTS.NaturalLanguageInference as NLI
 import qualified JSeM as JSeM                         --jsem
 import qualified ML.Exp.Classification.Bounded as NLP --nlp-tools
 
-data Options = Options Lang Command I.Style NLI.ProverName FilePath Int Int Int Int Int Int Bool Bool Bool Bool
+data Options = Options Lang Command I.Style NLI.ProverName FilePath Int Int Int Int Int Int Bool Bool Bool Bool (Maybe Int) Bool Bool
 
 data Command =
   Parse I.ParseOutput
@@ -206,6 +207,16 @@ optionParser =
     <*> switch 
       ( long "verbose"
       <> help "Show logs of type inferer and type checker" )
+    <*> optional (option auto
+      ( long "depth"
+      <> metavar "INT"
+      <> help "Set the expand depth for Express view" ))
+    <*> switch
+      ( long "noShowCat"
+      <> help "If True, hide categories in Express view" )
+    <*> switch
+      ( long "noShowSem"
+      <> help "If True, hide semantics in Express view" )
 
 parseOptionParser :: Parser Command
 parseOptionParser = Parse
@@ -247,7 +258,7 @@ main = customExecParser p opts >>= lightblueMain
         p = prefs showHelpOnEmpty
 
 lightblueMain :: Options -> IO ()
-lightblueMain (Options lang commands style proverName filepath beamW nParse nTypeCheck nProof maxDepth maxTime noTypeCheck noInference ifTime verbose) = do
+lightblueMain (Options lang commands style proverName filepath beamW nParse nTypeCheck nProof maxDepth maxTime noTypeCheck noInference ifTime verbose mDepth noShowCat noShowSem) = do
   start <- Time.getCurrentTime
   langOptions <- case lang of
                    JP morphaName filterName -> do
@@ -284,6 +295,14 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
           posTagOnly = case output of 
                          I.TREE -> False
                          I.POSTAG -> True
+      case style of
+        I.EXPRESS -> do
+          case mDepth of
+            Just d -> Env.setEnv "LB_EXPRESS_DEPTH" (show d)
+            Nothing -> return ()
+          Env.setEnv "LB_EXPRESS_NOSHOWCAT" (if noShowCat then "1" else "0")
+          Env.setEnv "LB_EXPRESS_NOSHOWSEM" (if noShowSem then "1" else "0")
+        _ -> return ()
       S.hPutStrLn handle $ I.headerOf style
       PPR.printParseResult handle style 1 noTypeCheck posTagOnly "input" parseResult
       S.hPutStrLn handle $ I.footerOf style

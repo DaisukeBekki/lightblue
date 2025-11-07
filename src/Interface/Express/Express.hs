@@ -5,6 +5,8 @@
 
 module Interface.Express.Express (
     showExpress
+  , setDisplaySetting
+  , setDisplayOptions
   ) where
 
 import Yesod
@@ -25,11 +27,30 @@ import System.Info (os)
 import Data.IORef
 import System.IO.Unsafe (unsafePerformIO)
 import qualified Parser.CCG as CCG (showScore, getLeafNodesFromNode)
+import System.Environment (lookupEnv)
+import Text.Read (readMaybe)
 
 -- アプリケーションの状態として ParseResult を保持するための IORef を定義
 {-# NOINLINE currentParseResultRef #-}
 currentParseResultRef :: IORef (Maybe NLI.ParseResult)
 currentParseResultRef = unsafePerformIO $ newIORef Nothing
+
+-- 表示設定を保持する IORef
+{-# NOINLINE currentDisplaySettingRef #-}
+currentDisplaySettingRef :: IORef WE.DisplaySetting
+currentDisplaySettingRef = unsafePerformIO $ newIORef WE.defaultDisplaySetting
+
+setDisplaySetting :: WE.DisplaySetting -> IO ()
+setDisplaySetting dsp = atomicWriteIORef currentDisplaySettingRef dsp
+
+-- | Helper: set by CLI options without importing WidgetExpress from caller
+setDisplayOptions :: Maybe Int -> Bool -> Bool -> IO ()
+setDisplayOptions mDepth noShowCat noShowSem = do
+  let base = WE.defaultDisplaySetting
+      base' = maybe base (\d -> base { WE.defaultExpandDepth = d }) mDepth
+      base'' = if noShowCat then base' { WE.showCat = False } else base'
+      dsp = if noShowSem then base'' { WE.showSem = False } else base''
+  setDisplaySetting dsp
 
 data App = App
 
@@ -44,6 +65,9 @@ showExpress :: NLI.ParseResult -> IO ()
 showExpress initialParseResult = do
   -- 初期ParseResultをIORefに保存
   atomicWriteIORef currentParseResultRef (Just initialParseResult)
+
+  -- 環境変数から表示設定を読み込み、反映
+  applyEnvDisplayOptions
 
   let port = 3000
   let url = "http://localhost:" ++ show port ++ "/parsing" -- 初めから /parsing を開く
@@ -61,6 +85,22 @@ showExpress initialParseResult = do
       hPutStrLn stderr $ "Failed to open browser: " ++ show (e :: IOException)
 
   warp port App
+
+-- 環境変数 LB_EXPRESS_DEPTH / LB_EXPRESS_NOSHOWCAT / LB_EXPRESS_NOSHOWSEM から設定を反映
+applyEnvDisplayOptions :: IO ()
+applyEnvDisplayOptions = do
+  mDepthStr <- lookupEnv "LB_EXPRESS_DEPTH"
+  let mDepth = mDepthStr >>= readMaybe
+  mNoShowCat <- lookupEnv "LB_EXPRESS_NOSHOWCAT"
+  mNoShowSem <- lookupEnv "LB_EXPRESS_NOSHOWSEM"
+  let toBool v = case v of { Just "1" -> True; Just "true" -> True; Just "True" -> True; _ -> False }
+      noShowCat = toBool mNoShowCat
+      noShowSem = toBool mNoShowSem
+      base = WE.defaultDisplaySetting
+      base' = maybe base (\d -> base { WE.defaultExpandDepth = d }) mDepth
+      base'' = if noShowCat then base' { WE.showCat = False } else base'
+      dsp = if noShowSem then base'' { WE.showSem = False } else base''
+  atomicWriteIORef currentDisplaySettingRef dsp
 
 getParsingR :: Handler Html
 getParsingR = do
@@ -100,11 +140,16 @@ getParsingR = do
           -- parseSentenceForDiagram :: NLI.ParseResult -> IO ([[QT.DTTProofDiagram]])
           tcds <- liftIO $ L.parseSentenceForDiagram pr
 
-          let length = Prelude.map Prelude.length tcds
-          liftIO $ putStrLn $ "length: " ++ show length
+          let tcdLengths = Prelude.map Prelude.length tcds
+          liftIO $ putStrLn $ "length: " ++ show tcdLengths
 
           let tabClasses = Prelude.map (\tcdList -> if Data.List.null tcdList then "tab-label error" :: T.Text else "tab-label" :: T.Text) tcds
           
+          -- 表示設定（CLI等から設定された値を参照）
+          dsp <- liftIO $ readIORef currentDisplaySettingRef
+          let catChecked = not (WE.showCat dsp)
+          let semChecked = not (WE.showSem dsp)
+
           defaultLayout $ do
             [whamlet|
               <div id="parsing-view" style="display:block;">
@@ -112,8 +157,8 @@ getParsingR = do
                   <div class="parsing-content">
                     <p>sentence: #{text_sen}
 
-                <input type="checkbox" id="cat-toggle"/>
-                <input type="checkbox" id="sem-toggle"/>
+                <input type="checkbox" id="cat-toggle" :catChecked:checked/>
+                <input type="checkbox" id="sem-toggle" :semChecked:checked/>
                 <label for="cat-toggle" id="catbtn"><b>&ensp;cat&ensp;&ensp;</b></label><br>
                 <label for="sem-toggle" id="sembtn"><b>&ensp;sem&ensp;</b></label>
 
@@ -127,19 +172,19 @@ getParsingR = do
                           <h2>Leaf Nodes
                           <div .leaf-node-list>
                             $forall leaf <- leafNodes
-                              <div .leaf-node-item>^{WE.widgetize leaf}
+                              <div .leaf-node-item>^{WE.widgetizeWith dsp leaf}
                         <div class="tab-node">
                           <h1>Node
-                          <div class="tab-node-content">^{WE.widgetize node}
+                          <div class="tab-node-content">^{WE.widgetizeWith dsp node}
                         <div class="tab-tcq">
                           <h1>Type Check Query
-                          <div class="tab-tcq-content">^{WE.widgetize tcq}
+                          <div class="tab-tcq-content">^{WE.widgetizeWith dsp tcq}
                         <div class="tab-tcd">
                           <h1>Type Check Diagram
                           $if Data.List.null tcdList
                             <p .error-message>⚠️ Type Check Failed... ⚠️
                           $else
-                            <div class="tab-tcds-content">^{Prelude.mapM_ WE.widgetize $ tcdList}
+                            <div class="tab-tcds-content">^{Prelude.mapM_ (WE.widgetizeWith dsp) $ tcdList}
             |]
             myDesign
             myFunction

@@ -8,7 +8,9 @@
 {-# LANGUAGE FlexibleInstances     #-}
 
 module Interface.Express.WidgetExpress (
-    Widgetizable(..)
+    DisplaySetting(..)
+  , defaultDisplaySetting
+  , Widgetizable(..)
   ) where
 
 import  Yesod
@@ -31,9 +33,25 @@ import  qualified Text.Julius as J
 import Interface.Tree
 
 
+-- 表示設定レコード
+data DisplaySetting = DisplaySetting
+  { defaultExpandDepth :: Int   -- ^ 何段までデフォルト展開するか
+  , showCat :: Bool             -- ^ 統語範疇を初期表示するか
+  , showSem :: Bool             -- ^ 意味表示を初期表示するか
+  }
+
+defaultDisplaySetting :: DisplaySetting
+defaultDisplaySetting = DisplaySetting
+  { defaultExpandDepth = 2
+  , showCat = True
+  , showSem = True
+  }
+
 -- Widgetizableクラスを定義、widgetizeという関数を持つ
 class Widgetizable a where
   widgetize :: forall b. a -> WidgetT b IO ()
+  widgetizeWith :: forall b. DisplaySetting -> a -> WidgetT b IO ()
+  widgetizeWith _ = widgetize
   -- type Widget = WidgetT MyApp IO ()
   -- 任意の型のbにWidget（WidgetT 型）としてページに描画できるように変換する
   -- widgetize :: forall b. a -> Widgetと同じ
@@ -41,13 +59,15 @@ class Widgetizable a where
 -- WidgetizableクラスのインスタンスにT.Text型を定義
 instance Widgetizable T.Text where
   widgetize = toWidget 
+  widgetizeWith _ = toWidget
 
 -- WidgetizableクラスのインスタンスにNode型を定義
 instance Widgetizable Node where
-  widgetize = widgetizeDepth 0
+  widgetize = widgetizeWith defaultDisplaySetting
+  widgetizeWith setting = widgetizeDepth setting 0
 
-widgetizeDepth :: Int -> Node -> WidgetT b IO ()
-widgetizeDepth depth node = case Parser.CCG.daughters node of
+widgetizeDepth :: DisplaySetting -> Int -> Node -> WidgetT b IO ()
+widgetizeDepth setting depth node = case Parser.CCG.daughters node of
   -- 子ノードなかったら
   -- widgetize node = case Parser.CCG.daughters node of
     [] -> do
@@ -66,10 +86,10 @@ widgetizeDepth depth node = case Parser.CCG.daughters node of
                     <table border="0" cellpadding="0">
                       <tr class="cathide">
                         <td align="center">
-                          <math xmlns='http://www.w3.org/1998/Math/MathML'>^{widgetize $ cat node}
+                          <math xmlns='http://www.w3.org/1998/Math/MathML'>^{widgetizeWith setting $ cat node}
                       <tr class="semhide">
                         <td>
-                          <math xmlns='http://www.w3.org/1998/Math/MathML'>^{widgetize $ sem node}
+                          <math xmlns='http://www.w3.org/1998/Math/MathML'>^{widgetizeWith setting $ sem node}
             <td valign="baseline">
               <span>LEX
         |]
@@ -77,7 +97,10 @@ widgetizeDepth depth node = case Parser.CCG.daughters node of
       -- 子の数*２
       let len = (length dtrs)*2
       id <- newIdent
-      let (styleA, classA, styleB, classB, buttonLabel) = if depth < 2 then ("display:block" :: StrictT.Text, "open" :: StrictT.Text, "display:none" :: StrictT.Text, "close" :: StrictT.Text, "-" :: StrictT.Text) else ("display:none" :: StrictT.Text, "close" :: StrictT.Text, "display:block" :: StrictT.Text, "open" :: StrictT.Text, "+" :: StrictT.Text)
+      let (styleA, classA, styleB, classB, buttonLabel) =
+            if depth < defaultExpandDepth setting
+              then ("display:block" :: StrictT.Text, "open" :: StrictT.Text, "display:none" :: StrictT.Text, "close" :: StrictT.Text, "-" :: StrictT.Text)
+              else ("display:none" :: StrictT.Text, "close" :: StrictT.Text, "display:block" :: StrictT.Text, "open" :: StrictT.Text, "+" :: StrictT.Text)
       [whamlet|
          <table>
           <tr valign="bottom">
@@ -86,35 +109,35 @@ widgetizeDepth depth node = case Parser.CCG.daughters node of
                 <table border="1" rules="rows" frame="void" cellpadding="2">
                   <tr valign="bottom">
                     $forall dtr <- dtrs
-                      <td align="center" valign="bottom">^{widgetizeDepth (depth + 1) dtr}&nbsp;
+                      <td align="center" valign="bottom">^{widgetizeDepth setting (depth + 1) dtr}&nbsp;
                   <tr>
                     <td align="center" colspan=#{len}>
                       <table border="0" cellpadding="0">
                         <tr class="cathide">
                           <td align="center">
-                            <math xmlns='http://www.w3.org/1998/Math/MathML'>^{widgetize $ cat node}
+                            <math xmlns='http://www.w3.org/1998/Math/MathML'>^{widgetizeWith setting $ cat node}
                         <tr class="semhide">
                           <td>
-                            <math xmlns='http://www.w3.org/1998/Math/MathML'>^{widgetize $ sem node}
+                            <math xmlns='http://www.w3.org/1998/Math/MathML'>^{widgetizeWith setting $ sem node}
               <div id=#{id}layerB style=#{styleB} class=#{classB}>
                 <table border="2" rules="rows" cellpadding="5" border="3px solid #808080">
                   <tr>
-                    <td align="center" bgcolor="#002b5c" style="color: #ffffff;">^{widgetize $ pf node}
+                    <td align="center" bgcolor="#002b5c" style="color: #ffffff;">^{widgetizeWith setting $ pf node}
                   <tr>
                     <td align="center" colspan=#{len}>
                       <table border="0" cellpadding="0">
                         <tr class="cathide">
                           <td align="center">
-                            <math xmlns='http://www.w3.org/1998/Math/MathML'>^{widgetize $ cat node}
+                            <math xmlns='http://www.w3.org/1998/Math/MathML'>^{widgetizeWith setting $ cat node}
                         <tr class="semhide">
                           <td align="center">
-                            <math xmlns='http://www.w3.org/1998/Math/MathML'>^{widgetize $ sem node}
+                            <math xmlns='http://www.w3.org/1998/Math/MathML'>^{widgetizeWith setting $ sem node}
             <td valign="baseline">
               <table border="1" rules="rows" frame="void" cellpadding="5">
                 <tr>
                   <td>
                    <button type="button" id=#{id}button onclick=toggle('#{id}')>#{buttonLabel}
-                  <span>^{widgetize $ rs node}
+                  <span>^{widgetizeWith setting $ rs node}
         |]
 
 -- toText :: a -> Text
