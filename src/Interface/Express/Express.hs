@@ -119,8 +119,9 @@ getParsingR = do
                 <p>ParseResult is not set...
             |]
         Just pr -> do
-          let sentence = SP.InputSentences { SP.input_Sentence = "太郎がパンを食べた。", SP.sen_beam = 24}
-          let text_sen = T.fromStrict $ SP.input_Sentence sentence
+          let text_sen = case pr of
+                           NLI.SentenceAndParseTrees sentence _ -> sentence
+                           _ -> T.empty
           -- tabs個のnode
           -- parseSentence' :: NLI.ParseResult -> IO ([CCG.Node])
           nodes <- liftIO $ L.parseSentence' pr
