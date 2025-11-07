@@ -158,12 +158,13 @@ getParsingR = do
               <div id="parsing-view" style="display:block;">
                 <div class="header">
                   <div class="parsing-content">
-                    <p>sentence: #{text_sen}
+                    <div class="sentence-line">sentence: #{text_sen}
+                    <div class="toggle-group">
+                      <label for="cat-toggle" id="catbtn" class="toggle">cat
+                      <label for="sem-toggle" id="sembtn" class="toggle">sem
 
                 <input type="checkbox" id="cat-toggle" :catChecked:checked/>
                 <input type="checkbox" id="sem-toggle" :semChecked:checked/>
-                <label for="cat-toggle" id="catbtn"><b>&ensp;cat&ensp;&ensp;</b></label><br>
-                <label for="sem-toggle" id="sembtn"><b>&ensp;sem&ensp;</b></label>
 
                 <div class="container-tab">
                   <div .tab-wrap>

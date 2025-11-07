@@ -1,20 +1,16 @@
 console.log("JavaScript file loaded");
 
 const checkbox = document.getElementById('toggle-node');
-
 const tabNode = document.querySelector('.tab-node');
-
-checkbox.addEventListener('change', () => {
-  if (checkbox.checked) {
-    console.log("Yesです");
-    tabNode.style.display = 'block'; // 表示する
-    console.log("現在のスタイル: ", tabNode.style.display);
-  } else {
-    console.log("Noです");
-    tabNode.style.display = 'none'; // 非表示にする
-    console.log("現在のスタイル: ", tabNode.style.display);
-  }
-});
+if (checkbox && tabNode) {
+  checkbox.addEventListener('change', () => {
+    if (checkbox.checked) {
+      tabNode.style.display = 'block';
+    } else {
+      tabNode.style.display = 'none';
+    }
+  });
+}
 
 function toggle(id){
             var objID1 = document.getElementById( id + "layerA" );
@@ -34,3 +30,27 @@ function toggle(id){
               buttonID.innerHTML = "+";
             }
 };
+
+// Toggle label active state for cat/sem controls in header
+function initToggleButtons() {
+  const cat = document.getElementById('cat-toggle');
+  const sem = document.getElementById('sem-toggle');
+  const catBtn = document.getElementById('catbtn');
+  const semBtn = document.getElementById('sembtn');
+  if (cat && catBtn) {
+    const syncCat = () => { if (!cat.checked) { catBtn.classList.add('active'); } else { catBtn.classList.remove('active'); } };
+    cat.addEventListener('change', syncCat);
+    syncCat();
+  }
+  if (sem && semBtn) {
+    const syncSem = () => { if (!sem.checked) { semBtn.classList.add('active'); } else { semBtn.classList.remove('active'); } };
+    sem.addEventListener('change', syncSem);
+    syncSem();
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initToggleButtons);
+} else {
+  initToggleButtons();
+}

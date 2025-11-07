@@ -80,31 +80,7 @@
           #toggle-node: checked ~ * .tab-node
             display: none;
           #catbtn
-            top: 140px;
-            position: fixed;
             font-weight: bold;
-            border: 1px solid #c0c0c0;
-            color: #808080;
-            background: #ffffff;
-          #catbtn:before
-            display: inline-block;
-            width: 20pt;
-            height: 20pt;
-            border: 3px solid #002b5c;
-            color: #ffffff;
-            background: #002b5c;
-            content: "ON";
-            font-weight: bold;
-            font-size: 10pt;
-            text-align: center;
-            line-height: 20pt;
-          #catbtn:hover
-            border: 3px solid #c0c0c0;
-          #cat-toggle:checked ~ label[id="catbtn"]:before
-            color: #ffffff;
-            border: 3px solid #c0c0c0;
-            background: #c0c0c0;
-            content: "OFF";
           #sem-toggle
             display: none;
           .semhide
@@ -112,31 +88,7 @@
           #sem-toggle:checked ~ * .semhide
             display: none;
           #sembtn
-            top: 180px;
-            position: fixed;
             font-weight: bold;
-            border: 1px solid #c0c0c0;
-            color: #808080;
-            background: #ffffff;
-          #sembtn:before
-            display: inline-block;
-            width: 20pt;
-            height: 20pt;
-            border: 3px solid #002b5c;
-            color: #ffffff;
-            background: #002b5c;
-            content: "ON";
-            font-weight: bold;
-            font-size: 10pt;
-            text-align: center;
-            line-height: 20pt;
-          #sembtn:hover
-            border: 3px solid #c0c0c0;
-          #sem-toggle:checked ~ label[id="sembtn"]:before
-            color: #ffffff;
-            border: 3px solid #c0c0c0;
-            background: #c0c0c0;
-            content: "OFF";
           .pre-under
             border-bottom: solid 3px #ffd700;
           .hy-under
@@ -146,19 +98,26 @@
           .header 
             background-color: #002b5c;
             color: white;
-            padding: 10px;
-            height: 80px;
+            padding: 10px 20px;
+            height: 70px;
             font-size: 1.0em;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
           .header h1
             padding-left: 30px;
             font-family: "Audiowide", serif;
             font-style: normal;
           .parsing-content
-            padding-left: 60px;
+            padding-left: 10px;
+            padding-right: 10px;
             display:flex;
-            flex-flow: column;
-            justify-content:space-around;
-            height: 70px;
+            align-items: center;
+            justify-content: space-between;
+            height: 80px;
           .header p
             padding: 1px;
             margin: 3px;
@@ -267,17 +226,53 @@
           .tab-switch
             display: none;
 
+          #parsing-view
+            padding-top: 110px;
           .container-tab
-            margin-top: 25px;
+            margin-top: 180px;
             text-align: center;
             margin: 20px auto;
             max-width: 1400px;
-          
+
+          .sentence-line
+            font-size: 1.1rem;
+            font-weight: 600;
+
+          .toggle-group
+            display: inline-flex;
+            gap: 8px;
+
+          .toggle
+            cursor: pointer;
+            background: #f2f6fb;
+            color: #00509e;
+            border: 2px solid #cfe0ff;
+            padding: 6px 12px;
+            border-radius: 9999px;
+            font-weight: bold;
+            transition: background .15s ease, color .15s ease, border-color .15s ease, transform .1s ease, box-shadow .15s ease;
+            box-shadow: 0 0 0 rgba(0,0,0,0);
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+          .toggle:hover
+            transform: translateY(-2px);
+          .toggle.active
+            background: #00509e;
+            color: #ffffff;
+            border-color: #00509e;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.2);
+          .toggle:not(.active)::after
+            content: " ON";
+            margin-left: 6px;
+            font-weight: 800;
+            color: #0a7f2e;
+          .toggle::after
+            content: " OFF";
+            color: #a10e2a;
           .tab-node-content
             display: flex;
             text-align: left;
             justify-content: center;
-
           .tab-node
             text-align: center;
             align-items : center;
