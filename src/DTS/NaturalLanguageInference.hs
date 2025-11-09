@@ -106,7 +106,7 @@ data QueryAndDiagrams =
 -- | that is an interface problem between natural language semantics and logic
 parseWithTypeCheck :: CP.ParseSetting -> QT.Prover -> DTT.Signature -> DTT.Context -> [T.Text] -> ParseResult
 parseWithTypeCheck ps prover signtr contxt txts =
-  parseWithTypeCheck' ps prover signtr contxt $ for txts $ \txt -> 
+  parseWithTypeCheck' ps prover signtr contxt $ parallelFor txts $ \txt -> 
     let nodes = takeNbest (CP.nParse ps) $ join $ fmap fromFoldable $ lift $ Partial.simpleParse ps txt 
     in (txt, nodes)
     -- | T.Text =simpleParse=>    IO [CCG.Node]
@@ -231,3 +231,8 @@ parallelM lst f = join $ lift $ do
                     where fx   = f x
                           mfxs = parallelM mxs f
 
+parallelFor :: [a] -> (a -> b) -> [b]
+parallelFor [] f = []
+parallelFor (x:xs) f = fx `par` fxs `pseq` (fx:fxs)
+  where fx = f x
+        fxs = parallelFor xs f
