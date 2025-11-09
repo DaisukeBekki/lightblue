@@ -9,6 +9,7 @@ module DTS.QueryTypes (
   , TypeInferer
   , LogicSystem(..)
   , ProofSearchSetting(..)
+  , defaultProofSearchSetting
   , ProverBuilder
   , Prover
   -- * ListEx monad
@@ -81,11 +82,16 @@ data ProofSearchSetting = ProofSearchSetting {
   maxDepth :: Maybe Int
   , maxTime :: Maybe Int
   , logicSystem :: Maybe LogicSystem
-  , debugDepth :: Int -- Default = -1
+  , debugDepth :: Int      -- Default = -1
   , enableEquality :: Bool -- Default = True
+  , reportMaxTime :: Bool  -- Default = False
+  , reportMaxDepth :: Bool -- Defailt = False
   , oracle :: Maybe (DTTdB.ConName -> DTTdB.ConName -> Float) -- Default = Nothing
   -- , neuralWani :: Maybe ()
-  } deriving (Eq, Show)
+  } -- deriving (Eq, Show)
+
+defaultProofSearchSetting :: ProofSearchSetting
+defaultProofSearchSetting = ProofSearchSetting Nothing Nothing (Just Intuitionistic) (-1) True False False Nothing
 
 type Prover = DTTdB.ProofSearchQuery -> ListT IO DTTProofDiagram
 

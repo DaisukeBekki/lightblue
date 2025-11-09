@@ -278,7 +278,10 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
     -- |
     lightblueMainLocal (Parse output) parseSetting contents = do
       let handle = S.stdout
-          prover = NLI.getProver proverName $ QT.ProofSearchSetting (Just maxDepth) Nothing (Just QT.Intuitionistic)
+          prover = NLI.getProver proverName $ QT.defaultProofSearchSetting {
+            QT.maxDepth = (Just maxDepth),
+            QT.maxTime = (Just maxTime)
+            }
           parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] $ T.lines contents
           posTagOnly = case output of 
                          I.TREE -> False
@@ -298,7 +301,10 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
             | nSample < 0 = parsedJSeM'
             | otherwise = take nSample parsedJSeM'
           handle = S.stdout
-          prover = NLI.getProver proverName $ QT.ProofSearchSetting (Just maxDepth) (Just maxTime) (Just QT.Intuitionistic)
+          prover = NLI.getProver proverName $ QT.defaultProofSearchSetting {
+            QT.maxDepth = Just maxDepth, 
+            QT.maxTime = Just maxTime
+            }
       S.hPutStrLn handle $ I.headerOf style
       pairs <- forM parsedJSeM'' $ \j -> do
         let title = "JSeM-ID " ++ (StrictT.unpack $ J.jsem_id j)
@@ -412,7 +418,7 @@ test = do
       termM = UDTT.Sigma UDTT.Entity (UDTT.App (UDTT.Con "f") (UDTT.Var 0))
       typeA = DTT.Type
       tcq = UDTT.Judgment signature context termM typeA
-      prover = NLI.getProver NLI.Wani $ QT.ProofSearchSetting Nothing Nothing (Just QT.Intuitionistic)
+      prover = NLI.getProver NLI.Wani QT.defaultProofSearchSetting
   typeCheckResults <- toList $ typeCheck prover False tcq
   T.putStrLn $ I.startMathML
   T.putStrLn $ I.toMathML $ DTTwN.fromDeBruijnSignature signature
