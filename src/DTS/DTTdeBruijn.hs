@@ -58,11 +58,13 @@ type ConName = LazyT.Text
 --   toMathML Fst = "<mn>1</mn>"  -- `Proj` `Fst` m is the first projection of m
 --   toMathML Snd = "<mn>2</mn>" -- `Proj` `Snd` m is the second projection of m
 
+type ConName = LazyT.Text
+
 -- | Preterms of Dependent Type Theory (DTT).
 data Preterm = 
   -- | Basic Preterms
   Var Int                       -- ^ Variables
-  | Con LazyT.Text                  -- ^ Constant symbols
+  | Con ConName                 -- ^ Constant symbols
   | Type                        -- ^ The sort \"type\"
   | Kind                        -- ^ The sort \"kind\"
   -- | Pi Types
