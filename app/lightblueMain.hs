@@ -30,6 +30,7 @@ import Parser.LangOptions (defaultJpOptions,defaultEnOptions)
 import qualified Interface as I
 import qualified Interface.Text as T
 import qualified Interface.HTML as I
+import qualified Interface.PrintParseResult as PPR
 import qualified JSeM as J
 import qualified JSeM.XML as J
 import qualified DTS.UDTTdeBruijn as UDTT
@@ -287,7 +288,7 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
                          I.TREE -> False
                          I.POSTAG -> True
       S.hPutStrLn handle $ I.headerOf style
-      NLI.printParseResult handle style 1 noTypeCheck posTagOnly "input" parseResult
+      PPR.printParseResult handle style 1 noTypeCheck posTagOnly "input" parseResult
       S.hPutStrLn handle $ I.footerOf style
     --
     -- | JSeM command
@@ -315,7 +316,7 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
         S.putStr "\n"
         let sentences = postpend (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
             parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] sentences
-        NLI.printParseResult handle style 1 noTypeCheck False title parseResult
+        PPR.printParseResult handle style 1 noTypeCheck False title parseResult
         inferenceLabels <- toList $ NLI.trawlParseResult parseResult
         let groundTruth = J.jsemLabel2YesNo $ J.answer j
             prediction = case inferenceLabels of

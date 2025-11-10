@@ -49,6 +49,8 @@ instance SimpleText Selector where
   toText Fst = "1"
   toText Snd = "2"
 
+type ConName = LazyT.Text
+
 -- instance Typeset Selector where
 --   toTeX = toText
 -- 

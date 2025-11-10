@@ -61,11 +61,13 @@ import qualified Data.List as L
 import qualified Data.Maybe as M
 import qualified Debug.Trace as D
 
+import qualified Data.Time.Clock as Time
+
 type ATerm = A.Arrowterm
 type AType = A.Arrowterm
 type Depth = Int
 
-type DeduceRule = A.SAEnv -> A.AEnv -> AType -> Depth -> Setting -> Result
+type DeduceRule = A.SAEnv -> A.AEnv -> AType -> Depth -> Setting -> IO Result
 type TypecheckRule = A.SAEnv -> A.AEnv -> ATerm -> AType -> Depth -> Setting -> Result
 
 data ProofMode = Plain | WithDNE | WithEFQ deriving (Show,Eq)
@@ -73,6 +75,7 @@ data ProofMode = Plain | WithDNE | WithEFQ deriving (Show,Eq)
 data Status = Status 
   {failedlst :: [(A.Context,ATerm,AType)], -- ^ Once wani failed to @typecheck@, wani add the tuple to this list
    deduceNgLst :: [(A.Context,AType)], -- ^ Once wani failed to @deduce@, wani add the pair to this list
+   usedDisJoint :: [ATerm],
    usedMaxDepth ::Depth, 
    allProof :: Bool -- ^ In the bottom of the tree, one proof is enough to judge whether the hypo is true or not.
   }deriving (Show,Eq)
@@ -84,7 +87,10 @@ data Setting = Setting
    maxtime :: Int,
    debug :: Int,
    sStatus :: Status,
-   ruleConHojo :: String} deriving (Show,Eq)
+   ruleConHojo :: String,
+   timeLimit :: M.Maybe Time.UTCTime,
+   enableneuralDTS :: Bool
+   } deriving (Show,Eq)
 
 data Result = Result
   {trees :: [UDT.Tree A.Arrowrule A.AJudgment],
@@ -97,13 +103,13 @@ mergeResult rs1 rs2 =
 
 mergeStatus :: Status -> Status -> Status
 mergeStatus st1 st2 =
-  Status {failedlst = L.nub(concatMap failedlst [st1,st2]),usedMaxDepth = maximum (map usedMaxDepth [st1,st2]),deduceNgLst=L.nub(concatMap deduceNgLst [st1,st2]),allProof = (allProof st1) || (allProof st2)}
+  Status {failedlst = L.nub(concatMap failedlst [st1,st2]),usedMaxDepth = maximum (map usedMaxDepth [st1,st2]),deduceNgLst=L.nub(concatMap deduceNgLst [st1,st2]),usedDisJoint=L.nub(concatMap usedDisJoint[st1,st2]),allProof = (allProof st1) || (allProof st2)}
 
 statusDef :: Status
-statusDef = Status{failedlst=[],usedMaxDepth = 0,deduceNgLst=[],allProof = True}
+statusDef = Status{failedlst=[],usedMaxDepth = 0,deduceNgLst=[],usedDisJoint=[],allProof = True}
 
 settingDef :: Setting
-settingDef = Setting{mode = Plain,falsum = True,maxdepth = 9,maxtime = 100000,debug = 0,sStatus = statusDef,ruleConHojo = "sub"}
+settingDef = Setting{mode = Plain,falsum = True,maxdepth = 9,maxtime = 100000,debug = 0,sStatus = statusDef,ruleConHojo = "sub",enableneuralDTS=False}
 
 resultDef :: Result
 resultDef = Result{trees = [],errMsg = "",rStatus = statusDef}
@@ -150,7 +156,7 @@ termFromGoal (Goal _ _ maybeProofTerm _ ) = maybeProofTerm
 typesFromGoal :: Goal -> [ProofType]
 typesFromGoal (Goal _ _ _ proofTypes) = proofTypes
 
-type Rule = Goal -> Setting -> ([SubGoalSet],T.Text)
+type Rule = Goal -> Setting -> IO ([SubGoalSet],T.Text)
 
 data SubGoal = 
   SubGoal 
@@ -183,13 +189,13 @@ type SubstLst = [SubstSet]
 substPrefix :: Char
 substPrefix = 's'
 
-generatedTempTerm :: A.Arrowterm -> T.Text -> A.Arrowterm
-generatedTempTerm origin id =
+generatedTempTerm :: (A.SAEnv,A.Arrowterm) -> T.Text -> A.Arrowterm
+generatedTempTerm (sig,origin) id =
   let gen =  T.concat [(T.singleton substPrefix),id]
   in 
-    if origin == A.arrowSubst origin (A.aCon gen) (A.aCon "dummyInGeneratedTempTerm")
+    if origin == A.arrowSubst origin (A.aCon gen) (A.aCon "dummyInGeneratedTempTerm") || M.isNothing (lookup gen sig)
     then A.aCon gen
-    else generatedTempTerm origin gen
+    else generatedTempTerm (sig,origin) gen
 
 {-|
   The clue \(([(a,b)],\text{Maybe } (c,d)) \) in 1 `SubGoal` means the following.
@@ -212,7 +218,7 @@ data SubGoalSet =
     QT.DTTrule -- ^ label of rule
     (Maybe (UDT.Tree QT.DTTrule A.AJudgment))  -- ^ forwardedTree; a tree for function in `piElim` or the upside tree for `membership`
     [SubGoal]  -- ^ list of subgoals; Proofsearch is performed starting with the one in the front
-    A.AJudgment -- ^ judgement for the downside; The part that needs to be updated based on the upside is indicated as `A.aVar` num. The left-most proofterm in the upside is `A.aVar` -1, the second proof term from the left is `A.aVar` -2, and so on, decreasing in number.
+    (A.AJudgment,SubstLst) -- ^ judgement for the downside; The part that needs to be updated based on the upside is indicated as `A.aVar` num. The left-most proofterm in the upside is `A.aVar` -1, the second proof term from the left is `A.aVar` -2, and so on, decreasing in number.
   deriving (Eq,Show)
 
 labelFromSubGoalSet :: SubGoalSet -> QT.DTTrule
@@ -225,7 +231,7 @@ subGoalsFromSubGoalSet :: SubGoalSet -> [SubGoal]
 subGoalsFromSubGoalSet subGoalSet = case subGoalSet of SubGoalSet _ tree subgoals dside -> subgoals
 
 dsideFromSubGoalSet :: SubGoalSet -> A.AJudgment
-dsideFromSubGoalSet subGoalSet = case subGoalSet of SubGoalSet _ tree subgoals dside -> dside
+dsideFromSubGoalSet subGoalSet = case subGoalSet of SubGoalSet _ tree subgoals (dside,substLst) -> dside
 
 exitMessage :: ExitReason -> QT.DTTrule ->T.Text
 exitMessage reasonCode label = 
