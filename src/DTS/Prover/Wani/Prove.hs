@@ -83,7 +83,7 @@ prove' QT.ProofSearchSetting{..} (DdB.ProofSearchQuery sig ctx typ) =  -- LiftT 
                         Nothing -> 100000,
         WB.debug = -1,
         WB.sStatus = WB.statusDef,
-        WB.enableneuralDTS = neuralDTS
+        WB.enableneuralDTS = False
         };
       ioResult = hojo ctx ((A.aEntityName,DdB.Type):sig) typ setting (M.maybe Nothing (\t -> M.Just $ toEnum (t * (10^9))) maxTime)
   in ListT.lift ioResult >>= \result ->
