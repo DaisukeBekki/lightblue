@@ -35,6 +35,8 @@ import qualified Debug.Trace as D
 
 import qualified Control.Monad as CM
 
+import System.Mem.StableName (makeStableName, hashStableName)
+
 
 -- | piIntro rule
 --
@@ -979,3 +981,46 @@ disjElim goal setting =
                       disjArrowTrees
               in subgoalsetDisj ++ subgoalsetDisjArrow
           in return (subgoalsets,"")
+
+waniBaseRuleFromDTTrule :: QT.DTTrule -> Maybe WB.Rule
+waniBaseRuleFromDTTrule rule = case rule of
+  QT.Var -> M.Just membership
+  QT.Con -> M.Nothing
+  QT.TypeF -> M.Nothing
+  QT.Conv -> M.Nothing
+  QT.WK -> M.Nothing
+  QT.PiF -> M.Just piForm
+  QT.PiI -> M.Just piIntro
+  QT.PiE -> M.Just piElim
+  QT.DNE -> M.Just dne
+  QT.EFQ -> M.Just efq
+  QT.SigmaF -> M.Just sigmaForm
+  QT.SigmaI -> M.Just sigmaIntro
+  QT.SigmaE -> M.Nothing
+  QT.DisjF -> M.Just disjForm
+  QT.DisjI -> M.Just disjIntro
+  QT.DisjE -> M.Just disjElim
+  QT.BotF -> M.Nothing
+  QT.TopF -> M.Nothing
+  QT.TopI -> M.Just topIntro
+  QT.EnumF -> M.Nothing
+  QT.EnumI -> M.Nothing
+  QT.EnumE -> M.Nothing
+  QT.IqF -> M.Just eqForm
+  QT.IqI -> M.Nothing
+  QT.IqE -> M.Nothing
+  QT.NatF -> M.Nothing
+  QT.NatI -> M.Nothing
+  QT.NatE -> M.Nothing
+
+dttRuleFromWaniBaseRule :: WB.Rule -> IO (Maybe QT.DTTrule)
+dttRuleFromWaniBaseRule rule = do
+  let ruleMap = [(waniRule, dttRule) | dttRule <- [minBound .. maxBound] :: [QT.DTTrule], M.Just waniRule <- [waniBaseRuleFromDTTrule dttRule]]
+  ruleStableName <- makeStableName rule
+  matchingRules <- CM.filterM (\(otherRule, _) -> do
+    otherStableName <- makeStableName otherRule
+    return $ hashStableName otherStableName == hashStableName ruleStableName
+    ) ruleMap
+  return $ case matchingRules of
+    ((_, dttRule):_) -> M.Just dttRule
+    [] -> M.Nothing
