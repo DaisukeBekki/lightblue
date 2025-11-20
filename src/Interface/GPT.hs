@@ -23,45 +23,49 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
 -- テスト用のmain関数
--- main :: IO ()
--- main = do
---   -- 環境変数からAPIキーを取得
---   _ <- loadFile defaultConfig
---   mApiKey <- lookupEnv "API_KEY"
---   prompt:_ <- getArgs
---   case mApiKey of
---     Nothing -> putStrLn "環境変数 API_KEY が設定されていません。"
---     Just apiKey -> do
---     --   let prompt = "Haskellはどんな言語ですか？"
---       response <- callGPT (BS.pack apiKey) (T.pack prompt)
---       putStrLn "===== GPTの応答 ====="
---       T.putStrLn response
+main :: IO ()
+main = do
+  -- 環境変数からAPIキーを取得
+  -- _ <- loadFile defaultConfig
+  -- mApiKey <- lookupEnv "API_KEY"
+  -- prompt:_ <- getArgs
+  -- case mApiKey of
+    -- Nothing -> putStrLn "環境変数 API_KEY が設定されていません。"
+    -- Just apiKey -> do
+      let prompt = "Haskellはどんな言語ですか？"
+      response <- callGPT (T.pack prompt)
+      putStrLn "===== GPTの応答 ====="
+      T.putStrLn response
 
 -- GPT APIを呼び出す関数
-callGPT :: BS.ByteString -> T.Text -> IO T.Text
-callGPT apiKey prompt = do
-  let url = "https://api.openai.com/v1/chat/completions"
-  initReq <- parseRequest url
-  let body = object
-        [ "model" .= String "gpt-3.5-turbo"
-        , "messages" .=
-            [ object
-                [ "role" .= String "user"
-                , "content" .= prompt
+callGPT :: T.Text -> IO T.Text
+callGPT prompt = do
+  _ <- loadFile defaultConfig
+  mApiKey <- lookupEnv "API_KEY"
+  case mApiKey of
+    Nothing -> error "環境変数 API_KEY が設定されていません。"
+    Just key -> do
+      let url = "https://api.openai.com/v1/chat/completions"
+      initReq <- parseRequest url
+      let body = object
+            [ "model" .= String "gpt-3.5-turbo"
+            , "messages" .=
+                [ object
+                    [ "role" .= String "user"
+                    , "content" .= prompt
+                    ]
                 ]
             ]
-        ]
-      request = setRequestMethod "POST"
-              $ setRequestHeader "Authorization" ["Bearer " <> apiKey]
-              $ setRequestHeader "Content-Type" ["application/json"]
-              $ setRequestBodyJSON body
-              $ initReq
-
-  response <- httpLBS request
-  let responseBody = getResponseBody response
-  -- putStrLn "===== APIレスポンス ====="
-  -- LBS.putStrLn responseBody
-  return $ extractText responseBody
+          request = setRequestMethod "POST"
+                  $ setRequestHeader "Authorization" ["Bearer " <> BS.pack key]
+                  $ setRequestHeader "Content-Type" ["application/json"]
+                  $ setRequestBodyJSON body
+                  $ initReq
+      response <- httpLBS request
+      let responseBody = getResponseBody response
+      -- putStrLn "===== APIレスポンス ====="
+      -- LBS.putStrLn responseBody
+      return $ extractText responseBody
 
 -- JSONレスポンスから応答文だけを抽出
 extractText :: LBS.ByteString -> T.Text

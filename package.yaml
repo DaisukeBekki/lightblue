@@ -61,6 +61,7 @@ library:
   - Parser.ChartParser
   - Parser.CCG
   - Parser.PartialParsing
+  - Parser.FeedBack
   - Parser.Language
   - Parser.LangOptions
   - Parser.Language.Japanese.Lexicon
@@ -83,6 +84,7 @@ library:
   - Interface.HTML
   - Interface.SVG
   - Interface.Tree
+  - Interface.GPT
   - Interface.PrintParseResult
   - DTS.Index
   - DTS.GeneralTypeQuery
