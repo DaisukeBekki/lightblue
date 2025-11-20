@@ -99,21 +99,23 @@ data QueryAndDiagrams =
 -- | that is an interface problem between natural language semantics and logic
 parseWithTypeCheck :: CP.ParseSetting -> QT.Prover -> DTT.Signature -> DTT.Context -> [T.Text] -> ParseResult
 parseWithTypeCheck ps prover signtr contxt txts =
-  parseWithTypeCheck' ps prover signtr contxt $ parallelFor txts $ \txt -> 
-    let nodes = takeNbest (CP.nParse ps) $ join $ fmap fromFoldable $ lift $ Partial.simpleParse ps txt 
-    in (txt, nodes)
+  let nodes = sequentialParsing ps txts
+  in sequentialTypeCheck ps prover signtr contxt nodes
+  
+type Discourse = [(T.Text, ListT IO CCG.Node)]
+
+sequentialParsing :: CP.ParseSetting -> [T.Text] -> Discourse
+sequentialParsing ps txts = 
+  parallelFor txts $ \txt -> (txt, takeNbest (CP.nParse ps) $ join $ fmap fromFoldable $ lift $ Partial.simpleParse ps txt)
     -- | T.Text =simpleParse=>    IO [CCG.Node]
     -- |        =lift=>           ListT IO [CCG.node] 
     -- |        =fmap(foldable)=> ListT IO (ListT IO CCG.Node)
     -- |        =join=>           ListT IO CCG.Node
     -- |        =takeNbest Int => ListT IO CCG.Node
-    where for = flip map
-  
-type Discourse = [(T.Text, ListT IO CCG.Node)]
 
-parseWithTypeCheck' :: CP.ParseSetting -> QT.Prover -> DTT.Signature -> DTT.Context -> Discourse -> ParseResult
-parseWithTypeCheck' _ _ _ [] [] = NoSentence     -- ^ Context is empty and no sentece is given 
-parseWithTypeCheck' ps prover signtr (typ:contxt) [] = -- ^ Context is given and no more sentence (= All parse done)
+sequentialTypeCheck :: CP.ParseSetting -> QT.Prover -> DTT.Signature -> DTT.Context -> Discourse -> ParseResult
+sequentialTypeCheck _ _ _ [] [] = NoSentence     -- ^ Context is empty and no sentece is given 
+sequentialTypeCheck ps prover signtr (typ:contxt) [] = -- ^ Context is given and no more sentence (= All parse done)
   if CP.noInference ps
     then NoSentence
     else let psqPos = DTT.ProofSearchQuery signtr contxt $ typ 
@@ -121,7 +123,7 @@ parseWithTypeCheck' ps prover signtr (typ:contxt) [] = -- ^ Context is given and
              psqNeg = DTT.ProofSearchQuery signtr contxt $ DTT.Pi typ DTT.Bot
              resultNeg = takeNbest (CP.nProof ps) $ prover psqNeg
          in InferenceResults (QueryAndDiagrams psqPos resultPos) (QueryAndDiagrams psqNeg resultNeg)
-parseWithTypeCheck' ps prover signtr contxt ((text,nodes):rests) = 
+sequentialTypeCheck ps prover signtr contxt ((text,nodes):rests) = 
   SentenceAndParseTrees text $ 
     parallelM nodes $ \node -> 
          let signtr' = L.nub $ (CCG.sig node) ++ signtr
@@ -132,7 +134,7 @@ parseWithTypeCheck' ps prover signtr contxt ((text,nodes):rests) =
                                                               <|> (TY.typeCheck prover (CP.verbose ps) tcQueryKind)
               in parallelM tcDiagrams $ \tcDiagram -> 
                    let contxt' = (DTT.trm $ Tree.node tcDiagram):contxt
-                   in (tcDiagram, parseWithTypeCheck' ps prover signtr' contxt' rests)
+                   in (tcDiagram, sequentialTypeCheck ps prover signtr' contxt' rests)
 
 -- | Take n element from the top of the list.
 -- | If n < 0, it returns all the elements.
