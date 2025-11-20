@@ -156,10 +156,11 @@ termFromGoal (Goal _ _ maybeProofTerm _ ) = maybeProofTerm
 typesFromGoal :: Goal -> [ProofType]
 typesFromGoal (Goal _ _ _ proofTypes) = proofTypes
 
-judgmentFromGoal :: Goal -> DdB.Judgment
-judgmentFromGoal (Goal sig var maybeTerm proofTypes) =
-  A.a2dtJudgment $ A.AJudgment sig var term (head proofTypes)
-  where term = maybe (A.Conclusion $ DdB.Con "?") id maybeTerm
+goal2NeuralWaniJudgement :: Goal -> Maybe DdB.Judgment
+goal2NeuralWaniJudgement (Goal sig var maybeTerm [proofType]) =
+  Just $ A.a2dtJudgment $ A.AJudgment sig var term proofType
+  where term = maybe (A.Conclusion $ DdB.Con "neuralWaniConPlaceholder") id maybeTerm
+goal2NeuralWaniJudgement (Goal _ _ _ _) = Nothing
 
 type Rule = Goal -> Setting -> IO ([SubGoalSet],T.Text)
 
