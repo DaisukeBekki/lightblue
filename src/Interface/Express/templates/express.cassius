@@ -118,6 +118,33 @@
             align-items: center;
             justify-content: space-between;
             height: 80px;
+          .span-controls
+            display: inline-flex;
+            gap: 8px;
+            align-items: center;
+            margin-left: 12px;
+          #span-surface
+            min-width: 240px;
+            padding: 6px 8px;
+            border: 1px solid #cfe0ff;
+            border-radius: 6px;
+            font-size: 0.9rem;
+          #span-beam
+            width: 70px;
+            padding: 6px 8px;
+            border: 1px solid #cfe0ff;
+            border-radius: 6px;
+            font-size: 0.9rem;
+          #span-results
+            min-width: 220px;
+            padding: 6px 8px;
+            border: 1px solid #cfe0ff;
+            border-radius: 6px;
+            font-size: 0.9rem;
+          #span-status
+            color: #fff;
+            font-size: 0.9rem;
+            margin-left: 6px;
           .header p
             padding: 1px;
             margin: 3px;
@@ -417,3 +444,48 @@
             border: 1px solid #bbb;
             border-radius: 4px;
             background-color: #f5f5f5;
+          
+/* span preview (部分文字列プレビュー) */
+          .span-preview-title
+            padding: 10px 12px;
+            font-weight: 700;
+            color: #002b5c;
+            background: #f0f5ff;
+            border-top: 1px solid #ddd;
+            border-bottom: 1px solid #e5eefc;
+          .span-preview-list
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 8px 12px;
+            border-top: 1px solid #ddd;
+            background: #fafafa;
+          .span-preview
+            padding: 6px 8px;
+            border: 1px solid #bbb;
+            border-radius: 4px;
+            background-color: #fff;
+            cursor: pointer;
+            min-width: 160px;
+            max-width: 100%;
+            overflow: auto;
+          .span-preview:hover
+            background-color: #f5faff;
+            border-color: #7fb3ff;
+          .span-preview.active
+            background-color: #e6f0ff;
+            border-color: #00509e;
+            box-shadow: 0 0 0 2px rgba(0,80,158,0.12) inset;
+          .span-preview-loading
+            color: #666;
+            font-size: 0.85rem;
+          .span-preview-pf
+            font-weight: 700;
+            color: #333;
+          .span-preview-cat
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 0.85rem;
+            color: #444;
+          .span-preview-score
+            font-size: 0.8rem;
+            color: #666;

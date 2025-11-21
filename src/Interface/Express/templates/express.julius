@@ -54,3 +54,215 @@ if (document.readyState === 'loading') {
 } else {
   initToggleButtons();
 }
+
+// Span parsing fetch without button
+async function fetchSpanFromInputs() {
+  const input = document.getElementById('span-surface');
+  const beam = document.getElementById('span-beam');
+  const select = document.getElementById('span-results');
+  const status = document.getElementById('span-status');
+  if (!input || !beam || !select || !status) return;
+  const surf = (input.value || '').trim();
+  const b = (beam.value || '32').trim();
+  status.textContent = '';
+  select.innerHTML = '';
+  if (!surf) {
+    status.textContent = 'テキストを入力/選択してください';
+    return;
+  }
+  try {
+    const url = `/span?surface=${encodeURIComponent(surf)}&beam=${encodeURIComponent(b)}`;
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!data || !Array.isArray(data.nodes) || data.nodes.length === 0) {
+      status.textContent = data && data.message ? data.message : '一致する区間がありません';
+      const ctx = { beam: b, surface: surf, span: null };
+      renderSpanTitle(ctx);
+      renderSpanPreviews([], ctx);
+      return;
+    }
+    const nodes = data.nodes;
+    nodes.forEach((n, idx) => {
+      const opt = document.createElement('option');
+      opt.value = String(idx);
+      opt.textContent = `${n.cat} | score: ${n.score}`;
+      select.appendChild(opt);
+    });
+    status.textContent = `候補: ${nodes.length} 件`;
+    const spanInfo = data.span && typeof data.span.start === 'number' && typeof data.span.end === 'number'
+      ? { start: data.span.start, end: data.span.end }
+      : null;
+    const ctx = { beam: b, surface: surf, span: spanInfo };
+    renderSpanTitle(ctx);
+    renderSpanPreviews(nodes, ctx);
+    // デフォルトで先頭を選択・ハイライト
+    select.value = '0';
+    const changeEv = new Event('change');
+    select.dispatchEvent(changeEv);
+  } catch (e) {
+    console.error(e);
+    status.textContent = '取得に失敗しました';
+  }
+}
+
+function initSpanControls() {
+  // Enter key in input triggers fetch
+  const input = document.getElementById('span-surface');
+  if (input) {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') fetchSpanFromInputs();
+    });
+  }
+  // ドロップダウン選択に応答してプレビューをハイライト・スクロール
+  const select = document.getElementById('span-results');
+  if (select) {
+    select.addEventListener('change', () => {
+      const idx = select.value;
+      highlightSpanPreview(idx);
+    });
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initSpanControls);
+} else {
+  initSpanControls();
+}
+
+// Selection -> auto fill and fetch
+function initSentenceSelection() {
+  const sen = document.getElementById('sentence-text');
+  const input = document.getElementById('span-surface');
+  if (!sen || !input) return;
+  sen.addEventListener('mouseup', () => {
+    const sel = window.getSelection && window.getSelection();
+    if (!sel || sel.isCollapsed) return;
+    const text = sel.toString().trim();
+    if (!text) return;
+    input.value = text;
+    fetchSpanFromInputs();
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initSentenceSelection);
+} else {
+  initSentenceSelection();
+}
+
+// 解析候補のプレビュー描画（サーバ側の Leaf Node レイアウトを取得して埋め込み）
+function renderSpanPreviews(nodes, ctx) {
+  const container = document.getElementById('span-preview-list');
+  if (!container) return;
+  container.innerHTML = '';
+  if (!Array.isArray(nodes) || nodes.length === 0) return;
+  nodes.forEach((n, idx) => {
+    const item = document.createElement('div');
+    item.className = 'span-preview';
+    item.id = `span-preview-${idx}`;
+    const loading = document.createElement('div');
+    loading.className = 'span-preview-loading';
+    loading.textContent = 'loading...';
+    item.appendChild(loading);
+    item.addEventListener('click', () => {
+      const select = document.getElementById('span-results');
+      if (select) {
+        select.value = String(idx);
+        const ev = new Event('change');
+        select.dispatchEvent(ev);
+      }
+    });
+    container.appendChild(item);
+
+    // HTML スニペットを取得して挿入
+    const params = new URLSearchParams();
+    params.set('beam', String(ctx && ctx.beam ? ctx.beam : '32'));
+    params.set('index', String(idx));
+    if (ctx && ctx.span && typeof ctx.span.start === 'number' && typeof ctx.span.end === 'number') {
+      params.set('start', String(ctx.span.start));
+      params.set('end', String(ctx.span.end));
+    } else if (ctx && ctx.surface) {
+      params.set('surface', ctx.surface);
+    }
+    fetch(`/span/node?${params.toString()}`, { headers: { 'Accept': 'text/html' } })
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.text();
+      })
+      .then(html => {
+        item.innerHTML = html;
+        // ID 衝突回避のため、プレビュー内のトグル用IDをインデックスでユニーク化
+        sanitizePreviewIds(item, idx);
+      })
+      .catch(err => {
+        console.error(err);
+        loading.textContent = 'failed to load';
+      });
+  });
+}
+
+// タイトルの描画：「部分文字列「xxx」の解析候補」
+function renderSpanTitle(ctx) {
+  const title = document.getElementById('span-preview-title');
+  if (!title) return;
+  const surf = ctx && typeof ctx.surface === 'string' ? ctx.surface.trim() : '';
+  if (surf) {
+    title.textContent = `部分文字列「${surf}」の解析候補`;
+  } else if (ctx && ctx.span && typeof ctx.span.start === 'number' && typeof ctx.span.end === 'number') {
+    title.textContent = `選択区間 (${ctx.span.start}, ${ctx.span.end}) の解析候補`;
+  } else {
+    title.textContent = '';
+  }
+}
+
+// プレビュー内のトグルIDをユニーク化し、onclick を正しいIDに差し替える
+function sanitizePreviewIds(container, idx) {
+  if (!container) return;
+  // 1) layerA/layerB/button をすべて一括でリネーム
+  const idNodes = container.querySelectorAll('[id]');
+  const buttons = [];
+  idNodes.forEach(el => {
+    const id = el.id || '';
+    let suffix = null;
+    if (id.endsWith('layerA')) suffix = 'layerA';
+    else if (id.endsWith('layerB')) suffix = 'layerB';
+    else if (id.endsWith('button')) suffix = 'button';
+    if (!suffix) return;
+    const base = id.slice(0, -suffix.length);
+    if (!base) return;
+    const newBase = base + 'pv' + String(idx) + '-';
+    el.id = newBase + suffix;
+    if (suffix === 'button') {
+      buttons.push({ el, newBase });
+    }
+  });
+  // 2) 既存の inline onclick="toggle(...)" を除去
+  container.querySelectorAll('[onclick]').forEach(node => {
+    const v = node.getAttribute('onclick') || '';
+    if (v.indexOf('toggle(') >= 0) {
+      try { node.removeAttribute('onclick'); } catch (_) {}
+    }
+  });
+  // 3) 各ボタンに JS で click をバインド（自分の newBase をトグル）
+  buttons.forEach(({ el, newBase }) => {
+    el.onclick = function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggle(newBase);
+      return false;
+    };
+  });
+}
+
+// 選択された候補のプレビューをハイライトしてスクロール
+function highlightSpanPreview(index) {
+  const container = document.getElementById('span-preview-list');
+  if (!container) return;
+  Array.from(container.children).forEach(el => el.classList.remove('active'));
+  const target = document.getElementById(`span-preview-${index}`);
+  if (target) {
+    target.classList.add('active');
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
