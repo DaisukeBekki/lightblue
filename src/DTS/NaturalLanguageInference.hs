@@ -93,15 +93,27 @@ data QueryAndDiagrams =
   QueryAndDiagrams DTT.ProofSearchQuery (ListT IO QT.DTTProofDiagram) 
   -- ^ A proof search query for the inference and its results.
 
-type Discourse = [T.Text]
-
 -- | Parse sequential texts, and check their semantic felicity condition.
 -- | If noInference = True, it does not execute inference.
 -- | The specification of this function reflects a view about what are entailments between texts,          
 -- | that is an interface problem between natural language semantics and logic
-parseWithTypeCheck :: CP.ParseSetting -> QT.Prover -> DTT.Signature -> DTT.Context -> Discourse -> ParseResult
-parseWithTypeCheck _ _ _ [] [] = NoSentence     -- ^ Context is empty and no sentece is given 
-parseWithTypeCheck ps prover signtr (typ:contxt) [] = -- ^ Context is given and no more sentence (= All parse done)
+parseWithTypeCheck :: CP.ParseSetting -> QT.Prover -> DTT.Signature -> DTT.Context -> [T.Text] -> ParseResult
+parseWithTypeCheck ps prover signtr contxt txts =
+  parseWithTypeCheck' ps prover signtr contxt $ parallelFor txts $ \txt -> 
+    let nodes = takeNbest (CP.nParse ps) $ join $ fmap fromFoldable $ lift $ Partial.simpleParse ps txt 
+    in (txt, nodes)
+    -- | T.Text =simpleParse=>    IO [CCG.Node]
+    -- |        =lift=>           ListT IO [CCG.node] 
+    -- |        =fmap(foldable)=> ListT IO (ListT IO CCG.Node)
+    -- |        =join=>           ListT IO CCG.Node
+    -- |        =takeNbest Int => ListT IO CCG.Node
+    where for = flip map
+  
+type Discourse = [(T.Text, ListT IO CCG.Node)]
+
+parseWithTypeCheck' :: CP.ParseSetting -> QT.Prover -> DTT.Signature -> DTT.Context -> Discourse -> ParseResult
+parseWithTypeCheck' _ _ _ [] [] = NoSentence     -- ^ Context is empty and no sentece is given 
+parseWithTypeCheck' ps prover signtr (typ:contxt) [] = -- ^ Context is given and no more sentence (= All parse done)
   if CP.noInference ps
     then NoSentence
     else let psqPos = DTT.ProofSearchQuery signtr contxt $ typ 
@@ -109,15 +121,9 @@ parseWithTypeCheck ps prover signtr (typ:contxt) [] = -- ^ Context is given and 
              psqNeg = DTT.ProofSearchQuery signtr contxt $ DTT.Pi typ DTT.Bot
              resultNeg = takeNbest (CP.nProof ps) $ prover psqNeg
          in InferenceResults (QueryAndDiagrams psqPos resultPos) (QueryAndDiagrams psqNeg resultNeg)
-parseWithTypeCheck ps prover signtr contxt (text:texts) = 
+parseWithTypeCheck' ps prover signtr contxt ((text,nodes):rests) = 
   SentenceAndParseTrees text $ 
-    --lift $ S.putStrLn $ "nParse = " ++ (show $ CP.nParse ps)
-    -- | IO [CCG.node] =lift=>           ListT IO [CCG.node] 
-    -- |               =fmap(foldable)=> ListT IO (ListT IO CCG.Node)
-    -- |               =join=>           ListT IO CCG.Node
-    -- |               =take n=>         ListT IO CCG.Node
-    let nodes = takeNbest (CP.nParse ps) $ join $ fmap fromFoldable $ lift $ Partial.simpleParse ps text 
-    in parallelM nodes $ \node -> 
+    parallelM nodes $ \node -> 
          let signtr' = L.nub $ (CCG.sig node) ++ signtr
              tcQueryType = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
              tcQueryKind = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Kind
@@ -126,7 +132,7 @@ parseWithTypeCheck ps prover signtr contxt (text:texts) =
                                                               <|> (TY.typeCheck prover (CP.verbose ps) tcQueryKind)
               in parallelM tcDiagrams $ \tcDiagram -> 
                    let contxt' = (DTT.trm $ Tree.node tcDiagram):contxt
-                   in (tcDiagram, parseWithTypeCheck ps prover signtr' contxt' texts)
+                   in (tcDiagram, parseWithTypeCheck' ps prover signtr' contxt' rests)
 
 -- | Take n element from the top of the list.
 -- | If n < 0, it returns all the elements.
@@ -163,3 +169,8 @@ parallelM lst f = join $ lift $ do
                     where fx   = f x
                           mfxs = parallelM mxs f
 
+parallelFor :: [a] -> (a -> b) -> [b]
+parallelFor [] f = []
+parallelFor (x:xs) f = fx `par` fxs `pseq` (fx:fxs)
+  where fx = f x
+        fxs = parallelFor xs f
