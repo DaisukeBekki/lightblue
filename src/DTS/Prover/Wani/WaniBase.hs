@@ -45,7 +45,7 @@ module DTS.Prover.Wani.WaniBase (
     SubGoalSet(..),
     ProofType(..),
     ProofTerm(..),
-    convertToSubstableTerm,
+    substedTempterm,
     acceptableType,
     exitMessage,
     ExitReason(..)
@@ -156,6 +156,12 @@ termFromGoal (Goal _ _ maybeProofTerm _ ) = maybeProofTerm
 typesFromGoal :: Goal -> [ProofType]
 typesFromGoal (Goal _ _ _ proofTypes) = proofTypes
 
+goal2NeuralWaniJudgement :: Goal -> Maybe DdB.Judgment
+goal2NeuralWaniJudgement (Goal sig var maybeTerm [proofType]) =
+  Just $ A.a2dtJudgment $ A.AJudgment sig var term proofType
+  where term = maybe (A.Conclusion $ DdB.Con "neuralWaniConPlaceholder") id maybeTerm
+goal2NeuralWaniJudgement (Goal _ _ _ _) = Nothing
+
 type Rule = Goal -> Setting -> IO ([SubGoalSet],T.Text)
 
 data SubGoal = 
@@ -202,7 +208,7 @@ generatedTempTerm (sig,origin) id =
   1. the proofterm for this Subgoal is mentioned in the type of \(b\) and the form is \(a\).
   2. \(c \equiv d \)
 -}
-type Clue = ([(ProofTerm,ProofType)],Maybe (ProofTerm,ProofTerm))
+type Clue = (Maybe (ProofTerm,[(Int,ProofType)]),Maybe ProofTerm)
 
 goalFromSubGoal :: SubGoal -> Goal
 goalFromSubGoal (SubGoal goal substLst clue) = goal
@@ -252,15 +258,5 @@ acceptableType label goal isAllow lst =
     [l] -> if isAllow ==  (any (l==) lst) then (Just l,"") else (Nothing,exitMessage (TypeMisMatch l) label)
     _ -> (Nothing,exitMessage MultipleTypes label)
 
--- e1:entity -> type , [u0:entity,u1:entity,u2:entity->type,u3:(var 0)(var 2),u4:(var 4)(var 2)]=>x
--- convertToSubstableTerm ((var 0)(var 2),3) 0 -> u3:(var -3)(var -1) s2 s0
--- convertToSubstableTerm ((var 4)(var 2),4) 0 -> u4:(var 0)(var -2) (var0) s1
--- convertToSubstableTerm ((var 0)(var 2),3) 1 -> u3:(var -2)(var 0) 
--- convertToSubstableTerm ((var 4)(var 2),3) 1 -> u4:(var 1)(var -1)
-
--- convertToSubstableTerm ((var 0)(var 2),3) 0 -> u3:(var -4)(var -2)
--- convertToSubstableTerm ((var 4)(var 2),4) 0 -> u4:(var 0)(var -3)
--- convertToSubstableTerm ((var 0)(var 2),3) 1 -> u3:(var -3)(var 0)
--- convertToSubstableTerm ((var 4)(var 2),3) 1 -> u4:(var 1)(var -2)
-convertToSubstableTerm :: (ProofType,Int) -> Int -> ProofType
-convertToSubstableTerm (childTerm,idAboutChild) idAboutTarget = A.shiftIndices childTerm (idAboutTarget-idAboutChild) 0
+substedTempterm :: ProofTerm -> (ProofType,Int) -> Int -> ProofType
+substedTempterm tempTerm (result,idAboutChild) idAboutTargetArg = A.arrowSubst result tempTerm (A.aVar (idAboutChild - idAboutTargetArg - 1 ))

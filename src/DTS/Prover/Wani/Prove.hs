@@ -81,7 +81,7 @@ prove' QT.ProofSearchSetting{..} (DdB.ProofSearchQuery sig ctx typ) =  -- LiftT 
         WB.maxtime = case maxTime of
                         Just t -> t
                         Nothing -> 100000,
-        WB.debug = -1,
+        WB.debug = 1,
         WB.sStatus = WB.statusDef,
         WB.enableneuralDTS = False
         };
