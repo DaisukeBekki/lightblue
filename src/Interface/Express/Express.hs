@@ -27,7 +27,7 @@ import Control.Exception (catch, IOException)
 import System.Info (os)
 import Data.IORef
 import System.IO.Unsafe (unsafePerformIO)
-import qualified Parser.CCG as CCG (showScore, getLeafNodesFromNode, pf, cat)
+import qualified Parser.CCG as CCG (showScore, getLeafNodesFromNode, pf, cat, sem)
 import qualified Parser.ChartParser as CP
 import qualified Parser.LangOptions as PL (defaultJpOptions)
 import qualified Parser.Language.Japanese.Lexicon as JP (setupLexicon)
@@ -36,6 +36,10 @@ import qualified Data.Map as M
 import System.Environment (lookupEnv)
 import Text.Read (readMaybe)
 import Data.Aeson (Value, object, (.=))
+import qualified Data.Store as Store
+import qualified Data.ByteString as BS
+import qualified DTS.UDTTdeBruijn as UDTT
+import Interface.Text (SimpleText(..))
 
 -- アプリケーションの状態として ParseResult を保持するための IORef を定義
 {-# NOINLINE currentParseResultRef #-}
@@ -66,6 +70,9 @@ mkYesod "App" [parseRoutes|
 /parsing ParsingR GET
 /span SpanR GET
 /span/node NodeR GET
+/export/sem ExportSemR GET
+/export/sem/text ExportSemTextR GET
+/export/node ExportNodeR GET
 |]
 
 instance Yesod App
@@ -404,3 +411,60 @@ getNodeR = do
   where
     (!!?) :: [a] -> Int -> Maybe a
     (!!?) xs n = if n < 0 || n >= length xs then Nothing else Just (xs !! n)
+
+-- Text export: UDTT preterm (semantics) as plain text for a selected tab's node
+getExportSemTextR :: Handler TypedContent
+getExportSemTextR = do
+  mpr <- liftIO $ readIORef currentParseResultRef
+  case mpr of
+    Nothing -> sendResponse (TypedContent "text/plain" (toContent ("ParseResult is not set" :: TS.Text)))
+    Just pr -> do
+      nodes <- liftIO $ L.parseSentence' pr
+      mTab <- lookupGetParam "tab"
+      let parseInt :: TS.Text -> Maybe Int
+          parseInt = readMaybe . TS.unpack
+          tab = maybe 1 id (mTab >>= parseInt)
+          idx = tab - 1
+      case nodes !!? idx of
+        Nothing -> sendResponse (TypedContent "text/plain" (toContent ("Invalid tab index" :: TS.Text)))
+        Just node -> do
+          let semTerm = CCG.sem node
+              txt = T.toStrict (toText semTerm)
+          addHeader "Content-Type" "text/plain; charset=utf-8"
+          sendResponse (TypedContent "text/plain" (toContent txt))
+  where
+    (!!?) :: [a] -> Int -> Maybe a
+    (!!?) xs n = if n < 0 || n >= length xs then Nothing else Just (xs !! n)
+
+-- Binary export: UDTT preterm (semantics) of a selected tab's node
+getExportSemR :: Handler TypedContent
+getExportSemR = do
+  mpr <- liftIO $ readIORef currentParseResultRef
+  case mpr of
+    Nothing -> sendResponse (TypedContent "text/plain" (toContent ("ParseResult is not set" :: TS.Text)))
+    Just pr -> do
+      nodes <- liftIO $ L.parseSentence' pr
+      mTab <- lookupGetParam "tab"
+      let parseInt :: TS.Text -> Maybe Int
+          parseInt = readMaybe . TS.unpack
+          tab = maybe 1 id (mTab >>= parseInt)
+          idx = tab - 1
+      case nodes !!? idx of
+        Nothing -> sendResponse (TypedContent "text/plain" (toContent ("Invalid tab index" :: TS.Text)))
+        Just node -> do
+          let semTerm = CCG.sem node
+              bs :: BS.ByteString
+              bs = Store.encode semTerm
+              fname = TS.pack $ "sem_tab" ++ show tab ++ ".udtt"
+          addHeader "Content-Type" "application/octet-stream"
+          addHeader "Content-Disposition" (TS.concat ["attachment; filename=\"", fname, "\""])
+          sendResponse (TypedContent "application/octet-stream" (toContent bs))
+  where
+    (!!?) :: [a] -> Int -> Maybe a
+    (!!?) xs n = if n < 0 || n >= length xs then Nothing else Just (xs !! n)
+
+-- Binary export: CCG node (syntax tree) of a selected tab (placeholder)
+getExportNodeR :: Handler TypedContent
+getExportNodeR = do
+  addHeader "Content-Type" "text/plain"
+  sendResponse (TypedContent "text/plain" (toContent ("Not implemented yet" :: TS.Text)))

@@ -151,6 +151,63 @@ if (document.readyState === 'loading') {
   initSentenceSelection();
 }
 
+// ===== Export context menu =====
+(function initExportMenu() {
+  function ensureMenu() {
+    let menu = document.getElementById('export-menu');
+    if (menu) return menu;
+    menu = document.createElement('div');
+    menu.id = 'export-menu';
+    const item1 = document.createElement('div');
+    item1.className = 'export-menu-item';
+    item1.textContent = 'semを保存（.udtt）';
+    item1.addEventListener('click', () => {
+      const tab = getActiveTab();
+      if (tab) window.open(`/export/sem?tab=${tab}`, '_blank');
+      hideMenu();
+    });
+    const item2 = document.createElement('div');
+    item2.className = 'export-menu-item';
+    item2.textContent = 'semをテキスト表示';
+    item2.addEventListener('click', () => {
+      const tab = getActiveTab();
+      if (tab) window.open(`/export/sem/text?tab=${tab}`, '_blank');
+      hideMenu();
+    });
+    menu.appendChild(item1);
+    menu.appendChild(item2);
+    document.body.appendChild(menu);
+    return menu;
+  }
+  function showMenu(x, y) {
+    const menu = ensureMenu();
+    menu.style.left = `${x}px`;
+    menu.style.top = `${y}px`;
+    menu.style.display = 'block';
+  }
+  function hideMenu() {
+    const menu = document.getElementById('export-menu');
+    if (menu) menu.style.display = 'none';
+  }
+  function getActiveTab() {
+    const checked = document.querySelector('input[name="TAB"].tab-switch:checked');
+    if (!checked) return null;
+    const id = checked.id || ''; // e.g., TAB-3
+    const m = id.match(/TAB-(\d+)/);
+    return m ? m[1] : null;
+  }
+  document.addEventListener('click', hideMenu);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideMenu(); });
+  const root = document.getElementById('parsing-view') || document.body;
+  root.addEventListener('contextmenu', (e) => {
+    // 有効な領域のみを対象（プレビューやタブ領域）
+    const inScope = e.target.closest('.tab-content') || e.target.closest('#span-preview-list') || e.target.closest('.header');
+    if (!inScope) return; // 既存のコンテキストメニューを許可
+    e.preventDefault();
+    showMenu(e.pageX, e.pageY);
+  });
+})();
+
 // 解析候補のプレビュー描画（サーバ側の Leaf Node レイアウトを取得して埋め込み）
 function renderSpanPreviews(nodes, ctx) {
   const container = document.getElementById('span-preview-list');

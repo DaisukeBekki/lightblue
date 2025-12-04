@@ -489,3 +489,21 @@
           .span-preview-score
             font-size: 0.8rem;
             color: #666;
+          
+/* export context menu */
+          #export-menu
+            position: absolute;
+            display: none;
+            min-width: 220px;
+            background: #ffffff;
+            border: 1px solid #cfe0ff;
+            border-radius: 8px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            z-index: 2000;
+            overflow: hidden;
+          .export-menu-item
+            padding: 10px 12px;
+            cursor: pointer;
+            font-size: 0.95rem;
+          .export-menu-item:hover
+            background: #f2f6fb;
