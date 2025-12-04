@@ -93,7 +93,7 @@ parse beam sentence = do
 parseWithTypeCheck :: Int -> T.Text -> IO NLI.ParseResult
 parseWithTypeCheck beam sentence = do
   useOnlybeamParseSetting <- defaultParseSetting' beam -- useOnlybeamParseSetting :: CP.ParseSetting
-  let prover = NLI.getProver NLI.Wani $ QT.ProofSearchSetting Nothing Nothing (Just QT.Classical)
+  let prover = NLI.getProver NLI.Wani $ QT.ProofSearchSetting Nothing Nothing (Just QT.Classical) (-1) True False False Nothing
   let parseResult = NLI.parseWithTypeCheck useOnlybeamParseSetting prover [("dummy",DTT.Entity)] [] $ T.lines sentence
   return parseResult
 
@@ -102,7 +102,7 @@ parseWithTypeCheck beam sentence = do
 parseWithTypeCheck3 :: [T.Text] -> IO NLI.ParseResult
 parseWithTypeCheck3 discource = do
   parseSetting <- defaultParseSettingForInference
-  let prover = NLI.getProver NLI.Wani $ QT.ProofSearchSetting Nothing Nothing (Just QT.Classical)
+  let prover = NLI.getProver NLI.Wani $ QT.ProofSearchSetting Nothing Nothing (Just QT.Classical) (-1) True False False Nothing
   let parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] discource
   return parseResult
   

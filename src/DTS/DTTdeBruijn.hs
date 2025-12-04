@@ -13,6 +13,7 @@ module DTS.DTTdeBruijn (
   -- * Terms and Types
   Selector(..)
   , Preterm(..)
+  , ConName
   -- * General Syntactic Operations
   , subst
   , shiftIndices
@@ -48,6 +49,8 @@ instance SimpleText Selector where
   toText Fst = "1"
   toText Snd = "2"
 
+type ConName = LazyT.Text
+
 -- instance Typeset Selector where
 --   toTeX = toText
 -- 
@@ -59,7 +62,7 @@ instance SimpleText Selector where
 data Preterm = 
   -- | Basic Preterms
   Var Int                       -- ^ Variables
-  | Con LazyT.Text                  -- ^ Constant symbols
+  | Con ConName                 -- ^ Constant symbols
   | Type                        -- ^ The sort \"type\"
   | Kind                        -- ^ The sort \"kind\"
   -- | Pi Types

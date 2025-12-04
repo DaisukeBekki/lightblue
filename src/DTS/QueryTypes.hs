@@ -9,6 +9,7 @@ module DTS.QueryTypes (
   , TypeInferer
   , LogicSystem(..)
   , ProofSearchSetting(..)
+  , defaultProofSearchSetting
   , ProverBuilder
   , Prover
   -- * ListEx monad
@@ -31,7 +32,7 @@ import qualified DTS.UDTTdeBruijn as UDTTdB
 import DTS.GeneralTypeQuery (GeneralTypeQuery(..))
 
 -- BOTF?
-data DTTrule = Var | Con | TypeF | Conv | WK | PiF | PiI | PiE | SigmaF | SigmaI | SigmaE | DisjF | DisjI | DisjE | BotF | TopF | TopI | EnumF | EnumI | EnumE | IqF | IqI | IqE | NatF | NatI | NatE deriving (Eq, Show, Read, G.Generic, Store, Enum, Bounded, Ord)
+data DTTrule = Var | Con | TypeF | Conv | WK | PiF | PiI | PiE | DNE | EFQ | SigmaF | SigmaI | SigmaE | DisjF | DisjI | DisjE | BotF | TopF | TopI | EnumF | EnumI | EnumE | IqF | IqI | IqE | NatF | NatI | NatE deriving (Eq, Show, Read, G.Generic, Store, Enum, Bounded, Ord)
 
 instance SimpleText DTTrule where
   toText = T.pack . show
@@ -44,6 +45,8 @@ instance MathML DTTrule where
       PiF -> "ΠF"
       PiI -> "ΠI"
       PiE -> "ΠE"
+      DNE -> "DNE"
+      EFQ -> "EFQ"
       SigmaF -> "ΣF"
       SigmaI -> "ΣI"
       SigmaE -> "ΣE"
@@ -81,7 +84,16 @@ data ProofSearchSetting = ProofSearchSetting {
   maxDepth :: Maybe Int
   , maxTime :: Maybe Int
   , logicSystem :: Maybe LogicSystem
-  } deriving (Eq, Show)
+  , debugDepth :: Int      -- Default = -1
+  , enableEquality :: Bool -- Default = True
+  , reportMaxTime :: Bool  -- Default = False
+  , reportMaxDepth :: Bool -- Defailt = False
+  , oracle :: Maybe (DTTdB.ConName -> DTTdB.ConName -> Float) -- Default = Nothing
+  -- , neuralWani :: Maybe ()
+  } -- deriving (Eq, Show)
+
+defaultProofSearchSetting :: ProofSearchSetting
+defaultProofSearchSetting = ProofSearchSetting Nothing Nothing (Just Intuitionistic) (-1) True False False Nothing
 
 type Prover = DTTdB.ProofSearchQuery -> ListT IO DTTProofDiagram
 
