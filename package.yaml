@@ -48,6 +48,24 @@ dependencies:
   - parserModules
   - unicode-show >= 0.1
   - parallel >= 3.2.2
+  - yesod >= 1.6
+  - yesod-core >= 1.6 && <1.7
+  - yesod-static >= 1.6 && <1.7
+  - yesod-form >= 1.6 && <1.8
+  - classy-prelude >= 1.5 && <1.6
+  - classy-prelude-conduit >=1.5 && <1.6
+  - classy-prelude-yesod >=1.5 && <1.6
+  - file-embed
+  - template-haskell
+  - warp
+  - monad-logger >=0.3 && <0.4
+  - shakespeare >=2.0 && <2.1
+  - hjsmin >=0.1 && <0.3
+  - case-insensitive
+  - http-client-tls
+  - wai
+  - wai-extra
+  - fast-logger
   - transformers >= 0.5.6.2
   - http-conduit >= 2.3.7
   - http-client-tls >= 0.3.5
@@ -81,6 +99,7 @@ library:
   - Interface.TeX
   - Interface.XML
   - Interface.HTML
+  - Interface.Express.Express
   - Interface.SVG
   - Interface.Tree
   - Interface.PrintParseResult

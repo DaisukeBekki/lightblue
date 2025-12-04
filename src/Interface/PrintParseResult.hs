@@ -24,6 +24,7 @@ import Interface                               --lightblue
 import Interface.HTML as HTML                  --lightblue
 import Interface.Text                          --lightblue
 import Interface.TeX                           --lightblue
+import qualified Interface.Express.Express as Express
 import qualified Parser.CCG as CCG             --lightblue
 import DTS.NaturalLanguageInference            --lightblue
 import qualified DTS.UDTTwithName as UDTTwN    --lightblue
@@ -31,6 +32,8 @@ import qualified DTS.DTTwithName as DTTwN      --lightblue
 
 -- | prints a CCG node (=i-th parsing result for a given sentence) in a specified style (=HTML|text|XML|TeX)
 printParseResult :: S.Handle -> Style -> Int -> Bool -> Bool -> String -> ParseResult -> IO ()
+printParseResult h EXPRESS _ _ _ _ pr = do
+    Express.showExpress pr
 printParseResult h style sid noTypeCheck posTagOnly title (SentenceAndParseTrees sentence parseTrees) = do
     let title' = "Sentence " ++ (show sid)
     T.hPutStrLn h $ T.concat["[", T.pack title', " of ", T.pack title, ": ", sentence, "]\n"]
