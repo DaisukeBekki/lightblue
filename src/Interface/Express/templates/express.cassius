@@ -74,17 +74,17 @@
           #cat-toggle
             display: none;
           .cathide
-            display: block;
+            display: table-row;
           #cat-toggle:checked ~ * .cathide
             display: none;
-          #toggle-node: checked ~ * .tab-node
+          #toggle-node:checked ~ * .tab-node
             display: none;
           #catbtn
             font-weight: bold;
           #sem-toggle
             display: none;
           .semhide
-            display: block;
+            display: table-row;
           #sem-toggle:checked ~ * .semhide
             display: none;
           #sembtn
@@ -93,6 +93,12 @@
             border-bottom: solid 3px #ffd700;
           .hy-under
             border-bottom: solid 3px #7fffd4; 
+
+/* class-based toggling for reliability and easier debug */
+          #parsing-view.hidden-cat .cathide
+            display: none;
+          #parsing-view.hidden-sem .semhide
+            display: none;
 
 /* Home */
           .header 
