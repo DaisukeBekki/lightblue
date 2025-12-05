@@ -18,6 +18,7 @@ module Parser.CCG (
   FeatureValue(..),
   -- * Text and TeX interface
   showScore,
+  getLeafNodesFromNode,
   -- * Tests
   isBaseCategory,
   --isBunsetsu,
@@ -81,6 +82,13 @@ instance Ord Node where
 -- | shows the score of the given node
 showScore :: Node -> T.Text
 showScore node = T.pack (show ((fromRational $ score node)::Fixed E2))
+
+-- Nodeから葉ノードをすべて抽出
+getLeafNodesFromNode :: Node -> [Node]
+getLeafNodesFromNode node =
+  case daughters node of
+    [] -> [node]
+    ds -> concatMap getLeafNodesFromNode ds
 
 instance SimpleText Node where
   toText n -- @(Node _ _ _ _ sig' _ _ _) 
