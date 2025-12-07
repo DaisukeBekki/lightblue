@@ -16,11 +16,16 @@ module DTS.NaturalLanguageInference (
   --, InferenceResult(..)
   , ProverName(..)
   , getProver
+  , InferenceLabel
   , ParseResult(..)
   , ParseTreeAndFelicityChecks(..)
   , QueryAndDiagrams(..)
   , parseWithTypeCheck
   , trawlParseResult
+  , RTEResult(..)
+  , runRTE
+  , RTEPretermResult(..)
+  , runRTEWithPreterms
   ) where
 
 import Control.Monad (join)    --base
@@ -33,7 +38,7 @@ import qualified Data.Char as C           --base
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.List as L           --base
-import ListT (ListT(..),fromFoldable,toReverseList,take,null,uncons,cons) --list-t
+import ListT (ListT(..),fromFoldable,toReverseList,toList,take,null,uncons,cons) --list-t
 import qualified Parser.ChartParser as CP      --lightblue
 import qualified Parser.PartialParsing as Partial --lightblue
 import qualified Parser.CCG as CCG             --lightblue
@@ -118,11 +123,8 @@ sequentialTypeCheck _ _ _ [] [] = NoSentence     -- ^ Context is empty and no se
 sequentialTypeCheck ps prover signtr (typ:contxt) [] = -- ^ Context is given and no more sentence (= All parse done)
   if CP.noInference ps
     then NoSentence
-    else let psqPos = DTT.ProofSearchQuery signtr contxt $ typ 
-             resultPos = takeNbest (CP.nProof ps) $ prover psqPos
-             psqNeg = DTT.ProofSearchQuery signtr contxt $ DTT.Pi typ DTT.Bot
-             resultNeg = takeNbest (CP.nProof ps) $ prover psqNeg
-         in InferenceResults (QueryAndDiagrams psqPos resultPos) (QueryAndDiagrams psqNeg resultNeg)
+    else let (qadPos, qadNeg) = runInferenceCore prover (CP.nProof ps) signtr contxt typ
+         in InferenceResults qadPos qadNeg
 sequentialTypeCheck ps prover signtr contxt ((text,nodes):rests) = 
   SentenceAndParseTrees text $ 
     parallelM nodes $ \node -> 
@@ -142,7 +144,24 @@ takeNbest :: Int -> ListT IO a -> ListT IO a
 takeNbest n l
   | n >= 0 = ListT.take n l
   | otherwise = l
- 
+
+{-- Core inference logic (shared inference logic) --}
+
+-- | Create inference queries and execute proof search (shared helper function)
+-- | Used by both sequentialTypeCheck and runRTEWithPreterms
+runInferenceCore :: QT.Prover         -- ^ Prover
+                 -> Int               -- ^ Maximum number of proofs (-1 for unlimited)
+                 -> DTT.Signature     -- ^ Signature
+                 -> DTT.Context       -- ^ Premises
+                 -> DTT.Preterm       -- ^ Hypothesis
+                 -> (QueryAndDiagrams, QueryAndDiagrams)
+runInferenceCore prover nProof signtr contxt hypothesis =
+  let psqPos = DTT.ProofSearchQuery signtr contxt hypothesis
+      resultPos = takeNbest nProof $ prover psqPos
+      psqNeg = DTT.ProofSearchQuery signtr contxt (DTT.Pi hypothesis DTT.Bot)
+      resultNeg = takeNbest nProof $ prover psqNeg
+  in (QueryAndDiagrams psqPos resultPos, QueryAndDiagrams psqNeg resultNeg)
+
 {-- Trawling functions --}
 
 trawlParseResult :: ParseResult -> ListT IO InferenceLabel
@@ -176,3 +195,57 @@ parallelFor [] f = []
 parallelFor (x:xs) f = fx `par` fxs `pseq` (fx:fxs)
   where fx = f x
         fxs = parallelFor xs f
+
+{-- RTE (Recognizing Textual Entailment) API --}
+
+-- | Data type representing RTE result
+data RTEResult = RTEResult {
+  rteLabel :: InferenceLabel,    -- ^ Inference label (Yes/No/Unk/Other)
+  rteParseResult :: ParseResult  -- ^ Parse result (for detailed information if needed)
+  }
+
+-- | Execute RTE
+-- | Takes a list of premise sentences and a hypothesis sentence, returns inference label and parse result
+runRTE :: CP.ParseSetting     -- ^ Parse setting
+       -> QT.Prover           -- ^ Prover
+       -> DTT.Signature       -- ^ Initial signature
+       -> DTT.Context         -- ^ Initial context
+       -> [T.Text]            -- ^ List of premise sentences
+       -> T.Text              -- ^ Hypothesis sentence
+       -> IO RTEResult
+runRTE parseSetting prover signature context premises hypothesis = do
+  let sentences = premises ++ [hypothesis]
+      parseResult = parseWithTypeCheck parseSetting prover signature context sentences
+  inferenceLabels <- toList $ trawlParseResult parseResult
+  let prediction = case inferenceLabels of
+        [] -> JSeM.Other
+        (bestLabel:_) -> bestLabel
+  return $ RTEResult prediction parseResult
+
+-- | Data type representing RTE result in Preterm format
+data RTEPretermResult = RTEPretermResult {
+  rtePretermLabel :: InferenceLabel,                          -- ^ Inference label (Yes/No/Unk)
+  rtePretermQueryPos :: DTT.ProofSearchQuery,                 -- ^ Positive proof query
+  rtePretermQueryNeg :: DTT.ProofSearchQuery,                 -- ^ Negative proof query
+  rtePretermProofsPos :: [QT.DTTProofDiagram],                -- ^ Positive proof diagrams
+  rtePretermProofsNeg :: [QT.DTTProofDiagram]                 -- ^ Negative proof diagrams
+  }
+
+-- | Execute RTE in Preterm format
+-- | Skips natural language parsing and directly takes premises and hypothesis as DTT.Preterm
+runRTEWithPreterms :: QT.Prover         -- ^ Prover
+                   -> DTT.Signature     -- ^ Signature
+                   -> [DTT.Preterm]     -- ^ Premises
+                   -> DTT.Preterm       -- ^ Hypothesis
+                   -> Int               -- ^ Maximum number of proofs (-1 for unlimited)
+                   -> IO RTEPretermResult
+runRTEWithPreterms prover signature premises hypothesis nProof = do
+  let (QueryAndDiagrams psqPos resultPosListT, QueryAndDiagrams psqNeg resultNegListT) =
+        runInferenceCore prover nProof signature premises hypothesis
+  proofsPos <- toList resultPosListT
+  proofsNeg <- toList resultNegListT
+  let label = case () of
+        _ | not (Prelude.null proofsPos) -> JSeM.Yes  -- Positive proof found
+          | not (Prelude.null proofsNeg) -> JSeM.No   -- Negative proof found
+          | otherwise                    -> JSeM.Unk -- Neither found
+  return $ RTEPretermResult label psqPos psqNeg proofsPos proofsNeg

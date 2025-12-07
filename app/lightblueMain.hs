@@ -314,14 +314,12 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
         S.putStr " ==> "
         StrictT.putStrLn $ J.hypothesis j
         S.putStr "\n"
-        let sentences = postpend (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
-            parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] sentences
-        PPR.printParseResult handle style 1 noTypeCheck False title parseResult
-        inferenceLabels <- toList $ NLI.trawlParseResult parseResult
-        let groundTruth = J.jsemLabel2YesNo $ J.answer j
-            prediction = case inferenceLabels of
-              [] -> J.Other
-              (bestLabel:_) -> bestLabel
+        let premises = map T.fromStrict $ J.premises j
+            hypothesis = T.fromStrict $ J.hypothesis j
+        rteResult <- NLI.runRTE parseSetting prover [("dummy",DTT.Entity)] [] premises hypothesis
+        let prediction = NLI.rteLabel rteResult
+            groundTruth = J.jsemLabel2YesNo $ J.answer j
+        PPR.printParseResult handle style 1 noTypeCheck False title (NLI.rteParseResult rteResult)
         S.putStrLn $ "\nPrediction: " ++ (show prediction) ++ "\nGround truth: " ++ (show groundTruth) ++ "\n"
         return (prediction, groundTruth)
       T.putStrLn $ T.fromStrict $ NLP.showClassificationReport pairs
