@@ -36,7 +36,7 @@ import qualified GHC.Generics as G    --base
 import qualified Data.Text.Lazy as LazyT --text
 import Data.Store (Store(..))         --store
 import Data.Store.TH (makeStore)      --store
-import Control.DeepSeq (NFData)
+import Control.DeepSeq (NFData)       --deepseq
 import Interface.Text                 --lightblue
 import Interface.TeX                  --lightblue
 import Interface.HTML                 --lightblue
