@@ -123,11 +123,9 @@ subgoalToGoalWithAntecedents results (WB.SubGoal goal substLst (pos,res)) depth 
       goalWithClue = 
         maybe
           (M.Just goal)
-          (\(before,after) -> 
-            let clueLst = L.nub $ filter ((A.aVar (-1) ==) . fst) (map (\(fst_,snd_) ->(A.betaReduce $ A.arrowNotat fst_,A.betaReduce $ A.arrowNotat snd_) ) $ A.canBeSame' 0 before after)
-                justMyTerm = if length clueLst == 1 then M.Just (snd $ head clueLst) else M.Nothing
-            in case goal of
-              WB.Goal sig var M.Nothing proofTypes -> maybe ((if depth < WB.debug setting then debugLog goal depth setting (T.pack ("remove this goal due to the clue " ++ (show clueLst) ++ " : ")) else id) (M.Nothing)) (\myTerm -> let newGoal = WB.Goal sig var (M.Just myTerm) proofTypes in (if depth < WB.debug setting then debugLog newGoal depth setting (T.pack ("update" ++ (show goal) ++  " with clue " ++ (show (pos,res)) ++ " : ")) else id) (M.Just newGoal)) justMyTerm
+          (\clueWithResult -> 
+            case goal of
+              WB.Goal sig var M.Nothing proofTypes -> (let newGoal = WB.Goal sig var (M.Just clueWithResult) proofTypes in (if depth < WB.debug setting then debugLog newGoal depth setting (T.pack ("update" ++ (show goal) ++  " with clue " ++ (show (pos,res)) ++ " : ")) else id) (M.Just newGoal)) 
               WB.Goal sig var _ proofTypes -> (if depth < WB.debug setting then D.trace ("it already has a term so I won't update the term with clue") else id) (M.Just goal)
           )
           res
