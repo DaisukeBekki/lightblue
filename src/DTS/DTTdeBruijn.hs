@@ -43,7 +43,7 @@ import Interface.HTML                 --lightblue
 import DTS.GeneralTypeQuery           --lightblue
 
 -- | 'Proj' 'Fst' m is the first projection of m, while 'Proj' 'Snd' m is the second projection of m.
-data Selector = Fst | Snd deriving (Eq, Show, G.Generic, Store)
+data Selector = Fst | Snd deriving (Eq, Show, G.Generic, Store, NFData)
 
 -- | Print a selector as "1" or "2".
 instance SimpleText Selector where
