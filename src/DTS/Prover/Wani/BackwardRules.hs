@@ -15,7 +15,9 @@ module DTS.Prover.Wani.BackwardRules
   askOracle,
   disjIntro,
   disjElim,
-  disjForm
+  disjForm,
+  waniBaseRuleFromDTTrule,
+  dttRuleFromWaniBaseRule
 ) where
 
 import qualified DTS.DTTdeBruijn as DdB   -- DTT
