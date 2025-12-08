@@ -36,6 +36,7 @@ import qualified GHC.Generics as G    --base
 import qualified Data.Text.Lazy as LazyT --text
 import Data.Store (Store(..))         --store
 import Data.Store.TH (makeStore)      --store
+import Control.DeepSeq (NFData)
 import Interface.Text                 --lightblue
 import Interface.TeX                  --lightblue
 import Interface.HTML                 --lightblue
@@ -93,7 +94,7 @@ data Preterm =
   | Refl Preterm Preterm           -- ^ refl
   | Idpeel Preterm Preterm Preterm -- ^ idpeel P E R
   -- | ToDo: add First Universe
-  deriving (Eq, G.Generic)
+  deriving (Eq, G.Generic, NFData)
 
 makeStore ''LazyT.Text
 
