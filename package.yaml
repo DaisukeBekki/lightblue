@@ -52,6 +52,7 @@ dependencies:
   - http-conduit >= 2.3.7
   - http-client-tls >= 0.3.5
   - dotenv >= 0.0.4
+  - deepseq
 
 library:
   source-dirs: src
