@@ -2,20 +2,8 @@
 module DTS.Prover.Wani.BackwardRules
 (
   -- * Rules
-  piIntro,
-  piElim,
-  piForm,
-  sigmaIntro,
-  sigmaForm,
-  eqForm,
-  membership,
-  dne,
-  efq,
-  topIntro,
-  askOracle,
-  disjIntro,
-  disjElim,
-  disjForm
+  RuleLabel(..),
+  rule
 ) where
 
 import qualified DTS.DTTdeBruijn as DdB   -- DTT
@@ -35,6 +23,39 @@ import qualified Debug.Trace as D
 
 import qualified Control.Monad as CM
 
+data RuleLabel =  
+  PiIntro |
+  PiElim |
+  PiForm |
+  SigmaIntro |
+  SigmaForm |
+  EqForm |
+  Membership |
+  Dne |
+  Efq |
+  TopIntro |
+  AskOracle |
+  DisjIntro |
+  DisjElim |
+  DisjForm
+
+rule :: RuleLabel -> WB.Rule
+rule label =
+  case label of 
+    PiIntro -> piIntro
+    PiElim -> piElim
+    PiForm -> piForm
+    SigmaIntro -> sigmaIntro
+    SigmaForm -> sigmaForm
+    EqForm -> eqForm
+    Membership -> membership
+    Dne -> dne
+    Efq -> efq
+    TopIntro -> topIntro
+    AskOracle -> askOracle
+    DisjIntro -> disjIntro
+    DisjElim -> disjElim
+    DisjForm -> disjForm
 
 -- | piIntro rule
 --
