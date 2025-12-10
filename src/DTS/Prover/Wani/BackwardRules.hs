@@ -17,7 +17,6 @@ module DTS.Prover.Wani.BackwardRules
   disjElim,
   disjForm,
   waniBaseRuleFromDTTrule,
-  dttRuleFromWaniBaseRule
 ) where
 
 import qualified DTS.DTTdeBruijn as DdB   -- DTT
@@ -996,7 +995,7 @@ disjElim goal setting =
 waniBaseRuleFromDTTrule :: QT.DTTrule -> Maybe WB.Rule
 waniBaseRuleFromDTTrule rule = case rule of
   QT.Var -> M.Just membership
-  QT.Con -> M.Nothing
+  QT.Con -> M.Just membership
   QT.TypeF -> M.Nothing
   QT.Conv -> M.Nothing
   QT.WK -> M.Nothing
@@ -1023,15 +1022,3 @@ waniBaseRuleFromDTTrule rule = case rule of
   QT.NatF -> M.Nothing
   QT.NatI -> M.Nothing
   QT.NatE -> M.Nothing
-
-dttRuleFromWaniBaseRule :: WB.Rule -> IO (Maybe QT.DTTrule)
-dttRuleFromWaniBaseRule rule = do
-  let ruleMap = [(waniRule, dttRule) | dttRule <- [minBound .. maxBound] :: [QT.DTTrule], M.Just waniRule <- [waniBaseRuleFromDTTrule dttRule]]
-  ruleStableName <- makeStableName rule
-  matchingRules <- CM.filterM (\(otherRule, _) -> do
-    otherStableName <- makeStableName otherRule
-    return $ hashStableName otherStableName == hashStableName ruleStableName
-    ) ruleMap
-  return $ case matchingRules of
-    ((_, dttRule):_) -> M.Just dttRule
-    [] -> M.Nothing
