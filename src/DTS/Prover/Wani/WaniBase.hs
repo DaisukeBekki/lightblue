@@ -48,7 +48,8 @@ module DTS.Prover.Wani.WaniBase (
     substedTempterm,
     acceptableType,
     exitMessage,
-    ExitReason(..)
+    ExitReason(..),
+    goal2NeuralWaniJudgement
 ) where
 
 import qualified DTS.DTTdeBruijn as DdB  -- UDTT
