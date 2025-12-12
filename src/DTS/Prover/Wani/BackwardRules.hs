@@ -34,7 +34,6 @@ data RuleLabel =
   Dne |
   Efq |
   TopIntro |
-  TopForm |
   AskOracle |
   DisjIntro |
   DisjElim |
