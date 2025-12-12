@@ -34,6 +34,7 @@ data RuleLabel =
   Dne |
   Efq |
   TopIntro |
+  TopForm |
   AskOracle |
   DisjIntro |
   DisjElim |
@@ -152,12 +153,9 @@ topIntro goal setting =
   case WB.acceptableType QT.TopI goal True [(A.Conclusion DdB.Top)] of
   (Nothing,message) -> return ([],message)
   (Just _,_) -> 
-    case WB.termFromGoal goal of
-      M.Just (A.Conclusion DdB.Unit) -> 
-        let (sig,var) = WB.conFromGoal goal
-            subgoalsets = [WB.SubGoalSet QT.TopI M.Nothing [] (A.AJudgment sig var (A.Conclusion DdB.Unit) (A.Conclusion DdB.Top), [])]
-        in return (subgoalsets,"")
-      term -> return ([],WB.exitMessage (WB.TermMisMatch term) QT.TopI)
+    let (sig,var) = WB.conFromGoal goal
+        subgoalset = return ([WB.SubGoalSet QT.TopI M.Nothing [] (A.AJudgment sig var (A.Conclusion DdB.Unit) (A.Conclusion DdB.Top), [])],"")
+    in M.maybe (subgoalset) (\term -> if term == (A.Conclusion DdB.Unit) then subgoalset else return ([],WB.exitMessage (WB.TermMisMatch (M.Just term)) QT.TopI)) (WB.termFromGoal goal)
 
 -- | piElim rule
 --
