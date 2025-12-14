@@ -427,7 +427,7 @@
             padding: 30px;
 
           .cathide
-            color: red;
+            color: blue;
 
           .sf
             color: green;
