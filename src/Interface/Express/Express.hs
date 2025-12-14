@@ -220,7 +220,8 @@ getParsingR = do
                               <div .leaf-node-item>^{WE.widgetizeWith dsp leaf}
                         <div class="tab-node">
                           <h1>Node
-                          <div class="tab-node-content">^{WE.widgetizeWith dsp node}
+                        <div class="tab-node-content">
+                          <div .tab-node-inner>^{WE.widgetizeWith dsp node}
                         <div class="tab-tcq">
                           <h1>Type Check Query
                           <div class="tab-tcq-content">^{WE.widgetizeWith dsp tcq}
@@ -229,7 +230,8 @@ getParsingR = do
                           $if Data.List.null tcdList
                             <p .error-message>⚠️ Type Check Failed... ⚠️
                           $else
-                            <div class="tab-tcds-content">^{Prelude.mapM_ (WE.widgetizeWith dsp) $ tcdList}
+                            <div class="tab-tcds-content">
+                              <div .tab-tcds-inner>^{Prelude.mapM_ (WE.widgetizeWith dsp) $ tcdList}
             |]
             myDesign
             myFunction
