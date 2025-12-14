@@ -40,6 +40,7 @@ import qualified Data.Store as Store
 import qualified Data.ByteString as BS
 import qualified DTS.UDTTdeBruijn as UDTT
 import Interface.Text (SimpleText(..))
+import Data.Char (toLower)
 
 -- アプリケーションの状態として ParseResult を保持するための IORef を定義
 {-# NOINLINE currentParseResultRef #-}
@@ -89,11 +90,27 @@ showExpress initialParseResult = do
   let port = 3000
   let url = "http://localhost:" ++ show port ++ "/parsing" -- 初めから /parsing を開く
 
-  let openBrowserCommand = case os of
-        "darwin" -> "open " ++ url
-        "linux"  -> "xdg-open " ++ url
-        "mingw32" -> "start " ++ url
-        _        -> "echo 'Unsupported OS for auto-opening browser.'"
+  -- ブラウザ選択（環境変数 LB_EXPRESS_BROWSER: chrome|firefox|default）
+  mBrowser <- lookupEnv "LB_EXPRESS_BROWSER"
+  let browserSel = fmap (map toLower) mBrowser
+      openBrowserCommand =
+        case os of
+          "darwin" ->
+            case browserSel of
+              Just "chrome"  -> "open -a \"Google Chrome\" " ++ url
+              Just "firefox" -> "open -a \"Firefox\" " ++ url
+              _              -> "open " ++ url
+          "linux"  ->
+            case browserSel of
+              Just "chrome"  -> "google-chrome " ++ url ++ " || google-chrome-stable " ++ url ++ " || chromium " ++ url ++ " || chromium-browser " ++ url ++ " || xdg-open " ++ url
+              Just "firefox" -> "firefox " ++ url ++ " || xdg-open " ++ url
+              _              -> "xdg-open " ++ url
+          "mingw32" ->
+            case browserSel of
+              Just "chrome"  -> "start chrome " ++ url
+              Just "firefox" -> "start firefox " ++ url
+              _              -> "start " ++ url
+          _        -> "echo 'Unsupported OS for auto-opening browser.'"
 
   putStrLn $ "Starting Yesod server on " ++ url
 
