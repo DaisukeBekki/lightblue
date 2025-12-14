@@ -303,14 +303,20 @@
             content: " OFF";
             color: #a10e2a;
           .tab-node-content
-            display: flex;
+            display: block;
+            text-align: center;
+            overflow-x: auto;
+            max-width: 100%;
+          .tab-node-inner
+            display: inline-block;
+            min-width: max-content;
             text-align: left;
-            justify-content: center;
           .tab-node
             text-align: center;
             align-items : center;
             padding-bottom: 50px;
             display: block;
+            width: 100%;
 
           .error
             color: red;
@@ -331,9 +337,14 @@
             justify-content: center;
 
           .tab-tcds-content
-            display: flex;
+            display: block;
+            text-align: center;
+            overflow-x: auto;
+            max-width: 100%;
+          .tab-tcds-inner
+            display: inline-block;
+            min-width: max-content;
             text-align: left;
-            justify-content: center;
 
           .tab-tcq
             padding-bottom: 50px;
