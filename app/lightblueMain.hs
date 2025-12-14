@@ -326,6 +326,12 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
           Env.setEnv "LB_EXPRESS_NOSHOWCAT" (if noShowCat then "1" else "0")
           Env.setEnv "LB_EXPRESS_NOSHOWSEM" (if noShowSem then "1" else "0")
           Env.setEnv "LB_EXPRESS_LEAFVERTICAL" (if leafVertical then "1" else "0")
+          -- Browser selection for Express
+          case mExpressBrowser of
+            Just BrowserChrome  -> Env.setEnv "LB_EXPRESS_BROWSER" "chrome"
+            Just BrowserFirefox -> Env.setEnv "LB_EXPRESS_BROWSER" "firefox"
+            Just BrowserDefault -> Env.setEnv "LB_EXPRESS_BROWSER" "default"
+            Nothing             -> return ()
         _ -> return ()
       S.hPutStrLn handle $ I.headerOf style
       PPR.printParseResult handle style 1 noTypeCheck posTagOnly "input" parseResult
