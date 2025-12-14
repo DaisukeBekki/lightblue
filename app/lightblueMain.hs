@@ -4,6 +4,7 @@
 import Options.Applicative hiding (style) --optparse-applicative
 import Control.Applicative (optional)     --base
 import Control.Monad (forM)               --base
+import Data.Char (toLower)
 import ListT (toList)                     --list-t
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
@@ -43,7 +44,7 @@ import qualified DTS.NaturalLanguageInference as NLI
 import qualified JSeM as JSeM                         --jsem
 import qualified ML.Exp.Classification.Bounded as NLP --nlp-tools
 
-data Options = Options Lang Command I.Style NLI.ProverName FilePath Int Int Int Int Int Int Bool Bool Bool Bool (Maybe Int) Bool Bool Bool
+data Options = Options Lang Command I.Style NLI.ProverName FilePath Int Int Int Int Int Int Bool Bool Bool Bool (Maybe Int) Bool Bool Bool (Maybe ExpressBrowser)
 
 data Command =
   Parse I.ParseOutput
@@ -56,6 +57,18 @@ data Command =
     deriving (Show, Eq)
 
 data Lang = JP Juman.MorphAnalyzerName JFilter.FilterName | EN deriving (Show, Eq)
+
+-- | Browser selection for Express mode
+data ExpressBrowser = BrowserDefault | BrowserChrome | BrowserFirefox
+  deriving (Show, Eq)
+
+expressBrowserReader :: ReadM ExpressBrowser
+expressBrowserReader = eitherReader $ \s ->
+  case map toLower s of
+    "default" -> Right BrowserDefault
+    "chrome"  -> Right BrowserChrome
+    "firefox" -> Right BrowserFirefox
+    _         -> Left "Expected one of: default|chrome|firefox"
 
 -- <$> :: (a -> b) -> Parser a -> Parser b
 -- <*> :: Parser (a -> b) -> Parser a -> Parser b
@@ -220,6 +233,10 @@ optionParser =
     <*> switch
       ( long "leafVertical"
       <> help "If True, list leaf nodes vertically in Express view" )
+    <*> optional (option expressBrowserReader
+      ( long "browser"
+      <> metavar "chrome|firefox|default"
+      <> help "Choose browser for Express view (default: system default)" ))
 
 parseOptionParser :: Parser Command
 parseOptionParser = Parse
@@ -261,7 +278,7 @@ main = customExecParser p opts >>= lightblueMain
         p = prefs showHelpOnEmpty
 
 lightblueMain :: Options -> IO ()
-lightblueMain (Options lang commands style proverName filepath beamW nParse nTypeCheck nProof maxDepth maxTime noTypeCheck noInference ifTime verbose mDepth noShowCat noShowSem leafVertical) = do
+lightblueMain (Options lang commands style proverName filepath beamW nParse nTypeCheck nProof maxDepth maxTime noTypeCheck noInference ifTime verbose mDepth noShowCat noShowSem leafVertical mExpressBrowser) = do
   start <- Time.getCurrentTime
   langOptions <- case lang of
                    JP morphaName filterName -> do
