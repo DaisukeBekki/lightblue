@@ -136,6 +136,7 @@ The global options are common to all commands.
 |```--noShowCat```                        |     |If specified, hide sysntactic categories|
 |```--noShowSem```                        |     |If specified, hide semantics|
 |```--leafVertical```                     |     |If specified, list leaf nodes vertically|
+|```--browser {chrome\|firefox\|default}``` | ```default``` |Choose the browser to launch the Express UI. If omitted, the system default browser is used.|
 
 ### For developpers ###
 Installing Haskell-mode for Emacs will help.
