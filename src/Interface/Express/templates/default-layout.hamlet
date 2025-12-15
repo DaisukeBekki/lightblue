@@ -1,0 +1,14 @@
+<!-- Page Contents -->
+$if (Just HomeR == mcurrentRoute)
+    ^{widget}
+$else
+    <div .container>
+        <div .row>
+            <div .col-md-12>
+                ^{widget}
+
+<!-- Footer -->
+<footer .footer>
+    <div .container>
+        <p .text-muted>
+            #{appCopyright $ appSettings master}
