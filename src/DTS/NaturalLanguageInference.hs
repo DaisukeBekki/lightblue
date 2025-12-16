@@ -45,6 +45,7 @@ import qualified DTS.QueryTypes as QT          --lightblue
 import qualified DTS.TypeChecker as TY         --lightblue
 import qualified DTS.Prover.Wani.Prove as Wani --lightblue
 import qualified JSeM as JSeM                  --jsem
+import qualified Parser.FeedBack as FB        --lightblue
 
 data InferenceSetting = InferenceSetting {
   beam :: Int     -- ^ beam width
@@ -100,8 +101,9 @@ data QueryAndDiagrams =
 parseWithTypeCheck :: CP.ParseSetting -> QT.Prover -> DTT.Signature -> DTT.Context -> [T.Text] -> ParseResult
 parseWithTypeCheck ps prover signtr contxt txts =
   let nodes = sequentialParsing ps txts
-  in sequentialTypeCheck ps prover signtr contxt nodes
-  
+      axioms = FB.returnFeedBacks nodes
+  in sequentialTypeCheck ps prover (concat [axioms,signtr]) contxt nodes
+ 
 type Discourse = [(T.Text, ListT IO CCG.Node)]
 
 sequentialParsing :: CP.ParseSetting -> [T.Text] -> Discourse

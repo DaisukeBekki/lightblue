@@ -48,7 +48,7 @@ callGPT prompt = do
       let url = "https://api.openai.com/v1/chat/completions"
       initReq <- parseRequest url
       let body = object
-            [ "model" .= String "gpt-3.5-turbo"
+            [ "model" .= String "gpt-4o-mini"
             , "messages" .=
                 [ object
                     [ "role" .= String "user"
