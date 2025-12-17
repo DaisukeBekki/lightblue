@@ -253,12 +253,12 @@ deduce' goal depth setting
               _ -> -- M.Nothing or M.Just term
                 let subgoalsetsIO = sortSubGoalSets $ (ruleResultToSubGoalsets depth $ depth < WB.debug setting) $ sequence $ 
                       map
-                        (\rule -> rule goal setting)
+                        (\ruleLabel -> BR.rule ruleLabel goal setting)
                         ( -- Because of `sortSubGoalSets`, there is no need to care about rule order. (Before `sortSubGoalSets`, The stronger the rule, the later to be set. For example, `dne` can be used for any term, thus turning the execution later. This setting takes effect in combination with the rounding up of proof search using `B.allProof`.)
-                          [BR.piForm]
-                          ++ (if arrowType /= (A.Conclusion DdB.Kind) then [BR.sigmaForm,BR.eqForm,BR.membership,BR.askOracle,BR.piIntro,BR.sigmaIntro,BR.piElim,BR.topIntro,BR.disjIntro,BR.disjElim,BR.disjForm] else [])
-                          ++ [BR.dne | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithDNE && (arrowType /= (A.Conclusion DdB.Kind))]
-                          ++ [BR.efq | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithEFQ && (arrowType /= (A.Conclusion DdB.Kind))]
+                          [BR.PiForm]
+                          ++ (if arrowType /= (A.Conclusion DdB.Kind) then [BR.SigmaForm,BR.EqForm,BR.Membership,BR.AskOracle,BR.PiIntro,BR.SigmaIntro,BR.PiElim,BR.TopIntro,BR.DisjIntro,BR.DisjElim,BR.DisjForm] else [])
+                          ++ [BR.Dne | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithDNE && (arrowType /= (A.Conclusion DdB.Kind))]
+                          ++ [BR.Efq | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithEFQ && (arrowType /= (A.Conclusion DdB.Kind))]
                         )
                     resultIO = 
                         let resultDef = -- update `deduceNgLst` and `failedlst` to be used in deeper search

@@ -1,21 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 module DTS.Prover.Wani.BackwardRules
 (
   -- * Rules
-  piIntro,
-  piElim,
-  piForm,
-  sigmaIntro,
-  sigmaForm,
-  eqForm,
-  membership,
-  dne,
-  efq,
-  topIntro,
-  askOracle,
-  disjIntro,
-  disjElim,
-  disjForm
+  RuleLabel(..),
+  rule,
+  dttruleToRuleLabel
 ) where
 
 import qualified DTS.DTTdeBruijn as DdB   -- DTT
@@ -34,7 +25,74 @@ import qualified Data.Maybe as M
 import qualified Debug.Trace as D
 
 import qualified Control.Monad as CM
+import qualified GHC.Generics as G
+import Data.Store (Store(..))
 
+data RuleLabel =  
+  PiIntro |
+  PiElim |
+  PiForm |
+  SigmaIntro |
+  SigmaForm |
+  EqForm |
+  Membership |
+  Dne |
+  Efq |
+  TopIntro |
+  AskOracle |
+  DisjIntro |
+  DisjElim |
+  DisjForm
+  deriving (Eq, Show, Read, G.Generic, Store, Enum, Bounded, Ord)
+
+dttruleToRuleLabel :: QT.DTTrule -> Maybe RuleLabel
+dttruleToRuleLabel rule = case rule of
+  QT.Var -> Just Membership
+  QT.Con -> Just Membership
+  QT.TypeF -> Nothing
+  QT.Conv -> Nothing
+  QT.WK -> Nothing
+  QT.PiF -> Just PiForm
+  QT.PiI -> Just PiIntro
+  QT.PiE -> Just PiElim
+  QT.DNE -> Just Dne
+  QT.EFQ -> Just Efq
+  QT.SigmaF -> Just SigmaForm
+  QT.SigmaI -> Just SigmaIntro
+  QT.SigmaE -> Nothing
+  QT.DisjF -> Just DisjForm
+  QT.DisjI -> Just DisjIntro
+  QT.DisjE -> Just DisjElim
+  QT.BotF -> Nothing
+  QT.TopF -> Nothing
+  QT.TopI -> Just TopIntro
+  QT.EnumF -> Nothing
+  QT.EnumI -> Nothing
+  QT.EnumE -> Nothing
+  QT.IqF -> Just EqForm
+  QT.IqI -> Nothing
+  QT.IqE -> Nothing
+  QT.NatF -> Nothing
+  QT.NatI -> Nothing
+  QT.NatE -> Nothing
+
+rule :: RuleLabel -> WB.Rule
+rule label =
+  case label of 
+    PiIntro -> piIntro
+    PiElim -> piElim
+    PiForm -> piForm
+    SigmaIntro -> sigmaIntro
+    SigmaForm -> sigmaForm
+    EqForm -> eqForm
+    Membership -> membership
+    Dne -> dne
+    Efq -> efq
+    TopIntro -> topIntro
+    AskOracle -> askOracle
+    DisjIntro -> disjIntro
+    DisjElim -> disjElim
+    DisjForm -> disjForm
 
 -- | piIntro rule
 --
@@ -131,12 +189,10 @@ topIntro goal setting =
   case WB.acceptableType QT.TopI goal True [(A.Conclusion DdB.Top)] of
   (Nothing,message) -> return ([],message)
   (Just _,_) -> 
-    case WB.termFromGoal goal of
-      M.Just (A.Conclusion DdB.Unit) -> 
-        let (sig,var) = WB.conFromGoal goal
-            subgoalsets = [WB.SubGoalSet QT.TopI M.Nothing [] (A.AJudgment sig var (A.Conclusion DdB.Unit) (A.Conclusion DdB.Top), [])]
-        in return (subgoalsets,"")
-      term -> return ([],WB.exitMessage (WB.TermMisMatch term) QT.TopI)
+    let (sig,var) = WB.conFromGoal goal
+        subgoalset = return ([WB.SubGoalSet QT.TopI M.Nothing [] (A.AJudgment sig var (A.Conclusion DdB.Unit) (A.Conclusion DdB.Top), [])],"")
+    in M.maybe (subgoalset) (\term -> if term == (A.Conclusion DdB.Unit) then subgoalset else return ([],WB.exitMessage (WB.TermMisMatch (M.Just term)) QT.TopI)) (WB.termFromGoal goal)
+
 
 -- | piElim rule
 --

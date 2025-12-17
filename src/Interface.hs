@@ -49,10 +49,10 @@ readerBuilder :: [(a,String)] -> Int -> ReadS a
 readerBuilder list _ r = concat $ map (\(constructor,string) -> [(constructor,s) | (x,s) <- lex r, map C.toLower x == string]) list
 
 -- | values of lightblue -s option
-data Style = HTML | TEXT | XML | TEX | SVG deriving (Eq,Show)
+data Style = HTML | TEXT | EXPRESS | XML | TEX | SVG deriving (Eq,Show)
 
 instance Read Style where
-  readsPrec = readerBuilder [(HTML,"html"),(TEXT,"text"),(TEX,"tex"),(XML,"xml"),(SVG,"svg")]
+  readsPrec = readerBuilder [(HTML,"html"),(TEXT,"text"),(EXPRESS,"express"),(TEX,"tex"),(XML,"xml"),(SVG,"svg")]
   --readsPrec _ r = 
     -- [(HTML,s) | (x,s) <- lex r, map C.toLower x == "html"]
     -- ++ [(TEXT,s) | (x,s) <- lex r, map C.toLower x == "text"]
@@ -72,6 +72,8 @@ headerOf :: Style -> String
 headerOf style = case style of
   HTML -> HTML.htmlHeader4MathML
   TEXT -> replicate 100 '-'
+  -- todo: あとで仕様を考える
+  EXPRESS -> replicate 100 '-'
   XML  -> "<?xml version='1.0' encoding='UTF-8'?><root><document id='d0'><sentences>"
   TEX  -> ""
   SVG  -> SVG.svgHeader
@@ -81,6 +83,8 @@ interimOf :: Style -> String -> String
 interimOf style text = case style of
   HTML -> "<hr size='15' />"
   TEXT -> "------" ++ text ++ (replicate (94-(length text)) '-')
+  -- todo: あとで仕様を考える
+  EXPRESS -> "------" ++ text ++ (replicate (94-(length text)) '-')
   XML  -> ""
   TEX  -> ""
   SVG  -> ""
@@ -90,6 +94,8 @@ footerOf :: Style -> String
 footerOf style = case style of
   HTML -> HTML.htmlFooter4MathML
   TEXT -> "□"
+  -- todo: あとで仕様を考える
+  EXPRESS -> replicate 100 '-'
   XML  -> "</sentences></document></root>"
   TEX  -> ""
   SVG  -> SVG.svgFooter
@@ -176,6 +182,8 @@ printLexicalItem :: Style -> CCG.Node -> T.Text
 printLexicalItem style node = case style of
   TEXT -> T.concat [CCG.pf node, "\t", T.toText (CCG.cat node), " \t", T.toText $ UDTTwN.fromDeBruijn [] $ CCG.sem node, "\t", CCG.source node, "\t[", CCG.showScore node, "]"]
   TEX  -> TEX.toTeX node
+  -- todo: あとで仕様を考える
+  EXPRESS -> TEX.toTeX node
   HTML -> T.concat $ [HTML.startMathML, HTML.toMathML node, HTML.endMathML]
   XML  -> X.node2XML 0 0 True node
   SVG  -> SVG.node2svg node

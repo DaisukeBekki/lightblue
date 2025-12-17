@@ -116,7 +116,7 @@ The global options are common to all commands.
 
 |Global Options                                    |Default   |Description                                                     |
 |:------------------------------------------------|:---------|:---------------------------------------------------------------|
-|```-s``` or ```--style {text\|tex\|xml\|html}``` |```text```|Show results in the specified format.                     |
+|```-s``` or ```--style {text\|tex\|xml\|html\|express}``` |```text```|Show results in the specified format. ```express``` launches an interactive UI.                     |
 |```-p``` or ```--prover {Wani\|Null}```          |```Wani```|Choose a prover.<br>```Wani```: Use Wani prover (Daido and Bekki 2020)<br>```None```: Use the null prover (that always returns no diagrams).|
 |```-f``` or ```--file <filepath>```              |          |Read input texts from <filepath><br>(Specify '-' to use stdin) |
 |```-b``` or ```--beam <int>```                   |```32```  |Set the beam width to <int>                                     |
@@ -129,6 +129,14 @@ The global options are common to all commands.
 |```--noInference```                              |          |If specified, execute no inference for each discourse.|
 |```--time```                                     |          |Show the execution time in stderr.|
 |```--verbose```                                  |          |Show type infer/check logs in stderr.|
+
+|Specific Options for ```express```                      |Default   |Description                           |
+|:-------------------------------------------------|:---------|:-------------------------------------|
+|```--depth <int>```                      | ```2``` |Set expansion depth of parse tree nodes|
+|```--noShowCat```                        |     |If specified, hide sysntactic categories|
+|```--noShowSem```                        |     |If specified, hide semantics|
+|```--leafVertical```                     |     |If specified, list leaf nodes vertically|
+|```--browser {chrome\|firefox\|default}``` | ```default``` |Choose the browser to launch the Express UI. If omitted, the system default browser is used.|
 
 ### For developpers ###
 Installing Haskell-mode for Emacs will help.

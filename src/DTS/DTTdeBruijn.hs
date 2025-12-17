@@ -36,13 +36,14 @@ import qualified GHC.Generics as G    --base
 import qualified Data.Text.Lazy as LazyT --text
 import Data.Store (Store(..))         --store
 import Data.Store.TH (makeStore)      --store
+import Control.DeepSeq (NFData)       --deepseq
 import Interface.Text                 --lightblue
 import Interface.TeX                  --lightblue
 import Interface.HTML                 --lightblue
 import DTS.GeneralTypeQuery           --lightblue
 
 -- | 'Proj' 'Fst' m is the first projection of m, while 'Proj' 'Snd' m is the second projection of m.
-data Selector = Fst | Snd deriving (Eq, Show, G.Generic, Store)
+data Selector = Fst | Snd deriving (Eq, Show, G.Generic, Store, NFData)
 
 -- | Print a selector as "1" or "2".
 instance SimpleText Selector where
@@ -93,7 +94,7 @@ data Preterm =
   | Refl Preterm Preterm           -- ^ refl
   | Idpeel Preterm Preterm Preterm -- ^ idpeel P E R
   -- | ToDo: add First Universe
-  deriving (Eq, G.Generic)
+  deriving (Eq, G.Generic, NFData)
 
 makeStore ''LazyT.Text
 
