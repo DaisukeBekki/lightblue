@@ -1,8 +1,8 @@
 name:         lightblue
-version:      0.5.0.0
+version:      0.5.0.1
 description:  Please see the README on GitHub at <https://github.com/DaisukeBekki/lightblue#README.md>
 homepage:     https://github.com/DaisukeBekki/lightblue
-category:     CCG Parser, Dependent Type Prover
+category:     CCG Parser + Automatic theorem prover for dependent type theory
 synopsis:     A Japanese CCG parser with DTS
 license:      AllRightsReserved
 license-file: LICENSE
@@ -59,7 +59,7 @@ dependencies:
   - template-haskell
   - warp
   - monad-logger >=0.3 && <0.4
-  - shakespeare >=2.0 && <2.1
+  - shakespeare >=2.0 
   - hjsmin >=0.1 && <0.3
   - case-insensitive
   - http-client-tls
@@ -69,8 +69,9 @@ dependencies:
   - transformers >= 0.5.6.2
   - http-conduit >= 2.3.7
   - http-client-tls >= 0.3.5
-  - dotenv >= 0.0.4
+  - dotenv >= 0.12.0
   - deepseq
+  - hasktorch
 
 library:
   source-dirs: src

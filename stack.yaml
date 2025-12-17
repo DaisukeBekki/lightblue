@@ -1,4 +1,4 @@
-resolver: lts-18.28
+resolver: lts-24.24
 
 flags: {}
 
@@ -7,13 +7,26 @@ extra-deps:
   commit: c2cd39168e267007b4690dbf625329bac57a8185
 - git: http://github.com/DaisukeBekki/nlp-tools
   commit: e4bd3783f4e872b8df29538d9219e41f40378363
+- git: https://github.com/hasktorch/hasktorch.git
+  commit: 4e846fdcd89df5c7c6991cb9d6142007a6bb0a58
+  subdirs:
+    - hasktorch
+    - libtorch-ffi
+    - libtorch-ffi-helper
+#  - git: git@github.com:DaisukeBekki/hasktorch-tools.git
+#    commit: 936928cdee27e179a5e3775d146046b107b0eba1
 # parserModule
 - git: https://github.com/morning85/parserModules.git
   commit: 899aae39b8c57866148fb3b19a4ac2f393ffaabd
-# 1bf4e582c603c823a89c3dfd1fba0ab4d3d8899a
-#  - git: git@github.com:DaisukeBekki/hasktorch-tools.git
-#    commit: 936928cdee27e179a5e3775d146046b107b0eba1
-- classy-prelude-yesod-1.5.0@sha256:8f7e183bdfd6d2ea9674284c4f285294ab086aff60d9be4e5d7d2f3c1a2b05b7,1330
+- dotenv-0.12.0.0@sha256:2f25615cec37ff9a66a48ef0ebf2ac96ae989911d0c26c6796fc2f5247bdd665,4702
+# - classy-prelude-yesod-1.5.0@sha256:8f7e183bdfd6d2ea9674284c4f285294ab086aff60d9be4e5d7d2f3c1a2b05b7,1330
+
+extra-include-dirs:
+  - libtorch/include/torch/csrc/api/include
+  - libtorch/include
+
+extra-lib-dirs:
+  - libtorch/lib
 
 allow-newer: true
 
