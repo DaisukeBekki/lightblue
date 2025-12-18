@@ -219,7 +219,7 @@ getParsingR = do
                             $forall leaf <- leafNodes
                               <div .leaf-node-item>^{WE.widgetizeWith dsp leaf}
                         <div class="tab-node">
-                          <h1>Node
+                          <h1>Syntactic Structures
                         <div class="tab-node-content">
                           <div .tab-node-inner>^{WE.widgetizeWith dsp node}
                         <div class="tab-tcq">
