@@ -232,7 +232,7 @@ optionParser =
       <> help "If True, hide semantics in Express view" )
     <*> switch
       ( long "leafVertical"
-      <> help "If True, list leaf nodes vertically in Express view" )
+      <> help "If True, list lexical items vertically in Express view" )
     <*> optional (option expressBrowserReader
       ( long "browser"
       <> metavar "chrome|firefox|default"

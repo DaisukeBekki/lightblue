@@ -244,7 +244,7 @@ if (document.readyState === 'loading') {
   });
 })();
 
-// 解析候補のプレビュー描画（サーバ側の Leaf Node レイアウトを取得して埋め込み）
+// 解析候補のプレビュー描画（サーバ側の Lexical Items レイアウトを取得して埋め込み）
 function renderSpanPreviews(nodes, ctx) {
   const container = document.getElementById('span-preview-list');
   if (!container) return;

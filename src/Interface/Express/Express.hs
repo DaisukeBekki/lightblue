@@ -214,7 +214,7 @@ getParsingR = do
                       <label for="TAB-#{tabNum}" class=#{tabClass}>#{tabNum} (score: #{score})
                       <div class="tab-content">
                         <div class="tab-leaves">
-                          <h2>Leaf Nodes
+                          <h2>Lexical Items
                           <div .leaf-node-list :WE.leafVertical dsp:.vertical>
                             $forall leaf <- leafNodes
                               <div .leaf-node-item>^{WE.widgetizeWith dsp leaf}
