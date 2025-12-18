@@ -132,8 +132,8 @@ The global options are common to all commands.
 
 |Specific Options for ```express```                      |Default   |Description                           |
 |:-------------------------------------------------|:---------|:-------------------------------------|
-|```--noShowCat```                        |     |If specified, hide sysntactic categories|
 |```--depth <int>```                      | ```2``` |Set expansion depth of syntactic structures|
+|```--noShowCat```                        |     |If specified, hide syntactic categories|
 |```--noShowSem```                        |     |If specified, hide semantics|
 |```--leafVertical```                     |     |If specified, list leaf nodes vertically|
 |```--browser {chrome\|firefox\|default}``` | ```default``` |Choose the browser to launch the Express UI. If omitted, the system default browser is used.|
