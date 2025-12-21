@@ -326,6 +326,7 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
           Env.setEnv "LB_EXPRESS_NOSHOWCAT" (if noShowCat then "1" else "0")
           Env.setEnv "LB_EXPRESS_NOSHOWSEM" (if noShowSem then "1" else "0")
           Env.setEnv "LB_EXPRESS_LEAFVERTICAL" (if leafVertical then "1" else "0")
+          Env.setEnv "LB_EXPRESS_START" "parsing"
           -- Browser selection for Express
           case mExpressBrowser of
             Just BrowserChrome  -> Env.setEnv "LB_EXPRESS_BROWSER" "chrome"
@@ -362,6 +363,24 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
         S.putStr "\n"
         let sentences = postpend (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
             parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] sentences
+        -- If EXPRESS style is requested, set environment for express view
+        case style of
+          I.EXPRESS -> do
+            -- Display options
+            case mDepth of
+              Just d -> Env.setEnv "LB_EXPRESS_DEPTH" (show d)
+              Nothing -> return ()
+            Env.setEnv "LB_EXPRESS_NOSHOWCAT" (if noShowCat then "1" else "0")
+            Env.setEnv "LB_EXPRESS_NOSHOWSEM" (if noShowSem then "1" else "0")
+            Env.setEnv "LB_EXPRESS_LEAFVERTICAL" (if leafVertical then "1" else "0")
+            Env.setEnv "LB_EXPRESS_START" "inference"
+            -- Browser selection for Express
+            case mExpressBrowser of
+              Just BrowserChrome  -> Env.setEnv "LB_EXPRESS_BROWSER" "chrome"
+              Just BrowserFirefox -> Env.setEnv "LB_EXPRESS_BROWSER" "firefox"
+              Just BrowserDefault -> Env.setEnv "LB_EXPRESS_BROWSER" "default"
+              Nothing             -> return ()
+          _ -> return ()
         PPR.printParseResult handle style 1 noTypeCheck False title parseResult
         inferenceLabels <- toList $ NLI.trawlParseResult parseResult
         let groundTruth = J.jsemLabel2YesNo $ J.answer j

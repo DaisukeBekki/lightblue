@@ -69,11 +69,13 @@ data App = App
 
 mkYesod "App" [parseRoutes|
 /parsing ParsingR GET
+/inference InferenceR GET
 /span SpanR GET
 /span/node NodeR GET
 /export/sem ExportSemR GET
 /export/sem/text ExportSemTextR GET
 /export/node ExportNodeR GET
+/error ErrorR GET
 |]
 
 instance Yesod App
@@ -88,7 +90,12 @@ showExpress initialParseResult = do
   applyEnvDisplayOptions
 
   let port = 3000
-  let url = "http://localhost:" ++ show port ++ "/parsing" -- 初めから /parsing を開く
+  mStart <- lookupEnv "LB_EXPRESS_START"
+  let startPath = case mStart of
+                    Just s | map toLower s == "inference" -> "/inference"
+                    Just s | map toLower s == "parsing" -> "/parsing"
+                    _ -> "/error"
+  let url = "http://localhost:" ++ show port ++ startPath
 
   -- ブラウザ選択（環境変数 LB_EXPRESS_BROWSER: chrome|firefox|default）
   mBrowser <- lookupEnv "LB_EXPRESS_BROWSER"
@@ -138,6 +145,25 @@ applyEnvDisplayOptions = do
       base''' = if noShowSem then base'' { WE.showSem = False } else base''
       dsp = base''' { WE.leafVertical = leafVert }
   atomicWriteIORef currentDisplaySettingRef dsp
+
+-- /inference: temporary stub page (redirect or placeholder)
+getInferenceR :: Handler Html
+getInferenceR = do
+  defaultLayout $ do
+    [whamlet|
+      <div style="padding:16px">
+        <h1>Inference mode
+        <p>Test
+    |]
+
+getErrorR :: Handler Html
+getErrorR = do
+  defaultLayout $ do
+    [whamlet|
+      <div style="padding:16px">
+        <h1>Error
+        <p>Invalid request
+    |]
 
 getParsingR :: Handler Html
 getParsingR = do
