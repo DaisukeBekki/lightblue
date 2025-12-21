@@ -17,4 +17,5 @@ oracle ("udon","noodle") = return True
 oracle ("customer","human") = return True
 oracle ("prof","female") = return True
 oracle ("aProf","female") = return True
+oracle ("ringo","fruit") = return True
 oracle (small,big) = return False
