@@ -41,6 +41,7 @@ import qualified Data.ByteString as BS
 import qualified DTS.UDTTdeBruijn as UDTT
 import Interface.Text (SimpleText(..))
 import Data.Char (toLower)
+import ListT (toList)
 
 -- アプリケーションの状態として ParseResult を保持するための IORef を定義
 {-# NOINLINE currentParseResultRef #-}
@@ -145,6 +146,21 @@ applyEnvDisplayOptions = do
       base''' = if noShowSem then base'' { WE.showSem = False } else base''
       dsp = base''' { WE.leafVertical = leafVert }
   atomicWriteIORef currentDisplaySettingRef dsp
+
+-- ParseResultから入力文を取得
+collectTexts :: NLI.ParseResult -> IO [T.Text]
+collectTexts pr = case pr of
+  NLI.SentenceAndParseTrees text parseTreeAndFelicityChecksListT -> do
+    parseTreeAndFelicityChecksList <- toList parseTreeAndFelicityChecksListT
+    case parseTreeAndFelicityChecksList of
+      [] -> pure [text]
+      (NLI.ParseTreeAndFelicityChecks _ _ _ felicityCheckAndMoresListT : _) -> do
+        felicityCheckAndMoresList <- toList felicityCheckAndMoresListT
+        case felicityCheckAndMoresList of
+          [] -> pure [text]
+          ((_, nextParseResult) : _) -> (text :) <$> collectTexts nextParseResult
+  NLI.InferenceResults _ _ -> pure []
+  NLI.NoSentence -> pure []
 
 -- /inference: temporary stub page (redirect or placeholder)
 getInferenceR :: Handler Html
