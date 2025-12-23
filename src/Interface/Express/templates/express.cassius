@@ -524,3 +524,41 @@
             font-size: 0.95rem;
           .export-menu-item:hover
             background: #f2f6fb;
+
+
+
+/* ===== Inference grid (inference view) ===== */
+#inference-grid
+  display: grid
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))
+  gap: 12px
+  padding: 12px
+
+.inf-col
+  border: 1px solid #e0e0e0
+  border-radius: 6px
+  background: #fff
+  display: flex
+  flex-direction: column
+  height: 100vh
+  height: 100dvh
+  overflow: hidden
+
+.inf-col-head
+  position: sticky
+  top: 0
+  background: #fafafa
+  padding: 10px 12px
+  font-weight: bold
+  border-bottom: 1px solid #eee
+  z-index: 1
+
+.inf-col-body
+  flex: 1
+  overflow-y: auto
+  padding: 8px 10px
+
+.dummy
+  margin: 0 0 8px 0
+  color: #444
+  font-size: 12px

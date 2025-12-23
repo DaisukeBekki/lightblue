@@ -165,12 +165,38 @@ collectTexts pr = case pr of
 -- /inference: temporary stub page (redirect or placeholder)
 getInferenceR :: Handler Html
 getInferenceR = do
-  defaultLayout $ do
-    [whamlet|
-      <div style="padding:16px">
-        <h1>Inference mode
-        <p>Test
-    |]
+    -- IORef から ParseResult を読み込む
+    mpr <- liftIO $ readIORef currentParseResultRef
+    case mpr of
+      Nothing -> do
+        -- 初期値が設定されていない場合はエラーメッセージを表示
+        defaultLayout $ do
+          [whamlet|
+              <div class="error-message">
+                <p>ParseResult is not set...
+          |]
+      Just pr -> do
+        -- 前提文、仮説文を取得
+        texts <- liftIO (collectTexts pr)
+        let premises = if null texts then [] else init texts :: [T.Text] 
+        let hypothesis = if null texts then T.empty else last texts
+        let inputTexts = premises ++ [hypothesis]
+
+        -- todo: 後で消す用のダミーのコンテンツ
+        let dummies = [1..40 :: Int]
+
+        defaultLayout $ do
+          [whamlet|
+            <div id="inference-grid" class="inference-grid">
+              $forall txt <- inputTexts
+                <div class="inf-col">
+                  <div class="inf-col-head">#{txt}
+                  <div class="inf-col-body">
+                    $forall _ <- dummies
+                      <p .dummy>この列のスクロールを確認するためのダミーコンテンツ
+          |]
+          myDesign
+          myFunction
 
 getErrorR :: Handler Html
 getErrorR = do
