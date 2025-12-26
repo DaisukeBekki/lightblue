@@ -19,6 +19,7 @@ module DTS.NaturalLanguageInference (
   , ParseResult(..)
   , ParseTreeAndFelicityChecks(..)
   , QueryAndDiagrams(..)
+  , sequentialParsing
   , parseWithTypeCheck
   , trawlParseResult
   ) where

@@ -534,6 +534,37 @@
   gap: 12px
   padding: 12px
 
+.inf-controls
+  padding: 8px 12px
+  display: flex
+  gap: 8px
+.btn
+  display: inline-block
+  padding: 6px 10px
+  border: 1px solid #ddd
+  border-radius: 4px
+  background: #fff
+  cursor: pointer
+.btn:hover
+  background: #f7f7f7
+.btn-run
+  border-color: #2e7d32
+  color: #2e7d32
+.btn-reset
+  border-color: #b71c1c
+  color: #b71c1c
+.btn-select
+  border-color: #1976d2
+  color: #1976d2
+.badge-selected
+  display: inline-block
+  margin-left: 6px
+  padding: 2px 6px
+  border-radius: 10px
+  background: #1976d2
+  color: #fff
+  font-size: 11px
+
 .inf-col
   border: 1px solid #e0e0e0
   border-radius: 6px
@@ -558,7 +589,11 @@
   overflow-y: auto
   padding: 8px 10px
 
-.dummy
-  margin: 0 0 8px 0
-  color: #444
-  font-size: 12px
+.inf-node-item
+  margin: 0 0 12px 0
+  border: 1px dashed transparent
+  padding: 6px
+.inf-node-item.selected
+  border-color: #1976d2
+.inf-node-actions
+  margin-bottom: 6px

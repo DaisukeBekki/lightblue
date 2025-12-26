@@ -359,3 +359,89 @@ function highlightSpanPreview(index) {
     target.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 }
+
+// ===== Inference progress: partial refresh of each column until done =====
+(function initInferenceProgress() {
+  const grid = document.getElementById('inference-grid');
+  if (!grid) return;
+  async function refreshOnce() {
+    const cols = Array.from(document.querySelectorAll('.inf-col[data-sidx]'));
+    // カラムごとにHTMLスニペットを取得して差し替え
+    await Promise.all(cols.map(async (col) => {
+      const body = col.querySelector('.inf-col-body');
+      if (!body) return;
+      const sidx = col.getAttribute('data-sidx') || '1';
+      try {
+        const url = `/inference/col?sent=${encodeURIComponent(sidx)}`;
+        const res = await fetch(url, { headers: { 'Accept': 'text/html' } });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const html = await res.text();
+        body.innerHTML = html;
+        // 差し替え後に各ノード内のトグルIDをユニーク化
+        const items = Array.from(body.querySelectorAll('.inf-node-item'));
+        items.forEach((item, idx) => {
+          sanitizeInferenceIds(item, sidx, idx);
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }));
+  }
+  async function tick(ctrl) {
+    try {
+      await refreshOnce();
+      const res = await fetch('/inference/progress', { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const j = await res.json();
+      if (j && j.allDone === true) {
+        clearInterval(ctrl.timer);
+        ctrl.timer = null;
+      }
+    } catch (_) {
+      // ignore
+    }
+  }
+  const ctrl = { timer: null };
+  // すぐ一回更新してから周回
+  tick(ctrl);
+  ctrl.timer = setInterval(() => tick(ctrl), 600);
+})(); 
+
+// ===== 推論カラム: ノード内トグルIDのユニーク化 =====
+function sanitizeInferenceIds(container, sidx, idx) {
+  if (!container) return;
+  // 1) layerA/layerB/button をすべて一括でリネーム
+  const idNodes = container.querySelectorAll('[id]');
+  const buttons = [];
+  idNodes.forEach(el => {
+    const id = el.id || '';
+    let suffix = null;
+    if (id.endsWith('layerA')) suffix = 'layerA';
+    else if (id.endsWith('layerB')) suffix = 'layerB';
+    else if (id.endsWith('button')) suffix = 'button';
+    if (!suffix) return;
+    const base = id.slice(0, -suffix.length);
+    if (!base) return;
+    const newBase = `${base}inf${String(sidx)}-${String(idx)}-`;
+    el.id = newBase + suffix;
+    if (suffix === 'button') {
+      buttons.push({ el, newBase });
+    }
+  });
+  // 2) 既存の inline onclick="toggle(...)" を除去
+  container.querySelectorAll('[onclick]').forEach(node => {
+    const v = node.getAttribute('onclick') || '';
+    if (v.indexOf('toggle(') >= 0) {
+      try { node.removeAttribute('onclick'); } catch (_) {}
+    }
+  });
+  // 3) 各ボタンに JS で click をバインド（自分の newBase をトグル）
+  buttons.forEach(({ el, newBase }) => {
+    el.onclick = function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggle(newBase);
+      return false;
+    };
+  });
+}

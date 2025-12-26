@@ -5,6 +5,7 @@
 
 module Interface.Express.Express (
     showExpress
+  , showExpressInference
   , setDisplaySetting
   , setDisplayOptions
   ) where
@@ -35,18 +36,32 @@ import qualified Parser.PartialParsing as Partial
 import qualified Data.Map as M
 import System.Environment (lookupEnv)
 import Text.Read (readMaybe)
-import Data.Aeson (Value, object, (.=))
 import qualified Data.Store as Store
 import qualified Data.ByteString as BS
-import qualified DTS.UDTTdeBruijn as UDTT
+import qualified DTS.QueryTypes as QT
+import qualified DTS.DTTdeBruijn as DTT
 import Interface.Text (SimpleText(..))
 import Data.Char (toLower)
-import ListT (toList)
+import qualified ListT as LT (ListT, uncons)
+import Control.Monad (when)
 
 -- アプリケーションの状態として ParseResult を保持するための IORef を定義
 {-# NOINLINE currentParseResultRef #-}
 currentParseResultRef :: IORef (Maybe NLI.ParseResult)
 currentParseResultRef = unsafePerformIO $ newIORef Nothing
+
+-- JSeM 用: 各文の N-best ノードを保持する IORef
+-- [(入力文, その文に対する [CCG.Node])] を格納
+-- 進捗管理用
+data SentenceProgress = SentenceProgress
+  { snText  :: T.Text
+  , snNodes :: [CCG.Node]
+  , snDone  :: Bool
+  }
+
+{-# NOINLINE currentDiscourseNodesRef #-}
+currentDiscourseNodesRef :: IORef (Maybe [SentenceProgress])
+currentDiscourseNodesRef = unsafePerformIO $ newIORef Nothing
 
 -- 表示設定を保持する IORef
 {-# NOINLINE currentDisplaySettingRef #-}
@@ -71,6 +86,8 @@ data App = App
 mkYesod "App" [parseRoutes|
 /parsing ParsingR GET
 /inference InferenceR GET
+/inference/progress InfProgressR GET
+/inference/col InfColR GET
 /span SpanR GET
 /span/node NodeR GET
 /export/sem ExportSemR GET
@@ -80,6 +97,164 @@ mkYesod "App" [parseRoutes|
 |]
 
 instance Yesod App
+
+showExpressInference :: CP.ParseSetting -> QT.Prover -> DTT.Signature -> DTT.Context -> [T.Text] -> IO ()
+showExpressInference ps _prover _signtr _contxt sentences = do
+  -- 環境変数から表示設定を読み込み、反映
+  applyEnvDisplayOptions
+
+  -- 逐次パース
+  let discourseLT = NLI.sequentialParsing ps sentences
+  let idxd = zip ([0..] :: [Int]) discourseLT
+      initProgress = [ SentenceProgress txt [] False
+                     | (_i,(txt,_)) <- idxd
+                     ]
+  atomicWriteIORef currentDiscourseNodesRef (Just initProgress)
+  -- ローカル関数群
+  let updateAt :: Int -> (SentenceProgress -> SentenceProgress) -> [SentenceProgress] -> [SentenceProgress]
+      updateAt _ _ [] = []
+      updateAt 0 f (x:xs) = f x : xs
+      updateAt n f (x:xs) = x : updateAt (n-1) f xs
+      appendNode :: Int -> CCG.Node -> IO ()
+      appendNode idx node =
+        atomicModifyIORef' currentDiscourseNodesRef $ \m ->
+          case m of
+            Nothing   -> (m, ())
+            Just list -> (Just (updateAt idx (\sp -> sp { snNodes = snNodes sp ++ [node] }) list), ())
+      markDone :: Int -> IO ()
+      markDone idx =
+        atomicModifyIORef' currentDiscourseNodesRef $ \m ->
+          case m of
+            Nothing   -> (m, ())
+            Just list -> (Just (updateAt idx (\sp -> sp { snDone = True }) list), ())
+      consume :: Int -> LT.ListT IO CCG.Node -> IO ()
+      consume idx lst = do
+        m <- LT.uncons lst
+        case m of
+          Nothing -> markDone idx
+          Just (node, rest) -> do
+            appendNode idx node
+            consume idx rest
+  -- 各文ごとにバックグラウンドで ListT を uncons して snNodes を追加
+  mapM_ (\(idx, (_txt, lst)) -> do
+            _ <- forkIO $ consume idx lst
+            return ()
+        ) (zip ([0..] :: [Int]) discourseLT)
+
+  let port = 3000
+  mStart <- lookupEnv "LB_EXPRESS_START"
+  let startPath = case mStart of
+                    Just s | map toLower s == "inference" -> "/inference"
+                    _ -> "/error"
+  let url = "http://localhost:" ++ show port ++ startPath
+
+  -- ブラウザ選択
+  mBrowser <- lookupEnv "LB_EXPRESS_BROWSER"
+  let browserSel = fmap (map toLower) mBrowser
+      openBrowserCommand =
+        case os of
+          "darwin" ->
+            case browserSel of
+              Just "chrome"  -> "open -a \"Google Chrome\" " ++ url
+              Just "firefox" -> "open -a \"Firefox\" " ++ url
+              _              -> "open " ++ url
+          "linux"  ->
+            case browserSel of
+              Just "chrome"  -> "google-chrome " ++ url ++ " || google-chrome-stable " ++ url ++ " || chromium " ++ url ++ " || chromium-browser " ++ url ++ " || xdg-open " ++ url
+              Just "firefox" -> "firefox " ++ url ++ " || xdg-open " ++ url
+              _              -> "xdg-open " ++ url
+          "mingw32" ->
+            case browserSel of
+              Just "chrome"  -> "start chrome " ++ url
+              Just "firefox" -> "start firefox " ++ url
+              _              -> "start " ++ url
+          _        -> "echo 'Unsupported OS for auto-opening browser.'"
+
+  putStrLn $ "Starting Yesod server on " ++ url
+
+  _ <- forkIO $ do
+    callCommand openBrowserCommand `catch` \e -> do
+      hPutStrLn stderr $ "Failed to open browser: " ++ show (e :: IOException)
+
+  warp port App
+
+getInferenceR :: Handler Html
+getInferenceR = do
+  -- 逐次パースを取得
+  mDisc <- liftIO $ readIORef currentDiscourseNodesRef
+  case mDisc of
+    Nothing -> defaultLayout $ do
+      [whamlet|
+        <div class="error-message">
+          <p>No discourse parsed yet. Please (re)start with JSeM express.
+      |]
+      myDesign
+      myFunction
+    Just discourse -> do
+      dsp <- liftIO $ readIORef currentDisplaySettingRef
+      let enumerated = zip ([1..] :: [Int]) discourse
+          nTotal :: Int
+          nTotal = length discourse
+          prefixFor :: Int -> TS.Text
+          prefixFor i = if i == nTotal then "Hypothesis: " else TS.pack ("Premise" ++ show i ++ ": ")
+      -- カラム表示: 各入力文を1カラムとして、その下に nparse 個の Node を表示
+      defaultLayout $ do
+        [whamlet|
+          <div class="inference-container">
+            <div #inference-grid>
+              $forall (sidx, sp) <- enumerated
+                <div .inf-col data-sidx=#{sidx}>
+                  <div .inf-col-head>#{prefixFor sidx}#{T.toStrict (snText sp)}
+                  <div .inf-col-body>
+                    $if null (snNodes sp)
+                      <div .span-preview-loading>loading...
+                    $else
+                      $forall node <- snNodes sp
+                        <div .inf-node-item>
+                          <div .inf-node-score>score: #{T.toStrict $ CCG.showScore node}
+                          ^{WE.widgetizeWith dsp node}
+                    $if not (snDone sp)
+                      <div .span-preview-loading>loading...
+        |]
+        myDesign
+        myFunction
+
+-- 進捗の簡易JSON（全カラムが完了したか）
+getInfProgressR :: Handler Value
+getInfProgressR = do
+  mDisc <- liftIO $ readIORef currentDiscourseNodesRef
+  case mDisc of
+    Nothing -> return $ object ["allDone" .= True]
+    Just disc -> return $ object ["allDone" .= all snDone disc]
+
+-- 各カラム（文インデックスごと）の現在ノードをHTMLスニペットで返す
+getInfColR :: Handler Html
+getInfColR = do
+  mDisc <- liftIO $ readIORef currentDiscourseNodesRef
+  mSent <- lookupGetParam "sent"
+  let parseInt :: TS.Text -> Maybe Int
+      parseInt = readMaybe . TS.unpack
+      sIdx = maybe 1 id (mSent >>= parseInt)
+      s0 = sIdx - 1
+      (!!?) :: [a] -> Int -> Maybe a
+      (!!?) xs n = if n < 0 || n >= length xs then Nothing else Just (xs !! n)
+  case mDisc >>= (!!? s0) of
+    Nothing -> return [shamlet|<div .span-preview-loading>loading...|]
+    Just sp -> do
+      dsp <- liftIO $ readIORef currentDisplaySettingRef
+      defaultLayout $ do
+        if null (snNodes sp)
+          then [whamlet|<div .span-preview-loading>loading...|]
+          else do
+            [whamlet|
+              $forall node <- snNodes sp
+                <div .inf-node-item>
+                  <div .inf-node-score>score: #{T.toStrict $ CCG.showScore node}
+                  ^{WE.widgetizeWith dsp node}
+            |]
+        when (not $ snDone sp) $
+          [whamlet|<div .span-preview-loading>loading...|]
+
 
 -- printExpressInterface を showExpress に変更し、ParseResult を引数に取る
 showExpress :: NLI.ParseResult -> IO ()
@@ -93,7 +268,6 @@ showExpress initialParseResult = do
   let port = 3000
   mStart <- lookupEnv "LB_EXPRESS_START"
   let startPath = case mStart of
-                    Just s | map toLower s == "inference" -> "/inference"
                     Just s | map toLower s == "parsing" -> "/parsing"
                     _ -> "/error"
   let url = "http://localhost:" ++ show port ++ startPath
@@ -146,57 +320,6 @@ applyEnvDisplayOptions = do
       base''' = if noShowSem then base'' { WE.showSem = False } else base''
       dsp = base''' { WE.leafVertical = leafVert }
   atomicWriteIORef currentDisplaySettingRef dsp
-
--- ParseResultから入力文を取得
-collectTexts :: NLI.ParseResult -> IO [T.Text]
-collectTexts pr = case pr of
-  NLI.SentenceAndParseTrees text parseTreeAndFelicityChecksListT -> do
-    parseTreeAndFelicityChecksList <- toList parseTreeAndFelicityChecksListT
-    case parseTreeAndFelicityChecksList of
-      [] -> pure [text]
-      (NLI.ParseTreeAndFelicityChecks _ _ _ felicityCheckAndMoresListT : _) -> do
-        felicityCheckAndMoresList <- toList felicityCheckAndMoresListT
-        case felicityCheckAndMoresList of
-          [] -> pure [text]
-          ((_, nextParseResult) : _) -> (text :) <$> collectTexts nextParseResult
-  NLI.InferenceResults _ _ -> pure []
-  NLI.NoSentence -> pure []
-
--- /inference: temporary stub page (redirect or placeholder)
-getInferenceR :: Handler Html
-getInferenceR = do
-    -- IORef から ParseResult を読み込む
-    mpr <- liftIO $ readIORef currentParseResultRef
-    case mpr of
-      Nothing -> do
-        -- 初期値が設定されていない場合はエラーメッセージを表示
-        defaultLayout $ do
-          [whamlet|
-              <div class="error-message">
-                <p>ParseResult is not set...
-          |]
-      Just pr -> do
-        -- 前提文、仮説文を取得
-        texts <- liftIO (collectTexts pr)
-        let premises = if null texts then [] else init texts :: [T.Text] 
-        let hypothesis = if null texts then T.empty else last texts
-        let inputTexts = premises ++ [hypothesis]
-
-        -- todo: 後で消す用のダミーのコンテンツ
-        let dummies = [1..40 :: Int]
-
-        defaultLayout $ do
-          [whamlet|
-            <div id="inference-grid" class="inference-grid">
-              $forall txt <- inputTexts
-                <div class="inf-col">
-                  <div class="inf-col-head">#{txt}
-                  <div class="inf-col-body">
-                    $forall _ <- dummies
-                      <p .dummy>この列のスクロールを確認するためのダミーコンテンツ
-          |]
-          myDesign
-          myFunction
 
 getErrorR :: Handler Html
 getErrorR = do
@@ -371,8 +494,8 @@ getSpanR = do
             Nothing -> return $ object ["nodes" .= ([] :: [TS.Text]), "message" .= ("No match" :: TS.Text)]
             Just surf -> do
               subChart <- liftIO $ L.parse beam (T.fromStrict surf)
-              let pr = Partial.extractParseResult beam subChart
-              case pr of
+              let prx = Partial.extractParseResult beam subChart
+              case prx of
                 Partial.Failed -> return $ object ["nodes" .= ([] :: [TS.Text]), "message" .= ("No match" :: TS.Text)]
                 Partial.Full ns -> do
                   let toNodeObj n = object
