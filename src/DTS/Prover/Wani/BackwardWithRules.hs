@@ -276,4 +276,4 @@ deduce' goal depth setting
 deduce :: WB.DeduceRule
 deduce sig var arrowType depth setting = 
   deduce' (WB.Goal sig var M.Nothing [arrowType]) depth setting
-    >>= \result ->  (if {--depth < WB.debug setting--} True then (D.trace ("result :" ++ (show result))) else id ) (return result) -- (if {--depth < WB.debug setting--} not (null (WB.trees result) )then (D.trace ("result :" ++ (show (map (A.downSide') $ WB.trees result)))) else D.trace "not found" ) (return result)
+    >>= \result ->  (if depth < WB.debug setting then (D.trace ("result :" ++ (show result))) else id ) (return result) -- (if {--depth < WB.debug setting--} not (null (WB.trees result) )then (D.trace ("result :" ++ (show (map (A.downSide') $ WB.trees result)))) else D.trace "not found" ) (return result)
