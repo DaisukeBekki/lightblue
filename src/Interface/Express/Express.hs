@@ -14,10 +14,8 @@ import Yesod
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text as TS          -- strict text for JSON
 import qualified Interface.Express.Lightblue as L
-import qualified Interface.Express.Sentence_process as SP
-import Data.List
+import Data.List (null, find, zip7)
 import qualified Interface.Express.WidgetExpress as WE
-import qualified Data.Text.Lazy.IO as TL
 import qualified DTS.NaturalLanguageInference as NLI
 import Text.Julius (juliusFile)
 import  Text.Cassius (cassiusFile)
@@ -26,9 +24,9 @@ import Control.Concurrent (forkIO)
 import System.IO (hPutStrLn, stderr)
 import Control.Exception (catch, IOException)
 import System.Info (os)
-import Data.IORef
+import Data.IORef(IORef, readIORef, atomicWriteIORef, newIORef, atomicModifyIORef')
 import System.IO.Unsafe (unsafePerformIO)
-import qualified Parser.CCG as CCG (showScore, getLeafNodesFromNode, pf, cat, sem)
+import qualified Parser.CCG as CCG (Node, showScore, getLeafNodesFromNode, pf, cat, sem)
 import qualified Parser.ChartParser as CP
 import qualified Parser.LangOptions as PL (defaultJpOptions)
 import qualified Parser.Language.Japanese.Lexicon as JP (setupLexicon)
