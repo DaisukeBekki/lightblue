@@ -14,7 +14,6 @@ import qualified DTS.UDTTdeBruijn as UDdB
 import qualified DTS.Prover.Wani.Arrowterm as A -- Aterm
 import qualified Interface.Tree as UDT
 import qualified DTS.QueryTypes as QT
-import qualified DTS.Prover.Oracle as O
 
 import qualified DTS.Prover.Wani.WaniBase as WB 
 import qualified DTS.Prover.Wani.Forward as F
@@ -800,9 +799,10 @@ membership goal setting =
 
 askOracle :: WB.Rule
 askOracle goal setting =
-  if WB.enableneuralDTS setting 
-    then
-      case WB.acceptableType QT.Con goal False [] of
+  maybe 
+    (return ([],"oracle Disabled")) 
+    (\ oracleFun ->
+            case WB.acceptableType QT.Con goal False [] of
         (Just appTerm,_) -> 
           let (sig,var) = WB.conFromGoal goal
               unsnoc lst = case lst of [] -> M.Nothing; lst -> M.Just (init lst, last lst) 
@@ -818,7 +818,10 @@ askOracle goal setting =
                           let (targetLst',shouldBeConForSmall) = disassemble $ A.typefromAJudgment (A.downSide' tree)
                           in
                             case shouldBeConForSmall of
-                              A.Conclusion (DdB.Con small) -> {--D.trace ("askOracle" ++" target : "++(show target)++" "++(show target')++" "++"small : "++(show small)++ " big :" ++(show big)) $--} if targetLst' == targetLst then O.oracle (small,big) else return False
+                              A.Conclusion (DdB.Con small) -> {--D.trace ("askOracle" ++" target : "++(show target)++" "++(show target')++" "++"small : "++(show small)++ " big :" ++(show big)) $--} 
+                                if targetLst' == targetLst 
+                                  then return $ (oracleFun small big) > (WB.oracleThreshold setting)
+                                  else return False
                               _ -> return False
                         )
                         forwardedTrees
@@ -833,9 +836,8 @@ askOracle goal setting =
                   in subgoalsetsIO >>= \subgoalsets -> return (subgoalsets,"")
               _ -> return ([],"not oracle target")
         (Nothing,message) -> return ([],message)
-    else return ([],"oracle Disabled")
-
-
+    )
+    (WB.oracle setting )
 
 -- | dne
 -- 
