@@ -14,7 +14,6 @@ import qualified DTS.UDTTdeBruijn as UDdB
 import qualified DTS.Prover.Wani.Arrowterm as A -- Aterm
 import qualified Interface.Tree as UDT
 import qualified DTS.QueryTypes as QT
-import qualified DTS.Prover.Oracle as O
 
 import qualified DTS.Prover.Wani.WaniBase as WB 
 import qualified DTS.Prover.Wani.Forward as F
@@ -324,13 +323,7 @@ piElim goal setting =
     (Just arrowType,_) -> 
       let (sig,var) = WB.conFromGoal goal
           maybeTerm = WB.termFromGoal goal
-          termsInProofTerm = let -- [b,a,f] for (f(a))(b)
-            maybeTermsInAppTerm appTerm =
-                case appTerm of 
-                  A.ArrowApp f t ->
-                    t : (maybeTermsInAppTerm f)
-                  f -> [f]
-            in maybe [] maybeTermsInAppTerm maybeTerm
+          termsInProofTerm = maybe [] A.termsInAppTerm maybeTerm
           termIsNotAppType = (length termsInProofTerm == 1) -- When termsInProofTerm is a list with one element, the term is not appType
           isDeduce = null termsInProofTerm
           (env',b') = case arrowType of A.Arrow env b -> (env,b) ; _ -> ([],arrowType)
@@ -806,35 +799,45 @@ membership goal setting =
 
 askOracle :: WB.Rule
 askOracle goal setting =
-  if WB.enableneuralDTS setting 
-    then
-      case WB.acceptableType QT.Con goal False [] of
-        (Just (A.ArrowApp (A.Conclusion (DdB.Con big)) target),_) -> 
+  maybe 
+    (return ([],"oracle Disabled")) 
+    (\ oracleFun ->
+            case WB.acceptableType QT.Con goal False [] of
+        (Just appTerm,_) -> 
           let (sig,var) = WB.conFromGoal goal
-              forwardedTrees = WB.trees $ F.forwardContext sig var
-              filteredTreesIO =  -- (Monad m) => (a -> m Bool) -> [a] -> m [a]
-                          CM.filterM 
-                            (\tree ->
-                                case A.typefromAJudgment (A.downSide' tree) of
-                                  (A.ArrowApp (A.Conclusion (DdB.Con small)) target') -> {--D.trace ("askOracle" ++" target : "++(show target)++" "++(show target')++" "++"small : "++(show small)++ " big :" ++(show big)) $--}
-                                    if target == target' then O.oracle (small,big) else return False
-                                  _ -> return False
-                            )
-                            forwardedTrees
-              subgoalsetsIO = filteredTreesIO >>= \filteredTrees -> return $ 
-                                map 
-                                  (\tree ->
-                                    let
-                                      term = A.termfromAJudgment $ A.downSide' tree
-                                    in WB.SubGoalSet QT.Con (M.Just tree) [] (A.AJudgment sig var (A.ArrowApp (A.Conclusion $ DdB.Con "oracle") term) (A.ArrowApp (A.Conclusion $ DdB.Con big) target), [])
-                                  )
-                                  (L.nub filteredTrees)
-          in subgoalsetsIO >>= \subgoalsets -> return (subgoalsets,"")
+              unsnoc lst = case lst of [] -> M.Nothing; lst -> M.Just (init lst, last lst) 
+              disassemble t = maybe ([],A.aType) id (unsnoc $ A.termsInAppTerm t)  -- If `term` is not an AppTerm, we fall back to a dummy `( [], aType )`. This dummy value is safe because the empty `targetLst` is immediately rejected by the `null targetLst` guard below, so `aType` is never semantically observed.
+              (targetLst,shoudBeConForBig) = disassemble appTerm
+          in case (shoudBeConForBig,null targetLst) of
+              (A.Conclusion (DdB.Con big),False) ->
+                  let 
+                    forwardedTrees = WB.trees $ F.forwardContext sig var
+                    filteredTreesIO =  -- (Monad m) => (a -> m Bool) -> [a] -> m [a]
+                      CM.filterM 
+                        (\tree -> 
+                          let (targetLst',shouldBeConForSmall) = disassemble $ A.typefromAJudgment (A.downSide' tree)
+                          in
+                            case shouldBeConForSmall of
+                              A.Conclusion (DdB.Con small) -> {--D.trace ("askOracle" ++" target : "++(show target)++" "++(show target')++" "++"small : "++(show small)++ " big :" ++(show big)) $--} 
+                                if targetLst' == targetLst 
+                                  then return $ (oracleFun small big) > (WB.oracleThreshold setting)
+                                  else return False
+                              _ -> return False
+                        )
+                        forwardedTrees
+                    subgoalsetsIO = filteredTreesIO >>= \filteredTrees -> return $ 
+                                      map 
+                                        (\tree ->
+                                          let
+                                            term = A.termfromAJudgment $ A.downSide' tree
+                                          in WB.SubGoalSet QT.Con (M.Just tree) [] (A.AJudgment sig var (A.ArrowApp (A.Conclusion $ DdB.Con "oracle") term) appTerm, [])
+                                        )
+                                        (L.nub filteredTrees)
+                  in subgoalsetsIO >>= \subgoalsets -> return (subgoalsets,"")
+              _ -> return ([],"not oracle target")
         (Nothing,message) -> return ([],message)
-        _ -> return ([],"not oracle target")
-      else return ([],"oracle Disabled")
-
-
+    )
+    (WB.oracle setting )
 
 -- | dne
 -- 
