@@ -46,12 +46,18 @@ matchingPairs :: [(DTT.Signature, CCG.Cat)]
               -> [(DTT.Signature, CCG.Cat)]
               -> [(TL.Text, TL.Text)]
 matchingPairs sigs1 sigs2 =
-  [ (fst $ Prelude.head $ fst x, fst $ Prelude.head $ fst y)
+  [ (firstToken $ fst $ Prelude.head $ fst x, firstToken $ fst $ Prelude.head $ fst y)
   | x@(s1, c1) <- sigs1
   , y@(s2, c2) <- sigs2
   , c1 == c2
   , not . null $ [ () | t1 <- sigTypes s1, t2 <- sigTypes s2, t1 == t2 ]
   ]
+  where
+    -- "/" で区切られた場合は最初の要素だけを返す（例: "飲む/のむ/ガニ" -> "飲む"）
+    firstToken :: TL.Text -> TL.Text
+    firstToken t = case TL.splitOn "/" t of
+                     (a:_) -> a
+                     []    -> t
 
 -- 2つの要素で完全に一致するSignatureを取り除く、このとき、sig1の方も一緒にペアにして残す
 compareSigs :: [(DTT.Signature, CCG.Cat)] -> [(DTT.Signature, CCG.Cat)] -> [((TL.Text, TL.Text))]
@@ -73,13 +79,23 @@ makePrompt :: [((TL.Text, TL.Text))] -> IO T.Text
 makePrompt sigPairs = 
     let prompt' = TL.toStrict 
             "次の語彙ペアについて、「A は B を意味的に含意するか」を判定してください。\n\
-                \含意とは、「A であれば必ず B が成立する」場合のみ Yes とし、矛盾がある場合のみ No とします。\n\
-                \成立が不明な場合は Unknown とします。\n\
-                \出力ルール:\n\
-                \  - 各ペアの順番通りに判定すること\n\
-                \  - 回答は Yes, No, Unknown のいずれか\n\
-                \  - 区切り文字は「,」\n\
-                \"
+            \含意とは、「A であれば必ず B が成立する」場合のみ Yes とし、矛盾がある場合のみ No とします。\n\
+            \ 成立が不明な場合は Unknown とします。 \n\
+            
+            \例:\n\
+            \ (犬, 動物) → Yes\n\
+            \ (医者, 人) → Yes \n\
+            \(独身, 既婚) → No\n\
+            \(死者, 生存者) → No \n\
+            \ (動物, 犬) → Unknown\n\
+            \(日本人, エンジニア) → Unknown\n\
+            \(本, 教科書) → Unknown\n\
+
+            \出力ルール: \n\
+            \ - 各ペアの順番通りに判定すること \n\
+            \ - 出力は **回答のみ** を「,」で区切ること \n\
+            \ - 回答は Yes, No, Unknown のいずれか "
+            
         prompts = T.concat $ prompt'  : makePrompt' sigPairs
    in return $ D.trace (U.ushow sigPairs) prompts
    where 
@@ -103,6 +119,7 @@ splitResponse response =
 makeAxiom :: (TL.Text, TL.Text) -> T.Text -> DTT.Signature --[(LazyT.Text, Preterm)]
 makeAxiom (word1, word2) answer = case answer of
     "Yes" -> [(TL.concat[word1,"-",word2], DTT.Pi (DTT.Entity) (DTT.Pi (DTT.Entity) (DTT.Pi (DTT.App (DTT.App (DTT.Con word1) (DTT.Var 1)) (DTT.Var 0)) (DTT.App (DTT.App (DTT.Con word2) (DTT.Var 2)) (DTT.Var 1)))))]
+    "No" -> [(TL.concat[word1,"-",word2], DTT.Pi (DTT.Entity) (DTT.Pi (DTT.Entity) (DTT.Pi (DTT.App (DTT.App (DTT.Con word1) (DTT.Var 1)) (DTT.Var 0)) (DTT.Pi (DTT.App (DTT.App (DTT.Con word2) (DTT.Var 2)) (DTT.Var 1)) DTT.Bot))))]
     _ -> []
 
 -- returnFeedBack :: CCG.Node -> CCG.Node -> IO DTT.Signature
