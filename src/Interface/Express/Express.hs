@@ -26,7 +26,7 @@ import Control.Exception (catch, IOException)
 import System.Info (os)
 import Data.IORef(IORef, readIORef, atomicWriteIORef, newIORef, atomicModifyIORef')
 import System.IO.Unsafe (unsafePerformIO)
-import qualified Parser.CCG as CCG (Node, showScore, getLeafNodesFromNode, pf, cat, sem)
+import qualified Parser.CCG as CCG (Node, showScore, getLeafNodesFromNode, pf, cat, sem, sig)
 import qualified Parser.ChartParser as CP
 import qualified Parser.LangOptions as PL (defaultJpOptions)
 import qualified Parser.Language.Japanese.Lexicon as JP (setupLexicon)
@@ -38,9 +38,13 @@ import qualified Data.Store as Store
 import qualified Data.ByteString as BS
 import qualified DTS.QueryTypes as QT
 import qualified DTS.DTTdeBruijn as DTT
+import qualified DTS.DTTwithName as DWN
+import qualified DTS.UDTTdeBruijn as UDTT
+import qualified DTS.TypeChecker as TY
+import qualified Interface.Tree as Tree
 import Interface.Text (SimpleText(..))
 import Data.Char (toLower)
-import qualified ListT as LT (ListT, uncons)
+import qualified ListT as LT (ListT, uncons, toList, take)
 import Control.Monad (when)
 
 -- アプリケーションの状態として ParseResult を保持するための IORef を定義
