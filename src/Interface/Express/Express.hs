@@ -157,6 +157,7 @@ mkYesod "App" [parseRoutes|
 /inference/typecheck/result InfTypecheckResultR GET
 /inference/typecheck/select InfTypecheckSelectR GET
 /proofsearch ProofSearchR GET
+/proofsearch/progress ProofProgressR GET
 /span SpanR GET
 /span/node NodeR GET
 /export/sem ExportSemR GET
@@ -725,6 +726,23 @@ getProofSearchR = do
   where
     (!!?) :: [a] -> Int -> Maybe a
     (!!?) xs n = if n < 0 || n >= length xs then Nothing else Just (xs !! n)
+
+getProofProgressR :: Handler Value
+getProofProgressR = do
+  qpos <- liftIO $ readIORef currentPSQPosRef
+  qneg <- liftIO $ readIORef currentPSQNegRef
+  pos <- liftIO $ readIORef currentPSPosRef
+  neg <- liftIO $ readIORef currentPSNegRef
+  dpos <- liftIO $ readIORef currentPSDonePosRef
+  dneg <- liftIO $ readIORef currentPSDoneNegRef
+  return $ object
+    [ "hasPos" .= (maybe False (const True) qpos)
+    , "hasNeg" .= (maybe False (const True) qneg)
+    , "posCount" .= length pos
+    , "negCount" .= length neg
+    , "posDone" .= dpos
+    , "negDone" .= dneg
+    ]
 
 -- Start a typecheck for a given sentence/node
 getInfTypecheckStartR :: Handler Value
