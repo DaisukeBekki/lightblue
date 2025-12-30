@@ -501,7 +501,9 @@ async function selectTypecheck(sidx, nidx, didx) {
     if (Number(sidx) === totalCols && col) {
       const pbtn = col.querySelector('.inf-col-head .btn.btn-select');
       if (pbtn) {
-        pbtn.removeAttribute('disabled');
+        pbtn.classList.remove('is-disabled');
+        pbtn.removeAttribute('aria-disabled');
+        pbtn.removeAttribute('data-disabled');
         pbtn.title = '';
         pbtn.onclick = function() { goProofsearch(); };
       }
@@ -513,8 +515,10 @@ async function selectTypecheck(sidx, nidx, didx) {
       for (let i = Number(sidx) + 1; i <= total; i++) {
         const hbtn = document.querySelector(`.inf-col[data-sidx="${String(i)}"] .inf-col-head .btn.btn-select`);
         if (hbtn) {
-          hbtn.setAttribute('disabled', '');
-          hbtn.title = 'select final diagram first';
+          hbtn.classList.add('is-disabled');
+          hbtn.setAttribute('aria-disabled', 'true');
+          hbtn.setAttribute('data-disabled', '1');
+          hbtn.title = '入力文のTypeCheckDiagramを選択してください。';
           try { hbtn.onclick = null; } catch (_) {}
         }
       }
@@ -539,6 +543,115 @@ function goProofsearch() {
   window.location.href = '/proofsearch';
 }
 window.goProofsearch = goProofsearch;
+
+// ===== Toast helper =====
+(function initToast() {
+  function ensureToastRoot() {
+    let root = document.querySelector('.toast-root');
+    if (!root) {
+      root = document.createElement('div');
+      root.className = 'toast-root';
+      document.body.appendChild(root);
+    }
+    return root;
+  }
+  function showToast(msg, timeoutMs) {
+    const root = ensureToastRoot();
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = String(msg || '');
+    root.appendChild(el);
+    const ttl = typeof timeoutMs === 'number' ? timeoutMs : 2200;
+    setTimeout(() => {
+      try { el.classList.add('fade-out'); } catch (_) {}
+      setTimeout(() => {
+        try { root.removeChild(el); } catch (_) {}
+      }, 320);
+    }, ttl);
+  }
+  window.showToast = showToast;
+})();
+
+// ===== Near-button toast (popover) =====
+(function initToastNear() {
+  function clamp(n, min, max) {
+    return Math.max(min, Math.min(max, n));
+  }
+  function showToastNear(el, msg, timeoutMs) {
+    if (!el) return (window.showToast ? window.showToast(msg, timeoutMs) : null);
+    const rect = el.getBoundingClientRect();
+    const body = document.body;
+    const docEl = document.documentElement || body;
+    const scrollX = (window.scrollX !== undefined ? window.scrollX : (docEl.scrollLeft || body.scrollLeft || 0));
+    const scrollY = (window.scrollY !== undefined ? window.scrollY : (docEl.scrollTop || body.scrollTop || 0));
+    const pop = document.createElement('div');
+    pop.className = 'toast-popover';
+    pop.textContent = String(msg || '');
+    // initial position (will refine after append)
+    const centerX = scrollX + rect.left + rect.width / 2;
+    let top = scrollY + rect.top - 10; // default above
+    document.body.appendChild(pop);
+    // If not enough space above, show below
+    const aboveSpace = rect.top;
+    if (aboveSpace < 40) {
+      top = scrollY + rect.bottom + 10;
+      try {
+        // flip arrow
+        pop.style.setProperty('--arrow-dir', 'down');
+        // Move arrow to top by swapping borders if desired; skip for simplicity
+      } catch (_) {}
+    }
+    // set final position centered horizontally
+    pop.style.left = `${centerX}px`;
+    pop.style.top = `${top}px`;
+    pop.style.transform = 'translateX(-50%)';
+    // ensure on screen (horizontally)
+    const vw = Math.max(docEl.clientWidth, window.innerWidth || 0);
+    const pw = pop.offsetWidth || 160;
+    const minLeft = 8 + pw / 2;
+    const maxLeft = vw - 8 - pw / 2;
+    const clampedCenter = clamp(centerX - scrollX, minLeft, maxLeft);
+    pop.style.left = `${scrollX + clampedCenter}px`;
+    // auto remove
+    const ttl = typeof timeoutMs === 'number' ? timeoutMs : 2200;
+    setTimeout(() => {
+      try { pop.classList.add('fade-out'); } catch (_) {}
+      setTimeout(() => {
+        try { pop.remove(); } catch (_) {}
+      }, 240);
+    }, ttl);
+  }
+  window.showToastNear = showToastNear;
+})();
+
+// ===== Disabled button alerts (typecheck / proofsearch) =====
+(function initDisabledButtonAlerts() {
+  // Capture phase to intercept early
+  document.addEventListener('click', function(e) {
+    const btn = e.target && e.target.closest && e.target.closest('button.btn');
+    if (!btn) return;
+    if (btn.hasAttribute('disabled') || btn.classList.contains('is-disabled') || btn.getAttribute('aria-disabled') === 'true') {
+      e.preventDefault();
+      e.stopPropagation();
+      // 日本語メッセージに分岐
+      const isProof = btn.classList.contains('btn-select');
+      const isTypecheck = btn.classList.contains('btn-run');
+      let msg;
+      if (isProof) {
+        msg = '入力文のTypeCheckDiagramを選択してください。';
+      } else if (isTypecheck) {
+        msg = '前文のTypeCheckDiagramを選択してください。';
+      } else {
+        msg = btn.getAttribute('title') || 'この操作は現在利用できません。';
+      }
+      try {
+        if (window.showToastNear) window.showToastNear(btn, msg);
+        else if (window.showToast) window.showToast(msg);
+        else alert(msg);
+      } catch (_) {}
+    }
+  }, true);
+})();
 
 // ===== Proof search page polling (if present) =====
 (function initProofSearch() {

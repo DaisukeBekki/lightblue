@@ -303,7 +303,7 @@ getInferenceR = do
                           $if hasSel
                             <button .btn .btn-select onclick="goProofsearch()">proofsearch
                           $else
-                            <button .btn .btn-select disabled title="select final diagram first">proofsearch
+                            <button .btn .btn-select .is-disabled aria-disabled=true data-disabled=1 title="入力文のTypeCheckDiagramを選択してください。">proofsearch
                   <div .inf-col-body>
                     $if null (snNodes sp)
                       <div .span-preview-loading>loading...
@@ -315,7 +315,7 @@ getInferenceR = do
                             $if isAllowed sidx
                               <button .btn .btn-run data-sidx=#{sidx} onclick="startTypecheck(this)">typecheck
                             $else
-                              <button .btn .btn-run data-sidx=#{sidx} disabled title="select previous diagram first">typecheck
+                              <button .btn .btn-run .is-disabled aria-disabled=true data-disabled=1 data-sidx=#{sidx} title="前文のTypeCheckDiagramを選択してください。">typecheck
                           ^{WE.widgetizeWith dsp node}
                           <div .inf-node-tc .tc-holder>
                     $if not (snDone sp)
@@ -371,7 +371,7 @@ getInfColR = do
                     $if isAllowed sIdx
                       <button .btn .btn-run data-sidx=#{sIdx} onclick="startTypecheck(this)">typecheck
                     $else
-                      <button .btn .btn-run data-sidx=#{sIdx} disabled title="select previous diagram first">typecheck
+                      <button .btn .btn-run .is-disabled aria-disabled=true data-disabled=1 data-sidx=#{sIdx} title="前文のTypeCheckDiagramを選択してください。">typecheck
                   ^{WE.widgetizeWith dsp node}
                   <div .inf-node-tc .tc-holder>
             |]
