@@ -47,11 +47,6 @@ import Data.Char (toLower)
 import qualified ListT as LT (ListT, uncons, toList, take)
 import Control.Monad (when)
 
--- アプリケーションの状態として ParseResult を保持するための IORef を定義
-{-# NOINLINE currentParseResultRef #-}
-currentParseResultRef :: IORef (Maybe NLI.ParseResult)
-currentParseResultRef = unsafePerformIO $ newIORef Nothing
-
 -- JSeM 用: 各文の N-best ノードを保持する IORef
 -- [(入力文, その文に対する [CCG.Node])] を格納
 -- 進捗管理用
@@ -61,9 +56,77 @@ data SentenceProgress = SentenceProgress
   , snDone  :: Bool
   }
 
+-- 選択された TypeCheckDiagram（文index -> diagram）
+data TCSelection = TCSelection { selNodeIdx :: Int, selDiagIdx :: Int, selDiagram :: QT.DTTProofDiagram }
+
+data TCStatus = TCNotStarted | TCInProgress | TCDone [QT.DTTProofDiagram] | TCFailed TS.Text
+
+-- アプリケーションの状態として ParseResult を保持するための IORef を定義
+{-# NOINLINE currentParseResultRef #-}
+currentParseResultRef :: IORef (Maybe NLI.ParseResult)
+currentParseResultRef = unsafePerformIO $ newIORef Nothing
+
 {-# NOINLINE currentDiscourseNodesRef #-}
 currentDiscourseNodesRef :: IORef (Maybe [SentenceProgress])
 currentDiscourseNodesRef = unsafePerformIO $ newIORef Nothing
+
+-- TypeCheck 設定・状態
+{-# NOINLINE currentProverRef #-}
+currentProverRef :: IORef (Maybe QT.Prover)
+currentProverRef = unsafePerformIO $ newIORef Nothing
+
+{-# NOINLINE currentBaseSignatureRef #-}
+currentBaseSignatureRef :: IORef DTT.Signature
+currentBaseSignatureRef = unsafePerformIO $ newIORef []
+
+{-# NOINLINE currentBaseContextRef #-}
+currentBaseContextRef :: IORef DTT.Context
+currentBaseContextRef = unsafePerformIO $ newIORef []
+
+{-# NOINLINE currentNTypeCheckRef #-}
+currentNTypeCheckRef :: IORef Int
+currentNTypeCheckRef = unsafePerformIO $ newIORef 1
+
+{-# NOINLINE currentNProofRef #-}
+currentNProofRef :: IORef Int
+currentNProofRef = unsafePerformIO $ newIORef 1
+
+{-# NOINLINE currentVerboseRef #-}
+currentVerboseRef :: IORef Bool
+currentVerboseRef = unsafePerformIO $ newIORef False
+
+{-# NOINLINE currentTCStateRef #-}
+currentTCStateRef :: IORef (M.Map (Int,Int) TCStatus)
+currentTCStateRef = unsafePerformIO $ newIORef M.empty
+
+{-# NOINLINE currentTCSelectionRef #-}
+currentTCSelectionRef :: IORef (M.Map Int TCSelection)
+currentTCSelectionRef = unsafePerformIO $ newIORef M.empty
+
+-- Proof search state
+{-# NOINLINE currentPSQPosRef #-}
+currentPSQPosRef :: IORef (Maybe DTT.ProofSearchQuery)
+currentPSQPosRef = unsafePerformIO $ newIORef Nothing
+
+{-# NOINLINE currentPSQNegRef #-}
+currentPSQNegRef :: IORef (Maybe DTT.ProofSearchQuery)
+currentPSQNegRef = unsafePerformIO $ newIORef Nothing
+
+{-# NOINLINE currentPSPosRef #-}
+currentPSPosRef :: IORef [QT.DTTProofDiagram]
+currentPSPosRef = unsafePerformIO $ newIORef []
+
+{-# NOINLINE currentPSNegRef #-}
+currentPSNegRef :: IORef [QT.DTTProofDiagram]
+currentPSNegRef = unsafePerformIO $ newIORef []
+
+{-# NOINLINE currentPSDonePosRef #-}
+currentPSDonePosRef :: IORef Bool
+currentPSDonePosRef = unsafePerformIO $ newIORef False
+
+{-# NOINLINE currentPSDoneNegRef #-}
+currentPSDoneNegRef :: IORef Bool
+currentPSDoneNegRef = unsafePerformIO $ newIORef False
 
 -- 表示設定を保持する IORef
 {-# NOINLINE currentDisplaySettingRef #-}
