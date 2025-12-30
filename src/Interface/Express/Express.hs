@@ -158,6 +158,7 @@ mkYesod "App" [parseRoutes|
 /inference/typecheck/select InfTypecheckSelectR GET
 /proofsearch ProofSearchR GET
 /proofsearch/progress ProofProgressR GET
+/proofsearch/list ProofListR GET
 /span SpanR GET
 /span/node NodeR GET
 /export/sem ExportSemR GET
@@ -743,6 +744,31 @@ getProofProgressR = do
     , "posDone" .= dpos
     , "negDone" .= dneg
     ]
+
+getProofListR :: Handler Html
+getProofListR = do
+  mk <- lookupGetParam "kind"
+  dsp <- liftIO $ readIORef currentDisplaySettingRef
+  case mk of
+    Just "pos" -> do
+      pos <- liftIO $ readIORef currentPSPosRef
+      let indexed = zip ([1..] :: [Int]) pos
+      defaultLayout $ do
+        [whamlet|
+          <div class="tab-tcds-content">
+            $forall (idx, d) <- indexed
+              <div .tab-tcds-inner data-diag-idx=#{idx}>^{WE.widgetizeWith dsp d}
+        |]
+    Just "neg" -> do
+      neg <- liftIO $ readIORef currentPSNegRef
+      let indexed = zip ([1..] :: [Int]) neg
+      defaultLayout $ do
+        [whamlet|
+          <div class="tab-tcds-content">
+            $forall (idx, d) <- indexed
+              <div .tab-tcds-inner data-diag-idx=#{idx}>^{WE.widgetizeWith dsp d}
+        |]
+    _ -> defaultLayout [whamlet|<div class="error-message">invalid kind|]
 
 -- Start a typecheck for a given sentence/node
 getInfTypecheckStartR :: Handler Value
