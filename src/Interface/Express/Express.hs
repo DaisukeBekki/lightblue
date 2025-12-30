@@ -175,6 +175,14 @@ showExpressInference ps _prover _signtr _contxt sentences = do
   -- 環境変数から表示設定を読み込み、反映
   applyEnvDisplayOptions
 
+  -- TypeCheck 設定を保持
+  atomicWriteIORef currentProverRef (Just _prover)
+  atomicWriteIORef currentBaseSignatureRef _signtr
+  atomicWriteIORef currentBaseContextRef _contxt
+  atomicWriteIORef currentNTypeCheckRef (CP.nTypeCheck ps)
+  atomicWriteIORef currentVerboseRef (CP.verbose ps)
+  atomicWriteIORef currentNProofRef (CP.nProof ps)
+
   -- 逐次パース
   let discourseLT = NLI.sequentialParsing ps sentences
   let idxd = zip ([0..] :: [Int]) discourseLT
