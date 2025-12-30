@@ -160,6 +160,7 @@ mkYesod "App" [parseRoutes|
 /proofsearch/progress ProofProgressR GET
 /proofsearch/list ProofListR GET
 /proofsearch/query ProofQueryR GET
+/proofsearch/query/bin ProofQueryBinR GET
 /span SpanR GET
 /span/node NodeR GET
 /export/sem ExportSemR GET
@@ -841,6 +842,27 @@ getProofQueryR = do
         [whamlet|
           <div class="tab-tcq-content">^{WE.widgetizeWith dsp psqWN}
         |]
+
+-- Export proof search query as binary file
+getProofQueryBinR :: Handler TypedContent
+getProofQueryBinR = do
+  mk <- lookupGetParam "kind"
+  q <- case mk of
+         Just "pos" -> liftIO $ readIORef currentPSQPosRef
+         Just "neg" -> liftIO $ readIORef currentPSQNegRef
+         _          -> return Nothing
+  case q of
+    Nothing -> do
+      addHeader "Content-Type" "text/plain; charset=utf-8"
+      return $ TypedContent typePlain (toContent ("not ready" :: TS.Text))
+    Just psq -> do
+      let bs = Store.encode psq
+          fname = case mk of
+                    Just "neg" -> "proofsearch-query-neg.bin"
+                    _          -> "proofsearch-query-pos.bin"
+      addHeader "Content-Type" "application/octet-stream"
+      addHeader "Content-Disposition" (TS.concat ["attachment; filename=\"", fname, "\""])
+      return $ TypedContent "application/octet-stream" (toContent bs)
 
 -- Start a typecheck for a given sentence/node
 getInfTypecheckStartR :: Handler Value
