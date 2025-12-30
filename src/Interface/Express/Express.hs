@@ -285,17 +285,30 @@ getInferenceR = do
         [whamlet|
           <div class="inference-container">
             <div #inference-grid>
-              $forall (sidx, sp) <- enumerated
+              $forall (sidx, sp, nodesZ) <- enumeratedWithNodes
                 <div .inf-col data-sidx=#{sidx}>
                   <div .inf-col-head>#{prefixFor sidx}#{T.toStrict (snText sp)}
                   <div .inf-col-body>
                     $if null (snNodes sp)
                       <div .span-preview-loading>loading...
                     $else
-                      $forall node <- snNodes sp
-                        <div .inf-node-item>
+                      $forall (nidx, node) <- nodesZ
+                        <div .inf-node-item :nidx == selNodeIdxFor sidx:.selected>
                           <div .inf-node-score>score: #{T.toStrict $ CCG.showScore node}
+                          <div .inf-node-actions>
+                            $if isAllowed sidx
+                              <button .btn .btn-run data-sidx=#{sidx} onclick="startTypecheck(this)">typecheck
+                            $else
+                              <button .btn .btn-run data-sidx=#{sidx} disabled title="select previous diagram first">typecheck
                           ^{WE.widgetizeWith dsp node}
+                          <div .inf-node-tc .tc-holder>
+                    $if sidx == nTotal
+                      $with hasSel <- M.member sidx sel
+                        <div style="margin-top:8px">
+                          $if hasSel
+                            <button .btn .btn-select onclick="goProofsearch()">proofsearch
+                          $else
+                            <button .btn .btn-select disabled title="select final diagram first">proofsearch
                     $if not (snDone sp)
                       <div .span-preview-loading>loading...
         |]
@@ -325,15 +338,39 @@ getInfColR = do
     Nothing -> return [shamlet|<div .span-preview-loading>loading...|]
     Just sp -> do
       dsp <- liftIO $ readIORef currentDisplaySettingRef
+      sel <- liftIO $ readIORef currentTCSelectionRef
+      let isAllowed s = all (\i -> i <= 0 || M.member i sel) [s-1]
+          selNodeIdxForThis :: Int
+          selNodeIdxForThis = case M.lookup sIdx sel of
+                                Just s | selNodeIdx s > 0 -> selNodeIdx s
+                                _ -> 0
+          enumeratedNodes :: [(Int, CCG.Node)]
+          enumeratedNodes = Prelude.zip ([1..] :: [Int]) (snNodes sp)
+          totalSentences :: Int
+          totalSentences = maybe 0 length mDisc
+          hasSelFinal :: Bool
+          hasSelFinal = M.member sIdx sel
       defaultLayout $ do
         if null (snNodes sp)
           then [whamlet|<div .span-preview-loading>loading...|]
           else do
             [whamlet|
-              $forall node <- snNodes sp
-                <div .inf-node-item>
+              $forall (nidx, node) <- enumeratedNodes
+                <div .inf-node-item :nidx == selNodeIdxForThis:.selected>
                   <div .inf-node-score>score: #{T.toStrict $ CCG.showScore node}
+                  <div .inf-node-actions>
+                    $if isAllowed sIdx
+                      <button .btn .btn-run data-sidx=#{sIdx} onclick="startTypecheck(this)">typecheck
+                    $else
+                      <button .btn .btn-run data-sidx=#{sIdx} disabled title="select previous diagram first">typecheck
                   ^{WE.widgetizeWith dsp node}
+                  <div .inf-node-tc .tc-holder>
+              $if sIdx == totalSentences
+                <div style="margin-top:8px">
+                  $if hasSelFinal
+                    <button .btn .btn-select onclick="goProofsearch()">proofsearch
+                  $else
+                    <button .btn .btn-select disabled title="select final diagram first">proofsearch
             |]
         when (not $ snDone sp) $
           [whamlet|<div .span-preview-loading>loading...|]
