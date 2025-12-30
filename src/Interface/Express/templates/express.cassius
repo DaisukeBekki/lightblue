@@ -711,6 +711,15 @@
   font-weight: bold
   border-bottom: 1px solid #eee
   z-index: 1
+  display: flex
+  align-items: center
+  justify-content: space-between
+
+.inf-head-title
+  display: inline-block
+
+.inf-head-actions .btn
+  margin-left: 8px
 
 .inf-col-body
   flex: 1

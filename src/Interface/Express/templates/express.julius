@@ -496,17 +496,30 @@ async function selectTypecheck(sidx, nidx, didx) {
         else it.classList.remove('selected');
       });
     }
-    // 4) 最終文なら proofsearch ボタンを直ちに有効化（部分更新を待たない）
+    // 4) 最終文なら proofsearch ボタンを直ちに有効化（ヘッダーのボタン）
     const totalCols = document.querySelectorAll('.inf-col').length;
     if (Number(sidx) === totalCols && col) {
-      const pbtn = col.querySelector('.btn.btn-select');
+      const pbtn = col.querySelector('.inf-col-head .btn.btn-select');
       if (pbtn) {
         pbtn.removeAttribute('disabled');
         pbtn.title = '';
         pbtn.onclick = function() { goProofsearch(); };
       }
     }
-    // 次の文カラムを再取得してボタン解放を反映
+    // 5) 後続カラムのヘッダーボタンを無効化（前段の選択でクリアされた可能性に対応）
+    {
+      const allCols = Array.from(document.querySelectorAll('.inf-col'));
+      const total = allCols.length;
+      for (let i = Number(sidx) + 1; i <= total; i++) {
+        const hbtn = document.querySelector(`.inf-col[data-sidx="${String(i)}"] .inf-col-head .btn.btn-select`);
+        if (hbtn) {
+          hbtn.setAttribute('disabled', '');
+          hbtn.title = 'select final diagram first';
+          try { hbtn.onclick = null; } catch (_) {}
+        }
+      }
+    }
+    // 次の文カラムを再取得してボタン解放を反映（本文側）
     const allCols = Array.from(document.querySelectorAll('.inf-col'));
     const total = allCols.length;
     for (let i = Number(sidx) + 1; i <= total; i++) {

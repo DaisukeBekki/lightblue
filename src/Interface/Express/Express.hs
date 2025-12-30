@@ -295,7 +295,15 @@ getInferenceR = do
             <div #inference-grid>
               $forall (sidx, sp, nodesZ) <- enumeratedWithNodes
                 <div .inf-col data-sidx=#{sidx}>
-                  <div .inf-col-head>#{prefixFor sidx}#{T.toStrict (snText sp)}
+                  <div .inf-col-head>
+                    <span .inf-head-title>#{prefixFor sidx}#{T.toStrict (snText sp)}
+                    $if sidx == nTotal
+                      $with hasSel <- M.member sidx sel
+                        <span .inf-head-actions>
+                          $if hasSel
+                            <button .btn .btn-select onclick="goProofsearch()">proofsearch
+                          $else
+                            <button .btn .btn-select disabled title="select final diagram first">proofsearch
                   <div .inf-col-body>
                     $if null (snNodes sp)
                       <div .span-preview-loading>loading...
@@ -310,13 +318,6 @@ getInferenceR = do
                               <button .btn .btn-run data-sidx=#{sidx} disabled title="select previous diagram first">typecheck
                           ^{WE.widgetizeWith dsp node}
                           <div .inf-node-tc .tc-holder>
-                    $if sidx == nTotal
-                      $with hasSel <- M.member sidx sel
-                        <div style="margin-top:8px">
-                          $if hasSel
-                            <button .btn .btn-select onclick="goProofsearch()">proofsearch
-                          $else
-                            <button .btn .btn-select disabled title="select final diagram first">proofsearch
                     $if not (snDone sp)
                       <div .span-preview-loading>loading...
         |]
@@ -373,12 +374,6 @@ getInfColR = do
                       <button .btn .btn-run data-sidx=#{sIdx} disabled title="select previous diagram first">typecheck
                   ^{WE.widgetizeWith dsp node}
                   <div .inf-node-tc .tc-holder>
-              $if sIdx == totalSentences
-                <div style="margin-top:8px">
-                  $if hasSelFinal
-                    <button .btn .btn-select onclick="goProofsearch()">proofsearch
-                  $else
-                    <button .btn .btn-select disabled title="select final diagram first">proofsearch
             |]
         when (not $ snDone sp) $
           [whamlet|<div .span-preview-loading>loading...|]
