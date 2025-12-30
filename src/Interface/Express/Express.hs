@@ -156,6 +156,7 @@ mkYesod "App" [parseRoutes|
 /inference/typecheck InfTypecheckStartR GET
 /inference/typecheck/result InfTypecheckResultR GET
 /inference/typecheck/select InfTypecheckSelectR GET
+/proofsearch ProofSearchR GET
 /span SpanR GET
 /span/node NodeR GET
 /export/sem ExportSemR GET
@@ -610,6 +611,120 @@ myDesign = do
 myFunction :: Widget
 myFunction = do
     toWidget $(juliusFile "src/Interface/Express/templates/express.julius")
+
+-- Build proof search queries from current selections and show progressive page
+getProofSearchR :: Handler Html
+getProofSearchR = do
+  mDisc <- liftIO $ readIORef currentDiscourseNodesRef
+  selMap <- liftIO $ readIORef currentTCSelectionRef
+  baseSig <- liftIO $ readIORef currentBaseSignatureRef
+  baseCtx <- liftIO $ readIORef currentBaseContextRef
+  mProver <- liftIO $ readIORef currentProverRef
+  nProof <- liftIO $ readIORef currentNProofRef
+  -- reset state
+  liftIO $ atomicWriteIORef currentPSQPosRef Nothing
+  liftIO $ atomicWriteIORef currentPSQNegRef Nothing
+  liftIO $ atomicWriteIORef currentPSPosRef []
+  liftIO $ atomicWriteIORef currentPSNegRef []
+  liftIO $ atomicWriteIORef currentPSDonePosRef False
+  liftIO $ atomicWriteIORef currentPSDoneNegRef False
+  case (mDisc, mProver) of
+    (Just discourse, Just prover) -> do
+      -- Build signature and context from selections
+      let total = length discourse
+          -- aggregate selected nodes for signature
+          getNodeAt sidx = do
+            let s0 = sidx - 1
+            case discourse !!? s0 of
+              Nothing -> Nothing
+              Just sp ->
+                case M.lookup sidx selMap of
+                  Nothing -> Nothing
+                  Just sel ->
+                    let n0 = selNodeIdx sel - 1
+                    in (snNodes sp) !!? n0
+          sigAccum = baseSig ++ concat [ maybe [] CCG.sig (getNodeAt i) | i <- [1..total] ]
+          -- build context with last chosen term at head
+          ctxAccum = foldl (\acc i ->
+                               case M.lookup i selMap of
+                                 Just s -> (DTT.trm (Tree.node (selDiagram s))):acc
+                                 Nothing -> acc) baseCtx [1..total]
+      -- Only if last sentence selected
+      if M.member total selMap
+        then do
+          let typ = case ctxAccum of
+                      (t:_) -> t
+                      []    -> DTT.Bot
+              rest = case ctxAccum of
+                       (_:xs) -> xs
+                       []     -> []
+              psqPos = DTT.ProofSearchQuery sigAccum rest typ
+              psqNeg = DTT.ProofSearchQuery sigAccum rest (DTT.Pi typ DTT.Bot)
+              enumerated :: [(Int, SentenceProgress)]
+              enumerated = zip ([1..] :: [Int]) discourse
+          liftIO $ atomicWriteIORef currentPSQPosRef (Just psqPos)
+          liftIO $ atomicWriteIORef currentPSQNegRef (Just psqNeg)
+          -- spawn background consumers
+          let consume lref dref doneRef lst k = do
+                m <- LT.uncons lst
+                case m of
+                  Nothing -> atomicWriteIORef doneRef True
+                  Just (d, rest) -> do
+                    atomicModifyIORef' lref (\xs -> (xs ++ [d], ()))
+                    consume lref dref doneRef rest k
+          _ <- liftIO $ forkIO $ do
+            let posL = LT.take nProof (prover psqPos)
+            consume currentPSPosRef currentPSDonePosRef currentPSDonePosRef posL nProof
+          _ <- liftIO $ forkIO $ do
+            let negL = LT.take nProof (prover psqNeg)
+            consume currentPSNegRef currentPSDoneNegRef currentPSDoneNegRef negL nProof
+          defaultLayout $ do
+            [whamlet|
+              <div .ps-container>
+                <div .ps-header>
+                  <div .ps-header-title>Proof Search
+                  <div .ps-sentences>
+                    $forall (i, sp) <- enumerated
+                      <div .ps-row>
+                        <div .ps-role>
+                          $if i == total
+                            Hypothesis
+                          $else
+                            Premise #{i}
+                        <div .ps-text>#{T.toStrict (snText sp)}
+                <div .ps-grid>
+                  <div .ps-section>
+                    <div .ps-title>
+                      <span .ps-badge .ps-badge-pos>Query (pos)
+                    <div .ps-body>
+                      <pre id="psq-pos">loading...
+                  <div .ps-section>
+                    <div .ps-title>
+                      <span .ps-badge .ps-badge-neg>Query (neg)
+                    <div .ps-body>
+                      <pre id="psq-neg">loading...
+                  <div .ps-section>
+                    <div .ps-title>
+                      <span .ps-badge .ps-badge-pos>Results (pos)
+                    <div .ps-body>
+                      <div class="tab-tcds-content">
+                        <div id="ps-pos-list" class="tc-holder">
+                          <div class="span-preview-loading">loading...</div>
+                  <div .ps-section>
+                    <div .ps-title>
+                      <span .ps-badge .ps-badge-neg>Results (neg)
+                    <div .ps-body>
+                      <div class="tab-tcds-content">
+                        <div id="ps-neg-list" class="tc-holder">
+                          <div class="span-preview-loading">loading...</div>
+            |]
+            myDesign
+            myFunction
+        else defaultLayout [whamlet|<div class="error-message">Select final diagram first|]
+    _ -> defaultLayout [whamlet|<div class="error-message">Not ready|]
+  where
+    (!!?) :: [a] -> Int -> Maybe a
+    (!!?) xs n = if n < 0 || n >= length xs then Nothing else Just (xs !! n)
 
 -- Start a typecheck for a given sentence/node
 getInfTypecheckStartR :: Handler Value
