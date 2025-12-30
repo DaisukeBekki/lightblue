@@ -332,8 +332,8 @@
             margin-top: 10px;
 
           .tab-tcq-content
-           display: flex;
-           text-align: left;
+            display: flex;
+            text-align: left;
            justify-content: flex-start;
 
           .tab-tcds-content
