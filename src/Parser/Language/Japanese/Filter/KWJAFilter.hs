@@ -57,9 +57,12 @@ getKWJAargs args = case args of
 -- | 全角数字を取り除く関数
 normalizeArgType :: String -> T.Text
 normalizeArgType input = 
-  T.pack . filter (not . isFullwidthDigit) $ input
+    let noDigits = filter (not . isFullwidthDigit) input
+    in T.pack  $ filter (`elem` args) noDigits
   where
     isFullwidthDigit c = let code = ord c in code >= 0xFF10 && code <= 0xFF19
+    args = ['ヨ', 'ガ', 'ヲ', 'ニ', 'ト', 'ノ']
+
 
 -- 動詞のCCGカテゴリーから項構造を取得
 getCCGArg :: CCG.Cat -> [T.Text]
