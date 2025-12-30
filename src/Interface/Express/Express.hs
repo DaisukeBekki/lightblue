@@ -153,6 +153,7 @@ mkYesod "App" [parseRoutes|
 /inference InferenceR GET
 /inference/progress InfProgressR GET
 /inference/col InfColR GET
+/inference/typecheck InfTypecheckStartR GET
 /span SpanR GET
 /span/node NodeR GET
 /export/sem ExportSemR GET
@@ -607,6 +608,60 @@ myDesign = do
 myFunction :: Widget
 myFunction = do
     toWidget $(juliusFile "src/Interface/Express/templates/express.julius")
+
+-- Start a typecheck for a given sentence/node
+getInfTypecheckStartR :: Handler Value
+getInfTypecheckStartR = do
+  mSent <- lookupGetParam "sent"
+  mTab  <- lookupGetParam "tab"
+  let parseInt :: TS.Text -> Maybe Int
+      parseInt = readMaybe . TS.unpack
+      sIdx = maybe 1 id (mSent >>= parseInt)
+      nIdx = maybe 1 id (mTab  >>= parseInt)
+      key = (sIdx, nIdx)
+  -- Check and start if needed
+  st <- liftIO $ readIORef currentTCStateRef
+  sel <- liftIO $ readIORef currentTCSelectionRef
+  -- 依存（前文の選択）が満たされているかを確認
+  let depsOk = all (\i -> i <= 0 || M.member i sel) [sIdx - 1]
+  if not depsOk
+    then return $ object ["status" .= ("blocked" :: TS.Text), "reason" .= ("need_previous_selection" :: TS.Text)]
+    else case M.lookup key st of
+    Just TCInProgress -> return $ object ["status" .= ("in_progress" :: TS.Text)]
+    Just (TCDone _)   -> return $ object ["status" .= ("done" :: TS.Text)]
+    Just (TCFailed _) -> return $ object ["status" .= ("failed" :: TS.Text)]
+    _ -> do
+      -- mark in progress
+      liftIO $ atomicModifyIORef' currentTCStateRef (\m -> (M.insert key TCInProgress m, ()))
+      -- spawn background job
+      _ <- liftIO $ forkIO $ do
+        mDisc <- readIORef currentDiscourseNodesRef
+        mProver <- readIORef currentProverRef
+        baseSig <- readIORef currentBaseSignatureRef
+        baseCtx <- readIORef currentBaseContextRef
+        nmax <- readIORef currentNTypeCheckRef
+        verbose <- readIORef currentVerboseRef
+        selMap <- readIORef currentTCSelectionRef
+        let (!!?) :: [a] -> Int -> Maybe a
+            (!!?) xs n = if n < 0 || n >= length xs then Nothing else Just (xs !! n)
+        case (mDisc, mProver) of
+          (Just disc, Just prover) -> do
+            let s0 = sIdx - 1
+                n0 = nIdx - 1
+            case disc !!? s0 of
+              Nothing -> atomicModifyIORef' currentTCStateRef (\m -> (M.insert key (TCFailed "bad sentence") m, ()))
+              Just sp -> case snNodes sp !!? n0 of
+                Nothing   -> atomicModifyIORef' currentTCStateRef (\m -> (M.insert key (TCFailed "bad node") m, ()))
+                Just node -> do
+                  let signtr' = CCG.sig node ++ baseSig
+                      -- 直前までの選択からコンテキストを構築（選択図の項を連結）
+                      ctxPrev = baseCtx ++ [ DTT.trm (Tree.node (selDiagram sel)) | i <- [1..(sIdx-1)], Just sel <- [M.lookup i selMap] ]
+                      tcQueryType = UDTT.Judgment signtr' ctxPrev (CCG.sem node) DTT.Type
+                      lts = TY.typeCheck prover verbose tcQueryType
+                  diags <- LT.toList (LT.take nmax lts)
+                  atomicModifyIORef' currentTCStateRef (\m -> (M.insert key (TCDone diags) m, ()))
+          _ -> atomicModifyIORef' currentTCStateRef (\m -> (M.insert key (TCFailed "no prover") m, ()))
+      return $ object ["status" .= ("started" :: TS.Text)]
 
 -- HTML snippet: render a single node like Leaf Node layout
 getNodeR :: Handler Html
