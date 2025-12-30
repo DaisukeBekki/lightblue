@@ -264,7 +264,18 @@ getInferenceR = do
       myFunction
     Just discourse -> do
       dsp <- liftIO $ readIORef currentDisplaySettingRef
+      sel <- liftIO $ readIORef currentTCSelectionRef
+      let isAllowed s = all (\i -> i <= 0 || M.member i sel) [s-1]
+          selNodeIdxFor :: Int -> Int
+          selNodeIdxFor s = case M.lookup s sel of
+                              Just s' | selNodeIdx s' > 0 -> selNodeIdx s'
+                              _ -> 0
       let enumerated = zip ([1..] :: [Int]) discourse
+          enumeratedWithNodes :: [(Int, SentenceProgress, [(Int, CCG.Node)])]
+          enumeratedWithNodes =
+            [ (sidx, sp, Prelude.zip [1..] (snNodes sp))
+            | (sidx, sp) <- enumerated
+            ]
           nTotal :: Int
           nTotal = length discourse
           prefixFor :: Int -> TS.Text
