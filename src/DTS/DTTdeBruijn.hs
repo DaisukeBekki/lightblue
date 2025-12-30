@@ -23,6 +23,7 @@ module DTS.DTTdeBruijn (
   , sigmaElimination
   , add
   , multiply
+  , embedProofSearchQuery
   -- * Judgment
   , Signature
   , Context

@@ -850,4 +850,6 @@ instance Widgetizable UDTT.Judgment where
           <math xmlns="http://www.w3.org/1998/Math/MathML">^{widgetize trm}
           <mo>:
           <math xmlns="http://www.w3.org/1998/Math/MathML">^{widgetize typ}
-    |]
+    |]-- Proof search query: Γ ⊢ ? : A
+instance Widgetizable DTT.ProofSearchQuery where
+  widgetize = widgetize . DTT.embedProofSearchQuery
