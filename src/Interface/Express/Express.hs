@@ -159,6 +159,7 @@ mkYesod "App" [parseRoutes|
 /proofsearch ProofSearchR GET
 /proofsearch/progress ProofProgressR GET
 /proofsearch/list ProofListR GET
+/proofsearch/query ProofQueryR GET
 /span SpanR GET
 /span/node NodeR GET
 /export/sem ExportSemR GET
@@ -769,6 +770,24 @@ getProofListR = do
               <div .tab-tcds-inner data-diag-idx=#{idx}>^{WE.widgetizeWith dsp d}
         |]
     _ -> defaultLayout [whamlet|<div class="error-message">invalid kind|]
+
+getProofQueryR :: Handler Html
+getProofQueryR = do
+  mk <- lookupGetParam "kind"
+  q <- case mk of
+         Just "pos" -> liftIO $ readIORef currentPSQPosRef
+         Just "neg" -> liftIO $ readIORef currentPSQNegRef
+         _          -> return Nothing
+  dsp <- liftIO $ readIORef currentDisplaySettingRef
+  case q of
+    Nothing -> defaultLayout [whamlet|<pre>loading...</pre>|]
+    Just psq -> do
+      -- Convert deBruijn to with-name for display
+      let psqWN = DWN.fromDeBruijnProofSearchQuery psq
+      defaultLayout $ do
+        [whamlet|
+          <div class="tab-tcq-content">^{WE.widgetizeWith dsp psqWN}
+        |]
 
 -- Start a typecheck for a given sentence/node
 getInfTypecheckStartR :: Handler Value
