@@ -154,6 +154,7 @@ mkYesod "App" [parseRoutes|
 /inference/progress InfProgressR GET
 /inference/col InfColR GET
 /inference/typecheck InfTypecheckStartR GET
+/inference/typecheck/result InfTypecheckResultR GET
 /span SpanR GET
 /span/node NodeR GET
 /export/sem ExportSemR GET
@@ -662,6 +663,41 @@ getInfTypecheckStartR = do
                   atomicModifyIORef' currentTCStateRef (\m -> (M.insert key (TCDone diags) m, ()))
           _ -> atomicModifyIORef' currentTCStateRef (\m -> (M.insert key (TCFailed "no prover") m, ()))
       return $ object ["status" .= ("started" :: TS.Text)]
+
+-- Get result snippet for a given sentence/node
+getInfTypecheckResultR :: Handler Html
+getInfTypecheckResultR = do
+  mSent <- lookupGetParam "sent"
+  mTab  <- lookupGetParam "tab"
+  let parseInt :: TS.Text -> Maybe Int
+      parseInt = readMaybe . TS.unpack
+      sIdx = maybe 1 id (mSent >>= parseInt)
+      nIdx = maybe 1 id (mTab  >>= parseInt)
+      key = (sIdx, nIdx)
+  st <- liftIO $ readIORef currentTCStateRef
+  dsp <- liftIO $ readIORef currentDisplaySettingRef
+  selMap <- liftIO $ readIORef currentTCSelectionRef
+  let selIdx :: Int
+      selIdx = case M.lookup sIdx selMap of
+                 Just s | selNodeIdx s == nIdx -> selDiagIdx s
+                 _ -> 0
+  case M.lookup key st of
+    Just (TCDone diags) -> do
+      let indexed = Prelude.zip ([1..] :: [Int]) diags
+      defaultLayout $ do
+        if Prelude.null diags
+          then [whamlet|<p .error-message>⚠️ Type Check Failed... ⚠️|]
+          else [whamlet|
+            <div class="tab-tcds-content">
+              $forall (idx, d) <- indexed
+                <div .tab-tcds-inner :idx == selIdx:.tc-selected data-diag-idx=#{idx} onclick="selectTypecheck(#{sIdx},#{nIdx},#{idx})" title="select this diagram">
+                  $if idx == selIdx
+                    <div .badge-selected>Selected
+                  ^{WE.widgetizeWith dsp d}
+          |]
+    Just (TCFailed msg) -> defaultLayout $ do
+      [whamlet|<div .error-message>TypeCheck failed: #{msg}|]
+    _ -> return [shamlet|<div data-tc-loading=1 .span-preview-loading>loading...|]
 
 -- HTML snippet: render a single node like Leaf Node layout
 getNodeR :: Handler Html
