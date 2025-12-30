@@ -155,6 +155,7 @@ mkYesod "App" [parseRoutes|
 /inference/col InfColR GET
 /inference/typecheck InfTypecheckStartR GET
 /inference/typecheck/result InfTypecheckResultR GET
+/inference/typecheck/select InfTypecheckSelectR GET
 /span SpanR GET
 /span/node NodeR GET
 /export/sem ExportSemR GET
@@ -699,6 +700,34 @@ getInfTypecheckResultR = do
       [whamlet|<div .error-message>TypeCheck failed: #{msg}|]
     _ -> return [shamlet|<div data-tc-loading=1 .span-preview-loading>loading...|]
 
+-- Select a diagram for a sentence (to unlock next sentence)
+getInfTypecheckSelectR :: Handler Value
+getInfTypecheckSelectR = do
+  mSent <- lookupGetParam "sent"
+  mTab  <- lookupGetParam "tab"
+  mIdx  <- lookupGetParam "idx"
+  let parseInt :: TS.Text -> Maybe Int
+      parseInt = readMaybe . TS.unpack
+      sIdx = maybe 1 id (mSent >>= parseInt)
+      nIdx = maybe 1 id (mTab  >>= parseInt)
+      dIdx = maybe 1 id (mIdx  >>= parseInt)
+  st <- liftIO $ readIORef currentTCStateRef
+  case M.lookup (sIdx, nIdx) st of
+    Just (TCDone diags) ->
+      let i = dIdx - 1
+      in if i < 0 || i >= length diags
+            then return $ object ["status" .= ("error" :: TS.Text), "reason" .= ("bad_index" :: TS.Text)]
+            else do
+              let chosen = diags !! i
+              -- 1) 選択を保存（この文だけ上書き）
+              liftIO $ atomicModifyIORef' currentTCSelectionRef (\m -> (M.insert sIdx (TCSelection nIdx dIdx chosen) m, ()))
+              -- 2) 後続文の選択をクリア（整合性のため）
+              liftIO $ atomicModifyIORef' currentTCSelectionRef (\m -> (M.filterWithKey (\k _ -> k <= sIdx) m, ()))
+              -- 3) 後続文のTypeCheck状態をクリア（再計算させる）
+              liftIO $ atomicModifyIORef' currentTCStateRef (\m -> (M.filterWithKey (\(k,_) _ -> k <= sIdx) m, ()))
+              return $ object ["status" .= ("ok" :: TS.Text)]
+    _ -> return $ object ["status" .= ("error" :: TS.Text), "reason" .= ("no_diagrams" :: TS.Text)]
+    
 -- HTML snippet: render a single node like Leaf Node layout
 getNodeR :: Handler Html
 getNodeR = do
