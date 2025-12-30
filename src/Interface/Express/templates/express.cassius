@@ -458,6 +458,12 @@
   display: flex
   align-items: center
   gap: 8px
+.ps-status
+  margin-left: 8px
+  font-size: 0.9rem
+  color: #666
+.ps-status.done
+  color: #0a7f2e
 
 .ps-badge
   display: inline-block

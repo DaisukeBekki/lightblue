@@ -763,6 +763,7 @@ getProofSearchR = do
                   <div .ps-section>
                     <div .ps-title>
                       <span .ps-badge .ps-badge-pos>Results (pos)
+                      <span #ps-pos-status .ps-status>Searching...
                     <div .ps-body>
                       <div class="tab-tcds-content">
                         <div id="ps-pos-list" class="tc-holder">
@@ -770,6 +771,7 @@ getProofSearchR = do
                   <div .ps-section>
                     <div .ps-title>
                       <span .ps-badge .ps-badge-neg>Results (neg)
+                      <span #ps-neg-status .ps-status>Searching...
                     <div .ps-body>
                       <div class="tab-tcds-content">
                         <div id="ps-neg-list" class="tc-holder">

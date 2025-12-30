@@ -662,6 +662,17 @@ window.goProofsearch = goProofsearch;
   async function refreshOnce() {
     try {
       const pr = await (await fetch('/proofsearch/progress', { headers: { 'Accept': 'application/json' } })).json();
+      // Update status badges in titles
+      const sPos = document.getElementById('ps-pos-status');
+      if (sPos) {
+        sPos.textContent = pr.posDone ? `Done (${pr.posCount})` : `Searching... (${pr.posCount})`;
+        if (pr.posDone) sPos.classList.add('done'); else sPos.classList.remove('done');
+      }
+      const sNeg = document.getElementById('ps-neg-status');
+      if (sNeg) {
+        sNeg.textContent = pr.negDone ? `Done (${pr.negCount})` : `Searching... (${pr.negCount})`;
+        if (pr.negDone) sNeg.classList.add('done'); else sNeg.classList.remove('done');
+      }
       // Queries: fetch once when ready
       const psqPosEl = document.getElementById('psq-pos');
       if (pr.hasPos && psqPosEl && psqPosEl.textContent === 'loading...') {
