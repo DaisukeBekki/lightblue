@@ -332,9 +332,9 @@
             margin-top: 10px;
 
           .tab-tcq-content
-            display: flex;
-            text-align: left;
-            justify-content: center;
+           display: flex;
+           text-align: left;
+           justify-content: flex-start;
 
           .tab-tcds-content
             display: block;
@@ -351,6 +351,130 @@
 
           .tab-tcd
             padding-bottom: 50px;
+
+/* ===== Inference: TypeCheck result holder (limit size, scroll) ===== */
+.tc-holder
+  display: block
+  text-align: left
+  overflow-x: auto
+  overflow-y: auto
+  max-width: 100%
+  max-height: 60vh
+  /* override global td nowrap inside holders */
+.tc-holder td
+  white-space: normal
+
+.tc-holder > .tab-tcds-content
+  display: block
+  overflow-x: auto
+  max-width: 100%
+
+.tc-holder > .tab-tcds-content > .tab-tcds-inner
+  display: block
+  min-width: max-content
+  width: auto
+  margin-bottom: 10px
+
+.tc-selected
+  border: 2px solid #1976d2
+  border-radius: 6px
+  padding: 4px
+  position: relative
+  background: #fff
+
+.badge-selected
+  position: absolute
+  top: 4px
+  right: 6px
+  background: #1976d2
+  color: #fff
+  font-size: 11px
+  border-radius: 10px
+  padding: 2px 6px
+
+/* ===== ProofSearch diagram layout tweaks ===== */
+.tab-tcds-inner
+  padding: 4px
+  max-width: 100%
+
+.tab-tcds-inner math
+  display: inline-block
+  vertical-align: middle
+
+.tab-tcds-inner .btn-design
+  display: inline-block
+  margin-left: 8px
+  vertical-align: middle
+  line-height: 1.1
+
+/* ===== ProofSearch page styling ===== */
+.ps-container
+  padding: 16px
+
+.ps-header
+  background: #f7faff
+  border: 1px solid #dde9ff
+  border-radius: 8px
+  padding: 12px 14px
+  margin-bottom: 16px
+
+.ps-header-title
+  font-size: 1.6rem
+  font-weight: 700
+  color: #002b5c
+  margin-bottom: 8px
+
+.ps-sentences
+  display: grid
+  grid-template-columns: 140px 1fr
+  row-gap: 6px
+  column-gap: 10px
+
+.ps-row
+  display: contents
+
+.ps-role
+  font-weight: 700
+  color: #0b4ea2
+
+.ps-text
+  color: #333
+
+.ps-grid
+  display: flex
+  flex-direction: column
+  gap: 12px
+
+.ps-section
+  background: #fff
+  border: 1px solid #eee
+  border-radius: 8px
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04)
+  padding: 8px 0
+
+.ps-title
+  padding: 12px 12px
+  border-bottom: 1px solid #f0f0f0
+  display: flex
+  align-items: center
+  gap: 8px
+
+.ps-badge
+  display: inline-block
+  padding: 3px 8px
+  border-radius: 9999px
+  font-size: 0.9rem
+  font-weight: 700
+  color: #fff
+
+.ps-badge-pos
+  background: #1976d2
+
+.ps-badge-neg
+  background: #b71c1c
+
+.ps-body
+  padding: 60px
 
 /* form */
           .parsing-input
@@ -550,6 +674,10 @@
 .btn-run
   border-color: #2e7d32
   color: #2e7d32
+.btn[disabled]
+  opacity: 0.5
+  cursor: not-allowed
+  pointer-events: none
 .btn-reset
   border-color: #b71c1c
   color: #b71c1c
