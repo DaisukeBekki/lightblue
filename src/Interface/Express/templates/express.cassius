@@ -687,6 +687,14 @@
 .btn-select
   border-color: #1976d2
   color: #1976d2
+.btn-save
+  border-color: #1976d2
+  color: #1976d2
+  font-size: 0.92rem
+  padding: 4px 10px
+  border-radius: 6px
+.btn-save:hover
+  background: #eaf3ff
 .badge-selected
   display: inline-block
   margin-left: 6px

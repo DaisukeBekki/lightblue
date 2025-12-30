@@ -750,11 +750,13 @@ getProofSearchR = do
                   <div .ps-section>
                     <div .ps-title>
                       <span .ps-badge .ps-badge-pos>Query (pos)
+                      <a .btn .btn-save href=@{ProofQueryBinR}?kind=pos download>保存
                     <div .ps-body>
                       <pre id="psq-pos">loading...
                   <div .ps-section>
                     <div .ps-title>
                       <span .ps-badge .ps-badge-neg>Query (neg)
+                      <a .btn .btn-save href=@{ProofQueryBinR}?kind=neg download>保存
                     <div .ps-body>
                       <pre id="psq-neg">loading...
                   <div .ps-section>
