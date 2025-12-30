@@ -24,12 +24,7 @@ import qualified DTS.DTTdeBruijn as DTT
 import qualified DTS.DTTwithName as DWN
 import qualified DTS.UDTTdeBruijn as UDTT
 import  qualified DTS.UDTTwithName as UDWN
-import qualified DTS.Index as Index
-import  qualified DTS.Index as UDID
 import qualified DTS.QueryTypes as QT
-import  Control.Monad (forM_)
-import  Control.Applicative
-import  qualified Text.Julius as J
 import Interface.Tree
 
 
