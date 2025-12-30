@@ -853,3 +853,5 @@ instance Widgetizable UDTT.Judgment where
     |]-- Proof search query: Γ ⊢ ? : A
 instance Widgetizable DTT.ProofSearchQuery where
   widgetize = widgetize . DTT.embedProofSearchQuery
+instance Widgetizable DWN.ProofSearchQuery where
+  widgetize = widgetize . DWN.embedProofSearchQuery
