@@ -3,10 +3,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 module DTS.Prover.Wani.BackwardRules
 (
-  -- * Rules
-  RuleLabel(..),
-  rule,
-  dttruleToRuleLabel
+  rule
 ) where
 
 import qualified DTS.DTTdeBruijn as DdB   -- DTT
@@ -27,71 +24,23 @@ import qualified Control.Monad as CM
 import qualified GHC.Generics as G
 import Data.Store (Store(..))
 
-data RuleLabel =  
-  PiIntro |
-  PiElim |
-  PiForm |
-  SigmaIntro |
-  SigmaForm |
-  EqForm |
-  Membership |
-  Dne |
-  Efq |
-  TopIntro |
-  AskOracle |
-  DisjIntro |
-  DisjElim |
-  DisjForm
-  deriving (Eq, Show, Read, G.Generic, Store, Enum, Bounded, Ord)
-
-dttruleToRuleLabel :: QT.DTTrule -> Maybe RuleLabel
-dttruleToRuleLabel rule = case rule of
-  QT.Var -> Just Membership
-  QT.Con -> Just Membership
-  QT.TypeF -> Nothing
-  QT.Conv -> Nothing
-  QT.WK -> Nothing
-  QT.PiF -> Just PiForm
-  QT.PiI -> Just PiIntro
-  QT.PiE -> Just PiElim
-  QT.DNE -> Just Dne
-  QT.EFQ -> Just Efq
-  QT.SigmaF -> Just SigmaForm
-  QT.SigmaI -> Just SigmaIntro
-  QT.SigmaE -> Nothing
-  QT.DisjF -> Just DisjForm
-  QT.DisjI -> Just DisjIntro
-  QT.DisjE -> Just DisjElim
-  QT.BotF -> Nothing
-  QT.TopF -> Nothing
-  QT.TopI -> Just TopIntro
-  QT.EnumF -> Nothing
-  QT.EnumI -> Nothing
-  QT.EnumE -> Nothing
-  QT.IqF -> Just EqForm
-  QT.IqI -> Nothing
-  QT.IqE -> Nothing
-  QT.NatF -> Nothing
-  QT.NatI -> Nothing
-  QT.NatE -> Nothing
-
-rule :: RuleLabel -> WB.Rule
+rule :: WB.RuleLabel -> WB.Rule
 rule label =
   case label of 
-    PiIntro -> piIntro
-    PiElim -> piElim
-    PiForm -> piForm
-    SigmaIntro -> sigmaIntro
-    SigmaForm -> sigmaForm
-    EqForm -> eqForm
-    Membership -> membership
-    Dne -> dne
-    Efq -> efq
-    TopIntro -> topIntro
-    AskOracle -> askOracle
-    DisjIntro -> disjIntro
-    DisjElim -> disjElim
-    DisjForm -> disjForm
+    WB.PiIntro -> piIntro
+    WB.PiElim -> piElim
+    WB.PiForm -> piForm
+    WB.SigmaIntro -> sigmaIntro
+    WB.SigmaForm -> sigmaForm
+    WB.EqForm -> eqForm
+    WB.Membership -> membership
+    WB.Dne -> dne
+    WB.Efq -> efq
+    WB.TopIntro -> topIntro
+    WB.AskOracle -> askOracle
+    WB.DisjIntro -> disjIntro
+    WB.DisjElim -> disjElim
+    WB.DisjForm -> disjForm
 
 -- | piIntro rule
 --
