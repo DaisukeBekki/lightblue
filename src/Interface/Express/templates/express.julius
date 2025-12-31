@@ -404,8 +404,143 @@ function highlightSpanPreview(index) {
   const ctrl = { timer: null };
   // すぐ一回更新してから周回
   tick(ctrl);
-  ctrl.timer = setInterval(() => tick(ctrl), 600);
+  ctrl.timer = setInterval(() => {
+    if (document.hidden) return;
+    tick(ctrl);
+  }, 1200);
 })(); 
+
+// ===== Inference global precompute indicator =====
+(function initPrecomputeIndicator() {
+  const grid = document.getElementById('inference-grid');
+  if (!grid) return;
+  let holder = document.getElementById('inf-precompute-status');
+  if (!holder) {
+    holder = document.createElement('div');
+    holder.id = 'inf-precompute-status';
+    holder.className = 'inf-precompute-status';
+    holder.innerHTML = '<span id="inf-precompute-text">Precompute: starting...</span> <span id="inf-outcome" class="ps-outcome ps-outcome-pending">Searching...</span>';
+    grid.parentElement && grid.parentElement.insertBefore(holder, grid);
+  }
+  async function tick() {
+    try {
+      if (document.hidden) return;
+      const r = await fetch('/proofcache/progress', { headers: { 'Accept': 'application/json' } });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const j = await r.json();
+      const txt = document.getElementById('inf-precompute-text');
+      if (txt) txt.textContent = `Precompute: keys ${j.keys}, POS ${j.pos} (done ${j.posDone}), NEG ${j.neg} (done ${j.negDone})`;
+      // Outcome badge (Yes/No/Pending)
+      const outcome = document.getElementById('inf-outcome');
+      if (outcome) {
+        if (Number(j.pos) > 0) {
+          outcome.className = 'ps-outcome ps-outcome-yes';
+          outcome.textContent = 'Yes';
+        } else if (Number(j.neg) > 0) {
+          outcome.className = 'ps-outcome ps-outcome-no';
+          outcome.textContent = 'No';
+        } else {
+          outcome.className = 'ps-outcome ps-outcome-pending';
+          outcome.textContent = 'Searching...';
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+  tick();
+  setInterval(tick, 2000);
+})();
+
+// ===== Per-diagram mini badges (POS/NEG/Running) on inference columns =====
+(function initDiagramBadges() {
+  const grid = document.getElementById('inference-grid');
+  if (!grid) return;
+  async function refreshMarks() {
+    if (document.hidden) return;
+    const cols = Array.from(document.querySelectorAll('.inf-col[data-sidx]')).filter(col => {
+      const r = col.getBoundingClientRect();
+      const vh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+      return r.bottom > 0 && r.top < vh;
+    });
+    for (const col of cols) {
+      const sidx = col.getAttribute('data-sidx');
+      if (!sidx) continue;
+      try {
+        const res = await fetch(`/proofcache/marks?sent=${encodeURIComponent(sidx)}`, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) continue;
+        const j = await res.json();
+        if (!j || !Array.isArray(j.items)) continue;
+        // Clear existing badges
+        col.querySelectorAll('.tab-tcds-inner .tc-badges').forEach(e => e.remove());
+        // Apply new
+        j.items.forEach(it => {
+          const nidx = String(it.nidx);
+          const didx = String(it.didx);
+          const holder = col.querySelector(`.inf-node-item:nth-of-type(${nidx}) .inf-node-tc .tab-tcds-inner[data-diag-idx="${didx}"]`);
+          if (!holder) return;
+          const wrap = document.createElement('div');
+          wrap.className = 'tc-badges';
+          // Found badge (when any proof found)
+          if (it.pos || it.neg) {
+            const f = document.createElement('span');
+            f.className = 'tc-badge tc-badge-found';
+            f.textContent = 'found';
+            wrap.appendChild(f);
+          }
+          if (it.runPos) {
+            const b = document.createElement('span');
+            b.className = 'tc-badge tc-badge-run';
+            b.textContent = '…';
+            wrap.appendChild(b);
+          }
+          if (it.pos) {
+            const b = document.createElement('span');
+            b.className = 'tc-badge tc-badge-pos';
+            b.textContent = 'P';
+            wrap.appendChild(b);
+          }
+          if (it.runNeg) {
+            const b = document.createElement('span');
+            b.className = 'tc-badge tc-badge-run';
+            b.textContent = '…';
+            wrap.appendChild(b);
+          }
+          if (it.neg) {
+            const b = document.createElement('span');
+            b.className = 'tc-badge tc-badge-neg';
+            b.textContent = 'N';
+            wrap.appendChild(b);
+          }
+          if (wrap.children.length > 0) {
+            holder.style.position = 'relative';
+            wrap.style.position = 'absolute';
+            holder.appendChild(wrap);
+            // Make it easy to jump to proofsearch when any proof found
+            if (it.pos || it.neg) {
+              wrap.classList.add('clickable');
+              wrap.title = 'Proof found – click to open ProofSearch';
+              wrap.onclick = function(ev) {
+                ev.preventDefault();
+                ev.stopPropagation();
+                if (window.goProofsearch) window.goProofsearch();
+              };
+              // Add headline banner on the diagram
+              const banner = document.createElement('div');
+              banner.className = 'tc-banner ' + (it.pos && it.neg ? 'tc-banner-both' : (it.pos ? 'tc-banner-pos' : 'tc-banner-neg'));
+              banner.textContent = it.pos && it.neg ? 'Proof found (POS/NEG)'
+                                   : it.pos ? 'Proof found (POS)'
+                                   : 'Proof found (NEG)';
+              holder.appendChild(banner);
+            }
+          }
+        });
+      } catch (_) {}
+    }
+  }
+  setInterval(refreshMarks, 2000);
+  refreshMarks();
+})();
 
 // ===== TypeCheck: start and poll per node =====
 async function startTypecheck(btn) {
@@ -662,6 +797,26 @@ window.goProofsearch = goProofsearch;
   async function refreshOnce() {
     try {
       const pr = await (await fetch('/proofsearch/progress', { headers: { 'Accept': 'application/json' } })).json();
+      // Lazy start: if no cached result and not done, start 1-shot proving
+      if (!window._psStartedPos && pr.hasPos && Number(pr.posCount) === 0 && !pr.posDone) {
+        window._psStartedPos = true;
+        fetch('/proofsearch/start?kind=pos', { headers: { 'Accept': 'application/json' } }).catch(()=>{});
+      }
+      if (!window._psStartedNeg && pr.hasNeg && Number(pr.negCount) === 0 && !pr.negDone) {
+        window._psStartedNeg = true;
+        fetch('/proofsearch/start?kind=neg', { headers: { 'Accept': 'application/json' } }).catch(()=>{});
+      }
+      // Outcome badge in header
+      (function updateOutcome() {
+        const out = document.getElementById('ps-outcome');
+        if (!out) return;
+        let cls = 'ps-outcome ps-outcome-pending';
+        let txt = 'Searching...';
+        if (Number(pr.posCount) > 0) { cls = 'ps-outcome ps-outcome-yes'; txt = 'Yes'; }
+        else if (Number(pr.negCount) > 0) { cls = 'ps-outcome ps-outcome-no'; txt = 'No'; }
+        out.className = cls;
+        out.textContent = txt;
+      })();
       // Update status badges in titles
       const sPos = document.getElementById('ps-pos-status');
       if (sPos) {

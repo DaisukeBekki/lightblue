@@ -396,6 +396,7 @@
 .tab-tcds-inner
   padding: 4px
   max-width: 100%
+  position: relative
 
 .tab-tcds-inner math
   display: inline-block
@@ -422,6 +423,8 @@
   font-size: 1.6rem
   font-weight: 700
   color: #002b5c
+  margin-bottom: 8px
+.ps-header-ctl
   margin-bottom: 8px
 
 .ps-sentences
@@ -481,6 +484,22 @@
 
 .ps-body
   padding: 60px
+
+.ps-outcome
+  display: inline-block
+  padding: 4px 12px
+  border-radius: 9999px
+  font-weight: 700
+  font-size: 0.95rem
+.ps-outcome-yes
+  background: #2e7d32
+  color: #fff
+.ps-outcome-no
+  background: #b71c1c
+  color: #fff
+.ps-outcome-pending
+  background: #ffe69c
+  color: #8a6d3b
 
 /* form */
           .parsing-input
@@ -710,6 +729,51 @@
   color: #fff
   font-size: 11px
 
+.tc-badges
+  display: inline-flex
+  gap: 4px
+  position: absolute
+  top: 4px
+  left: 6px
+.tc-badges.clickable
+  cursor: pointer
+  filter: brightness(0.98)
+  transition: transform .08s ease
+.tc-badges.clickable:hover
+  transform: translateY(-1px)
+.tc-badge
+  display: inline-block
+  padding: 1px 5px
+  border-radius: 10px
+  font-size: 10px
+  line-height: 1.2
+  color: #fff
+.tc-badge-pos
+  background: #2e7d32
+.tc-badge-neg
+  background: #b71c1c
+.tc-badge-run
+  background: #1976d2
+.tc-badge-found
+  background: #4a148c
+
+.tc-banner
+  position: absolute
+  top: 24px
+  left: 50%
+  transform: translateX(-50%)
+  padding: 2px 8px
+  border-radius: 10px
+  font-size: 11px
+  color: #fff
+  z-index: 2
+.tc-banner-pos
+  background: #2e7d32
+.tc-banner-neg
+  background: #b71c1c
+.tc-banner-both
+  background: #4a148c
+
 .inf-col
   border: 1px solid #e0e0e0
   border-radius: 6px
@@ -731,6 +795,15 @@
   display: flex
   align-items: center
   justify-content: space-between
+
+.inf-precompute-status
+  margin: 8px 12px
+  padding: 6px 10px
+  border: 1px dashed #cfe0ff
+  background: #f7faff
+  color: #0b4ea2
+  border-radius: 6px
+  font-size: 0.9rem
 
 .inf-head-title
   display: inline-block
