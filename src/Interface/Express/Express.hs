@@ -8,25 +8,26 @@ module Interface.Express.Express (
   , showExpressInference
   , setDisplaySetting
   , setDisplayOptions
+  , setPrewarmOptions
   ) where
 
 import Yesod
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text as TS          -- strict text for JSON
 import qualified Interface.Express.Lightblue as L
-import Data.List (null, find, zip7)
+import Data.List (null, find, zip7, maximumBy, sortOn, nubBy)
 import qualified Interface.Express.WidgetExpress as WE
 import qualified DTS.NaturalLanguageInference as NLI
 import Text.Julius (juliusFile)
 import  Text.Cassius (cassiusFile)
 import System.Process (callCommand)
-import Control.Concurrent (forkIO)
+import Control.Concurrent (forkIO, threadDelay)
 import System.IO (hPutStrLn, stderr)
-import Control.Exception (catch, IOException)
+import Control.Exception (catch, IOException, try, SomeException)
 import System.Info (os)
 import Data.IORef(IORef, readIORef, atomicWriteIORef, newIORef, atomicModifyIORef')
 import System.IO.Unsafe (unsafePerformIO)
-import qualified Parser.CCG as CCG (Node, showScore, getLeafNodesFromNode, pf, cat, sem, sig)
+import qualified Parser.CCG as CCG (Node, showScore, getLeafNodesFromNode, pf, cat, sem, sig, score)
 import qualified Parser.ChartParser as CP
 import qualified Parser.LangOptions as PL (defaultJpOptions)
 import qualified Parser.Language.Japanese.Lexicon as JP (setupLexicon)
@@ -46,6 +47,8 @@ import Interface.Text (SimpleText(..))
 import Data.Char (toLower)
 import qualified ListT as LT (ListT, uncons, toList, take)
 import Control.Monad (when)
+import qualified Data.ByteString as BS
+import qualified Data.Store as Store
 
 -- JSeM 用: 各文の N-best ノードを保持する IORef
 -- [(入力文, その文に対する [CCG.Node])] を格納
