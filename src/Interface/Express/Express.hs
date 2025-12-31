@@ -161,6 +161,7 @@ mkYesod "App" [parseRoutes|
 /proofsearch/list ProofListR GET
 /proofsearch/query ProofQueryR GET
 /proofsearch/query/bin ProofQueryBinR GET
+/proofsearch/start ProofStartR GET
 /span SpanR GET
 /span/node NodeR GET
 /export/sem ExportSemR GET
@@ -845,6 +846,68 @@ getProofQueryR = do
           <div class="tab-tcq-content">^{WE.widgetizeWith dsp psqWN}
         |]
 
+-- Start proving (pos/neg) lazily after /proofsearch renders
+getProofStartR :: Handler Value
+getProofStartR = do
+  mk <- lookupGetParam "kind"
+  nProof <- liftIO $ readIORef currentNProofRef
+  mProver <- liftIO $ readIORef currentProverRef
+  case (mk, mProver) of
+    (Just "pos", Just prover) -> do
+      mpsq <- liftIO $ readIORef currentPSQPosRef
+      case mpsq of
+        Nothing -> return $ object ["status" .= ("no_psq" :: TS.Text)]
+        Just psq -> do
+          let key = Store.encode psq
+          cache <- liftIO $ readIORef proofCacheRef
+          let already = maybe False cachePosDone (M.lookup key cache) || maybe False (not . null . cachePos) (M.lookup key cache)
+          if already
+            then return $ object ["status" .= ("cached" :: TS.Text)]
+            else do
+              _ <- liftIO $ scheduleLimited $ do
+                let l = LT.take nProof (prover psq)
+                m <- LT.uncons l
+                case m of
+                  Nothing -> atomicModifyIORef' proofCacheRef (\m0 ->
+                              let ce = M.findWithDefault emptyCacheEntry key m0
+                                  ce' = ce { cachePosDone = True }
+                              in (M.insert key ce' m0, ()))
+                  Just (d, _) -> do
+                    atomicModifyIORef' proofCacheRef (\m0 ->
+                      let ce = M.findWithDefault emptyCacheEntry key m0
+                          ce' = ce { cachePos = cachePos ce ++ [d], cachePosDone = True }
+                      in (M.insert key ce' m0, ()))
+                    atomicModifyIORef' currentPSPosRef (\xs -> (xs ++ [d], ()))
+                    atomicWriteIORef currentPSDonePosRef True
+              return $ object ["status" .= ("started" :: TS.Text)]
+    (Just "neg", Just prover) -> do
+      mpsq <- liftIO $ readIORef currentPSQNegRef
+      case mpsq of
+        Nothing -> return $ object ["status" .= ("no_psq" :: TS.Text)]
+        Just psq -> do
+          let key = Store.encode psq
+          cache <- liftIO $ readIORef proofCacheRef
+          let already = maybe False cacheNegDone (M.lookup key cache) || maybe False (not . null . cacheNeg) (M.lookup key cache)
+          if already
+            then return $ object ["status" .= ("cached" :: TS.Text)]
+            else do
+              _ <- liftIO $ scheduleLimited $ do
+                let l = LT.take nProof (prover psq)
+                m <- LT.uncons l
+                case m of
+                  Nothing -> atomicModifyIORef' proofCacheRef (\m0 ->
+                              let ce = M.findWithDefault emptyCacheEntry key m0
+                                  ce' = ce { cacheNegDone = True }
+                              in (M.insert key ce' m0, ()))
+                  Just (d, _) -> do
+                    atomicModifyIORef' proofCacheRef (\m0 ->
+                      let ce = M.findWithDefault emptyCacheEntry key m0
+                          ce' = ce { cacheNeg = cacheNeg ce ++ [d], cacheNegDone = True }
+                      in (M.insert key ce' m0, ()))
+                    atomicModifyIORef' currentPSNegRef (\xs -> (xs ++ [d], ()))
+                    atomicWriteIORef currentPSDoneNegRef True
+              return $ object ["status" .= ("started" :: TS.Text)]
+    _ -> return $ object ["status" .= ("no_prover" :: TS.Text)]
 -- Export proof search query as binary file
 getProofQueryBinR :: Handler TypedContent
 getProofQueryBinR = do
