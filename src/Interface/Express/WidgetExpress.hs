@@ -6,6 +6,7 @@
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE FlexibleContexts      #-}
 
 module Interface.Express.WidgetExpress (
     DisplaySetting(..)
@@ -24,13 +25,9 @@ import qualified DTS.DTTdeBruijn as DTT
 import qualified DTS.DTTwithName as DWN
 import qualified DTS.UDTTdeBruijn as UDTT
 import  qualified DTS.UDTTwithName as UDWN
-import qualified DTS.Index as Index
-import  qualified DTS.Index as UDID
 import qualified DTS.QueryTypes as QT
-import  Control.Monad (forM_)
-import  Control.Applicative
-import  qualified Text.Julius as J
 import Interface.Tree
+import qualified DTS.GeneralTypeQuery as GTQ
 
 
 -- 表示設定レコード
@@ -851,3 +848,27 @@ instance Widgetizable UDTT.Judgment where
           <mo>:
           <math xmlns="http://www.w3.org/1998/Math/MathML">^{widgetize typ}
     |]
+
+-- Proof search query: Γ ⊢ ? : A
+instance Widgetizable DTT.ProofSearchQuery where
+  widgetize = widgetize . DTT.embedProofSearchQuery
+
+-- GeneralTypeQuery (generic judgment-like view)
+instance (Widgetizable b, Widgetizable (GTQ.QueryGoal c), Widgetizable (GTQ.QueryGoal d)) => Widgetizable (GTQ.GeneralTypeQuery a b c d) where
+  widgetize (GTQ.GeneralTypeQuery _ cxt trm typ) =
+    [whamlet|
+      <math xmlns="http://www.w3.org/1998/Math/MathML">
+        <mrow>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">^{widgetize cxt}
+          <mo>&vdash;
+          <math xmlns="http://www.w3.org/1998/Math/MathML">^{widgetize trm}
+          <mo>:
+          <math xmlns="http://www.w3.org/1998/Math/MathML">^{widgetize typ}
+    |]
+  
+instance (Widgetizable a) => Widgetizable (GTQ.QueryGoal a) where
+  widgetize (GTQ.Term t) = widgetize t
+  widgetize GTQ.Question = [whamlet|<mo>?</mo>|]
+
+instance Widgetizable DWN.ProofSearchQuery where
+  widgetize = widgetize . DWN.embedProofSearchQuery

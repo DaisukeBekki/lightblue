@@ -19,8 +19,14 @@ module DTS.NaturalLanguageInference (
   , ParseResult(..)
   , ParseTreeAndFelicityChecks(..)
   , QueryAndDiagrams(..)
+  , sequentialParsing
   , parseWithTypeCheck
   , trawlParseResult
+  , ParseResultExpress(..)
+  , ParseTreeAndFelicityCheckExpress(..)
+  , NodeSelector
+  , DiagramSelector
+  , sequentialTypeCheckExpress
   ) where
 
 import Control.Monad (join)    --base
@@ -93,6 +99,18 @@ data QueryAndDiagrams =
   QueryAndDiagrams DTT.ProofSearchQuery (ListT IO QT.DTTProofDiagram) 
   -- ^ A proof search query for the inference and its results.
 
+{-- Data structure of Express for sequential parsing and the inference --}
+data ParseResultExpress =
+    SentenceAndParseTreeExpress T.Text ParseTreeAndFelicityCheckExpress
+  | InferenceResultsExpress QueryAndDiagrams QueryAndDiagrams
+  | NoSentenceExpress
+
+data ParseTreeAndFelicityCheckExpress =
+  ParseTreeAndFelicityCheckExpress CCG.Node DTT.Signature UDTT.TypeCheckQuery (IO (QT.DTTProofDiagram, ParseResultExpress))
+
+type NodeSelector = ListT IO CCG.Node -> IO (Maybe CCG.Node)
+type DiagramSelector = UDTT.TypeCheckQuery -> IO (Maybe QT.DTTProofDiagram)
+
 -- | Parse sequential texts, and check their semantic felicity condition.
 -- | If noInference = True, it does not execute inference.
 -- | The specification of this function reflects a view about what are entailments between texts,          
@@ -159,6 +177,40 @@ trawlParseResult (InferenceResults (QueryAndDiagrams _ resultPos) (QueryAndDiagr
                | not ifNo  -> JSeM.No
                | otherwise -> JSeM.Unk
 trawlParseResult NoSentence = fromFoldable []
+
+{-- Express sequential typecheck --}
+sequentialTypeCheckExpress :: CP.ParseSetting -> QT.Prover -> DTT.Signature -> DTT.Context -> Discourse -> NodeSelector -> DiagramSelector -> IO ParseResultExpress
+sequentialTypeCheckExpress ps prover signtr contxt [] _ _ =
+  -- 文が尽きたら、選択により構築された contxt を用いて推論を実行（pos/neg）
+  pure $
+    if CP.noInference ps
+      then NoSentenceExpress
+      else case contxt of
+             [] -> NoSentenceExpress
+             (typ:rest) ->
+               let psqPos = DTT.ProofSearchQuery signtr rest typ
+                   resultPos = takeNbest (CP.nProof ps) $ prover psqPos
+                   psqNeg = DTT.ProofSearchQuery signtr rest (DTT.Pi typ DTT.Bot)
+                   resultNeg = takeNbest (CP.nProof ps) $ prover psqNeg
+               in InferenceResultsExpress (QueryAndDiagrams psqPos resultPos)
+                                          (QueryAndDiagrams psqNeg resultNeg)
+sequentialTypeCheckExpress ps prover signtr contxt ((text,nodes):rests) pickNode pickDiag = do
+  mnode <- pickNode nodes
+  case mnode of
+    Nothing -> fail "No node selected"
+    Just node -> do
+      let signtr' = L.nub $ (CCG.sig node) ++ signtr
+          tcQueryType = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
+      pure $
+        SentenceAndParseTreeExpress text $
+          ParseTreeAndFelicityCheckExpress node signtr' tcQueryType $ do
+            mDiag <- pickDiag tcQueryType
+            case mDiag of
+              Nothing -> fail "No typecheck diagram selected"
+              Just tcDiagram -> do
+                let contxt' = (DTT.trm $ Tree.node tcDiagram):contxt
+                next <- sequentialTypeCheckExpress ps prover signtr' contxt' rests pickNode pickDiag
+                pure (tcDiagram, next)
 
 {-- Parallel processing --}
 

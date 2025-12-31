@@ -334,7 +334,7 @@
           .tab-tcq-content
             display: flex;
             text-align: left;
-            justify-content: center;
+           justify-content: flex-start;
 
           .tab-tcds-content
             display: block;
@@ -351,6 +351,155 @@
 
           .tab-tcd
             padding-bottom: 50px;
+
+/* ===== Inference: TypeCheck result holder (limit size, scroll) ===== */
+.tc-holder
+  display: block
+  text-align: left
+  overflow-x: auto
+  overflow-y: auto
+  max-width: 100%
+  max-height: 60vh
+  /* override global td nowrap inside holders */
+.tc-holder td
+  white-space: normal
+
+.tc-holder > .tab-tcds-content
+  display: block
+  overflow-x: auto
+  max-width: 100%
+
+.tc-holder > .tab-tcds-content > .tab-tcds-inner
+  display: block
+  min-width: max-content
+  width: auto
+  margin-bottom: 10px
+
+.tc-selected
+  border: 2px solid #1976d2
+  border-radius: 6px
+  padding: 4px
+  position: relative
+  background: #fff
+
+.badge-selected
+  position: absolute
+  top: 4px
+  right: 6px
+  background: #1976d2
+  color: #fff
+  font-size: 11px
+  border-radius: 10px
+  padding: 2px 6px
+
+/* ===== ProofSearch diagram layout tweaks ===== */
+.tab-tcds-inner
+  padding: 4px
+  max-width: 100%
+  position: relative
+
+.tab-tcds-inner math
+  display: inline-block
+  vertical-align: middle
+
+.tab-tcds-inner .btn-design
+  display: inline-block
+  margin-left: 8px
+  vertical-align: middle
+  line-height: 1.1
+
+/* ===== ProofSearch page styling ===== */
+.ps-container
+  padding: 16px
+
+.ps-header
+  background: #f7faff
+  border: 1px solid #dde9ff
+  border-radius: 8px
+  padding: 12px 14px
+  margin-bottom: 16px
+
+.ps-header-title
+  font-size: 1.6rem
+  font-weight: 700
+  color: #002b5c
+  margin-bottom: 8px
+.ps-header-ctl
+  margin-bottom: 8px
+
+.ps-sentences
+  display: grid
+  grid-template-columns: 140px 1fr
+  row-gap: 6px
+  column-gap: 10px
+
+.ps-row
+  display: contents
+
+.ps-role
+  font-weight: 700
+  color: #0b4ea2
+
+.ps-text
+  color: #333
+
+.ps-grid
+  display: flex
+  flex-direction: column
+  gap: 12px
+
+.ps-section
+  background: #fff
+  border: 1px solid #eee
+  border-radius: 8px
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04)
+  padding: 8px 0
+
+.ps-title
+  padding: 12px 12px
+  border-bottom: 1px solid #f0f0f0
+  display: flex
+  align-items: center
+  gap: 8px
+.ps-status
+  margin-left: 8px
+  font-size: 0.9rem
+  color: #666
+.ps-status.done
+  color: #0a7f2e
+
+.ps-badge
+  display: inline-block
+  padding: 3px 8px
+  border-radius: 9999px
+  font-size: 0.9rem
+  font-weight: 700
+  color: #fff
+
+.ps-badge-pos
+  background: #1976d2
+
+.ps-badge-neg
+  background: #b71c1c
+
+.ps-body
+  padding: 60px
+
+.ps-outcome
+  display: inline-block
+  padding: 4px 12px
+  border-radius: 9999px
+  font-weight: 700
+  font-size: 0.95rem
+.ps-outcome-yes
+  background: #2e7d32
+  color: #fff
+.ps-outcome-no
+  background: #b71c1c
+  color: #fff
+.ps-outcome-pending
+  background: #ffe69c
+  color: #8a6d3b
 
 /* form */
           .parsing-input
@@ -524,3 +673,211 @@
             font-size: 0.95rem;
           .export-menu-item:hover
             background: #f2f6fb;
+
+
+
+/* ===== Inference grid (inference view) ===== */
+#inference-grid
+  display: grid
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))
+  gap: 12px
+  padding: 12px
+
+.inf-controls
+  padding: 8px 12px
+  display: flex
+  gap: 8px
+.btn
+  display: inline-block
+  padding: 6px 10px
+  border: 1px solid #ddd
+  border-radius: 4px
+  background: #fff
+  cursor: pointer
+.btn:hover
+  background: #f7f7f7
+.btn-run
+  border-color: #2e7d32
+  color: #2e7d32
+.btn[disabled]
+  opacity: 0.5
+  cursor: not-allowed
+.btn.is-disabled
+  opacity: 0.5
+  cursor: not-allowed
+
+.btn-reset
+  border-color: #b71c1c
+  color: #b71c1c
+.btn-select
+  border-color: #1976d2
+  color: #1976d2
+.btn-save
+  border-color: #1976d2
+  color: #1976d2
+  font-size: 0.92rem
+  padding: 4px 10px
+  border-radius: 6px
+.btn-save:hover
+  background: #eaf3ff
+.badge-selected
+  display: inline-block
+  margin-left: 6px
+  padding: 2px 6px
+  border-radius: 10px
+  background: #1976d2
+  color: #fff
+  font-size: 11px
+
+.tc-badges
+  display: inline-flex
+  gap: 4px
+  position: absolute
+  top: 4px
+  left: 6px
+.tc-badges.clickable
+  cursor: pointer
+  filter: brightness(0.98)
+  transition: transform .08s ease
+.tc-badges.clickable:hover
+  transform: translateY(-1px)
+.tc-badge
+  display: inline-block
+  padding: 1px 5px
+  border-radius: 10px
+  font-size: 10px
+  line-height: 1.2
+  color: #fff
+.tc-badge-pos
+  background: #2e7d32
+.tc-badge-neg
+  background: #b71c1c
+.tc-badge-run
+  background: #1976d2
+.tc-badge-found
+  background: #4a148c
+
+.tc-banner
+  position: absolute
+  top: 24px
+  left: 50%
+  transform: translateX(-50%)
+  padding: 2px 8px
+  border-radius: 10px
+  font-size: 11px
+  color: #fff
+  z-index: 2
+.tc-banner-pos
+  background: #2e7d32
+.tc-banner-neg
+  background: #b71c1c
+.tc-banner-both
+  background: #4a148c
+
+.inf-col
+  border: 1px solid #e0e0e0
+  border-radius: 6px
+  background: #fff
+  display: flex
+  flex-direction: column
+  height: 100vh
+  height: 100dvh
+  overflow: hidden
+
+.inf-col-head
+  position: sticky
+  top: 0
+  background: #fafafa
+  padding: 10px 12px
+  font-weight: bold
+  border-bottom: 1px solid #eee
+  z-index: 1
+  display: flex
+  align-items: center
+  justify-content: space-between
+
+.inf-precompute-status
+  margin: 8px 12px
+  padding: 6px 10px
+  border: 1px dashed #cfe0ff
+  background: #f7faff
+  color: #0b4ea2
+  border-radius: 6px
+  font-size: 0.9rem
+
+.inf-head-title
+  display: inline-block
+
+.inf-head-actions .btn
+  margin-left: 8px
+
+/* ===== Toast notifications ===== */
+.toast-root
+  position: fixed
+  left: 50%
+  bottom: 24px
+  transform: translateX(-50%)
+  display: flex
+  flex-direction: column
+  gap: 8px
+  z-index: 3000
+  pointer-events: none
+
+.toast
+  background: rgba(0,0,0,0.85)
+  color: #fff
+  padding: 8px 12px
+  border-radius: 6px
+  font-size: 0.95rem
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2)
+  pointer-events: auto
+  opacity: 1
+  transition: opacity .3s ease
+
+.toast.fade-out
+  opacity: 0
+
+/* Near-button toast (popover style) */
+.toast-popover
+  position: absolute
+  background: rgba(0,0,0,0.9)
+  color: #fff
+  padding: 6px 10px
+  border-radius: 6px
+  font-size: 0.9rem
+  line-height: 1.3
+  box-shadow: 0 6px 16px rgba(0,0,0,0.25)
+  z-index: 4000
+  opacity: 1
+  transition: opacity .2s ease
+  pointer-events: none
+
+.toast-popover.fade-out
+  opacity: 0
+
+.toast-popover:after
+  content: ""
+  position: absolute
+  left: 50%
+  transform: translateX(-50%)
+  bottom: -6px
+  border-left: 6px solid transparent
+  border-right: 6px solid transparent
+  border-top: 6px solid rgba(0,0,0,0.9)
+
+/* No speech-bubble arrow: make it plain rectangle */
+.toast-popover:after
+  display: none
+.inf-col-body
+  flex: 1
+  overflow-y: auto
+  padding: 8px 10px
+
+.inf-node-item
+  margin: 0 0 12px 0
+  border: 1px dashed transparent
+  padding: 6px
+.inf-node-item.selected
+  border-color: #1976d2
+.inf-node-actions
+  margin-bottom: 6px

@@ -359,3 +359,595 @@ function highlightSpanPreview(index) {
     target.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 }
+
+// ===== Inference progress: partial refresh of each column until done =====
+(function initInferenceProgress() {
+  const grid = document.getElementById('inference-grid');
+  if (!grid) return;
+  async function refreshOnce() {
+    const cols = Array.from(document.querySelectorAll('.inf-col[data-sidx]'));
+    // カラムごとにHTMLスニペットを取得して差し替え
+    await Promise.all(cols.map(async (col) => {
+      const body = col.querySelector('.inf-col-body');
+      if (!body) return;
+      const sidx = col.getAttribute('data-sidx') || '1';
+      try {
+        const url = `/inference/col?sent=${encodeURIComponent(sidx)}`;
+        const res = await fetch(url, { headers: { 'Accept': 'text/html' } });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const html = await res.text();
+        body.innerHTML = html;
+        // 差し替え後に各ノード内のトグルIDをユニーク化
+        const items = Array.from(body.querySelectorAll('.inf-node-item'));
+        items.forEach((item, idx) => {
+          sanitizeInferenceIds(item, sidx, idx);
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }));
+  }
+  async function tick(ctrl) {
+    try {
+      await refreshOnce();
+      const res = await fetch('/inference/progress', { headers: { 'Accept': 'application/json' } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const j = await res.json();
+      if (j && j.allDone === true) {
+        clearInterval(ctrl.timer);
+        ctrl.timer = null;
+      }
+    } catch (_) {
+      // ignore
+    }
+  }
+  const ctrl = { timer: null };
+  // すぐ一回更新してから周回
+  tick(ctrl);
+  ctrl.timer = setInterval(() => {
+    if (document.hidden) return;
+    tick(ctrl);
+  }, 1200);
+})(); 
+
+// ===== Inference global precompute indicator =====
+(function initPrecomputeIndicator() {
+  const grid = document.getElementById('inference-grid');
+  if (!grid) return;
+  let holder = document.getElementById('inf-precompute-status');
+  if (!holder) {
+    holder = document.createElement('div');
+    holder.id = 'inf-precompute-status';
+    holder.className = 'inf-precompute-status';
+    holder.innerHTML = '<span id="inf-precompute-text">Precompute: starting...</span> <span id="inf-outcome" class="ps-outcome ps-outcome-pending">Searching...</span>';
+    grid.parentElement && grid.parentElement.insertBefore(holder, grid);
+  }
+  async function tick() {
+    try {
+      if (document.hidden) return;
+      const r = await fetch('/proofcache/progress', { headers: { 'Accept': 'application/json' } });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const j = await r.json();
+      const txt = document.getElementById('inf-precompute-text');
+      if (txt) txt.textContent = `Precompute: keys ${j.keys}, POS ${j.pos} (done ${j.posDone}), NEG ${j.neg} (done ${j.negDone})`;
+      // Outcome badge (Yes/No/Pending)
+      const outcome = document.getElementById('inf-outcome');
+      if (outcome) {
+        if (Number(j.pos) > 0) {
+          outcome.className = 'ps-outcome ps-outcome-yes';
+          outcome.textContent = 'Yes';
+        } else if (Number(j.neg) > 0) {
+          outcome.className = 'ps-outcome ps-outcome-no';
+          outcome.textContent = 'No';
+        } else {
+          outcome.className = 'ps-outcome ps-outcome-pending';
+          outcome.textContent = 'Searching...';
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+  tick();
+  setInterval(tick, 2000);
+})();
+
+// ===== Per-diagram mini badges (POS/NEG/Running) on inference columns =====
+(function initDiagramBadges() {
+  const grid = document.getElementById('inference-grid');
+  if (!grid) return;
+  async function refreshMarks() {
+    if (document.hidden) return;
+    const cols = Array.from(document.querySelectorAll('.inf-col[data-sidx]')).filter(col => {
+      const r = col.getBoundingClientRect();
+      const vh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+      return r.bottom > 0 && r.top < vh;
+    });
+    for (const col of cols) {
+      const sidx = col.getAttribute('data-sidx');
+      if (!sidx) continue;
+      try {
+        const res = await fetch(`/proofcache/marks?sent=${encodeURIComponent(sidx)}`, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) continue;
+        const j = await res.json();
+        if (!j || !Array.isArray(j.items)) continue;
+        // Clear existing badges
+        col.querySelectorAll('.tab-tcds-inner .tc-badges').forEach(e => e.remove());
+        // Apply new
+        j.items.forEach(it => {
+          const nidx = String(it.nidx);
+          const didx = String(it.didx);
+          const holder = col.querySelector(`.inf-node-item:nth-of-type(${nidx}) .inf-node-tc .tab-tcds-inner[data-diag-idx="${didx}"]`);
+          if (!holder) return;
+          const wrap = document.createElement('div');
+          wrap.className = 'tc-badges';
+          // Found badge (when any proof found)
+          if (it.pos || it.neg) {
+            const f = document.createElement('span');
+            f.className = 'tc-badge tc-badge-found';
+            f.textContent = 'found';
+            wrap.appendChild(f);
+          }
+          if (it.runPos) {
+            const b = document.createElement('span');
+            b.className = 'tc-badge tc-badge-run';
+            b.textContent = '…';
+            wrap.appendChild(b);
+          }
+          if (it.pos) {
+            const b = document.createElement('span');
+            b.className = 'tc-badge tc-badge-pos';
+            b.textContent = 'P';
+            wrap.appendChild(b);
+          }
+          if (it.runNeg) {
+            const b = document.createElement('span');
+            b.className = 'tc-badge tc-badge-run';
+            b.textContent = '…';
+            wrap.appendChild(b);
+          }
+          if (it.neg) {
+            const b = document.createElement('span');
+            b.className = 'tc-badge tc-badge-neg';
+            b.textContent = 'N';
+            wrap.appendChild(b);
+          }
+          if (wrap.children.length > 0) {
+            holder.style.position = 'relative';
+            wrap.style.position = 'absolute';
+            holder.appendChild(wrap);
+            // Make it easy to jump to proofsearch when any proof found
+            if (it.pos || it.neg) {
+              wrap.classList.add('clickable');
+              wrap.title = 'Proof found – click to open ProofSearch';
+              wrap.onclick = function(ev) {
+                ev.preventDefault();
+                ev.stopPropagation();
+                if (window.goProofsearch) window.goProofsearch();
+              };
+              // Add headline banner on the diagram
+              const banner = document.createElement('div');
+              banner.className = 'tc-banner ' + (it.pos && it.neg ? 'tc-banner-both' : (it.pos ? 'tc-banner-pos' : 'tc-banner-neg'));
+              banner.textContent = it.pos && it.neg ? 'Proof found (POS/NEG)'
+                                   : it.pos ? 'Proof found (POS)'
+                                   : 'Proof found (NEG)';
+              holder.appendChild(banner);
+            }
+          }
+        });
+      } catch (_) {}
+    }
+  }
+  setInterval(refreshMarks, 2000);
+  refreshMarks();
+})();
+
+// ===== TypeCheck: start and poll per node =====
+async function startTypecheck(btn) {
+  try {
+    const item = btn.closest('.inf-node-item');
+    const col  = btn.closest('.inf-col');
+    if (!item || !col) return;
+    const sidx = col.getAttribute('data-sidx') || '1';
+    // Compute 1-based node index within this column
+    const siblings = Array.from(item.parentElement.querySelectorAll('.inf-node-item'));
+    const nidx = String(siblings.indexOf(item) + 1);
+    const holder = item.querySelector('.inf-node-tc');
+    if (holder) holder.innerHTML = '<div class="span-preview-loading" data-tc-loading="1">loading...</div>';
+    // Start
+    await fetch(`/inference/typecheck?sent=${encodeURIComponent(sidx)}&tab=${encodeURIComponent(nidx)}`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    // Poll for result and render
+    await pollTypecheckResult(sidx, nidx, holder);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+async function pollTypecheckResult(sidx, nidx, holder) {
+  let keep = true;
+  const maxTries = 300; // ~3min at 600ms
+  let tries = 0;
+  while (keep && tries < maxTries) {
+    tries++;
+    try {
+      const res = await fetch(`/inference/typecheck/result?sent=${encodeURIComponent(sidx)}&tab=${encodeURIComponent(nidx)}`, {
+        headers: { 'Accept': 'text/html' }
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const html = await res.text();
+      if (holder) holder.innerHTML = html;
+      // 取得した結果内のトグルIDをユニーク化（図ごとに）
+      if (holder) sanitizeDiagramIds(holder, sidx, nidx);
+      // If still loading marker exists, continue
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      const loading = tmp.querySelector('[data-tc-loading]');
+      if (!loading) keep = false;
+    } catch (e) {
+      console.error(e);
+      // backoff a bit on error
+    }
+    if (keep) await new Promise(r => setTimeout(r, 600));
+  }
+}
+
+// expose
+window.startTypecheck = startTypecheck;
+
+// ===== Select a TypeCheck diagram and enable next sentence =====
+async function selectTypecheck(sidx, nidx, didx) {
+  try {
+    const res = await fetch(`/inference/typecheck/select?sent=${encodeURIComponent(String(sidx))}&tab=${encodeURIComponent(String(nidx))}&idx=${encodeURIComponent(String(didx))}`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    // 現在ノードの結果ホルダ内で即時ハイライト（再取得せずにDOMを書き換え）
+    const col = document.querySelector(`.inf-col[data-sidx="${String(sidx)}"]`);
+    const items = col ? Array.from(col.querySelectorAll('.inf-node-item')) : [];
+    const node = items[Number(nidx) - 1] || null;
+    // 1) 同一文内の全図から選択表示を除去（複数選択の見え方を防止）
+    if (col) {
+      col.querySelectorAll('.inf-node-tc .tab-tcds-inner.tc-selected').forEach(el => el.classList.remove('tc-selected'));
+      col.querySelectorAll('.inf-node-tc .tab-tcds-inner .badge-selected').forEach(el => el.remove());
+    }
+    // 2) 対象ノードの該当図だけ選択表示を付与
+    const holder = node ? node.querySelector('.inf-node-tc') : null;
+    if (holder) {
+      const target = holder.querySelector(`.tab-tcds-inner[data-diag-idx="${String(didx)}"]`);
+      if (target) {
+        target.classList.add('tc-selected');
+        const bdg = document.createElement('div');
+        bdg.className = 'badge-selected';
+        bdg.textContent = 'Selected';
+        target.appendChild(bdg);
+      }
+    }
+    // 3) ノード側のハイライト（文内で単一選択）
+    if (col) {
+      items.forEach((it, i) => {
+        if ((i + 1) === Number(nidx)) it.classList.add('selected');
+        else it.classList.remove('selected');
+      });
+    }
+    // 4) 最終文なら proofsearch ボタンを直ちに有効化（ヘッダーのボタン）
+    const totalCols = document.querySelectorAll('.inf-col').length;
+    if (Number(sidx) === totalCols && col) {
+      const pbtn = col.querySelector('.inf-col-head .btn.btn-select');
+      if (pbtn) {
+        pbtn.classList.remove('is-disabled');
+        pbtn.removeAttribute('aria-disabled');
+        pbtn.removeAttribute('data-disabled');
+        pbtn.title = '';
+        pbtn.onclick = function() { goProofsearch(); };
+      }
+    }
+    // 5) 後続カラムのヘッダーボタンを無効化（前段の選択でクリアされた可能性に対応）
+    {
+      const allCols = Array.from(document.querySelectorAll('.inf-col'));
+      const total = allCols.length;
+      for (let i = Number(sidx) + 1; i <= total; i++) {
+        const hbtn = document.querySelector(`.inf-col[data-sidx="${String(i)}"] .inf-col-head .btn.btn-select`);
+        if (hbtn) {
+          hbtn.classList.add('is-disabled');
+          hbtn.setAttribute('aria-disabled', 'true');
+          hbtn.setAttribute('data-disabled', '1');
+          hbtn.title = '入力文のTypeCheckDiagramを選択してください。';
+          try { hbtn.onclick = null; } catch (_) {}
+        }
+      }
+    }
+    // 次の文カラムを再取得してボタン解放を反映（本文側）
+    const allCols = Array.from(document.querySelectorAll('.inf-col'));
+    const total = allCols.length;
+    for (let i = Number(sidx) + 1; i <= total; i++) {
+      const body = document.querySelector(`.inf-col[data-sidx="${String(i)}"] .inf-col-body`);
+      if (!body) continue;
+      const url = `/inference/col?sent=${encodeURIComponent(String(i))}`;
+      const html = await (await fetch(url, { headers: { 'Accept': 'text/html' } })).text();
+      body.innerHTML = html;
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
+window.selectTypecheck = selectTypecheck;
+
+function goProofsearch() {
+  window.location.href = '/proofsearch';
+}
+window.goProofsearch = goProofsearch;
+
+// ===== Toast helper =====
+(function initToast() {
+  function ensureToastRoot() {
+    let root = document.querySelector('.toast-root');
+    if (!root) {
+      root = document.createElement('div');
+      root.className = 'toast-root';
+      document.body.appendChild(root);
+    }
+    return root;
+  }
+  function showToast(msg, timeoutMs) {
+    const root = ensureToastRoot();
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = String(msg || '');
+    root.appendChild(el);
+    const ttl = typeof timeoutMs === 'number' ? timeoutMs : 2200;
+    setTimeout(() => {
+      try { el.classList.add('fade-out'); } catch (_) {}
+      setTimeout(() => {
+        try { root.removeChild(el); } catch (_) {}
+      }, 320);
+    }, ttl);
+  }
+  window.showToast = showToast;
+})();
+
+// ===== Near-button toast (popover) =====
+(function initToastNear() {
+  function clamp(n, min, max) {
+    return Math.max(min, Math.min(max, n));
+  }
+  function showToastNear(el, msg, timeoutMs) {
+    if (!el) return (window.showToast ? window.showToast(msg, timeoutMs) : null);
+    const rect = el.getBoundingClientRect();
+    const body = document.body;
+    const docEl = document.documentElement || body;
+    const scrollX = (window.scrollX !== undefined ? window.scrollX : (docEl.scrollLeft || body.scrollLeft || 0));
+    const scrollY = (window.scrollY !== undefined ? window.scrollY : (docEl.scrollTop || body.scrollTop || 0));
+    const pop = document.createElement('div');
+    pop.className = 'toast-popover';
+    pop.textContent = String(msg || '');
+    // initial position (will refine after append)
+    const centerX = scrollX + rect.left + rect.width / 2;
+    let top = scrollY + rect.top - 10; // default above
+    document.body.appendChild(pop);
+    // If not enough space above, show below
+    const aboveSpace = rect.top;
+    if (aboveSpace < 40) {
+      top = scrollY + rect.bottom + 10;
+      try {
+        // flip arrow
+        pop.style.setProperty('--arrow-dir', 'down');
+        // Move arrow to top by swapping borders if desired; skip for simplicity
+      } catch (_) {}
+    }
+    // set final position centered horizontally
+    pop.style.left = `${centerX}px`;
+    pop.style.top = `${top}px`;
+    pop.style.transform = 'translateX(-50%)';
+    // ensure on screen (horizontally)
+    const vw = Math.max(docEl.clientWidth, window.innerWidth || 0);
+    const pw = pop.offsetWidth || 160;
+    const minLeft = 8 + pw / 2;
+    const maxLeft = vw - 8 - pw / 2;
+    const clampedCenter = clamp(centerX - scrollX, minLeft, maxLeft);
+    pop.style.left = `${scrollX + clampedCenter}px`;
+    // auto remove
+    const ttl = typeof timeoutMs === 'number' ? timeoutMs : 2200;
+    setTimeout(() => {
+      try { pop.classList.add('fade-out'); } catch (_) {}
+      setTimeout(() => {
+        try { pop.remove(); } catch (_) {}
+      }, 240);
+    }, ttl);
+  }
+  window.showToastNear = showToastNear;
+})();
+
+// ===== Disabled button alerts (typecheck / proofsearch) =====
+(function initDisabledButtonAlerts() {
+  // Capture phase to intercept early
+  document.addEventListener('click', function(e) {
+    const btn = e.target && e.target.closest && e.target.closest('button.btn');
+    if (!btn) return;
+    if (btn.hasAttribute('disabled') || btn.classList.contains('is-disabled') || btn.getAttribute('aria-disabled') === 'true') {
+      e.preventDefault();
+      e.stopPropagation();
+      // 日本語メッセージに分岐
+      const isProof = btn.classList.contains('btn-select');
+      const isTypecheck = btn.classList.contains('btn-run');
+      let msg;
+      if (isProof) {
+        msg = '入力文のTypeCheckDiagramを選択してください。';
+      } else if (isTypecheck) {
+        msg = '前文のTypeCheckDiagramを選択してください。';
+      } else {
+        msg = btn.getAttribute('title') || 'この操作は現在利用できません。';
+      }
+      try {
+        if (window.showToastNear) window.showToastNear(btn, msg);
+        else if (window.showToast) window.showToast(msg);
+        else alert(msg);
+      } catch (_) {}
+    }
+  }, true);
+})();
+
+// ===== Proof search page polling (if present) =====
+(function initProofSearch() {
+  const listPos = document.getElementById('ps-pos-list');
+  const listNeg = document.getElementById('ps-neg-list');
+  // listPos/listNeg は必須、クエリは後で動的に差し替えるため存在チェックを毎回行う
+  if (!listPos || !listNeg) return;
+  async function refreshOnce() {
+    try {
+      const pr = await (await fetch('/proofsearch/progress', { headers: { 'Accept': 'application/json' } })).json();
+      // Lazy start: if no cached result and not done, start 1-shot proving
+      if (!window._psStartedPos && pr.hasPos && Number(pr.posCount) === 0 && !pr.posDone) {
+        window._psStartedPos = true;
+        fetch('/proofsearch/start?kind=pos', { headers: { 'Accept': 'application/json' } }).catch(()=>{});
+      }
+      if (!window._psStartedNeg && pr.hasNeg && Number(pr.negCount) === 0 && !pr.negDone) {
+        window._psStartedNeg = true;
+        fetch('/proofsearch/start?kind=neg', { headers: { 'Accept': 'application/json' } }).catch(()=>{});
+      }
+      // Outcome badge in header
+      (function updateOutcome() {
+        const out = document.getElementById('ps-outcome');
+        if (!out) return;
+        let cls = 'ps-outcome ps-outcome-pending';
+        let txt = 'Searching...';
+        if (Number(pr.posCount) > 0) { cls = 'ps-outcome ps-outcome-yes'; txt = 'Yes'; }
+        else if (Number(pr.negCount) > 0) { cls = 'ps-outcome ps-outcome-no'; txt = 'No'; }
+        out.className = cls;
+        out.textContent = txt;
+      })();
+      // Update status badges in titles
+      const sPos = document.getElementById('ps-pos-status');
+      if (sPos) {
+        sPos.textContent = pr.posDone ? `Done (${pr.posCount})` : `Searching... (${pr.posCount})`;
+        if (pr.posDone) sPos.classList.add('done'); else sPos.classList.remove('done');
+      }
+      const sNeg = document.getElementById('ps-neg-status');
+      if (sNeg) {
+        sNeg.textContent = pr.negDone ? `Done (${pr.negCount})` : `Searching... (${pr.negCount})`;
+        if (pr.negDone) sNeg.classList.add('done'); else sNeg.classList.remove('done');
+      }
+      // Queries: fetch once when ready
+      const psqPosEl = document.getElementById('psq-pos');
+      if (pr.hasPos && psqPosEl && psqPosEl.textContent === 'loading...') {
+        const qpos = await (await fetch('/proofsearch/query?kind=pos', { headers: { 'Accept': 'text/html' } })).text();
+        psqPosEl.outerHTML = qpos; // safe: element exists and has parent
+      }
+      const psqNegEl = document.getElementById('psq-neg');
+      if (pr.hasNeg && psqNegEl && psqNegEl.textContent === 'loading...') {
+        const qneg = await (await fetch('/proofsearch/query?kind=neg', { headers: { 'Accept': 'text/html' } })).text();
+        psqNegEl.outerHTML = qneg;
+      }
+      // Results
+      const htmlPos = await (await fetch('/proofsearch/list?kind=pos', { headers: { 'Accept': 'text/html' } })).text();
+      const posTrim = (htmlPos || '').trim();
+      if (posTrim.length > 0) {
+        listPos.innerHTML = posTrim;
+        // sanitize toggle ids for POS
+        sanitizeDiagramIds(listPos, 0, 1);
+      } else {
+        listPos.innerHTML = pr.posDone
+          ? '<div class="span-preview-loading">no results</div>'
+          : '<div class="span-preview-loading">loading...</div>';
+      }
+      const htmlNeg = await (await fetch('/proofsearch/list?kind=neg', { headers: { 'Accept': 'text/html' } })).text();
+      const negTrim = (htmlNeg || '').trim();
+      if (negTrim.length > 0) {
+        listNeg.innerHTML = negTrim;
+        // sanitize toggle ids for NEG
+        sanitizeDiagramIds(listNeg, 0, 2);
+      } else {
+        listNeg.innerHTML = pr.negDone
+          ? '<div class="span-preview-loading">no results</div>'
+          : '<div class="span-preview-loading">loading...</div>';
+      }
+      if (pr.posDone && pr.negDone) {
+        clearInterval(timer);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  const timer = setInterval(refreshOnce, 600);
+  refreshOnce();
+})();
+// ===== TypeCheck diagrams: sanitize inner toggle IDs per diagram =====
+function sanitizeDiagramIds(container, sidx, nidx) {
+  if (!container) return;
+  const blocks = container.querySelectorAll('.tab-tcds-content .tab-tcds-inner[data-diag-idx]');
+  blocks.forEach(block => {
+    const didx = String(block.getAttribute('data-diag-idx') || '');
+    if (!didx) return;
+    const prefix = `tc-s${sidx}-n${nidx}-d${didx}-`;
+    const idNodes = block.querySelectorAll('[id]');
+    const buttons = [];
+    idNodes.forEach(el => {
+      const id = el.id || '';
+      let suffix = null;
+      if (id.endsWith('layerA')) suffix = 'layerA';
+      else if (id.endsWith('layerB')) suffix = 'layerB';
+      else if (id.endsWith('button')) suffix = 'button';
+      if (!suffix) return;
+      const base = id.slice(0, -suffix.length);
+      if (!base) return;
+      const newBase = prefix + base;
+      el.id = newBase + suffix;
+      if (suffix === 'button') buttons.push({ el, base: newBase });
+    });
+    // remove inline onclick
+    block.querySelectorAll('[onclick]').forEach(node => {
+      const v = node.getAttribute('onclick') || '';
+      if (v.indexOf('toggle(') >= 0) {
+        try { node.removeAttribute('onclick'); } catch (_) {}
+      }
+    });
+    // rebind toggle buttons
+    buttons.forEach(({ el, base }) => {
+      el.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        toggle(base);
+        return false;
+      };
+    });
+  });
+}
+// ===== 推論カラム: ノード内トグルIDのユニーク化 =====
+function sanitizeInferenceIds(container, sidx, idx) {
+  if (!container) return;
+  // 1) layerA/layerB/button をすべて一括でリネーム
+  const idNodes = container.querySelectorAll('[id]');
+  const buttons = [];
+  idNodes.forEach(el => {
+    const id = el.id || '';
+    let suffix = null;
+    if (id.endsWith('layerA')) suffix = 'layerA';
+    else if (id.endsWith('layerB')) suffix = 'layerB';
+    else if (id.endsWith('button')) suffix = 'button';
+    if (!suffix) return;
+    const base = id.slice(0, -suffix.length);
+    if (!base) return;
+    const newBase = `${base}inf${String(sidx)}-${String(idx)}-`;
+    el.id = newBase + suffix;
+    if (suffix === 'button') {
+      buttons.push({ el, newBase });
+    }
+  });
+  // 2) 既存の inline onclick="toggle(...)" を除去
+  container.querySelectorAll('[onclick]').forEach(node => {
+    const v = node.getAttribute('onclick') || '';
+    if (v.indexOf('toggle(') >= 0) {
+      try { node.removeAttribute('onclick'); } catch (_) {}
+    }
+  });
+  // 3) 各ボタンに JS で click をバインド（自分の newBase をトグル）
+  buttons.forEach(({ el, newBase }) => {
+    el.onclick = function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggle(newBase);
+      return false;
+    };
+  });
+}

@@ -33,6 +33,7 @@ import qualified System.Environment as Env
 import qualified Interface.Text as T
 import qualified Interface.HTML as I
 import qualified Interface.PrintParseResult as PPR
+import qualified Interface.Express.Express as Express
 import qualified JSeM as J
 import qualified JSeM.XML as J
 import qualified DTS.UDTTdeBruijn as UDTT
@@ -326,6 +327,7 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
           Env.setEnv "LB_EXPRESS_NOSHOWCAT" (if noShowCat then "1" else "0")
           Env.setEnv "LB_EXPRESS_NOSHOWSEM" (if noShowSem then "1" else "0")
           Env.setEnv "LB_EXPRESS_LEAFVERTICAL" (if leafVertical then "1" else "0")
+          Env.setEnv "LB_EXPRESS_START" "parsing"
           -- Browser selection for Express
           case mExpressBrowser of
             Just BrowserChrome  -> Env.setEnv "LB_EXPRESS_BROWSER" "chrome"
@@ -352,26 +354,50 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
             QT.maxDepth = Just maxDepth, 
             QT.maxTime = Just maxTime
             }
-      S.hPutStrLn handle $ I.headerOf style
-      pairs <- forM parsedJSeM'' $ \j -> do
-        let title = "JSeM-ID " ++ (StrictT.unpack $ J.jsem_id j)
-        S.putStr $ "[" ++ title ++ "] "
-        mapM_ StrictT.putStr $ J.premises j
-        S.putStr " ==> "
-        StrictT.putStrLn $ J.hypothesis j
-        S.putStr "\n"
-        let sentences = postpend (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
-            parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] sentences
-        PPR.printParseResult handle style 1 noTypeCheck False title parseResult
-        inferenceLabels <- toList $ NLI.trawlParseResult parseResult
-        let groundTruth = J.jsemLabel2YesNo $ J.answer j
-            prediction = case inferenceLabels of
-              [] -> J.Other
-              (bestLabel:_) -> bestLabel
-        S.putStrLn $ "\nPrediction: " ++ (show prediction) ++ "\nGround truth: " ++ (show groundTruth) ++ "\n"
-        return (prediction, groundTruth)
-      T.putStrLn $ T.fromStrict $ NLP.showClassificationReport pairs
-      S.hPutStrLn handle $ I.footerOf style
+      case style of
+        I.EXPRESS -> do
+          case parsedJSeM'' of
+            [] -> do
+              S.hPutStrLn handle $ "No JSeM data matched."
+            (j:_) -> do
+              let sentences = postpend (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
+              -- 表示オプション
+              case mDepth of
+                Just d -> Env.setEnv "LB_EXPRESS_DEPTH" (show d)
+                Nothing -> return ()
+              Env.setEnv "LB_EXPRESS_NOSHOWCAT" (if noShowCat then "1" else "0")
+              Env.setEnv "LB_EXPRESS_NOSHOWSEM" (if noShowSem then "1" else "0")
+              Env.setEnv "LB_EXPRESS_LEAFVERTICAL" (if leafVertical then "1" else "0")
+              Env.setEnv "LB_EXPRESS_START" "inference"
+              -- Browser selection for Express
+              case mExpressBrowser of
+                Just BrowserChrome  -> Env.setEnv "LB_EXPRESS_BROWSER" "chrome"
+                Just BrowserFirefox -> Env.setEnv "LB_EXPRESS_BROWSER" "firefox"
+                Just BrowserDefault -> Env.setEnv "LB_EXPRESS_BROWSER" "default"
+                Nothing             -> return ()
+              -- Express を起動
+              Express.showExpressInference parseSetting prover [("dummy",DTT.Entity)] [] sentences
+        _ -> do
+          S.hPutStrLn handle $ I.headerOf style
+          pairs <- forM parsedJSeM'' $ \j -> do
+            let title = "JSeM-ID " ++ (StrictT.unpack $ J.jsem_id j)
+            S.putStr $ "[" ++ title ++ "] "
+            mapM_ StrictT.putStr $ J.premises j
+            S.putStr " ==> "
+            StrictT.putStrLn $ J.hypothesis j
+            S.putStr "\n"
+            let sentences = postpend (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
+                parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] sentences
+            PPR.printParseResult handle style 1 noTypeCheck False title parseResult
+            inferenceLabels <- toList $ NLI.trawlParseResult parseResult
+            let groundTruth = J.jsemLabel2YesNo $ J.answer j
+                prediction = case inferenceLabels of
+                  [] -> J.Other
+                  (bestLabel:_) -> bestLabel
+            S.putStrLn $ "\nPrediction: " ++ (show prediction) ++ "\nGround truth: " ++ (show groundTruth) ++ "\n"
+            return (prediction, groundTruth)
+          T.putStrLn $ T.fromStrict $ NLP.showClassificationReport pairs
+          S.hPutStrLn handle $ I.footerOf style
     -- | 
     -- | Numeration command
     -- | 
