@@ -123,6 +123,126 @@ currentPSPosRef = unsafePerformIO $ newIORef []
 currentPSNegRef :: IORef [QT.DTTProofDiagram]
 currentPSNegRef = unsafePerformIO $ newIORef []
 
+-- ProofSearch cache (for prewarm/lookup)
+data PSCacheEntry = PSCacheEntry
+  { cachePos     :: [QT.DTTProofDiagram]
+  , cacheNeg     :: [QT.DTTProofDiagram]
+  , cachePosDone :: Bool
+  , cacheNegDone :: Bool
+  , cacheCtxHashes :: [BS.ByteString]
+  , cacheExtraHashes :: [BS.ByteString]
+  }
+
+emptyCacheEntry :: PSCacheEntry
+emptyCacheEntry = PSCacheEntry [] [] False False [] []
+
+{-# NOINLINE proofCacheRef #-}
+proofCacheRef :: IORef (M.Map BS.ByteString PSCacheEntry)
+proofCacheRef = unsafePerformIO $ newIORef M.empty
+
+-- limit concurrent proofsearch tasks
+{-# NOINLINE activeProofThreadsRef #-}
+activeProofThreadsRef :: IORef Int
+activeProofThreadsRef = unsafePerformIO $ newIORef 0
+
+-- global halt: stop broad prewarm once any proof is found
+{-# NOINLINE prewarmHaltRef #-}
+prewarmHaltRef :: IORef Bool
+prewarmHaltRef = unsafePerformIO $ newIORef False
+
+-- configurable: prewarm top-k and concurrency
+{-# NOINLINE currentPrewarmTopKRef #-}
+currentPrewarmTopKRef :: IORef Int
+currentPrewarmTopKRef = unsafePerformIO $ newIORef 3
+
+{-# NOINLINE currentPrewarmParallelRef #-}
+currentPrewarmParallelRef :: IORef Int
+currentPrewarmParallelRef = unsafePerformIO $ newIORef 2
+
+setPrewarmOptions :: Int -> Int -> IO ()
+setPrewarmOptions k par = do
+  atomicWriteIORef currentPrewarmTopKRef (max 1 k)
+  atomicWriteIORef currentPrewarmParallelRef (max 1 par)
+
+-- schedule with concurrency limit
+scheduleLimited :: IO () -> IO ()
+scheduleLimited action = do
+  let waitLoop = do
+        lim <- readIORef currentPrewarmParallelRef
+        cur <- readIORef activeProofThreadsRef
+        if cur >= lim then threadDelay 200000 >> waitLoop else return ()
+  waitLoop
+  atomicModifyIORef' activeProofThreadsRef (\x -> (x+1, ()))
+  _ <- forkIO $ do
+    catch action (const (return ()) :: SomeException -> IO ())
+    atomicModifyIORef' activeProofThreadsRef (\x -> (max 0 (x-1), ()))
+    return ()
+  return ()
+
+-- Ensure a PSQ is being cached; if absent, start streaming results into cache
+ensureCachedWithTerms :: DTT.ProofSearchQuery -> [DTT.Preterm] -> Int -> QT.Prover -> IO ()
+ensureCachedWithTerms psq extraTerms nProof prover = do
+  let key = Store.encode psq
+      isNegQ = case psq of
+                 DTT.ProofSearchQuery _ _ t -> case t of
+                   DTT.Pi _ DTT.Bot -> True
+                   _                -> False
+  mp <- readIORef proofCacheRef
+  halted <- readIORef prewarmHaltRef
+  when halted (return ())
+  when (M.notMember key mp) $ do
+    let ctxHashes = case psq of
+                      DTT.ProofSearchQuery _ ctx _ -> map Store.encode ctx
+        extraHashes = map Store.encode extraTerms
+    atomicModifyIORef' proofCacheRef (\m0 ->
+      let base = emptyCacheEntry { cacheCtxHashes = ctxHashes, cacheExtraHashes = extraHashes }
+      in (M.insertWith (\_ old -> old) key base m0, ()))
+    -- run POS/NEG depending on query's goal (we don't know here; run once)
+    _ <- scheduleLimited $ do
+      let loop l updDone updList = do
+            m <- LT.uncons l
+            case m of
+              Nothing -> atomicModifyIORef' proofCacheRef (\m0 ->
+                           let ce = M.findWithDefault emptyCacheEntry key m0
+                               ce' = updDone ce
+                           in (M.insert key ce' m0, ()))
+              Just (d, rest) -> do
+                atomicModifyIORef' proofCacheRef (\m0 ->
+                  let ce = M.findWithDefault emptyCacheEntry key m0
+                      ce' = updList ce d
+                  in (M.insert key ce' m0, ()))
+            -- stop after first found (one is enough)
+            atomicWriteIORef prewarmHaltRef True
+            atomicModifyIORef' proofCacheRef (\m0 ->
+              let ce = M.findWithDefault emptyCacheEntry key m0
+                  ce' = updDone ce
+              in (M.insert key ce' m0, ()))
+            return ()
+      if isNegQ
+        then loop (LT.take nProof (prover psq))
+                  (\e -> e { cacheNegDone = True })
+                  (\e d -> e { cacheNeg = cacheNeg e ++ [d] })
+        else loop (LT.take nProof (prover psq))
+                  (\e -> e { cachePosDone = True })
+                  (\e d -> e { cachePos = cachePos e ++ [d] })
+    return ()
+
+ensureCached :: DTT.ProofSearchQuery -> Int -> QT.Prover -> IO ()
+ensureCached psq nProof prover = ensureCachedWithTerms psq [] nProof prover
+
+-- Only ensure cache entry exists and record extra term hashes (no proving)
+addTermsToCache :: DTT.ProofSearchQuery -> [DTT.Preterm] -> IO ()
+addTermsToCache psq extra = do
+  let key = Store.encode psq
+      ctxHashes = case psq of
+                    DTT.ProofSearchQuery _ ctx _ -> map Store.encode ctx
+      extraHashes = map Store.encode extra
+  atomicModifyIORef' proofCacheRef (\m0 ->
+    let base = emptyCacheEntry { cacheCtxHashes = ctxHashes, cacheExtraHashes = extraHashes }
+        upd e = e { cacheCtxHashes = cacheCtxHashes e ++ ctxHashes
+                  , cacheExtraHashes = cacheExtraHashes e ++ extraHashes
+                  }
+    in (M.insertWith (\new old -> upd old) key base m0, ()))
 {-# NOINLINE currentPSDonePosRef #-}
 currentPSDonePosRef :: IORef Bool
 currentPSDonePosRef = unsafePerformIO $ newIORef False
@@ -150,6 +270,12 @@ setDisplayOptions mDepth noShowCat noShowSem leafVert = do
   setDisplaySetting dsp
 
 data App = App
+
+-- normalize signature for stable PSQ keys
+normalizeSignature :: DTT.Signature -> DTT.Signature
+normalizeSignature =
+  nubBy (\(a,_) (b,_) -> a == b) . sortOn fst
+
 
 mkYesod "App" [parseRoutes|
 /parsing ParsingR GET
@@ -189,6 +315,18 @@ showExpressInference ps _prover _signtr _contxt sentences = do
   atomicWriteIORef currentNTypeCheckRef (CP.nTypeCheck ps)
   atomicWriteIORef currentVerboseRef (CP.verbose ps)
   atomicWriteIORef currentNProofRef (CP.nProof ps)
+  -- Prewarm options (env override)
+  mTopK <- lookupEnv "LB_PREWARM_TOPK"
+  mPar  <- lookupEnv "LB_PREWARM_PARALLEL"
+  case (mTopK >>= readMaybe, mPar >>= readMaybe) of
+    (Just k, Just p) -> setPrewarmOptions k p
+    (Just k, Nothing) -> do
+      p <- readIORef currentPrewarmParallelRef
+      setPrewarmOptions k p
+    (Nothing, Just p) -> do
+      k <- readIORef currentPrewarmTopKRef
+      setPrewarmOptions k p
+    _ -> return ()
 
   -- 逐次パース
   let discourseLT = NLI.sequentialParsing ps sentences
@@ -227,6 +365,158 @@ showExpressInference ps _prover _signtr _contxt sentences = do
             _ <- forkIO $ consume idx lst
             return ()
         ) (zip ([0..] :: [Int]) discourseLT)
+
+  -- 事前探索
+  let prewarmBest :: IO ()
+      prewarmBest = do
+        let waitLoop = do
+              md <- readIORef currentDiscourseNodesRef
+              case md of
+                Nothing -> threadDelay 300000 >> waitLoop
+                Just disc ->
+                  if all snDone disc
+                    then do
+                      mProver <- readIORef currentProverRef
+                      baseSig <- readIORef currentBaseSignatureRef
+                      baseCtx <- readIORef currentBaseContextRef
+                      nProof  <- readIORef currentNProofRef
+                      nType   <- readIORef currentNTypeCheckRef
+                      verbose <- readIORef currentVerboseRef
+                      case mProver of
+                        Nothing -> return ()
+                        Just prover -> do
+                          -- 各文の top-1 ノードを選択（score 降順）
+                          let pickBest sp =
+                                case reverse (snNodes sp) of
+                                  [] -> Nothing
+                                  xs -> Just $ maximumBy (\a b -> compare (CCG.score a) (CCG.score b)) xs
+                              bests = map pickBest disc
+                          if any (== Nothing) bests
+                            then return ()
+                            else do
+                              -- 逐次 TypeCheck で context と signature を構築
+                              let nodes = [ n | Just n <- bests ]
+                              let build :: DTT.Signature -> DTT.Context -> [DTT.Preterm] -> [CCG.Node] -> IO (Maybe (DTT.Signature, DTT.Context, [DTT.Preterm]))
+                                  build sigAcc ctxAcc used [] = return (Just (sigAcc, ctxAcc, used))
+                                  build sigAcc ctxAcc used (n:ns) = do
+                                    let sig' = CCG.sig n ++ sigAcc
+                                        tcQuery = UDTT.Judgment sig' ctxAcc (CCG.sem n) DTT.Type
+                                        lts = TY.typeCheck prover verbose tcQuery
+                                    mu <- LT.uncons lts
+                                    case mu of
+                                      Nothing -> return Nothing
+                                      Just (d, _) -> do
+                                        let t = DTT.trm (Tree.node d)
+                                            ctx' = t : ctxAcc
+                                        build sig' ctx' (t:used) ns
+                              mres <- build baseSig baseCtx [] nodes
+                              case mres of
+                                Nothing -> return ()
+                                Just (sigAccum, ctxAccum, usedTerms) -> do
+                                  let typ  = case ctxAccum of { (t:_) -> t; [] -> DTT.Bot }
+                                      rest = case ctxAccum of { (_:xs) -> xs; [] -> [] }
+                                      sigNorm = normalizeSignature sigAccum
+                                      psqPos = DTT.ProofSearchQuery sigNorm rest typ
+                                      psqNeg = DTT.ProofSearchQuery sigNorm rest (DTT.Pi typ DTT.Bot)
+                                      keyPos = Store.encode psqPos
+                                      keyNeg = Store.encode psqNeg
+                                  -- 既存キャッシュがなければ流し込む
+                                  mp <- readIORef proofCacheRef
+                                  when (M.notMember keyPos mp) $ do
+                                    _ <- scheduleLimited $ do
+                                      -- extra に使用済み図の項を渡す（照合用）
+                                      atomicModifyIORef' proofCacheRef (\m0 ->
+                                        let ce0 = M.findWithDefault emptyCacheEntry keyPos m0
+                                            ce1 = ce0 { cacheExtraHashes = cacheExtraHashes ce0 ++ map Store.encode usedTerms }
+                                        in (M.insert keyPos ce1 m0, ()))
+                                      let loop l = do
+                                            m <- LT.uncons l
+                                            case m of
+                                              Nothing -> atomicModifyIORef' proofCacheRef (\m0 ->
+                                                            let ce = M.findWithDefault emptyCacheEntry keyPos m0
+                                                                ce' = ce { cachePosDone = True }
+                                                            in (M.insert keyPos ce' m0, ()))
+                                              Just (d, restL) -> do
+                                                atomicModifyIORef' proofCacheRef (\m0 ->
+                                                  let ce = M.findWithDefault emptyCacheEntry keyPos m0
+                                                      ce' = ce { cachePos = cachePos ce ++ [d] }
+                                                  in (M.insert keyPos ce' m0, ()))
+                                                loop restL
+                                      loop (LT.take nProof (prover psqPos))
+                                    return ()
+                                  mn <- readIORef proofCacheRef
+                                  when (M.notMember keyNeg mn) $ do
+                                    _ <- scheduleLimited $ do
+                                      atomicModifyIORef' proofCacheRef (\m0 ->
+                                        let ce0 = M.findWithDefault emptyCacheEntry keyNeg m0
+                                            ce1 = ce0 { cacheExtraHashes = cacheExtraHashes ce0 ++ map Store.encode usedTerms }
+                                        in (M.insert keyNeg ce1 m0, ()))
+                                      let loop l = do
+                                            m <- LT.uncons l
+                                            case m of
+                                              Nothing -> atomicModifyIORef' proofCacheRef (\m0 ->
+                                                            let ce = M.findWithDefault emptyCacheEntry keyNeg m0
+                                                                ce' = ce { cacheNegDone = True }
+                                                            in (M.insert keyNeg ce' m0, ()))
+                                              Just (d, restL) -> do
+                                                atomicModifyIORef' proofCacheRef (\m0 ->
+                                                  let ce = M.findWithDefault emptyCacheEntry keyNeg m0
+                                                      ce' = ce { cacheNeg = cacheNeg ce ++ [d] }
+                                                  in (M.insert keyNeg ce' m0, ()))
+                                                loop restL
+                                      loop (LT.take nProof (prover psqNeg))
+                                    return ()
+                    else threadDelay 300000 >> waitLoop
+        waitLoop
+  _ <- forkIO prewarmBest
+  return ()
+
+  -- 複数経路探索
+  _ <- forkIO $ do
+    let waitAllParsed = do
+          md <- readIORef currentDiscourseNodesRef
+          case md of
+            Nothing -> threadDelay 300000 >> waitAllParsed
+            Just disc -> if all snDone disc then return () else threadDelay 300000 >> waitAllParsed
+    waitAllParsed
+    mProver <- readIORef currentProverRef
+    baseSig <- readIORef currentBaseSignatureRef
+    baseCtx <- readIORef currentBaseContextRef
+    nProof  <- readIORef currentNProofRef
+    nType   <- readIORef currentNTypeCheckRef
+    verbose <- readIORef currentVerboseRef
+    kTop <- readIORef currentPrewarmTopKRef
+    case mProver of
+      Nothing -> return ()
+      Just prover -> do
+        Just disc <- readIORef currentDiscourseNodesRef
+        -- 各文で score 降順に top-k を選択
+        let topNodesPerSentence :: [[CCG.Node]]
+            topNodesPerSentence = map (take kTop . reverse . sortOn CCG.score . snNodes) disc
+        let total = length topNodesPerSentence
+        let build sigAcc ctxAcc idx = 
+              if idx >= total
+                then do
+                  let typ  = case ctxAcc of { (t:_) -> t; [] -> DTT.Bot }
+                      rest = case ctxAcc of { (_:xs) -> xs; [] -> [] }
+                      psqPos = DTT.ProofSearchQuery sigAcc rest typ
+                      psqNeg = DTT.ProofSearchQuery sigAcc rest (DTT.Pi typ DTT.Bot)
+                  ensureCached psqPos nProof prover
+                  ensureCached psqNeg nProof prover
+                else do
+                  let nodesHere = topNodesPerSentence !! idx
+                  mapM_ (\n -> do
+                           let sig' = CCG.sig n ++ sigAcc
+                               tcQuery = UDTT.Judgment sig' ctxAcc (CCG.sem n) DTT.Type
+                               lts = TY.typeCheck prover verbose tcQuery
+                           diags <- LT.toList (LT.take nType lts)
+                           mapM_ (\d -> do
+                                   let ctx' = (DTT.trm (Tree.node d)) : ctxAcc
+                                   build sig' ctx' (idx+1)
+                                 ) diags
+                        ) nodesHere
+        build baseSig baseCtx 0
+  return ()
 
   let port = 3000
   mStart <- lookupEnv "LB_EXPRESS_START"
@@ -719,31 +1009,39 @@ getProofSearchR = do
               rest = case ctxAccum of
                        (_:xs) -> xs
                        []     -> []
-              psqPos = DTT.ProofSearchQuery sigAccum rest typ
-              psqNeg = DTT.ProofSearchQuery sigAccum rest (DTT.Pi typ DTT.Bot)
+              sigNorm = normalizeSignature sigAccum
+              psqPos = DTT.ProofSearchQuery sigNorm rest typ
+              psqNeg = DTT.ProofSearchQuery sigNorm rest (DTT.Pi typ DTT.Bot)
               enumerated :: [(Int, SentenceProgress)]
               enumerated = zip ([1..] :: [Int]) discourse
           liftIO $ atomicWriteIORef currentPSQPosRef (Just psqPos)
           liftIO $ atomicWriteIORef currentPSQNegRef (Just psqNeg)
-          -- spawn background consumers
-          let consume lref dref doneRef lst k = do
-                m <- LT.uncons lst
-                case m of
-                  Nothing -> atomicWriteIORef doneRef True
-                  Just (d, rest) -> do
-                    atomicModifyIORef' lref (\xs -> (xs ++ [d], ()))
-                    consume lref dref doneRef rest k
-          _ <- liftIO $ forkIO $ do
-            let posL = LT.take nProof (prover psqPos)
-            consume currentPSPosRef currentPSDonePosRef currentPSDonePosRef posL nProof
-          _ <- liftIO $ forkIO $ do
-            let negL = LT.take nProof (prover psqNeg)
-            consume currentPSNegRef currentPSDoneNegRef currentPSDoneNegRef negL nProof
+          -- augment cache entries with full context terms so diagrams can be matched
+          liftIO $ addTermsToCache psqPos ctxAccum
+          liftIO $ addTermsToCache psqNeg ctxAccum
+          -- Check cache and seed current results if present
+          let keyPos = Store.encode psqPos
+              keyNeg = Store.encode psqNeg
+          mCachedPos <- liftIO $ readIORef proofCacheRef >>= \m -> return (M.lookup keyPos m)
+          mCachedNeg <- liftIO $ readIORef proofCacheRef >>= \m -> return (M.lookup keyNeg m)
+          case mCachedPos of
+            Just ce -> do
+              liftIO $ atomicWriteIORef currentPSPosRef (cachePos ce)
+              liftIO $ atomicWriteIORef currentPSDonePosRef (cachePosDone ce)
+            Nothing -> return ()
+          case mCachedNeg of
+            Just ce -> do
+              liftIO $ atomicWriteIORef currentPSNegRef (cacheNeg ce)
+              liftIO $ atomicWriteIORef currentPSDoneNegRef (cacheNegDone ce)
+            Nothing -> return ()
+          -- NOTE: 実探索の起動はページ描画後に /proofsearch/start から行う（初期レスポンスを軽くする）
           defaultLayout $ do
             [whamlet|
               <div .ps-container>
                 <div .ps-header>
                   <div .ps-header-title>Proof Search
+                  <div .ps-header-ctl>
+                    <span #ps-outcome .ps-outcome>Searching...
                   <div .ps-sentences>
                     $forall (i, sp) <- enumerated
                       <div .ps-row>
