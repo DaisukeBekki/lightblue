@@ -164,6 +164,7 @@ mkYesod "App" [parseRoutes|
 /proofsearch/start ProofStartR GET
 /span SpanR GET
 /span/node NodeR GET
+/proofcache/progress ProofCacheProgressR GET
 /proofcache/marks ProofCacheMarksR GET
 /export/sem ExportSemR GET
 /export/sem/text ExportSemTextR GET
@@ -802,6 +803,24 @@ getProofProgressR = do
     , "negCount" .= length neg
     , "posDone" .= dpos
     , "negDone" .= dneg
+    ]
+
+-- Proof precompute cache progress (for /inference mini indicator)
+getProofCacheProgressR :: Handler Value
+getProofCacheProgressR = do
+  m <- liftIO $ readIORef proofCacheRef
+  let entries = M.elems m
+      posFound = sum (map (length . cachePos) entries)
+      negFound = sum (map (length . cacheNeg) entries)
+      posDoneN = length (filter cachePosDone entries)
+      negDoneN = length (filter cacheNegDone entries)
+      totalKeys = M.size m
+  return $ object
+    [ "keys" .= totalKeys
+    , "pos" .= posFound
+    , "neg" .= negFound
+    , "posDone" .= posDoneN
+    , "negDone" .= negDoneN
     ]
 
 -- For a sentence: return per node/diag the POS/NEG/running flags if any cached PSQ includes that diagram's term
