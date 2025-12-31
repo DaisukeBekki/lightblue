@@ -164,6 +164,7 @@ mkYesod "App" [parseRoutes|
 /proofsearch/start ProofStartR GET
 /span SpanR GET
 /span/node NodeR GET
+/proofcache/marks ProofCacheMarksR GET
 /export/sem ExportSemR GET
 /export/sem/text ExportSemTextR GET
 /export/node ExportNodeR GET
@@ -802,6 +803,64 @@ getProofProgressR = do
     , "posDone" .= dpos
     , "negDone" .= dneg
     ]
+
+-- For a sentence: return per node/diag the POS/NEG/running flags if any cached PSQ includes that diagram's term
+getProofCacheMarksR :: Handler Value
+getProofCacheMarksR = do
+  mDisc <- liftIO $ readIORef currentDiscourseNodesRef
+  mSent <- lookupGetParam "sent"
+  let parseInt :: TS.Text -> Maybe Int
+      parseInt = readMaybe . TS.unpack
+      sIdx = maybe 1 id (mSent >>= parseInt)
+      s0 = sIdx - 1
+      (!!?) :: [a] -> Int -> Maybe a
+      (!!?) xs n = if n < 0 || n >= length xs then Nothing else Just (xs !! n)
+  case mDisc >>= (!!? s0) of
+    Nothing -> return $ object ["items" .= ([] :: [Value])]
+    Just sp -> do
+      st <- liftIO $ readIORef currentTCStateRef
+      let nodeCount = length (snNodes sp)
+          nodeIdxs = [1..nodeCount] :: [Int]
+          pick k = M.lookup (sIdx, k) st
+      let mkItem nidx didx hasP hasN runP runN =
+            object [ "sidx" .= sIdx
+                   , "nidx" .= nidx
+                   , "didx" .= didx
+                   , "pos"  .= hasP
+                   , "neg"  .= hasN
+                   , "runPos" .= runP
+                   , "runNeg" .= runN
+                   ]
+      cache <- liftIO $ readIORef proofCacheRef
+      let entries = M.elems cache
+          -- helper: check diagram term hash against cache entry contexts (including extra/head terms)
+          check termHash ce =
+            let hit = any (== termHash) (cacheCtxHashes ce) || any (== termHash) (cacheExtraHashes ce)
+            in if not hit then (False, False, False, False)
+               else
+                 let hasP = not (null (cachePos ce))
+                     hasN = not (null (cacheNeg ce))
+                     runP = not (cachePosDone ce) && null (cachePos ce)
+                     runN = not (cacheNegDone ce) && null (cacheNeg ce)
+                 in (hasP, hasN, runP, runN)
+      let items =
+            concatMap (\nidx ->
+              case pick nidx of
+                Just (TCDone diags) ->
+                  let indexed = zip ([1..] :: [Int]) diags
+                  in map (\(didx, d) ->
+                           let term = DTT.trm (Tree.node d)
+                               thash = Store.encode term
+                               results = map (check thash) entries
+                               anyP = or [p | (p,_,_,_) <- results]
+                               anyN = or [n | (_,n,_,_) <- results]
+                               anyRunP = or [rp | (_,_,rp,_) <- results]
+                               anyRunN = or [rn | (_,_,_,rn) <- results]
+                           in mkItem nidx didx anyP anyN anyRunP anyRunN
+                         ) indexed
+                _ -> []
+            ) nodeIdxs
+      return $ object ["items" .= items]
 
 getProofListR :: Handler Html
 getProofListR = do
