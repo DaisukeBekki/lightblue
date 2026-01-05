@@ -332,7 +332,7 @@ piElim goal setting =
         else
           let
             argNumAndFunctions = -- return [(the num of args,functionTree) pair]
-              let forwarded = F.forwardContext sig var
+              let forwarded = F.forwardContext (WB.enableEq setting) sig var
                   argNumAndFunction functionTree = -- return Maybe (the num of args,functionTree) pair "the num of args" is the num `function` need to gain `r`
                     let canBeFunctionJudgment = A.downSide' functionTree
                         canBeFunctionTerm = A.termfromAJudgment canBeFunctionJudgment
@@ -694,8 +694,8 @@ eqForm goal setting=
     (Nothing,message) -> -- point1 : typeMisMatch
       return ([],message)
     (Just arrowType,_) -> 
-      case WB.termFromGoal goal of
-        M.Just (A.ArrowEq t a b) ->
+      case (WB.termFromGoal goal,WB.enableEq setting) of
+        (M.Just (A.ArrowEq t a b),True) ->
           let (sig,var) = WB.conFromGoal goal
               subgoalset = 
                 let dside = A.AJudgment sig var (A.ArrowEq t a b) arrowType
@@ -710,7 +710,7 @@ eqForm goal setting=
                       in WB.SubGoal goal [] (M.Nothing,M.Nothing)
                 in WB.SubGoalSet QT.IqF M.Nothing [subgoalForT,subgoalForA,subgoalForB] (dside,[])
           in return ([subgoalset],"")
-        term -> -- if term is M.Nothing or M.Just `not Arrow type`, return WB.TermMisMatch
+        (term,_) -> -- if term is M.Nothing or M.Just `not Arrow type`, return WB.TermMisMatch
           return ([],WB.exitMessage (WB.TermMisMatch term) QT.IqF)
 
 -- | membership
@@ -774,7 +774,7 @@ membership goal setting =
     (Nothing,message) -> return ([],message)
     (Just arrowType,_) -> 
       let (sig,var) = WB.conFromGoal goal
-          forwardedTrees = WB.trees $ F.forwardContext sig var
+          forwardedTrees = WB.trees $ F.forwardContext (WB.enableEq setting) sig var
           trees = L.nub $
             filter 
               (\tree ->
@@ -811,7 +811,7 @@ askOracle goal setting =
           in case (shoudBeConForBig,null targetLst) of
               (A.Conclusion (DdB.Con big),False) ->
                   let 
-                    forwardedTrees = WB.trees $ F.forwardContext sig var
+                    forwardedTrees = WB.trees $ F.forwardContext (WB.enableEq setting) sig var
                     filteredTreesIO =  -- (Monad m) => (a -> m Bool) -> [a] -> m [a]
                       CM.filterM 
                         (\tree -> 
@@ -1006,7 +1006,7 @@ disjElim goal setting =
         then return ([],WB.exitMessage (WB.TermMisMatch maybeTerm) QT.PiE)
         else
           let
-            forwardedTree = WB.trees $ F.forwardContext sig var
+            forwardedTree = WB.trees $ F.forwardContext (WB.enableEq setting) sig var
             usedDisJointLst = WB.usedDisJoint $ WB.sStatus setting
             disjTrees = filter (\tree -> case A.typefromAJudgment $ A.downSide' tree of A.ArrowDisj a b -> (A.ArrowDisj a b) `notElem` usedDisJointLst ; _ -> False) forwardedTree
             disjArrowTrees = filter (\tree -> case A.typefromAJudgment $ A.downSide' tree of A.Arrow c (A.ArrowDisj a b) -> (A.Arrow c (A.ArrowDisj a b)) `notElem` usedDisJointLst; _ -> False) forwardedTree
