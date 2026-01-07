@@ -113,7 +113,6 @@ library:
   - DTS.QueryTypes
   - DTS.TypeChecker
   - DTS.NaturalLanguageInference
-  - DTS.Prover.Oracle
   - DTS.Prover.Wani.WaniBase
   - DTS.Prover.Wani.Forward
   - DTS.Prover.Wani.BackwardRules
