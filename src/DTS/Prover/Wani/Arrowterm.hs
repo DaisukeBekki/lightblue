@@ -38,6 +38,7 @@ module DTS.Prover.Wani.Arrowterm
   isFreeCon,
   canBeSame,
   canBeSame',
+  termsInAppTerm,
   addLam,
   addLam',
   rmLam,
@@ -474,6 +475,13 @@ canBeSame' lim (ArrowDisj a b) (ArrowDisj a' b') = canBeSame' lim a a' ++ canBeS
 canBeSame' lim (ArrowIota h t) (ArrowIota h' t') = if h == h' then canBeSame' lim t t' else []
 canBeSame' lim (ArrowUnpack a b c d) (ArrowUnpack a' b' c' d') = canBeSame' lim a a' ++ canBeSame' lim b b' ++ canBeSame' lim c c' ++ canBeSame' lim d d'
 canBeSame' lim other other' = [(other,other')]
+
+-- | [b,a,f] for (f(a))(b)
+termsInAppTerm :: Arrowterm -> [Arrowterm]
+termsInAppTerm appTerm =
+  case appTerm of
+    ArrowApp f t -> t : (termsInAppTerm f)
+    f -> [f]
 
 addApp ::Int -> Arrowterm -> Arrowterm
 -- addApp 0 base = base

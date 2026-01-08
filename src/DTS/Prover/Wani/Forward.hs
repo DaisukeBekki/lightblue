@@ -162,8 +162,8 @@ forEq context term =
                   arEqTypes)
     Nothing -> ([],[])
 
-forwardContext :: A.SAEnv -> A.AEnv -> B.Result
-forwardContext sig var = 
+forwardContext :: Bool ->A.SAEnv -> A.AEnv -> B.Result
+forwardContext eqEnabled sig var = 
     let (sigNames,sigTerms) = unzip sig
         context' = var ++ sigTerms
         varsigmaForwarded =
@@ -189,7 +189,7 @@ forwardContext sig var =
               (L.tails  context')) 
         trees =   
           let eqIntroTree = UDT.Tree QT.Var (A.AJudgment sig var (A.Conclusion $DdB.Con "forwardEqIntro") eqIntro) []
-              sigmaForwarded = eqIntroTree :
+              sigmaForwarded = (if eqEnabled then (eqIntroTree :) else id) $
                     map
                       (\aTree  ->
                         case aTree of
@@ -209,7 +209,7 @@ forwardContext sig var =
                           _ -> aTree
                       )
                       varsigmaForwarded
-          in (eqForwards2' sigmaForwarded)  ++ sigmaForwarded
+          in (if eqEnabled then ((eqForwards2' sigmaForwarded)  ++) else id) sigmaForwarded
     in B.resultDef{B.trees = trees}
 
 

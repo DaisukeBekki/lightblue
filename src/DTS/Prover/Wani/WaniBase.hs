@@ -89,8 +89,10 @@ data Setting = Setting
    sStatus :: Status,
    ruleConHojo :: String,
    timeLimit :: M.Maybe Time.UTCTime,
-   enableneuralDTS :: Bool
-   } deriving (Show,Eq)
+   oracle :: Maybe (DdB.ConName -> DdB.ConName -> Float),
+   oracleThreshold :: Float,
+   enableEq :: Bool
+   } -- deriving (Show,Eq)
 
 data Result = Result
   {trees :: [UDT.Tree A.Arrowrule A.AJudgment],
@@ -109,7 +111,7 @@ statusDef :: Status
 statusDef = Status{failedlst=[],usedMaxDepth = 0,deduceNgLst=[],usedDisJoint=[],allProof = True}
 
 settingDef :: Setting
-settingDef = Setting{mode = Plain,falsum = True,maxdepth = 9,maxtime = 100000,debug = 0,sStatus = statusDef,ruleConHojo = "sub",enableneuralDTS=False}
+settingDef = Setting{mode = Plain,falsum = True,maxdepth = 9,maxtime = 100000,debug = 0,sStatus = statusDef,ruleConHojo = "sub",oracle=M.Nothing,oracleThreshold=0.5,enableEq=True}
 
 resultDef :: Result
 resultDef = Result{trees = [],errMsg = "",rStatus = statusDef}
