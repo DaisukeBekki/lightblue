@@ -336,6 +336,11 @@
             text-align: left;
            justify-content: flex-start;
 
+          .tab-tcq-content-inference
+            display: flex;
+            text-align: left;
+            justify-content: flex-start;
+
           .tab-tcds-content
             display: block;
             text-align: center;

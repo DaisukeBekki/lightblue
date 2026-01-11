@@ -1222,7 +1222,7 @@ getProofQueryR = do
       let psqWN = DWN.fromDeBruijnProofSearchQuery psq
       defaultLayout $ do
         [whamlet|
-          <div class="tab-tcq-content">^{WE.widgetizeWith dsp psqWN}
+          <div class="tab-tcq-content-inference">^{WE.widgetizeWith dsp psqWN}
         |]
 
 -- Start proving (pos/neg) lazily after /proofsearch renders
