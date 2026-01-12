@@ -956,7 +956,11 @@ getSpanR = do
 --CSS（cassius）
 myDesign :: Widget
 myDesign = do
-    toWidget $(cassiusFile "src/Interface/Express/templates/express.cassius")
+    toWidget $(cassiusFile "src/Interface/Express/templates/common.cassius")
+    toWidget $(cassiusFile "src/Interface/Express/templates/parsing.cassius")
+    toWidget $(cassiusFile "src/Interface/Express/templates/inference.cassius")
+    toWidget $(cassiusFile "src/Interface/Express/templates/proofsearch.cassius")
+    toWidget $(cassiusFile "src/Interface/Express/templates/toast.cassius")
 
 -- julius file for javascript
 myFunction :: Widget

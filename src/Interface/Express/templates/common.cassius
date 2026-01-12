@@ -1,0 +1,53 @@
+/* Common base */
+.hidden
+  display: none;
+body
+  width: 100vw;
+  height: 100vh;
+  font-size: 1em;
+  background-color: #f4f4f4;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+td
+  white-space: nowrap;
+table
+  table-layout: fixed;
+h2
+  border-bottom: dashed 3px #ffd700;
+  padding: 0.3em
+a 
+  text-decoration: none;  
+
+/* Buttons */
+.btn
+  display: inline-block
+  padding: 6px 10px
+  border: 1px solid #ddd
+  border-radius: 4px
+  background: #fff
+  cursor: pointer
+.btn:hover
+  background: #f7f7f7
+.btn[disabled]
+  opacity: 0.5
+  cursor: not-allowed
+.btn.is-disabled
+  opacity: 0.5
+  cursor: not-allowed
+
+/* Decorative small button used inside diagrams */
+.btn-design
+  color: #696969;
+  font-size: 18pt;
+  text-align: center;
+  background: #ffffff;
+  border-radius: 10%;
+  border: 2px solid #c0c0c0;
+.btn-design:hover
+  color: #696969;
+  font-size: 18pt;
+  text-align: center;
+  background: #f5f5f5;
+  border-radius: 10%;
+  border: 2px solid #c0c0c0;
