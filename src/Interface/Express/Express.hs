@@ -956,7 +956,11 @@ getSpanR = do
 --CSS（cassius）
 myDesign :: Widget
 myDesign = do
-    toWidget $(cassiusFile "src/Interface/Express/templates/express.cassius")
+    toWidget $(cassiusFile "src/Interface/Express/templates/common.cassius")
+    toWidget $(cassiusFile "src/Interface/Express/templates/parsing.cassius")
+    toWidget $(cassiusFile "src/Interface/Express/templates/inference.cassius")
+    toWidget $(cassiusFile "src/Interface/Express/templates/proofsearch.cassius")
+    toWidget $(cassiusFile "src/Interface/Express/templates/toast.cassius")
 
 -- julius file for javascript
 myFunction :: Widget
@@ -1222,7 +1226,7 @@ getProofQueryR = do
       let psqWN = DWN.fromDeBruijnProofSearchQuery psq
       defaultLayout $ do
         [whamlet|
-          <div class="tab-tcq-content">^{WE.widgetizeWith dsp psqWN}
+          <div class="tab-tcq-content-inference">^{WE.widgetizeWith dsp psqWN}
         |]
 
 -- Start proving (pos/neg) lazily after /proofsearch renders
