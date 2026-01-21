@@ -22,6 +22,11 @@ import qualified Data.Maybe as M
 
 import qualified Data.Time.Clock as Time
 
+import Control.Concurrent
+import Control.Concurrent.Async
+import Data.IORef
+import qualified Data.List as L
+
 debugLog :: WB.Goal -> WB.Depth -> WB.Setting -> T.Text -> a -> a
 debugLog (WB.Goal sig var maybeTerm proofTypes) depth setting = 
   WB.debugLogWithTerm (sig,var) (maybe (A.Conclusion $ DdB.Con $T.pack "?") id maybeTerm) (head proofTypes) depth setting
@@ -177,8 +182,15 @@ deduceWithSubGoalset (WB.SubGoalSet rule maybeTree subgoals dSide) depth setting
 -- | 2. check if allProof is needed
 -- | 3. execute `deduceWithSubGoalset` for each subgoalset
 -- | 4. leave only the result matches the target.
+
 deduceWithSubGoalsets :: [WB.SubGoalSet] -> WB.Depth -> WB.Setting -> WB.Result -> M.Maybe A.Arrowterm -> A.Arrowterm -> IO WB.Result
 deduceWithSubGoalsets subgoalsets depth setting resultDef justTerm arrowType = 
+  if WB.enableConcurrent setting 
+    then deduceWithSubGoalsetsConcurrent subgoalsets depth setting resultDef justTerm arrowType
+    else deduceWithSubGoalsetsSequential subgoalsets depth setting resultDef justTerm arrowType
+
+deduceWithSubGoalsetsSequential :: [WB.SubGoalSet] -> WB.Depth -> WB.Setting -> WB.Result -> M.Maybe A.Arrowterm -> A.Arrowterm -> IO WB.Result
+deduceWithSubGoalsetsSequential subgoalsets depth setting resultDef justTerm arrowType = 
     let resultIO' = 
             foldl
                 (\rsIO subgoalset -> 
@@ -201,6 +213,36 @@ deduceWithSubGoalsets subgoalsets depth setting resultDef justTerm arrowType =
                   L.nub$ WB.trees result'
     in treeIO >>= \trees -> resultIO' >>= \result' -> return $ result'{WB.rStatus = (WB.rStatus result'){WB.deduceNgLst = WB.deduceNgLst$WB.sStatus setting}}{WB.trees = trees}
 
+deduceWithSubGoalsetsConcurrent :: [WB.SubGoalSet] -> WB.Depth -> WB.Setting -> WB.Result -> M.Maybe A.Arrowterm -> A.Arrowterm -> IO WB.Result
+deduceWithSubGoalsetsConcurrent subgoalsets depth setting resultDef justTerm arrowType = 
+    newIORef False >>= \stopRef ->
+    newIORef resultDef >>= \resultRef ->
+
+    let worker subgoalset = readIORef stopRef >>= \stop ->
+          if (stop && (not $ WB.allProof (WB.sStatus setting))) then pure () else
+              readIORef resultRef >>= \current ->  (deduceWithSubGoalset subgoalset depth setting{WB.sStatus = WB.mergeStatus (WB.rStatus current) WB.statusDef{WB.allProof = True}} resultDef)
+                >>= \result ->
+                  atomicModifyIORef' resultRef (\rs ->
+                    let merged = WB.mergeResult rs result
+                        stop'  = not (null (WB.trees merged))
+                    in (merged, stop')
+                  )
+                  >>= \stop' ->
+                    if stop'
+                      then writeIORef stopRef True
+                      else pure ()
+    in mapConcurrently_ worker subgoalsets >>
+      readIORef resultRef >>= \result' ->
+        let
+          trees =
+            filter
+              (\tree ->
+                let A.AJudgment _ _ term' type' = A.downSide' tree
+                in ( maybe True (\term -> (A.arrowNotat . A.betaReduce) term' == (A.arrowNotat . A.betaReduce) term) justTerm)
+                  && ( (A.arrowNotat . A.betaReduce) type' == (A.arrowNotat . A.betaReduce) arrowType)
+              )
+              (L.nub $ WB.trees result')
+        in pure $ result'{ WB.rStatus =(WB.rStatus result'){ WB.deduceNgLst = WB.deduceNgLst $ WB.sStatus setting }, WB.trees = trees}
 
 -- | deduce'
 -- | summary : search or check proof terms for a type in input `goal`

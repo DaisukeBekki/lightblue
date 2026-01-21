@@ -71,6 +71,7 @@ dependencies:
   - http-client-tls >= 0.3.5
   - dotenv >= 0.0.4
   - deepseq
+  - async >= 2.2.4
 
 library:
   source-dirs: src
