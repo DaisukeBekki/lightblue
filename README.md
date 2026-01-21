@@ -136,6 +136,7 @@ The global options are common to all commands.
 |```--noShowCat```                        |     |If specified, hide syntactic categories|
 |```--noShowSem```                        |     |If specified, hide semantics|
 |```--leafVertical```                     |     |If specified, list lexical items vertically|
+|```--lexicalPos {top\|bottom\|none}```  | ```top``` |Position of Lexical Items section. `top`: at the very top, `bottom`: at the very bottom, `none`: hide.|
 |```--browser {chrome\|firefox\|default}``` | ```default``` |Choose the browser to launch the Express UI. If omitted, the system default browser is used.|
 
 ### For developpers ###
