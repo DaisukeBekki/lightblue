@@ -1,0 +1,350 @@
+/* Parsing screen styles */
+
+/* Lexical Items */
+.tab-leaves
+  margin-top: 12px;
+  padding: 6px 0;
+  border-top: 1px solid #aaa;
+.leaf-node-list
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+.leaf-node-list.vertical
+  flex-direction: column;
+  flex-wrap: nowrap;
+.leaf-node-item
+  padding: 3px 6px;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  background-color: #f5f5f5;
+
+/* Toggle controls for cat/sem rows */
+#cat-toggle
+  display: none;
+.cathide
+  display: table-row;
+#cat-toggle:checked ~ * .cathide
+  display: none;
+#toggle-node:checked ~ * .tab-node
+  display: none;
+#catbtn
+  font-weight: bold;
+#sem-toggle
+  display: none;
+.semhide
+  display: table-row;
+#sem-toggle:checked ~ * .semhide
+  display: none;
+#sembtn
+  font-weight: bold;
+
+/* Root flags to toggle rows via class (robust) */
+#parsing-view.hidden-cat .cathide
+  display: none;
+#parsing-view.hidden-sem .semhide
+  display: none;
+
+/* Header area (parsing view) */
+.header 
+  background-color: #002b5c;
+  color: white;
+  padding: 10px 20px;
+  height: 70px;
+  font-size: 1.0em;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+.header h1
+  padding-left: 30px;
+  font-family: "Audiowide", serif;
+  font-style: normal;
+.parsing-content
+  padding-left: 10px;
+  padding-right: 10px;
+  display:flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 80px;
+.span-controls
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: 12px;
+#span-surface
+  min-width: 240px;
+  padding: 6px 8px;
+  border: 1px solid #cfe0ff;
+  border-radius: 6px;
+  font-size: 0.9rem;
+#span-beam
+  width: 70px;
+  padding: 6px 8px;
+  border: 1px solid #cfe0ff;
+  border-radius: 6px;
+  font-size: 0.9rem;
+#span-results
+  min-width: 220px;
+  padding: 6px 8px;
+  border: 1px solid #cfe0ff;
+  border-radius: 6px;
+  font-size: 0.9rem;
+#span-status
+  color: #fff;
+  font-size: 0.9rem;
+  margin-left: 6px;
+.header p
+  padding: 1px;
+  margin: 3px;
+
+/* Tab UI */
+.tab-wrap
+  display: flex;
+  flex-wrap: wrap;
+  margin:20px 0;
+.tab-wrap:after
+  content: '';
+  width: 100%;
+  height: 3px;
+  background:  #002b5c;
+  display: block;
+  order: -1;
+.tab-label
+  color: White;
+  background: LightGray;
+  font-weight: bold;
+  text-shadow: 0 -1px 0 rgba(0,0,0,.2);
+  white-space: nowrap;
+  text-align: center;
+  padding: 10px .5em;
+  order: -1;
+  position: relative;
+  z-index: 1;
+  cursor: pointer;
+  border-radius: 5px 5px 0 0;
+  flex: 1;
+.tab-label:not(:last-of-type)
+  margin-right: 5px;
+.tab-content
+  width: 100%;
+  height: 0;
+  overflow: hidden;
+  opacity: 0;
+.tab-switch:checked+.tab-label
+  background:  #002b5c;
+.tab-switch:checked+.tab-label+.tab-content
+  height: auto;
+  overflow: auto;
+  padding: 15px;
+  opacity: 1;
+  transition: .5s opacity;
+  box-shadow: 0 0 3px rgba(0,0,0,.2);
+.tab-switch
+  display: none;
+#parsing-view
+  padding-top: 110px;
+.container-tab
+  margin-top: 180px;
+  text-align: center;
+  margin: 20px auto;
+  max-width: 1400px;
+.sentence-line
+  font-size: 1.1rem;
+  font-weight: 600;
+.toggle-group
+  display: inline-flex;
+  gap: 8px;
+.toggle
+  cursor: pointer;
+  background: #f2f6fb;
+  color: #00509e;
+  border: 2px solid #cfe0ff;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-weight: bold;
+  transition: background .15s ease, color .15s ease, border-color .15s ease, transform .1s ease, box-shadow .15s ease;
+  box-shadow: 0 0 0 rgba(0,0,0,0);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+.toggle:hover
+  transform: translateY(-2px);
+.toggle.active
+  background: #00509e;
+  color: #ffffff;
+  border-color: #00509e;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.2);
+.toggle:not(.active)::after
+  content: " ON";
+  margin-left: 6px;
+  font-weight: 800;
+  color: #0a7f2e;
+.toggle::after
+  content: " OFF";
+  color: #a10e2a;
+
+/* Syntactic Structures */
+.tab-node-content
+  display: block;
+  text-align: center;
+  overflow-x: auto;
+  max-width: 100%;
+.tab-node-inner
+  display: inline-block;
+  min-width: max-content;
+  text-align: left;
+.tab-node
+  text-align: center;
+  align-items : center;
+  padding-bottom: 50px;
+  display: block;
+  width: 100%;
+
+.error-message
+  color: red;
+  font-size: 34px;
+  margin-top: 10px;
+
+/* TCQ/TCD */
+.tab-tcq-content
+  display: flex;
+  text-align: left;
+  justify-content: center;
+.tab-tcq-content-inference
+  display: flex;
+  text-align: left;
+  justify-content: flex-start;
+.tab-tcds-content
+  display: block;
+  text-align: center;
+  overflow-x: auto;
+  max-width: 100%;
+.tab-tcds-inner
+  display: inline-block;
+  min-width: max-content;
+  text-align: left;
+.tab-tcq
+  padding-bottom: 50px;
+.tab-tcd
+  padding-bottom: 50px;
+
+/* TC holders / selection badges */
+.tc-holder
+  display: block
+  text-align: left
+  overflow-x: auto
+  overflow-y: auto
+  max-width: 100%
+  max-height: 60vh
+.tc-holder td
+  white-space: normal
+.tc-holder > .tab-tcds-content
+  display: block
+  overflow-x: auto
+  max-width: 100%
+.tc-holder > .tab-tcds-content > .tab-tcds-inner
+  display: block
+  min-width: max-content
+  width: auto
+  margin-bottom: 10px
+.tc-selected
+  border: 2px solid #1976d2
+  border-radius: 6px
+  padding: 4px
+  position: relative
+  background: #fff
+.badge-selected
+  position: absolute
+  top: 4px
+  right: 6px
+  background: #1976d2
+  color: #fff
+  font-size: 11px
+  border-radius: 10px
+  padding: 2px 6px
+
+/* TCD layout tweaks */
+.tab-tcds-inner
+  padding: 4px
+  max-width: 100%
+  position: relative
+.tab-tcds-inner math
+  display: inline-block
+  vertical-align: middle
+.tab-tcds-inner .btn-design
+  display: inline-block
+  margin-left: 8px
+  vertical-align: middle
+  line-height: 1.1
+
+/* JSeM markers (color) */
+.cathide
+  color: blue;
+.sf
+  color: green;
+
+/* Span preview */
+.span-preview-title
+  padding: 10px 12px;
+  font-weight: 700;
+  color: #002b5c;
+  background: #f0f5ff;
+  border-top: 1px solid #ddd;
+  border-bottom: 1px solid #e5eefc;
+.span-preview-list
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px;
+  border-top: 1px solid #ddd;
+  background: #fafafa;
+.span-preview
+  padding: 6px 8px;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+  min-width: 160px;
+  max-width: 100%;
+  overflow: auto;
+.span-preview:hover
+  background-color: #f5faff;
+  border-color: #7fb3ff;
+.span-preview.active
+  background-color: #e6f0ff;
+  border-color: #00509e;
+  box-shadow: 0 0 0 2px rgba(0,80,158,0.12) inset;
+.span-preview-loading
+  color: #666;
+  font-size: 0.85rem;
+.span-preview-pf
+  font-weight: 700;
+  color: #333;
+.span-preview-cat
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.85rem;
+  color: #444;
+.span-preview-score
+  font-size: 0.8rem;
+  color: #666;
+
+/* Export context menu */
+#export-menu
+  position: absolute;
+  display: none;
+  min-width: 220px;
+  background: #ffffff;
+  border: 1px solid #cfe0ff;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  z-index: 2000;
+  overflow: hidden;
+.export-menu-item
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 0.95rem;
+.export-menu-item:hover
+  background: #f2f6fb;
+
