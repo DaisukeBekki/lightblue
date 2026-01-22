@@ -360,6 +360,74 @@ function highlightSpanPreview(index) {
   }
 }
 
+// ===== Top horizontal scrollbars (above content) =====
+(function setupTopScrollbars() {
+  function enhance(container) {
+    if (!container || container.dataset.topScrollReady === '1') return;
+    container.dataset.topScrollReady = '1';
+    // Hide native bottom horizontal scrollbar
+    container.classList.add('hide-x-scrollbar');
+    // Build top scroller
+    const top = document.createElement('div');
+    top.className = 'hscroll-top';
+    const inner = document.createElement('div');
+    inner.className = 'hscroll-top-inner';
+    top.appendChild(inner);
+    // Insert before container
+    container.parentNode.insertBefore(top, container);
+    // Keep widths in sync
+    function refreshWidth() {
+      // Ensure inner width matches content scroll width
+      const w = Math.max(container.scrollWidth || 0, container.clientWidth || 0);
+      inner.style.width = w + 'px';
+    }
+    // Sync scroll positions (both directions)
+    let syncing = false;
+    top.addEventListener('scroll', () => {
+      if (syncing) return;
+      syncing = true;
+      container.scrollLeft = top.scrollLeft;
+      syncing = false;
+    });
+    container.addEventListener('scroll', () => {
+      if (syncing) return;
+      syncing = true;
+      top.scrollLeft = container.scrollLeft;
+      syncing = false;
+    });
+    // Observe size/content changes
+    if (window.ResizeObserver) {
+      const ro = new ResizeObserver(() => refreshWidth());
+      ro.observe(container);
+      // also observe first child that defines width if exists
+      if (container.firstElementChild) {
+        ro.observe(container.firstElementChild);
+      }
+    } else {
+      window.addEventListener('resize', refreshWidth);
+      setInterval(refreshWidth, 800);
+    }
+    // Initial layout
+    refreshWidth();
+    top.scrollLeft = container.scrollLeft;
+  }
+  function run() {
+    // Targets with horizontal overflow: .tab-node-content, .tab-tcds-content
+    document.querySelectorAll('.tab-node-content, .tab-tcds-content').forEach(enhance);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', run);
+  } else {
+    run();
+  }
+  // Re-run when tab switched (radio inputs change)
+  document.addEventListener('change', (e) => {
+    const t = e.target;
+    if (t && t.matches && t.matches('input[name="TAB"].tab-switch')) {
+      setTimeout(run, 0);
+    }
+  });
+})();
 // ===== Inference progress: partial refresh of each column until done =====
 (function initInferenceProgress() {
   const grid = document.getElementById('inference-grid');
