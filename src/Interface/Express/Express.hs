@@ -730,7 +730,13 @@ applyEnvDisplayOptions = do
   mNoShowCat <- lookupEnv "LB_EXPRESS_NOSHOWCAT"
   mNoShowSem <- lookupEnv "LB_EXPRESS_NOSHOWSEM"
   mLeafVertical <- lookupEnv "LB_EXPRESS_LEAFVERTICAL"
+  mLexPos <- lookupEnv "LB_EXPRESS_LEXICALPOS"
   let toBool v = case v of { Just "1" -> True; Just "true" -> True; Just "True" -> True; _ -> False }
+      toLexPos v = case fmap (map toLower) v of
+        Just "top"    -> WE.LexTop
+        Just "bottom" -> WE.LexBottom
+        Just "none"   -> WE.LexNone
+        _             -> WE.lexicalItemsPosition WE.defaultDisplaySetting
       noShowCat = toBool mNoShowCat
       noShowSem = toBool mNoShowSem
       leafVert = toBool mLeafVertical
@@ -738,7 +744,8 @@ applyEnvDisplayOptions = do
       base' = maybe base (\d -> base { WE.defaultExpandDepth = d }) mDepth
       base'' = if noShowCat then base' { WE.showCat = False } else base'
       base''' = if noShowSem then base'' { WE.showSem = False } else base''
-      dsp = base''' { WE.leafVertical = leafVert }
+      base'''' = base''' { WE.leafVertical = leafVert }
+      dsp = base'''' { WE.lexicalItemsPosition = toLexPos mLexPos }
   atomicWriteIORef currentDisplaySettingRef dsp
 
 getErrorR :: Handler Html
@@ -824,11 +831,12 @@ getParsingR = do
                       <input id="TAB-#{tabNum}" type="radio" name="TAB" class="tab-switch" :tabNum == 1:checked>
                       <label for="TAB-#{tabNum}" class=#{tabClass}>#{tabNum} (score: #{score})
                       <div class="tab-content">
-                        <div class="tab-leaves">
-                          <h2>Lexical Items
-                          <div .leaf-node-list :WE.leafVertical dsp:.vertical>
-                            $forall leaf <- leafNodes
-                              <div .leaf-node-item>^{WE.widgetizeWith dsp leaf}
+                        $if WE.lexicalItemsPosition dsp == WE.LexTop
+                          <div class="tab-leaves">
+                            <h2>Lexical Items
+                            <div .leaf-node-list :WE.leafVertical dsp:.vertical>
+                              $forall leaf <- leafNodes
+                                <div .leaf-node-item>^{WE.widgetizeWith dsp leaf}
                         <div class="tab-node">
                           <h1>Syntactic Structures
                         <div class="tab-node-content">
@@ -843,6 +851,12 @@ getParsingR = do
                           $else
                             <div class="tab-tcds-content">
                               <div .tab-tcds-inner>^{Prelude.mapM_ (WE.widgetizeWith dsp) $ tcdList}
+                        $if WE.lexicalItemsPosition dsp == WE.LexBottom
+                          <div class="tab-leaves">
+                            <h2>Lexical Items
+                            <div .leaf-node-list :WE.leafVertical dsp:.vertical>
+                              $forall leaf <- leafNodes
+                                <div .leaf-node-item>^{WE.widgetizeWith dsp leaf}
             |]
             myDesign
             myFunction

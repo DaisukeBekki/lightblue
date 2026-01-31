@@ -428,6 +428,7 @@ function highlightSpanPreview(index) {
     }
   });
 })();
+
 // ===== Inference progress: partial refresh of each column until done =====
 (function initInferenceProgress() {
   const grid = document.getElementById('inference-grid');
