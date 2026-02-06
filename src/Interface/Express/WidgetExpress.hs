@@ -169,6 +169,8 @@ instance Widgetizable Cat where
                               ^{widgetize' u}
                               <mn>:[#{T.pack $ show i}]
                               |]
+    S []        -> [whamlet|<mi>S
+                           |]
     S (pos:(conj:pm)) -> let x = toText pm
                              nullx = T.null x in
                          [whamlet|
@@ -185,10 +187,13 @@ instance Widgetizable Cat where
                                    <mtd>
                                      <mpadded height='-0.5em'>^{widgetize pm}
                                  |]
+    NP []       -> [whamlet|<mi>NP
+                           |]
     NP [cas]    -> [whamlet|<msub>
                               <mi>NP
                               <mtext class="sf">^{widgetize cas}
                            |]
+    Sbar []     -> [whamlet|<menclose notation='top'><mi>S|]
     Sbar [sf]   -> [whamlet|<msub>
                               <menclose notation='top'>
                                 <mi>S
@@ -357,11 +362,9 @@ instance Widgetizable UDWN.Preterm where
         |]
     UDWN.Disj a b -> [whamlet|
       <mrow>
-        <mi>
-          ^{widgetize a}
+        ^{widgetize a}
         <mo>+
-        <mi>
-          ^{widgetize b}
+        ^{widgetize b}
         |]
     UDWN.Iota s p -> [whamlet|
         <mrow>
