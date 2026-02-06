@@ -997,7 +997,7 @@ disjElim goal setting =
           termsInProofTerm = let -- [b,a,f] for (f(a))(b)
             maybeTermsInUnpackTerm appTerm =
                 case appTerm of 
-                  A.ArrowUnpack p l m n -> [p,l,m,n]
+                  A.ArrowUnpack l p m n -> [p,l,m,n]
                   f -> [f]
             in maybe [] maybeTermsInUnpackTerm maybeTerm
           termIsNotUnpackType = (length termsInProofTerm == 1) -- When termsInProofTerm is a list with one element, the term is not appType
@@ -1014,25 +1014,25 @@ disjElim goal setting =
             dSideSubstLstTerms = map (\(WB.SubstSet _ term _) -> term) dSideSubstLst
             dSide = A.AJudgment sig var (A.ArrowUnpack (dSideSubstLstTerms !! 3) (dSideSubstLstTerms !! 2) (dSideSubstLstTerms !! 1) (dSideSubstLstTerms !! 0)) arrowType
             pTerm = A.ArrowLam arrowType
-            subgoalsForDisj mType =
-              let A.ArrowDisj disjFst disjSnd = mType
+            subgoalsForDisj lType =
+              let A.ArrowDisj disjFst disjSnd = lType
                   pTerm = A.ArrowLam arrowType
                   pType = A.Arrow [mType] A.aType
-                  lType  = A.Arrow [disjFst] arrowType
+                  mType  = A.Arrow [disjFst] arrowType
                   nType = A.Arrow [disjSnd] arrowType
-                  mGoal = WB.Goal sig var (if isDeduce then M.Nothing else M.Just (termsInProofTerm !! 2)) [mType]
-                  pGoal = WB.Goal sig var (M.Just pTerm) [pType]
                   lGoal = WB.Goal sig var (if isDeduce then M.Nothing else M.Just (termsInProofTerm !! 1)) [lType]
+                  pGoal = WB.Goal sig var (M.Just pTerm) [pType]
+                  mGoal = WB.Goal sig var (if isDeduce then M.Nothing else M.Just (termsInProofTerm !! 2)) [mType]
                   nGoal = WB.Goal sig var (if isDeduce then M.Nothing else M.Just (termsInProofTerm !! 3)) [nType]
-              in [mGoal,pGoal,lGoal,nGoal]
+              in [lGoal,pGoal,mGoal,nGoal]
             subgoalsets = 
               let subgoalsetDisj =
                     map
                       (\tree -> 
                         let
                           mJudgment = A.downSide' tree
-                          plmnGoal = subgoalsForDisj (A.typefromAJudgment mJudgment)
-                        in WB.SubGoalSet QT.DisjE (M.Just tree) (map (\goal -> WB.SubGoal goal [] (M.Nothing,M.Nothing)) plmnGoal) (dSide,dSideSubstLst)
+                          lpmnGoal = subgoalsForDisj (A.typefromAJudgment mJudgment)
+                        in WB.SubGoalSet QT.DisjE (M.Just tree) (map (\goal -> WB.SubGoal goal [] (M.Nothing,M.Nothing)) lpmnGoal) (dSide,dSideSubstLst)
                         )
                       disjTrees
                   subgoalsetDisjArrow =
@@ -1041,8 +1041,8 @@ disjElim goal setting =
                         let
                           mArrowJudgment = A.downSide' tree
                           A.Arrow _ mType = A.typefromAJudgment mArrowJudgment
-                          plmnGoal = subgoalsForDisj mType
-                        in WB.SubGoalSet QT.DisjE (M.Just tree) (map (\goal -> WB.SubGoal goal [] (M.Nothing,M.Nothing)) plmnGoal) (dSide,dSideSubstLst)
+                          lpmnGoal = subgoalsForDisj mType
+                        in WB.SubGoalSet QT.DisjE (M.Just tree) (map (\goal -> WB.SubGoal goal [] (M.Nothing,M.Nothing)) lpmnGoal) (dSide,dSideSubstLst)
                         )
                       disjArrowTrees
               in subgoalsetDisj ++ subgoalsetDisjArrow
