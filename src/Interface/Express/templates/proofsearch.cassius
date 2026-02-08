@@ -1,0 +1,93 @@
+/* ProofSearch page styles */
+.ps-container
+  padding: 16px
+
+.ps-header
+  background: #f7faff
+  border: 1px solid #dde9ff
+  border-radius: 8px
+  padding: 12px 14px
+  margin-bottom: 16px
+
+.ps-header-title
+  font-size: 1.6rem
+  font-weight: 700
+  color: #002b5c
+  margin-bottom: 8px
+.ps-header-ctl
+  margin-bottom: 8px
+
+.ps-sentences
+  display: grid
+  grid-template-columns: 140px 1fr
+  row-gap: 6px
+  column-gap: 10px
+
+.ps-row
+  display: contents
+
+.ps-role
+  font-weight: 700
+  color: #0b4ea2
+
+.ps-text
+  color: #333
+
+.ps-grid
+  display: flex
+  flex-direction: column
+  gap: 12px
+
+.ps-section
+  background: #fff
+  border: 1px solid #eee
+  border-radius: 8px
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04)
+  padding: 8px 0
+
+.ps-title
+  padding: 12px 12px
+  border-bottom: 1px solid #f0f0f0
+  display: flex
+  align-items: center
+  gap: 8px
+.ps-status
+  margin-left: 8px
+  font-size: 0.9rem
+  color: #666
+.ps-status.done
+  color: #0a7f2e
+
+.ps-badge
+  display: inline-block
+  padding: 3px 8px
+  border-radius: 9999px
+  font-size: 0.9rem
+  font-weight: 700
+  color: #fff
+
+.ps-badge-pos
+  background: #1976d2
+
+.ps-badge-neg
+  background: #b71c1c
+
+.ps-body
+  padding: 60px
+
+.ps-outcome
+  display: inline-block
+  padding: 4px 12px
+  border-radius: 9999px
+  font-weight: 700
+  font-size: 0.95rem
+.ps-outcome-yes
+  background: #2e7d32
+  color: #fff
+.ps-outcome-no
+  background: #b71c1c
+  color: #fff
+.ps-outcome-pending
+  background: #ffe69c
+  color: #8a6d3b
+

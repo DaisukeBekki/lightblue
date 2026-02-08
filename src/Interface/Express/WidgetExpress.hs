@@ -6,9 +6,11 @@
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE FlexibleContexts      #-}
 
 module Interface.Express.WidgetExpress (
     DisplaySetting(..)
+  , LexicalItemsPosition(..)
   , defaultDisplaySetting
   , Widgetizable(..)
   ) where
@@ -24,21 +26,21 @@ import qualified DTS.DTTdeBruijn as DTT
 import qualified DTS.DTTwithName as DWN
 import qualified DTS.UDTTdeBruijn as UDTT
 import  qualified DTS.UDTTwithName as UDWN
-import qualified DTS.Index as Index
-import  qualified DTS.Index as UDID
 import qualified DTS.QueryTypes as QT
-import  Control.Monad (forM_)
-import  Control.Applicative
-import  qualified Text.Julius as J
 import Interface.Tree
+import qualified DTS.GeneralTypeQuery as GTQ
 
 
 -- 表示設定レコード
+data LexicalItemsPosition = LexTop | LexBottom | LexNone
+  deriving (Eq, Show)
+
 data DisplaySetting = DisplaySetting
-  { defaultExpandDepth :: Int   -- ^ 何段までデフォルト展開するか
-  , showCat :: Bool             -- ^ 統語範疇を初期表示するか
-  , showSem :: Bool             -- ^ 意味表示を初期表示するか
-  , leafVertical :: Bool        -- ^ 葉ノードを縦並び表示にするか
+  { defaultExpandDepth :: Int         -- ^ 何段までデフォルト展開するか
+  , showCat :: Bool                   -- ^ 統語範疇を初期表示するか
+  , showSem :: Bool                   -- ^ 意味表示を初期表示するか
+  , leafVertical :: Bool              -- ^ 葉ノードを縦並び表示にするか
+  , lexicalItemsPosition :: LexicalItemsPosition -- ^ Lexical Items の表示位置
   }
 
 defaultDisplaySetting :: DisplaySetting
@@ -47,6 +49,7 @@ defaultDisplaySetting = DisplaySetting
   , showCat = True
   , showSem = True
   , leafVertical = False
+  , lexicalItemsPosition = LexTop
   }
 
 -- Widgetizableクラスを定義、widgetizeという関数を持つ
@@ -166,6 +169,8 @@ instance Widgetizable Cat where
                               ^{widgetize' u}
                               <mn>:[#{T.pack $ show i}]
                               |]
+    S []        -> [whamlet|<mi>S
+                           |]
     S (pos:(conj:pm)) -> let x = toText pm
                              nullx = T.null x in
                          [whamlet|
@@ -182,10 +187,13 @@ instance Widgetizable Cat where
                                    <mtd>
                                      <mpadded height='-0.5em'>^{widgetize pm}
                                  |]
+    NP []       -> [whamlet|<mi>NP
+                           |]
     NP [cas]    -> [whamlet|<msub>
                               <mi>NP
                               <mtext class="sf">^{widgetize cas}
                            |]
+    Sbar []     -> [whamlet|<menclose notation='top'><mi>S|]
     Sbar [sf]   -> [whamlet|<msub>
                               <menclose notation='top'>
                                 <mi>S
@@ -354,11 +362,9 @@ instance Widgetizable UDWN.Preterm where
         |]
     UDWN.Disj a b -> [whamlet|
       <mrow>
-        <mi>
-          ^{widgetize a}
+        ^{widgetize a}
         <mo>+
-        <mi>
-          ^{widgetize b}
+        ^{widgetize b}
         |]
     UDWN.Iota s p -> [whamlet|
         <mrow>
@@ -851,3 +857,27 @@ instance Widgetizable UDTT.Judgment where
           <mo>:
           <math xmlns="http://www.w3.org/1998/Math/MathML">^{widgetize typ}
     |]
+
+-- Proof search query: Γ ⊢ ? : A
+instance Widgetizable DTT.ProofSearchQuery where
+  widgetize = widgetize . DTT.embedProofSearchQuery
+
+-- GeneralTypeQuery (generic judgment-like view)
+instance (Widgetizable b, Widgetizable (GTQ.QueryGoal c), Widgetizable (GTQ.QueryGoal d)) => Widgetizable (GTQ.GeneralTypeQuery a b c d) where
+  widgetize (GTQ.GeneralTypeQuery _ cxt trm typ) =
+    [whamlet|
+      <math xmlns="http://www.w3.org/1998/Math/MathML">
+        <mrow>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">^{widgetize cxt}
+          <mo>&vdash;
+          <math xmlns="http://www.w3.org/1998/Math/MathML">^{widgetize trm}
+          <mo>:
+          <math xmlns="http://www.w3.org/1998/Math/MathML">^{widgetize typ}
+    |]
+  
+instance (Widgetizable a) => Widgetizable (GTQ.QueryGoal a) where
+  widgetize (GTQ.Term t) = widgetize t
+  widgetize GTQ.Question = [whamlet|<mo>?</mo>|]
+
+instance Widgetizable DWN.ProofSearchQuery where
+  widgetize = widgetize . DWN.embedProofSearchQuery

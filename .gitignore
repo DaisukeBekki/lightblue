@@ -22,3 +22,5 @@ src/.ftpconfig
 stack.yaml.lock
 config.yaml
 .env
+
+client_session_key.aes

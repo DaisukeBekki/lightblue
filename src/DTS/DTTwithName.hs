@@ -36,6 +36,7 @@ module DTS.DTTwithName (
   , fromDeBruijnTypeInferQuery
   , ProofSearchQuery(..)
   , fromDeBruijnProofSearchQuery 
+  , embedProofSearchQuery
   ) where
 
 import qualified GHC.Generics        as G --base
