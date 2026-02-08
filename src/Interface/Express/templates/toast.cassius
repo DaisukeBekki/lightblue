@@ -1,0 +1,55 @@
+/* Toast notifications and popovers */
+.toast-root
+  position: fixed
+  left: 50%
+  bottom: 24px
+  transform: translateX(-50%)
+  display: flex
+  flex-direction: column
+  gap: 8px
+  z-index: 3000
+  pointer-events: none
+
+.toast
+  background: rgba(0,0,0,0.85)
+  color: #fff
+  padding: 8px 12px
+  border-radius: 6px
+  font-size: 0.95rem
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2)
+  pointer-events: auto
+  opacity: 1
+  transition: opacity .3s ease
+
+.toast.fade-out
+  opacity: 0
+
+.toast-popover
+  position: absolute
+  background: rgba(0,0,0,0.9)
+  color: #fff
+  padding: 6px 10px
+  border-radius: 6px
+  font-size: 0.9rem
+  line-height: 1.3
+  box-shadow: 0 6px 16px rgba(0,0,0,0.25)
+  z-index: 4000
+  opacity: 1
+  transition: opacity .2s ease
+  pointer-events: none
+
+.toast-popover.fade-out
+  opacity: 0
+
+.toast-popover:after
+  content: ""
+  position: absolute
+  left: 50%
+  transform: translateX(-50%)
+  bottom: -6px
+  border-left: 6px solid transparent
+  border-right: 6px solid transparent
+  border-top: 6px solid rgba(0,0,0,0.9)
+
+.toast-popover:after
+  display: none

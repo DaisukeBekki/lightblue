@@ -33,6 +33,7 @@ import qualified System.Environment as Env
 import qualified Interface.Text as T
 import qualified Interface.HTML as I
 import qualified Interface.PrintParseResult as PPR
+import qualified Interface.Express.Express as Express
 import qualified JSeM as J
 import qualified JSeM.XML as J
 import qualified DTS.UDTTdeBruijn as UDTT
@@ -44,7 +45,7 @@ import qualified DTS.NaturalLanguageInference as NLI
 import qualified JSeM as JSeM                         --jsem
 import qualified ML.Exp.Classification.Bounded as NLP --nlp-tools
 
-data Options = Options Lang Command I.Style NLI.ProverName FilePath Int Int Int Int Int Int Bool Bool Bool Bool (Maybe Int) Bool Bool Bool (Maybe ExpressBrowser)
+data Options = Options Lang Command I.Style NLI.ProverName FilePath Int Int Int Int Int Int Bool Bool Bool Bool (Maybe Int) Bool Bool Bool (Maybe ExpressBrowser) (Maybe LexicalPos)
 
 data Command =
   Parse I.ParseOutput
@@ -61,6 +62,18 @@ data Lang = JP Juman.MorphAnalyzerName JFilter.FilterName | EN deriving (Show, E
 -- | Browser selection for Express mode
 data ExpressBrowser = BrowserDefault | BrowserChrome | BrowserFirefox
   deriving (Show, Eq)
+
+-- | Lexical Items position for Express
+data LexicalPos = LexTop | LexBottom | LexNone
+  deriving (Show, Eq)
+
+lexicalPosReader :: ReadM LexicalPos
+lexicalPosReader = eitherReader $ \s ->
+  case map toLower s of
+    "top"    -> Right LexTop
+    "bottom" -> Right LexBottom
+    "none"   -> Right LexNone
+    _        -> Left "Expected one of: top|bottom|none"
 
 expressBrowserReader :: ReadM ExpressBrowser
 expressBrowserReader = eitherReader $ \s ->
@@ -232,11 +245,15 @@ optionParser =
       <> help "If True, hide semantics in Express view" )
     <*> switch
       ( long "leafVertical"
-      <> help "If True, list leaf nodes vertically in Express view" )
+      <> help "If True, list lexical items vertically in Express view" )
     <*> optional (option expressBrowserReader
       ( long "browser"
       <> metavar "chrome|firefox|default"
       <> help "Choose browser for Express view (default: system default)" ))
+    <*> optional (option lexicalPosReader
+      ( long "lexicalPos"
+      <> metavar "top|bottom|none"
+      <> help "Set Lexical Items position in Express view" ))
 
 parseOptionParser :: Parser Command
 parseOptionParser = Parse
@@ -278,7 +295,7 @@ main = customExecParser p opts >>= lightblueMain
         p = prefs showHelpOnEmpty
 
 lightblueMain :: Options -> IO ()
-lightblueMain (Options lang commands style proverName filepath beamW nParse nTypeCheck nProof maxDepth maxTime noTypeCheck noInference ifTime verbose mDepth noShowCat noShowSem leafVertical mExpressBrowser) = do
+lightblueMain (Options lang commands style proverName filepath beamW nParse nTypeCheck nProof maxDepth maxTime noTypeCheck noInference ifTime verbose mDepth noShowCat noShowSem leafVertical mExpressBrowser mLexPos) = do
   start <- Time.getCurrentTime
   langOptions <- case lang of
                    JP morphaName filterName -> do
@@ -326,6 +343,13 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
           Env.setEnv "LB_EXPRESS_NOSHOWCAT" (if noShowCat then "1" else "0")
           Env.setEnv "LB_EXPRESS_NOSHOWSEM" (if noShowSem then "1" else "0")
           Env.setEnv "LB_EXPRESS_LEAFVERTICAL" (if leafVertical then "1" else "0")
+          -- Lexical Items position
+          case mLexPos of
+            Just LexTop    -> Env.setEnv "LB_EXPRESS_LEXICALPOS" "top"
+            Just LexBottom -> Env.setEnv "LB_EXPRESS_LEXICALPOS" "bottom"
+            Just LexNone   -> Env.setEnv "LB_EXPRESS_LEXICALPOS" "none"
+            Nothing        -> return ()
+          Env.setEnv "LB_EXPRESS_START" "parsing"
           -- Browser selection for Express
           case mExpressBrowser of
             Just BrowserChrome  -> Env.setEnv "LB_EXPRESS_BROWSER" "chrome"
@@ -352,26 +376,50 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
             QT.maxDepth = Just maxDepth, 
             QT.maxTime = Just maxTime
             }
-      S.hPutStrLn handle $ I.headerOf style
-      pairs <- forM parsedJSeM'' $ \j -> do
-        let title = "JSeM-ID " ++ (StrictT.unpack $ J.jsem_id j)
-        S.putStr $ "[" ++ title ++ "] "
-        mapM_ StrictT.putStr $ J.premises j
-        S.putStr " ==> "
-        StrictT.putStrLn $ J.hypothesis j
-        S.putStr "\n"
-        let sentences = postpend (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
-            parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] sentences
-        PPR.printParseResult handle style 1 noTypeCheck False title parseResult
-        inferenceLabels <- toList $ NLI.trawlParseResult parseResult
-        let groundTruth = J.jsemLabel2YesNo $ J.answer j
-            prediction = case inferenceLabels of
-              [] -> J.Other
-              (bestLabel:_) -> bestLabel
-        S.putStrLn $ "\nPrediction: " ++ (show prediction) ++ "\nGround truth: " ++ (show groundTruth) ++ "\n"
-        return (prediction, groundTruth)
-      T.putStrLn $ T.fromStrict $ NLP.showClassificationReport pairs
-      S.hPutStrLn handle $ I.footerOf style
+      case style of
+        I.EXPRESS -> do
+          case parsedJSeM'' of
+            [] -> do
+              S.hPutStrLn handle $ "No JSeM data matched."
+            (j:_) -> do
+              let sentences = postpend (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
+              -- 表示オプション
+              case mDepth of
+                Just d -> Env.setEnv "LB_EXPRESS_DEPTH" (show d)
+                Nothing -> return ()
+              Env.setEnv "LB_EXPRESS_NOSHOWCAT" (if noShowCat then "1" else "0")
+              Env.setEnv "LB_EXPRESS_NOSHOWSEM" (if noShowSem then "1" else "0")
+              Env.setEnv "LB_EXPRESS_LEAFVERTICAL" (if leafVertical then "1" else "0")
+              Env.setEnv "LB_EXPRESS_START" "inference"
+              -- Browser selection for Express
+              case mExpressBrowser of
+                Just BrowserChrome  -> Env.setEnv "LB_EXPRESS_BROWSER" "chrome"
+                Just BrowserFirefox -> Env.setEnv "LB_EXPRESS_BROWSER" "firefox"
+                Just BrowserDefault -> Env.setEnv "LB_EXPRESS_BROWSER" "default"
+                Nothing             -> return ()
+              -- Express を起動
+              Express.showExpressInference parseSetting prover [("dummy",DTT.Entity)] [] sentences
+        _ -> do
+          S.hPutStrLn handle $ I.headerOf style
+          pairs <- forM parsedJSeM'' $ \j -> do
+            let title = "JSeM-ID " ++ (StrictT.unpack $ J.jsem_id j)
+            S.putStr $ "[" ++ title ++ "] "
+            mapM_ StrictT.putStr $ J.premises j
+            S.putStr " ==> "
+            StrictT.putStrLn $ J.hypothesis j
+            S.putStr "\n"
+            let sentences = postpend (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
+                parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] sentences
+            PPR.printParseResult handle style 1 noTypeCheck False title parseResult
+            inferenceLabels <- toList $ NLI.trawlParseResult parseResult
+            let groundTruth = J.jsemLabel2YesNo $ J.answer j
+                prediction = case inferenceLabels of
+                  [] -> J.Other
+                  (bestLabel:_) -> bestLabel
+            S.putStrLn $ "\nPrediction: " ++ (show prediction) ++ "\nGround truth: " ++ (show groundTruth) ++ "\n"
+            return (prediction, groundTruth)
+          T.putStrLn $ T.fromStrict $ NLP.showClassificationReport pairs
+          S.hPutStrLn handle $ I.footerOf style
     -- | 
     -- | Numeration command
     -- | 

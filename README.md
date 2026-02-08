@@ -132,10 +132,11 @@ The global options are common to all commands.
 
 |Specific Options for ```express```                      |Default   |Description                           |
 |:-------------------------------------------------|:---------|:-------------------------------------|
-|```--depth <int>```                      | ```2``` |Set expansion depth of parse tree nodes|
-|```--noShowCat```                        |     |If specified, hide sysntactic categories|
+|```--depth <int>```                      | ```2``` |Set expansion depth of syntactic structures|
+|```--noShowCat```                        |     |If specified, hide syntactic categories|
 |```--noShowSem```                        |     |If specified, hide semantics|
-|```--leafVertical```                     |     |If specified, list leaf nodes vertically|
+|```--leafVertical```                     |     |If specified, list lexical items vertically|
+|```--lexicalPos {top\|bottom\|none}```  | ```top``` |Position of Lexical Items section. `top`: at the very top, `bottom`: at the very bottom, `none`: hide.|
 |```--browser {chrome\|firefox\|default}``` | ```default``` |Choose the browser to launch the Express UI. If omitted, the system default browser is used.|
 
 ### For developpers ###

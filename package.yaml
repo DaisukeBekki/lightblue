@@ -72,6 +72,7 @@ dependencies:
   - dotenv >= 0.11.0
   - deepseq
   - hasktorch
+  - async >= 2.2.4
 
 library:
   source-dirs: src
@@ -114,7 +115,6 @@ library:
   - DTS.QueryTypes
   - DTS.TypeChecker
   - DTS.NaturalLanguageInference
-  - DTS.Prover.Oracle
   - DTS.Prover.Wani.WaniBase
   - DTS.Prover.Wani.Forward
   - DTS.Prover.Wani.BackwardRules

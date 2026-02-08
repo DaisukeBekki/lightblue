@@ -352,6 +352,23 @@
           .tab-tcd
             padding-bottom: 50px;
 
+/* horizontal scrollbar placed at TOP (helper) */
+          .hscroll-wrap
+            position: relative;
+          .hscroll-top
+            overflow-x: auto;
+            overflow-y: hidden;
+            height: 16px;
+            margin-bottom: 6px;
+          .hscroll-top-inner
+            height: 1px;
+          .hide-x-scrollbar
+            overflow-x: auto;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          .hide-x-scrollbar::-webkit-scrollbar
+            display: none;
+
 /* form */
           .parsing-input
             background:  #002b5c;

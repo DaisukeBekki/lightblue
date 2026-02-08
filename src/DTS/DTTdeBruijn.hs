@@ -23,6 +23,7 @@ module DTS.DTTdeBruijn (
   , sigmaElimination
   , add
   , multiply
+  , embedProofSearchQuery
   -- * Judgment
   , Signature
   , Context
@@ -30,13 +31,16 @@ module DTS.DTTdeBruijn (
   , TypeCheckQuery(..)
   , TypeInferQuery(..)
   , ProofSearchQuery(..)
+  , loadProofSearchQuery
   ) where
 
 import qualified GHC.Generics as G    --base
 import qualified Data.Text.Lazy as LazyT --text
-import Data.Store (Store(..))         --store
+import Data.Store (Store(..), decode)         --store
 import Data.Store.TH (makeStore)      --store
 import Control.DeepSeq (NFData)       --deepseq
+import qualified Data.ByteString as BS
+import Control.Exception (try, SomeException)
 import Interface.Text                 --lightblue
 import Interface.TeX                  --lightblue
 import Interface.HTML                 --lightblue
@@ -386,7 +390,7 @@ instance Typeset TypeInferQuery where
 instance MathML TypeInferQuery where
   toMathML = toMathML . embedTypeInferQuery
 
-data ProofSearchQuery = ProofSearchQuery Signature Context Preterm deriving (Eq)
+data ProofSearchQuery = ProofSearchQuery Signature Context Preterm deriving (G.Generic)
 
 embedProofSearchQuery :: ProofSearchQuery -> GeneralTypeQuery Signature Context Preterm Preterm
 embedProofSearchQuery (ProofSearchQuery sig cxt typ) = GeneralTypeQuery sig cxt Question (Term typ)
@@ -399,3 +403,14 @@ instance Typeset ProofSearchQuery where
   toTeX = toTeX . embedProofSearchQuery
 instance MathML ProofSearchQuery where
   toMathML = toMathML . embedProofSearchQuery
+instance Store ProofSearchQuery
+
+-- | Load a ProofSearchQuery from a binary file
+loadProofSearchQuery :: FilePath -> IO (Either String ProofSearchQuery)
+loadProofSearchQuery path = do
+  eres <- try (BS.readFile path) :: IO (Either SomeException BS.ByteString)
+  case eres of
+    Left ex   -> return (Left (show ex))
+    Right bs  -> case decode bs of
+                   Left perr -> return (Left (show perr))
+                   Right v   -> return (Right v)
