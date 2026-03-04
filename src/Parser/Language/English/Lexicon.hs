@@ -49,7 +49,7 @@ setupLexicon sentence = do
     Just nltkWords' -> do
       putStrLn $ show nltkWords'
       let tokens = map word nltkWords'
-          lexicon = concat $ map fromNLTKtoCCG nltkWords'
+          lexicon = (concat $ map fromNLTKtoCCG nltkWords') ++ complexWords
       -- putStrLn $ "Lexicon: " ++ (show lexicon)
       return (tokens, lexicon)
     Nothing -> do
@@ -89,13 +89,24 @@ fromNLTKtoCCG (NLTKword word pos) = case (word,pos) of
   (w,"NNS") -> mylex [w] "NNS" (S [] `BS` NP []) (predSR 1 w)
   (w,"VBN") -> mylex [w] "VBN" (S [] `BS` NP []) (predSR 1 w) -- ex. walked
   (w,"VBD") -> mylex [w] "VBD" (S [] `BS` NP []) (predSR 1 w) -- ex. sat
+  (w,"VB")  -> mylex [w] "VB"  (S [] `BS` NP [] `SL` NP []) (predSR 2 w)
   (w,"VBZ") -> mylex [w] "VBZ" (S [] `BS` NP [] `SL` NP []) (predSR 2 w)
+  (w,"MD")  -> mylex [w] "MD"  ((S [] `BS` NP []) `SL` (S [] `BS` NP [])) (id,[]) -- auxiliary verbs
   -- (S [] `BS` NP []) `SL` NP []  -- own
-  (w,"IN") -> mylex [w] "IN" ((S [] `BS` NP []) `BS` (S [] `BS` NP [])) (sid,[])
+  --(w,"IN") -> mylex [w] "IN" ((S [] `BS` NP []) `BS` (S [] `BS` NP [])) (sid,[])
   (w,"RB") -> mylex [w] "RB" ((S [] `BS` NP []) `BS` (S [] `BS` NP [])) (sid,[])
   ("and","CC") -> mylex ["and"] "CC" CONJ andSR
   ("or","CC") -> mylex ["or"] "CC" CONJ orSR
   ("Either","CC") -> mylex ["Either"] "CC" ((S []) `SL` (S []) `SL` CONJ `SL` (S [])) ((UDTT.Lam (UDTT.Lam (UDTT.Lam (UDTT.Lam (UDTT.App (UDTT.App (Var 2) (UDTT.App (Var 3) (Var 0))) (UDTT.App (Var 1) (Var 0))))))),[])
   (w,".") -> mylex [w] "." (PERIOD) (id,[])
-  (w,_) -> mylex [w] "_" (PUNCT) (id,[])
+  (w,_) -> []
+  --mylex [w] "_" (PUNCT) (id,[])
   -- mylex [w] "Error" N (commonNounSR w) 
+
+complexWords :: [Node]
+complexWords = concat $ [
+  mylex ["walked in"] "comp" (S [] `BS` NP []) (predSR 1 "walkIn"),
+  mylex ["sat down"] "comp" (S [] `BS` NP []) (predSR 1 "satDown"),
+  mylex ["come in"] "comp" (S [] `BS` NP []) (predSR 1 "come in"),
+  mylex ["assistant professor"] "comp" N (commonNounSR "AP")
+  ]
