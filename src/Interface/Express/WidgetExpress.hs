@@ -96,7 +96,7 @@ widgetizeDepth setting depth node = case Parser.CCG.daughters node of
                         <td>
                           <math xmlns='http://www.w3.org/1998/Math/MathML'>^{widgetizeWith setting $ sem node}
             <td valign="baseline">
-              <span>LEX
+              <span style="font-size:0.8em;">#{Parser.CCG.source node}
         |]
     dtrs -> do
       -- 子の数*２
