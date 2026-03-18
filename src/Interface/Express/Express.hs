@@ -613,7 +613,8 @@ getInferenceR = do
                               <button .btn .btn-run data-sidx=#{sidx} onclick="startTypecheck(this)">typecheck
                             $else
                               <button .btn .btn-run .is-disabled aria-disabled=true data-disabled=1 data-sidx=#{sidx} title="前文のTypeCheckDiagramを選択してください。">typecheck
-                          ^{WE.widgetizeWith dsp node}
+                          <div class="tab-node-content">
+                            <div .tab-node-inner>^{WE.widgetizeWith dsp node}
                           <div .inf-node-tc .tc-holder>
                     $if not (snDone sp)
                       <div .span-preview-loading>loading...
@@ -669,7 +670,8 @@ getInfColR = do
                       <button .btn .btn-run data-sidx=#{sIdx} onclick="startTypecheck(this)">typecheck
                     $else
                       <button .btn .btn-run .is-disabled aria-disabled=true data-disabled=1 data-sidx=#{sIdx} title="前文のTypeCheckDiagramを選択してください。">typecheck
-                  ^{WE.widgetizeWith dsp node}
+                  <div class="tab-node-content">
+                    <div .tab-node-inner>^{WE.widgetizeWith dsp node}
                   <div .inf-node-tc .tc-holder>
             |]
         when (not $ snDone sp) $

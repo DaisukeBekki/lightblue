@@ -117,7 +117,7 @@
   margin-left: 8px
 .inf-col-body
   flex: 1
-  overflow-y: auto
+  overflow: auto
   padding: 8px 10px
 .inf-node-item
   margin: 0 0 12px 0
