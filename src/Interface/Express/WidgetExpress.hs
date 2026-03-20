@@ -177,15 +177,13 @@ instance Widgetizable Cat where
                            <msub>
                              <mi>S
                              <mstyle color='Purple'>
-                               <mtable columnalign='left'>
+                               <mtable columnalign='left' style="text-align:left">
                                  <mtr class="sf">
-                                   <mtd>^{widgetize pos}
+                                   <mtd columnalign='left' style="text-align:left">^{widgetize pos}
                                  <mtr class="sf">
-                                   <mtd>
-                                     <mpadded height='-0.5em'>^{widgetize conj}
+                                   <mtd columnalign='left' style="text-align:left">^{widgetize conj}
                                  <mtr class="sf">
-                                   <mtd>
-                                     <mpadded height='-0.5em'>^{widgetize pm}
+                                   <mtd columnalign='left' style="text-align:left">^{widgetize pm}
                                  |]
     NP []       -> [whamlet|<mi>NP
                            |]
