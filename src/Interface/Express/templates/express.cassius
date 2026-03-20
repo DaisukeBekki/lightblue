@@ -459,6 +459,8 @@
 
           .sf
             color: green;
+          mtr.sf > mtd
+            text-align: left !important;
 
 /* 葉ノードの表示設定 */
           .tab-leaves
