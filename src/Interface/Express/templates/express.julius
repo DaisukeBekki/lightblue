@@ -284,7 +284,11 @@ function renderSpanPreviews(nodes, ctx) {
         return r.text();
       })
       .then(html => {
+        const scoreEl = document.createElement('div');
+        scoreEl.className = 'node-score';
+        scoreEl.textContent = `score: ${n.score}`;
         item.innerHTML = html;
+        item.insertBefore(scoreEl, item.firstChild);
         // ID 衝突回避のため、プレビュー内のトグル用IDをインデックスでユニーク化
         sanitizePreviewIds(item, idx);
       })
