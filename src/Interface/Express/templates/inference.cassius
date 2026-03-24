@@ -111,6 +111,9 @@
   color: #0b4ea2
   border-radius: 6px
   font-size: 0.9rem
+  display: flex
+  align-items: center
+  justify-content: space-between
 .inf-head-title
   display: inline-block
 .inf-head-actions .btn

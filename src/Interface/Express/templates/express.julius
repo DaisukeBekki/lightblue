@@ -488,7 +488,7 @@ function highlightSpanPreview(index) {
     holder = document.createElement('div');
     holder.id = 'inf-precompute-status';
     holder.className = 'inf-precompute-status';
-    holder.innerHTML = '<span id="inf-precompute-text">Precompute: starting...</span> <span id="inf-outcome" class="ps-outcome ps-outcome-pending">Searching...</span>';
+    holder.innerHTML = '<span><span id="inf-precompute-text">Precompute: starting...</span> <span id="inf-outcome" class="ps-outcome ps-outcome-pending">Searching...</span></span><a href="/shutdown" class="btn-shutdown">終了</a>';
     grid.parentElement && grid.parentElement.insertBefore(holder, grid);
   }
   async function tick() {
