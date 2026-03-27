@@ -79,8 +79,12 @@ fromNLTKtoCCG (NLTKword word pos) = case (word,pos) of
   ("she","PRP") -> mylex ["she"] "PRP" (NP []) ((Proj Fst (Asp (Sigma Entity (Sigma Entity (App (App (Con "woman") (Var 1)) (Var 0)))))), [("woman", DTT.Pi DTT.Entity DTT.Type)])
   (w,"PRP") -> mylex [w] "PRP" (NP []) (properNameSR w)
   --NP [] -- john
-  ("A","DT") -> mylex ["a"] "DT" ((S [] `SL` (S [] `BS` NP [])) `SL` N) ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[])
-  ("a","DT") -> mylex ["a"] "DT" ((S [] `SL` (S [] `BS` NP [])) `SL` N) ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[])
+  ("A","DT") -> mylex ["A"] "DT" ((T True 1 (S []) `SL` (T True 1 (S []) `BS` NP [])) `SL` N) 
+        ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[])
+  ("a","DT") -> mylex ["a"] "DT" ((T True 1 (S []) `SL` (T True 1 (S []) `BS` NP [])) `SL` N) 
+        ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[])
+  ("an","DT") -> mylex ["an"] "DT" ((T True 1 (S []) `SL` (T True 1 (S []) `BS` NP [])) `SL` N) 
+        ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[])
   (w,"DT") -> mylex [w] "DT" (NP [] `SL` N) (nominalModifier w)
   -- ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N)   -- every, a
   (w,"NN") -> mylex [w] "NN" (N) (commonNounSR w)             -- Common noun? Prenominal adjective??
@@ -106,7 +110,7 @@ fromNLTKtoCCG (NLTKword word pos) = case (word,pos) of
 complexWords :: [Node]
 complexWords = concat $ [
   mylex ["walked in"] "comp" (S [] `BS` NP []) (predSR 1 "walkIn"),
-  mylex ["sat down"] "comp" (S [] `BS` NP []) (predSR 1 "satDown"),
-  mylex ["come in"] "comp" (S [] `BS` NP []) (predSR 1 "come in"),
+  mylex ["sat down"] "comp" (S [] `BS` NP []) (predSR 1 "sitDown"),
+  mylex ["come in"] "comp" (S [] `BS` NP []) (predSR 1 "comeIn"),
   mylex ["assistant professor"] "comp" N (commonNounSR "AP")
   ]

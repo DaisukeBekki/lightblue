@@ -203,6 +203,7 @@ instance Widgetizable Cat where
     CONJ        -> [whamlet|<mi>CONJ|]
     LPAREN      -> [whamlet|<mi>LPAREN|]
     RPAREN      -> [whamlet|<mi>RPAREN|]
+    PERIOD      -> [whamlet|<mi>PERIOD|]
     _           -> [whamlet|<mtext>Error: #{toText category}|]
     where widgetize' c = if isBaseCategory c 
                            then widgetize c
