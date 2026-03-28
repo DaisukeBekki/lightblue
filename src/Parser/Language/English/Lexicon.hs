@@ -88,7 +88,8 @@ fromNLTKtoCCG (NLTKword word pos) = case (word,pos) of
         ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[])
   ("an","DT") -> mylex ["an"] "DT" ((T True 1 (S []) `SL` (T True 1 (S []) `BS` NP [])) `SL` N) 
         ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[])
-  ("the","DT") -> mylex ["the"] "DT" (NP [] `SL` N) ((Lam (Lam (Proj Fst (Asp (Sigma Entity (Sigma Entity (App (App (Var 2) (Var 1)) (Var 0)))))))), [])
+  ("the","DT") -> mylex ["the"] "DT" (NP [] `SL` N) ((Lam (Proj Fst (Asp (Sigma Entity (App (App (Var 1) (Var 0)) terminator))))), [])
+  ("If","IN") -> mylex ["If"] "IN" (S [] `SL` S [] `SL` S []) (Lam (Lam (Lam (Pi (App (Var 2) terminator) (App (Var 2) (Var 1))))), [])
   --(w,"DT") -> mylex [w] "DT" (NP [] `SL` N) (nominalModifier w)
   -- ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N)   -- every, a
   (w,"NN") -> mylex [w] "NN" (N) (commonNounSR w)             -- Common noun? Prenominal adjective??
