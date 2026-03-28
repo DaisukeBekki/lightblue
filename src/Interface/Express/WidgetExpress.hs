@@ -277,7 +277,7 @@ instance Widgetizable UDWN.Preterm where
     UDWN.Not a -> [whamlet|
       <mrow>
         <mo>&not;
-        <mi>toMathML a
+        <mi>^{widgetize a}
         |]
     UDWN.Lam vname m -> [whamlet|
       <mrow>
@@ -499,7 +499,7 @@ instance Widgetizable DWN.Preterm where
     DWN.Not a -> [whamlet|
       <mrow>
         <mi>&not;
-        <mi>toMathML a
+        <mi>^{widgetize a}
         |]
     DWN.Sigma vname a b -> case b of 
       DWN.Top -> widgetize a

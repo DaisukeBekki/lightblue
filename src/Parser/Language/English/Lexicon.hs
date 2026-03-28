@@ -11,7 +11,10 @@ A Japanese CCG lexicon.
 -}
 
 module Parser.Language.English.Lexicon (
-  setupLexicon
+  setupLexicon,
+  mylex,
+  sid,
+  terminator
 ) where
 
 import Prelude hiding (id)
@@ -77,7 +80,7 @@ fromNLTKtoCCG (NLTKword word pos) = case (word,pos) of
   (w,"NNP") -> mylex [w] "NNP" (NP []) ((Con w), [(w, DTT.Entity)])
   ("She","PRP") -> mylex ["She"] "PRP" (NP []) ((Proj Fst (Asp (Sigma Entity (Sigma Entity (App (App (Con "woman") (Var 1)) (Var 0)))))), [("woman", DTT.Pi DTT.Entity DTT.Type)])
   ("she","PRP") -> mylex ["she"] "PRP" (NP []) ((Proj Fst (Asp (Sigma Entity (Sigma Entity (App (App (Con "woman") (Var 1)) (Var 0)))))), [("woman", DTT.Pi DTT.Entity DTT.Type)])
-  (w,"PRP") -> mylex [w] "PRP" (NP []) (properNameSR w)
+  (w,"PRP") -> mylex [w] "PRP" (NP []) (UDTT.Con w, [(w, DTT.Entity)])
   --NP [] -- john
   ("A","DT") -> mylex ["A"] "DT" ((T True 1 (S []) `SL` (T True 1 (S []) `BS` NP [])) `SL` N) 
         ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[])
@@ -85,7 +88,8 @@ fromNLTKtoCCG (NLTKword word pos) = case (word,pos) of
         ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[])
   ("an","DT") -> mylex ["an"] "DT" ((T True 1 (S []) `SL` (T True 1 (S []) `BS` NP [])) `SL` N) 
         ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[])
-  (w,"DT") -> mylex [w] "DT" (NP [] `SL` N) (nominalModifier w)
+  ("the","DT") -> mylex ["the"] "DT" (NP [] `SL` N) ((Lam (Lam (Proj Fst (Asp (Sigma Entity (Sigma Entity (App (App (Var 2) (Var 1)) (Var 0)))))))), [])
+  --(w,"DT") -> mylex [w] "DT" (NP [] `SL` N) (nominalModifier w)
   -- ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N)   -- every, a
   (w,"NN") -> mylex [w] "NN" (N) (commonNounSR w)             -- Common noun? Prenominal adjective??
   (w,"WP") -> mylex [w] "WP" (N `SL` N) (nominalModifier w)
@@ -112,5 +116,10 @@ complexWords = concat $ [
   mylex ["walked in"] "comp" (S [] `BS` NP []) (predSR 1 "walkIn"),
   mylex ["sat down"] "comp" (S [] `BS` NP []) (predSR 1 "sitDown"),
   mylex ["come in"] "comp" (S [] `BS` NP []) (predSR 1 "comeIn"),
-  mylex ["assistant professor"] "comp" N (commonNounSR "AP")
+  mylex ["report to"] "comp" (S [] `BS` NP []) (predSR 1 "reportTo"),
+  mylex ["want to be served"] "comp" (S [] `BS` NP []) (predSR 1 "wtbs"),
+  mylex ["assistant professor"] "comp" N (commonNounSR "AP"),
+  mylex ["the meeting"] "PRP" (NP []) (UDTT.Con "meeting", [("meeting", DTT.Entity)]),
+  mylex ["it is a"] "exp" (S [] `SL` N) (UDTT.Lam (UDTT.Lam UDTT.Top), []),
+  mylex ["it is not a"] "exp" (S [] `SL` N) (UDTT.Lam (UDTT.Lam (UDTT.Not UDTT.Top)), [])
   ]
