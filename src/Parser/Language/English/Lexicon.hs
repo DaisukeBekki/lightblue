@@ -17,7 +17,7 @@ module Parser.Language.English.Lexicon (
   terminator
 ) where
 
-import Prelude hiding (id)
+import Prelude hiding (id, not)
 import qualified GHC.Generics as G       --base
 import qualified System.Environment as E --base
 import Data.String (fromString) --base
@@ -75,6 +75,9 @@ sid = UDTT.Lam (UDTT.Var 0)
 terminator :: UDTT.Preterm
 terminator = UDTT.Ann (UDTT.Lam UDTT.Top) (DTT.Pi DTT.Entity DTT.Type)
 
+not :: UDTT.Preterm -> UDTT.Preterm
+not t = UDTT.Pi t UDTT.Bot
+
 fromNLTKtoCCG :: NLTKword -> [Node]
 fromNLTKtoCCG (NLTKword word pos) = case (word,pos) of
   ("Either",_) -> mylex ["Either"] "CC/DT" [((S []) `SL` (S []) `SL` CONJ `SL` (S []))] ((UDTT.Lam (UDTT.Lam (UDTT.Lam (UDTT.Lam (UDTT.App (UDTT.App (Var 2) (UDTT.App (Var 3) (Var 0))) (UDTT.App (Var 1) (Var 0))))))),[])
@@ -127,5 +130,5 @@ complexWords = concat $ [
   mylex ["assistant professor"] "comp" [N] (commonNounSR "AP"),
   -- mylex ["the meeting"] "PRP" (NP []) (Con "meeting", [("meeting", DTT.Entity)]),
   mylex ["is a"] "exp" [S [] `BS` NP [] `SL` N]     (Lam (Lam (Lam      (App (App (Var 2) (Var 1)) (terminator)))), []),
-  mylex ["is not a"] "exp" [S [] `BS` NP [] `SL` N] (Lam (Lam (Lam (Not (App (App (Var 2) (Var 1)) (terminator))))), [])
+  mylex ["is not a"] "exp" [S [] `BS` NP [] `SL` N] (Lam (Lam (Lam (not (App (App (Var 2) (Var 1)) (terminator))))), [])
   ]
