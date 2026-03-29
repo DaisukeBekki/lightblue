@@ -31,8 +31,8 @@ module Parser.CCG (
   forwardFunctionApplicationRule,
   unifyCategory,
   unifyWithHead,
-  unifyFeature,
-  transvec,
+  -- unifyFeature,
+  -- transvec,
   -- * Partial Parsing
   wrapNode,
   conjoinNodes

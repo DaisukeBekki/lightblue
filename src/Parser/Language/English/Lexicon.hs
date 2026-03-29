@@ -80,6 +80,7 @@ fromNLTKtoCCG (NLTKword word pos) = case (word,pos) of
   (w,"NNP") -> mylex [w] "NNP" (NP []) ((Con w), [(w, DTT.Entity)])
   ("She","PRP") -> mylex ["She"] "PRP" (NP []) ((Proj Fst (Asp (Sigma Entity (Sigma Entity (App (App (Con "woman") (Var 1)) (Var 0)))))), [("woman", DTT.Pi DTT.Entity DTT.Type)])
   ("she","PRP") -> mylex ["she"] "PRP" (NP []) ((Proj Fst (Asp (Sigma Entity (Sigma Entity (App (App (Con "woman") (Var 1)) (Var 0)))))), [("woman", DTT.Pi DTT.Entity DTT.Type)])
+  ("it","PRP") -> mylex ["it"] "PRP" (NP []) (UDTT.Con "it", [("it", DTT.Entity)])
   (w,"PRP") -> mylex [w] "PRP" (NP []) (UDTT.Con w, [(w, DTT.Entity)])
   --NP [] -- john
   ("A","DT") -> mylex ["A"] "DT" ((T True 1 (S []) `SL` (T True 1 (S []) `BS` NP [])) `SL` N) 
@@ -107,9 +108,9 @@ fromNLTKtoCCG (NLTKword word pos) = case (word,pos) of
   ("and","CC") -> mylex ["and"] "CC" CONJ andSR
   ("or","CC") -> mylex ["or"] "CC" CONJ orSR
   ("Either","CC") -> mylex ["Either"] "CC" ((S []) `SL` (S []) `SL` CONJ `SL` (S [])) ((UDTT.Lam (UDTT.Lam (UDTT.Lam (UDTT.Lam (UDTT.App (UDTT.App (Var 2) (UDTT.App (Var 3) (Var 0))) (UDTT.App (Var 1) (Var 0))))))),[])
+  (w,",") -> mylex [w] "." (PUNCT) (id,[])
   (w,".") -> mylex [w] "." (PERIOD) (id,[])
   (w,_) -> []
-  --mylex [w] "_" (PUNCT) (id,[])
   -- mylex [w] "Error" N (commonNounSR w) 
 
 complexWords :: [Node]
@@ -120,7 +121,8 @@ complexWords = concat $ [
   mylex ["report to"] "comp" (S [] `BS` NP []) (predSR 1 "reportTo"),
   mylex ["want to be served"] "comp" (S [] `BS` NP []) (predSR 1 "wtbs"),
   mylex ["assistant professor"] "comp" N (commonNounSR "AP"),
-  mylex ["the meeting"] "PRP" (NP []) (UDTT.Con "meeting", [("meeting", DTT.Entity)]),
-  mylex ["it is a"] "exp" (S [] `SL` N) (UDTT.Lam (UDTT.Lam UDTT.Top), []),
-  mylex ["it is not a"] "exp" (S [] `SL` N) (UDTT.Lam (UDTT.Lam (UDTT.Not UDTT.Top)), [])
+  mylex ["the meeting"] "PRP" (NP []) (Con "meeting", [("meeting", DTT.Entity)]),
+  mylex ["is a"] "exp" (S [] `BS` NP [] `SL` N)     (Lam (Lam (Lam      (App (App (Var 2) (Var 1)) (terminator)))), []),
+  mylex ["is not a"] "exp" (S [] `BS` NP [] `SL` N) (Lam (Lam (Lam (Not (App (App (Var 2) (Var 1)) (terminator))))), [])
+  -- mylex ["If John jogs"] "" (S [] `SL` S []) (id, [])
   ]
