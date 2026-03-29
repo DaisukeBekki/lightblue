@@ -120,11 +120,10 @@ complexWords = concat $ [
   mylex ["walked in"] "comp" (S [] `BS` NP []) (predSR 1 "walkIn"),
   mylex ["sat down"] "comp" (S [] `BS` NP []) (predSR 1 "sitDown"),
   mylex ["come in"] "comp" (S [] `BS` NP []) (predSR 1 "comeIn"),
-  mylex ["report to"] "comp" (S [] `BS` NP []) (predSR 1 "reportTo"),
+  mylex ["report to"] "comp" (S [] `BS` NP [] `SL` NP []) (predSR 2 "reportTo"),
   mylex ["want to be served"] "comp" (S [] `BS` NP []) (predSR 1 "wtbs"),
   mylex ["assistant professor"] "comp" N (commonNounSR "AP"),
-  mylex ["the meeting"] "PRP" (NP []) (Con "meeting", [("meeting", DTT.Entity)]),
+  -- mylex ["the meeting"] "PRP" (NP []) (Con "meeting", [("meeting", DTT.Entity)]),
   mylex ["is a"] "exp" (S [] `BS` NP [] `SL` N)     (Lam (Lam (Lam      (App (App (Var 2) (Var 1)) (terminator)))), []),
   mylex ["is not a"] "exp" (S [] `BS` NP [] `SL` N) (Lam (Lam (Lam (Not (App (App (Var 2) (Var 1)) (terminator))))), [])
-  -- mylex ["If John jogs"] "" (S [] `SL` S []) (id, [])
   ]
