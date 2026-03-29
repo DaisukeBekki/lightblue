@@ -66,8 +66,8 @@ data NLTKword = NLTKword {
 
 instance A.FromJSON NLTKword
 
-mylex :: [T.Text] -> T.Text -> Cat -> (UDTT.Preterm, Signature) -> [Node]
-mylex wds num cat' (sem',sig') = [(lexicalitem wd num 100 cat' (sem',sig')) | wd <- wds ]
+mylex :: [T.Text] -> T.Text -> [Cat] -> (UDTT.Preterm, Signature) -> [Node]
+mylex wds num cats' (sem',sig') = [(lexicalitem wd num 100 cat' (sem',sig')) | wd <- wds, cat' <- cats' ]
 
 sid :: UDTT.Preterm
 sid = UDTT.Lam (UDTT.Var 0)
@@ -77,53 +77,53 @@ terminator = UDTT.Ann (UDTT.Lam UDTT.Top) (DTT.Pi DTT.Entity DTT.Type)
 
 fromNLTKtoCCG :: NLTKword -> [Node]
 fromNLTKtoCCG (NLTKword word pos) = case (word,pos) of
-  ("Either",_) -> mylex ["Either"] "CC/DT" ((S []) `SL` (S []) `SL` CONJ `SL` (S [])) ((UDTT.Lam (UDTT.Lam (UDTT.Lam (UDTT.Lam (UDTT.App (UDTT.App (Var 2) (UDTT.App (Var 3) (Var 0))) (UDTT.App (Var 1) (Var 0))))))),[])
-  (w,"NNP") -> mylex [w] "NNP" (NP []) ((Con w), [(w, DTT.Entity)])
-  ("She","PRP") -> mylex ["She"] "PRP" (NP []) ((Proj Fst (Asp (Sigma Entity (Sigma Entity (App (App (Con "woman") (Var 1)) (Var 0)))))), [("woman", DTT.Pi DTT.Entity DTT.Type)])
-  ("she","PRP") -> mylex ["she"] "PRP" (NP []) ((Proj Fst (Asp (Sigma Entity (Sigma Entity (App (App (Con "woman") (Var 1)) (Var 0)))))), [("woman", DTT.Pi DTT.Entity DTT.Type)])
+  ("Either",_) -> mylex ["Either"] "CC/DT" [((S []) `SL` (S []) `SL` CONJ `SL` (S []))] ((UDTT.Lam (UDTT.Lam (UDTT.Lam (UDTT.Lam (UDTT.App (UDTT.App (Var 2) (UDTT.App (Var 3) (Var 0))) (UDTT.App (Var 1) (Var 0))))))),[])
+  (w,"NNP") -> mylex [w] "NNP" [NP []] ((Con w), [(w, DTT.Entity)])
+  ("She","PRP") -> mylex ["She"] "PRP" [NP []] ((Proj Fst (Asp (Sigma Entity (Sigma Entity (App (App (Con "woman") (Var 1)) (Var 0)))))), [("woman", DTT.Pi DTT.Entity DTT.Type)])
+  ("she","PRP") -> mylex ["she"] "PRP" [NP []] ((Proj Fst (Asp (Sigma Entity (Sigma Entity (App (App (Con "woman") (Var 1)) (Var 0)))))), [("woman", DTT.Pi DTT.Entity DTT.Type)])
   -- ("she","PRP") -> mylex ["she"] "PRP" (NP []) ((Proj Fst (Asp Entity)), [])
-  ("it","PRP") -> mylex ["it"] "PRP" (NP []) (UDTT.Con "it", [("it", DTT.Entity)])
-  (w,"PRP") -> mylex [w] "PRP" (NP []) (UDTT.Con w, [(w, DTT.Entity)])
+  ("it","PRP") -> mylex ["it"] "PRP" [NP []] (UDTT.Con "it", [("it", DTT.Entity)])
+  (w,"PRP") -> mylex [w] "PRP" [NP []] (UDTT.Con w, [(w, DTT.Entity)])
   --NP [] -- john
-  ("A","DT") -> mylex ["A"] "DT" ((T True 1 (S []) `SL` (T True 1 (S []) `BS` NP [])) `SL` N) 
+  ("A","DT") -> mylex ["A"] "DT" [(T True 1 (S []) `SL` (T True 1 (S []) `BS` NP [])) `SL` N, (T True 1 (S []) `BS` (T True 1 (S []) `SL` NP [])) `SL` N]
         ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[])
-  ("a","DT") -> mylex ["a"] "DT" ((T True 1 (S []) `SL` (T True 1 (S []) `BS` NP [])) `SL` N) 
+  ("a","DT") -> mylex ["a"] "DT" [(T True 1 (S []) `SL` (T True 1 (S []) `BS` NP [])) `SL` N, (T True 1 (S []) `BS` (T True 1 (S []) `SL` NP [])) `SL` N] 
         ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[])
-  ("an","DT") -> mylex ["an"] "DT" ((T True 1 (S []) `SL` (T True 1 (S []) `BS` NP [])) `SL` N) 
+  ("an","DT") -> mylex ["an"] "DT" [(T True 1 (S []) `SL` (T True 1 (S []) `BS` NP [])) `SL` N, (T True 1 (S []) `BS` (T True 1 (S []) `SL` NP [])) `SL` N] 
         ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[])
-  ("the","DT") -> mylex ["the"] "DT" (NP [] `SL` N) ((Lam (Proj Fst (Asp (Sigma Entity (App (App (Var 1) (Var 0)) terminator))))), [])
-  ("The","DT") -> mylex ["The"] "DT" (NP [] `SL` N) ((Lam (Proj Fst (Asp (Sigma Entity (App (App (Var 1) (Var 0)) terminator))))), [])
-  ("If","IN") -> mylex ["If"] "IN" (S [] `SL` S [] `SL` S []) (Lam (Lam (Lam (Pi (App (Var 2) terminator) (App (Var 2) (Var 1))))), [])
+  ("the","DT") -> mylex ["the"] "DT" [NP [] `SL` N] ((Lam (Proj Fst (Asp (Sigma Entity (App (App (Var 1) (Var 0)) terminator))))), [])
+  ("The","DT") -> mylex ["The"] "DT" [NP [] `SL` N] ((Lam (Proj Fst (Asp (Sigma Entity (App (App (Var 1) (Var 0)) terminator))))), [])
+  ("If","IN") -> mylex ["If"] "IN" [S [] `SL` S [] `SL` S []] (Lam (Lam (Lam (Pi (App (Var 2) terminator) (App (Var 2) (Var 1))))), [])
   --(w,"DT") -> mylex [w] "DT" (NP [] `SL` N) (nominalModifier w)
   -- ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N)   -- every, a
-  (w,"NN") -> mylex [w] "NN" (N) (commonNounSR w)             -- Common noun? Prenominal adjective??
-  (w,"WP") -> mylex [w] "WP" (N `SL` N) (nominalModifier w)
+  (w,"NN") -> mylex [w] "NN" [N] (commonNounSR w)             -- Common noun? Prenominal adjective??
+  (w,"WP") -> mylex [w] "WP" [N `SL` N] (nominalModifier w)
   -- (N `BS` N) `SL` (S [] `BS` NP [] ) -- who
-  (w,"NNS") -> mylex [w] "NNS" (S [] `BS` NP []) (predSR 1 w)
-  (w,"VBN") -> mylex [w] "VBN" (S [] `BS` NP []) (predSR 1 w) -- ex. walked
-  (w,"VBD") -> mylex [w] "VBD" (S [] `BS` NP []) (predSR 1 w) -- ex. sat
-  (w,"VB")  -> mylex [w] "VB"  (S [] `BS` NP [] `SL` NP []) (predSR 2 w)
-  (w,"VBZ") -> mylex [w] "VBZ" (S [] `BS` NP [] `SL` NP []) (predSR 2 w)
-  (w,"MD")  -> mylex [w] "MD"  ((S [] `BS` NP []) `SL` (S [] `BS` NP [])) (id,[]) -- auxiliary verbs
+  (w,"NNS") -> mylex [w] "NNS" [S [] `BS` NP []] (predSR 1 w)
+  (w,"VBN") -> mylex [w] "VBN" [S [] `BS` NP []] (predSR 1 w) -- ex. walked
+  (w,"VBD") -> mylex [w] "VBD" [S [] `BS` NP []] (predSR 1 w) -- ex. sat
+  (w,"VB")  -> mylex [w] "VB"  [S [] `BS` NP [] `SL` NP []] (predSR 2 w)
+  (w,"VBZ") -> mylex [w] "VBZ" [S [] `BS` NP [] `SL` NP []] (predSR 2 w)
+  (w,"MD")  -> mylex [w] "MD"  [(S [] `BS` NP []) `SL` (S [] `BS` NP [])] (id,[]) -- auxiliary verbs
   -- (S [] `BS` NP []) `SL` NP []  -- own
   --(w,"IN") -> mylex [w] "IN" ((S [] `BS` NP []) `BS` (S [] `BS` NP [])) (sid,[])
-  (w,"RB") -> mylex [w] "RB" ((S [] `BS` NP []) `BS` (S [] `BS` NP [])) (sid,[])
-  ("and","CC") -> mylex ["and"] "CC" CONJ andSR
-  ("or","CC") -> mylex ["or"] "CC" CONJ orSR
-  (w,",") -> mylex [w] "." (PUNCT) (id,[])
-  (w,".") -> mylex [w] "." (PERIOD) (id,[])
+  (w,"RB") -> mylex [w] "RB" [(S [] `BS` NP []) `BS` (S [] `BS` NP [])] (sid,[])
+  ("and","CC") -> mylex ["and"] "CC" [CONJ] andSR
+  ("or","CC") -> mylex ["or"] "CC" [CONJ] orSR
+  (w,",") -> mylex [w] "." [PUNCT] (id,[])
+  (w,".") -> mylex [w] "." [PERIOD] (id,[])
   (w,_) -> []
   -- mylex [w] "Error" N (commonNounSR w) 
 
 complexWords :: [Node]
 complexWords = concat $ [
-  mylex ["walked in"] "comp" (S [] `BS` NP []) (predSR 1 "walkIn"),
-  mylex ["sat down"] "comp" (S [] `BS` NP []) (predSR 1 "sitDown"),
-  mylex ["come in"] "comp" (S [] `BS` NP []) (predSR 1 "comeIn"),
-  mylex ["report to"] "comp" (S [] `BS` NP [] `SL` NP []) (predSR 2 "reportTo"),
-  mylex ["want to be served"] "comp" (S [] `BS` NP []) (predSR 1 "wtbs"),
-  mylex ["assistant professor"] "comp" N (commonNounSR "AP"),
+  mylex ["walked in"] "comp" [S [] `BS` NP []] (predSR 1 "walkIn"),
+  mylex ["sat down"] "comp" [S [] `BS` NP []] (predSR 1 "sitDown"),
+  mylex ["come in"] "comp" [S [] `BS` NP []] (predSR 1 "comeIn"),
+  mylex ["report to"] "comp" [S [] `BS` NP [] `SL` NP []] (predSR 2 "reportTo"),
+  mylex ["want to be served"] "comp" [S [] `BS` NP []] (predSR 1 "wtbs"),
+  mylex ["assistant professor"] "comp" [N] (commonNounSR "AP"),
   -- mylex ["the meeting"] "PRP" (NP []) (Con "meeting", [("meeting", DTT.Entity)]),
-  mylex ["is a"] "exp" (S [] `BS` NP [] `SL` N)     (Lam (Lam (Lam      (App (App (Var 2) (Var 1)) (terminator)))), []),
-  mylex ["is not a"] "exp" (S [] `BS` NP [] `SL` N) (Lam (Lam (Lam (Not (App (App (Var 2) (Var 1)) (terminator))))), [])
+  mylex ["is a"] "exp" [S [] `BS` NP [] `SL` N]     (Lam (Lam (Lam      (App (App (Var 2) (Var 1)) (terminator)))), []),
+  mylex ["is not a"] "exp" [S [] `BS` NP [] `SL` N] (Lam (Lam (Lam (Not (App (App (Var 2) (Var 1)) (terminator))))), [])
   ]
