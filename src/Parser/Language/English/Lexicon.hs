@@ -80,8 +80,8 @@ fromNLTKtoCCG (NLTKword word pos) = case (word,pos) of
   ("Either",_) -> mylex ["Either"] "CC/DT" ((S []) `SL` (S []) `SL` CONJ `SL` (S [])) ((UDTT.Lam (UDTT.Lam (UDTT.Lam (UDTT.Lam (UDTT.App (UDTT.App (Var 2) (UDTT.App (Var 3) (Var 0))) (UDTT.App (Var 1) (Var 0))))))),[])
   (w,"NNP") -> mylex [w] "NNP" (NP []) ((Con w), [(w, DTT.Entity)])
   ("She","PRP") -> mylex ["She"] "PRP" (NP []) ((Proj Fst (Asp (Sigma Entity (Sigma Entity (App (App (Con "woman") (Var 1)) (Var 0)))))), [("woman", DTT.Pi DTT.Entity DTT.Type)])
-  -- ("she","PRP") -> mylex ["she"] "PRP" (NP []) ((Proj Fst (Asp (Sigma Entity (Sigma Entity (App (App (Con "woman") (Var 1)) (Var 0)))))), [("woman", DTT.Pi DTT.Entity DTT.Type)])
-  ("she","PRP") -> mylex ["she"] "PRP" (NP []) ((Proj Fst (Asp Entity)), [])
+  ("she","PRP") -> mylex ["she"] "PRP" (NP []) ((Proj Fst (Asp (Sigma Entity (Sigma Entity (App (App (Con "woman") (Var 1)) (Var 0)))))), [("woman", DTT.Pi DTT.Entity DTT.Type)])
+  -- ("she","PRP") -> mylex ["she"] "PRP" (NP []) ((Proj Fst (Asp Entity)), [])
   ("it","PRP") -> mylex ["it"] "PRP" (NP []) (UDTT.Con "it", [("it", DTT.Entity)])
   (w,"PRP") -> mylex [w] "PRP" (NP []) (UDTT.Con w, [(w, DTT.Entity)])
   --NP [] -- john
