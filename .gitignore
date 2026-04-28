@@ -23,5 +23,5 @@ stack.yaml.lock
 config.yaml
 .env
 .DS_Store
-
+.venv/
 client_session_key.aes
