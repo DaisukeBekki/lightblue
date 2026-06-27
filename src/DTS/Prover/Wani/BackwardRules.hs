@@ -1006,7 +1006,7 @@ disjElim goal setting =
         then return ([],WB.exitMessage (WB.TermMisMatch maybeTerm) QT.PiE)
         else
           let
-            forwardedTree = WB.trees $ F.forwardContext {--(WB.enableEq setting)--}False sig var
+            forwardedTree = WB.trees $ F.forwardContext False sig var -- Set enableEq to False to avoid the eqIntro branch for the upper part of the tree.
             usedDisJointLst = WB.usedDisJoint $ WB.sStatus setting
             disjTrees = filter (\tree -> case A.typefromAJudgment $ A.downSide' tree of A.ArrowDisj a b -> (A.ArrowDisj a b) `notElem` usedDisJointLst ; _ -> False) forwardedTree
             disjArrowTrees = filter (\tree -> case A.typefromAJudgment $ A.downSide' tree of A.Arrow c (A.ArrowDisj a b) -> (A.Arrow c (A.ArrowDisj a b)) `notElem` usedDisJointLst; _ -> False) forwardedTree
