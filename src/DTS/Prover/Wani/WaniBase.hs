@@ -92,7 +92,8 @@ data Setting = Setting
    oracle :: Maybe (DdB.ConName -> DdB.ConName -> Float),
    oracleThreshold :: Float,
    enableEq :: Bool,
-   enableConcurrent :: Bool
+   enableConcurrent :: Bool,
+   enableneuralDTS :: Bool
    } -- deriving (Show,Eq)
 
 data Result = Result
@@ -112,7 +113,7 @@ statusDef :: Status
 statusDef = Status{failedlst=[],usedMaxDepth = 0,deduceNgLst=[],usedDisJoint=[],allProof = True}
 
 settingDef :: Setting
-settingDef = Setting{mode = Plain,falsum = True,maxdepth = 9,maxtime = 100000,debug = 0,sStatus = statusDef,ruleConHojo = "sub",oracle=M.Nothing,oracleThreshold=0.5,enableEq=True,enableConcurrent=False}
+settingDef = Setting{mode = Plain,falsum = True,maxdepth = 9,maxtime = 100000,debug = 0,sStatus = statusDef,ruleConHojo = "sub",enableneuralDTS=False}
 
 resultDef :: Result
 resultDef = Result{trees = [],errMsg = "",rStatus = statusDef}

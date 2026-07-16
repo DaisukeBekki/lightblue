@@ -12,6 +12,7 @@
 module Parser.Language.Japanese.Filter.KNPFilter (
     ConjMap,
     isVerb,
+    isPredicate,
     getStem,
     getConjMap,
     knpFilter,

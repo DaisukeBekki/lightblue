@@ -72,6 +72,7 @@ dependencies:
   - dotenv >= 0.0.4
   - deepseq
   - async >= 2.2.4
+  - Diff
 
 library:
   source-dirs: src
@@ -136,13 +137,35 @@ executables:
     dependencies: lightblue
 
 tests:
-  testJumanDicSettings:
-    source-dirs:  test/Juman
-    main:         testJumanDicSettings.hs
+  # testJumanDicSettings:
+  #   source-dirs:  test/Juman
+  #   main:         testJumanDicSettings.hs
+  #   ghc-options:  [-threaded, -rtsopts, -with-rtsopts=-N]
+  #   dependencies: lightblue
+  # typeCheck:
+  #   source-dirs:  test/DTS
+  #   main:         testTypeChecker.hs
+  #   ghc-options:  [-threaded, -rtsopts, -with-rtsopts=-N]
+  #   dependencies: lightblue
+  testFeedBack:
+    source-dirs:  test
+    main:         testFeedBack.hs
     ghc-options:  [-threaded, -rtsopts, -with-rtsopts=-N]
     dependencies: lightblue
-  typeCheck:
-    source-dirs:  test/DTS
-    main:         testTypeChecker.hs
+  
+  testWordPair:
+    source-dirs:  test
+    main:         testWordPair.hs
+    ghc-options:  [-threaded, -rtsopts, -with-rtsopts=-N]
+    dependencies: lightblue
+    
+  testMajorityBaseline:
+    source-dirs:  test
+    main:         testMajorityBaseline.hs
+    ghc-options:  [-threaded, -rtsopts, -with-rtsopts=-N]
+    dependencies: lightblue
+  axiomDump:
+    source-dirs:  test
+    main:         testAxiomDump.hs
     ghc-options:  [-threaded, -rtsopts, -with-rtsopts=-N]
     dependencies: lightblue

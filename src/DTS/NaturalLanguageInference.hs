@@ -102,6 +102,7 @@ parseWithTypeCheck :: CP.ParseSetting -> QT.Prover -> DTT.Signature -> DTT.Conte
 parseWithTypeCheck ps prover signtr contxt txts =
   let nodes = sequentialParsing ps txts
       axioms = FB.returnFeedBacks nodes
+  -- in sequentialTypeCheck ps prover signtr contxt nodes
   in sequentialTypeCheck ps prover (concat [axioms,signtr]) contxt nodes
  
 type Discourse = [(T.Text, ListT IO CCG.Node)]
