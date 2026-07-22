@@ -31,6 +31,16 @@ function toggle(id){
             }
 };
 
+// Toggle signature visibility on ProofSearch query cards
+function toggleSignature(kind){
+  const body = document.getElementById('ps-sig-body-' + kind);
+  const btn = document.getElementById('ps-sig-btn-' + kind);
+  if (!body || !btn) return;
+  const show = body.style.display === 'none';
+  body.style.display = show ? 'block' : 'none';
+  btn.textContent = show ? 'Hide Signature' : 'Show Signature';
+}
+
 // Toggle label active state for cat/sem controls in header
 function initToggleButtons() {
   const cat = document.getElementById('cat-toggle');

@@ -1258,10 +1258,18 @@ getProofQueryR = do
     Nothing -> defaultLayout [whamlet|<pre>loading...</pre>|]
     Just psq -> do
       -- Convert deBruijn to with-name for display
-      let psqWN = DWN.fromDeBruijnProofSearchQuery psq
+      let psqWN@(DWN.ProofSearchQuery sigWN _ _) = DWN.fromDeBruijnProofSearchQuery psq
+          kindT = maybe "pos" id mk
       defaultLayout $ do
         [whamlet|
           <div class="tab-tcq-content-inference">^{WE.widgetizeWith dsp psqWN}
+          <div .ps-sig>
+            <button type="button" .btn id="ps-sig-btn-#{kindT}" onclick="toggleSignature('#{kindT}')">Show Signature
+            <div .ps-sig-body id="ps-sig-body-#{kindT}" style="display: none">
+              $if null sigWN
+                <span .ps-sig-empty>(empty)
+              $else
+                <div class="tab-tcq-content-inference">^{WE.widgetizeWith dsp sigWN}
         |]
 
 -- Start proving (pos/neg) lazily after /proofsearch renders

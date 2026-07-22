@@ -689,15 +689,16 @@ instance Widgetizable QT.DTTrule where
 
 -- type Signature = [(T.Text, Preterm)]
 instance Widgetizable DTT.Signature where
-  widgetize signature = 
+  widgetize signature =
     let reversedItems = reverse signature
         itemsWithFlags = case reversedItems of
           [] -> []
-          _  -> zip reversedItems (repeat False) ++ [(last reversedItems, True)]
+          _  -> zip (init reversedItems) (repeat False) ++ [(last reversedItems, True)]
     in [whamlet|
        <mrow>
          $forall ((nm, tm), isLast) <- itemsWithFlags
-           <math xmlns="http://www.w3.org/1998/Math/MathML">^{widgetize nm}
+           <math xmlns="http://www.w3.org/1998/Math/MathML">
+             <mtext>#{nm}
            <mo>:
            <math xmlns="http://www.w3.org/1998/Math/MathML">^{widgetize tm}
            $if not isLast
@@ -706,16 +707,17 @@ instance Widgetizable DTT.Signature where
 
 -- type Signature = [(T.Text, Preterm)]
 instance Widgetizable DWN.Signature where
-  widgetize signature = 
+  widgetize signature =
     let reversedItems = reverse signature
         itemsWithFlags = case reversedItems of
           [] -> []
-          _  -> zip reversedItems (repeat False) ++ [(last reversedItems, True)]
+          _  -> zip (init reversedItems) (repeat False) ++ [(last reversedItems, True)]
     in [whamlet|
        <math xmlns="http://www.w3.org/1998/Math/MathML">
        <mrow>
          $forall ((nm, tm), isLast) <- itemsWithFlags
-           <math xmlns="http://www.w3.org/1998/Math/MathML">^{widgetize nm}
+           <math xmlns="http://www.w3.org/1998/Math/MathML">
+             <mtext>#{nm}
            <mo>:
            <math xmlns="http://www.w3.org/1998/Math/MathML">^{widgetize tm}
            $if not isLast
