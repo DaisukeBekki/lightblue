@@ -220,6 +220,7 @@ instance MathML Cat where
     BS x y      -> T.concat ["<mrow>", toMathML x, "<mo>\\</mo>", toMathML' y, "</mrow>"]
     T True i _  -> T.concat ["<msub><mi>T</mi><mn>",(T.pack $ show i),"</mn></msub>"]
     T False i u -> T.concat ["<msub>", toMathML' u, "<mn>",(T.pack $ "<"++ show i ++">"),"</mn></msub>"]
+    S []        -> T.concat ["<msub><mi>S</mi></msub>"]
     S (pos:(conj:pm)) -> 
                    T.concat [
                      "<msub><mi>S</mi><mstyle color='Purple'><mtable columnalign='left'><mtr><mtd>",
@@ -231,7 +232,9 @@ instance MathML Cat where
                        else T.append "</mtd></mtr><mtr><mtd><mpadded height='-0.5em'>" x,
                      "</mpadded></mtd></mtr></mtable></mstyle></msub>"
                      ]
+    NP []       -> T.concat ["<msub><mi>NP</mi></msub>"]
     NP [cas]    -> T.concat ["<msub><mi>NP</mi><mtext color='Purple'>", toMathML cas, "</mtext></msub>"]
+    Sbar []     -> T.concat ["<msub><menclose notation='top'><mi>S</mi></menclose></msub>"]
     Sbar [sf]   -> T.concat ["<msub><menclose notation='top'><mi>S</mi></menclose><mtext color='Purple'>", toMathML sf, "</mtext></msub>"]
     N           -> "<mi>N</mi>"
     CONJ        -> "<mi>CONJ</mi>"
