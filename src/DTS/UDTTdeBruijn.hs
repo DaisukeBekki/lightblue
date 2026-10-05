@@ -99,7 +99,7 @@ data Preterm =
   | Refl Preterm Preterm         -- ^ refl
   | Idpeel Preterm Preterm Preterm -- ^ idpeel
   -- | UDTT extensions
-  | Asp Preterm                 -- ^ Underspesified terms
+  | Asp Preterm Preterm                -- ^ Underspesified types
   | Lamvec Preterm              -- ^ Lambda abstractions of a variable vector
   | Appvec Int Preterm          -- ^ Function applications of a variable vector
   | Ann Preterm DTTdB.Preterm         -- ^ Type annotation
@@ -143,7 +143,7 @@ instance SimpleText Preterm where
     Eq a m n -> T.concat [toText m, "=[", toText a, "]", toText n]
     Refl a m -> T.concat ["refl", toText a, "(", toText m, ")"]
     Idpeel p e r -> T.concat ["idpeel(", toText p, ",", toText e, ",", toText r, ")"]
-    Asp m -> T.concat["@", toText m]
+    Asp a b -> T.concat["(@", toText a, ")", toText b]
     Lamvec m   -> T.concat ["λ+.", toText m]
     Appvec i m -> T.concat ["(", toText m, " ", T.pack (show i), "+)"]
     Ann m a -> T.concat ["(", toText m, "::", toText a, ")"]
@@ -189,7 +189,7 @@ subst preterm l i = case preterm of
   Eq a m n   -> Eq (subst a l i) (subst m l i) (subst n l i)
   Refl a m   -> Refl (subst a l i) (subst m l i)
   Idpeel p e r -> Idpeel (subst p l i) (subst e l i) (subst r l i)
-  Asp m      -> Asp (subst m l i)
+  Asp a b    -> Asp (subst a l i) (subst b (shiftIndices l 1 0) (i+1))
   Lamvec m   -> Lamvec (subst m (shiftIndices l 1 0) (i+1))
   Appvec j m -> Appvec j (subst m l i)
   Ann m a    -> Ann (subst m l i) a
@@ -216,7 +216,7 @@ shiftIndices preterm d i = case preterm of
   Eq a m n   -> Eq (shiftIndices a d i) (shiftIndices m d i) (shiftIndices n d i)
   Refl a m   -> Refl (shiftIndices a d i) (shiftIndices m d i)
   Idpeel p e r -> Idpeel (shiftIndices p d i) (shiftIndices e d i) (shiftIndices r d i)
-  Asp m    -> Asp (shiftIndices m d i)
+  Asp a b    -> Asp (shiftIndices a d i) (shiftIndices b d (i+1))
   Lamvec m   -> Lamvec (shiftIndices m d (i+1))
   Appvec j m -> if j >= i
                    then Appvec (j+d) (shiftIndices m d i)
@@ -269,7 +269,7 @@ betaReduce preterm = case preterm of
   Idpeel p e r -> case betaReduce e of
                   Refl _ m -> betaReduce $ (App r m)
                   e' -> Idpeel (betaReduce p) e' (betaReduce r)
-  Asp m -> Asp (betaReduce m)
+  Asp a b -> Asp (betaReduce a) (betaReduce b)
   Lamvec m   -> Lamvec (betaReduce m)
   Appvec i m -> Appvec i (betaReduce m)
   Ann m a -> Ann (betaReduce m) a
@@ -318,7 +318,7 @@ strongBetaReduce t preterm = case preterm of
   Idpeel p e r -> case strongBetaReduce 0 e of
                     Refl _ m -> strongBetaReduce 0 (App r m)
                     e' -> Idpeel (strongBetaReduce 0 p) e' (strongBetaReduce 0 r)
-  Asp m -> Asp (strongBetaReduce 0 m)
+  Asp a b -> Asp (strongBetaReduce 0 a) (strongBetaReduce 0 b)
   Lamvec m   -> if t > 0
                    then Lam (strongBetaReduce (t-1) $ Lamvec (addLambda 0 m))
                    else strongBetaReduce 0 (deleteLambda 0 m)
@@ -347,7 +347,9 @@ sigmaElimination preterm = case preterm of
   Eq a m n   -> Eq (sigmaElimination a) (sigmaElimination m) (sigmaElimination n)
   Refl a m   -> Refl (sigmaElimination a) (sigmaElimination m)
   Idpeel p e r -> Idpeel (sigmaElimination p) (sigmaElimination e) (sigmaElimination r)
-  Asp m      -> Asp (sigmaElimination m)
+  Asp a b    -> case a of
+                  Sigma a' b' -> sigmaElimination (Asp a' (Asp b' (subst (shiftIndices b 1 1) (Pair (Var 1) (Var 0)) 0)))
+                  _ -> Asp (sigmaElimination a) (sigmaElimination b)
   Lamvec m   -> Lamvec (sigmaElimination m)
   Appvec j m -> Appvec j (sigmaElimination m)
   Ann m a    -> Ann (sigmaElimination m) a
@@ -388,7 +390,7 @@ addLambda i preterm = case preterm of
   Eq a m n   -> Eq (addLambda i a) (addLambda i m) (addLambda i n)
   Refl m n   -> Refl (addLambda i m) (addLambda i n)
   Idpeel p e r -> Idpeel (addLambda i p) (addLambda i e) (addLambda i r)
-  Asp m      -> Asp (addLambda i m)
+  Asp a b     -> Asp (addLambda i a) (addLambda (i+1) b)
   Lamvec m   -> Lamvec (addLambda (i+1) m)
   Appvec j m | j > i     -> Appvec (j+1) (addLambda i m)
              | j < i     -> Appvec j (addLambda i m)
@@ -418,7 +420,7 @@ deleteLambda i preterm = case preterm of
   Eq a m n   -> Eq (deleteLambda i a) (deleteLambda i m) (deleteLambda i n)
   Refl m n   -> Refl (deleteLambda i m) (deleteLambda i n)
   Idpeel p e r -> Idpeel (deleteLambda i p) (deleteLambda i e) (deleteLambda i r)
-  Asp m      -> Asp (deleteLambda i m)
+  Asp a b    -> Asp (deleteLambda i a) (deleteLambda (i+1) b)
   Lamvec m   -> Lamvec (deleteLambda (i+1) m)
   Appvec j m | j > i     -> Appvec (j-1) (deleteLambda i m)
              | j < i     -> Appvec j (deleteLambda i m)
@@ -536,7 +538,7 @@ toDTT preterm = case preterm of
                   e' <- toDTT e
                   r' <- toDTT r
                   return $ DTTdB.Idpeel p' e' r'
-  Asp _   -> Nothing
+  Asp _ _ -> Nothing
   Lamvec _  -> Nothing
   Appvec _ _ -> Nothing
   Ann _ _ -> Nothing
