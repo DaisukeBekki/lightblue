@@ -3,7 +3,8 @@
 module DTS.Prover.Wani.Prove
 (
   display,
-  prove'
+  prove',
+  searchProofWithIncrementalDepth
 ) where
 
 import qualified Interface.Tree as UDT
@@ -86,7 +87,11 @@ prove' QT.ProofSearchSetting{..} (DdB.ProofSearchQuery sig ctx typ) =  -- LiftT 
         WB.oracle = oracle,
         WB.oracleThreshold=0.5,
         WB.enableEq = True,
-        WB.enableConcurrent = True
+        WB.enableConcurrent = True,
+        WB.enableEnum = case logicSystem of
+                    Nothing -> False
+                    Just QT.Intuitionistic -> False
+                    Just QT.Classical -> True
         };
       ioResult = hojo ctx ((A.aEntityName,DdB.Type):sig) typ setting (M.maybe Nothing (\t -> M.Just $ toEnum (t * (10^9))) maxTime)
   in ListT.lift ioResult >>= \result ->

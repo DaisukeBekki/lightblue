@@ -88,8 +88,9 @@ data Preterm =
   | Bot                          -- ^ The bottom type
   | Unit                         -- ^ The unit term (of type Top)
   | Top                          -- ^ The top type
-  | Entity                       -- ^ The entity type
-  -- | Natural Number Types
+  | Entity                       -- ^ The entity type  
+  | Case Preterm Preterm [Preterm]
+    -- | Natural Number Types
   | Nat                          -- ^ Natural number type (Nat)
   | Zero                         -- ^ 0 (of type Nat)
   | Succ Preterm                 -- ^ The successor function

@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, DeriveGeneric, DeriveAnyClass, TemplateHaskell #-}
+{-# LANGUAGE FlexibleInstances, DeriveGeneric, DeriveAnyClass, TemplateHaskell, TypeSynonymInstances #-}
 
 {-|
 Copyright   : (c) Daisuke Bekki, 2024
@@ -12,6 +12,8 @@ Implementation of Underspecified Dependent Type Theory (Bekki forthcoming).
 module DTS.DTTdeBruijn (
   -- * Terms and Types
   Selector(..)
+  , Const(..)
+  , EnumLabel(..)
   , Preterm(..)
   , ConName
   -- * General Syntactic Operations
@@ -36,8 +38,8 @@ module DTS.DTTdeBruijn (
 
 import qualified GHC.Generics as G    --base
 import qualified Data.Text.Lazy as LazyT --text
-import Data.Store (Store(..), decode)         --store
-import Data.Store.TH (makeStore)      --store
+import Data.Store (Store(..), Size(..), decode)         --store
+import qualified Data.Text.Encoding as TE
 import Control.DeepSeq (NFData)       --deepseq
 import qualified Data.ByteString as BS
 import Control.Exception (try, SomeException)
@@ -48,6 +50,19 @@ import DTS.GeneralTypeQuery           --lightblue
 
 -- | 'Proj' 'Fst' m is the first projection of m, while 'Proj' 'Snd' m is the second projection of m.
 data Selector = Fst | Snd deriving (Eq, Show, G.Generic, Store, NFData)
+data Const = Const LazyT.Text deriving (Eq,Show,G.Generic,Store,NFData)
+data EnumLabel = EnumLabel LazyT.Text deriving (Eq,Show,G.Generic,Store,NFData)
+
+instance Store LazyT.Text where
+  size = VarSize $ \t -> BS.length (TE.encodeUtf8 (LazyT.toStrict t))
+  poke t = poke (LazyT.toStrict t)
+  peek = LazyT.fromStrict <$> peek
+
+instance SimpleText Const where
+  toText (Const t) = t
+
+instance SimpleText EnumLabel where
+  toText (EnumLabel t) = t
 
 -- | Print a selector as "1" or "2".
 instance SimpleText Selector where
@@ -88,6 +103,9 @@ data Preterm =
   | Unit                         -- ^ The unit term (of type Top)
   | Top                          -- ^ The top type
   | Entity                       -- ^ The entity type
+  | Case Preterm Preterm [Preterm]
+  | EConst EnumLabel Int Const
+  | Enum EnumLabel [Const]
   -- | Natural Number Types
   | Nat                          -- ^ Natural number type (Nat)
   | Zero                         -- ^ 0 (of type Nat)
@@ -100,7 +118,7 @@ data Preterm =
   -- | ToDo: add First Universe
   deriving (Eq, G.Generic, NFData)
 
-makeStore ''LazyT.Text
+--makeStore ''LazyT.Text
 
 instance Store Preterm
 
@@ -132,6 +150,9 @@ instance SimpleText Preterm where
     Entity -> "entity"
     Nat   -> "N"
     Zero  -> "0"
+    Case p l conLst-> LazyT.concat (["case(", toText p, ",", toText l, ",[",LazyT.intercalate "," (map toText conLst),"])"])
+    EConst label num con -> LazyT.concat ["const(", (toText label), "_", (LazyT.pack $ show num), "_", toText con,")"]
+    Enum label conLst -> LazyT.concat $ ["enum(", (toText label), ",{",LazyT.intercalate "," (map toText conLst), "})"]
     Succ n -> LazyT.concat ["s", toText n]
     Natrec p n e f -> LazyT.concat ["natrec(", toText p, ",", toText n, ",", toText e, ",", toText f, ")"]
     Eq a m n -> LazyT.concat [toText m, "=[", toText a, "]", toText n]
@@ -174,6 +195,9 @@ subst preterm l i = case preterm of
   Entity     -> Entity
   Nat        -> Nat
   Zero       -> Zero
+  Case p l' conLst -> Case (subst p l i) (subst l' l i) (map (\t -> subst t l i) conLst)
+  EConst label num con -> EConst label num con
+  Enum label conLst -> Enum label conLst
   Succ n     -> Succ (subst n l i)
   Natrec p n e f -> Natrec (subst p l i) (subst n l i) (subst e l i) (subst f l i)
   Eq a m n   -> Eq (subst a l i) (subst m l i) (subst n l i)
@@ -202,6 +226,7 @@ shiftIndices preterm d i = case preterm of
   Eq a m n   -> Eq (shiftIndices a d i) (shiftIndices m d i) (shiftIndices n d i)
   Refl a m   -> Refl (shiftIndices a d i) (shiftIndices m d i)
   Idpeel p e r -> Idpeel (shiftIndices p d i) (shiftIndices e d i) (shiftIndices r d i)
+  Case p l' conLst -> Case (shiftIndices p d i) (shiftIndices l' d i) (map (\t -> shiftIndices t d i) conLst)
   m -> m
   
 
@@ -249,6 +274,9 @@ betaReduce preterm = case preterm of
   Idpeel p e r-> case betaReduce e of
                    Refl _ m -> betaReduce $ App r m
                    e' -> Idpeel (betaReduce p) e' (betaReduce r)
+  Case p c termLst -> case c of (EConst label num const) -> betaReduce (termLst !! num);_ -> Case (betaReduce p) (betaReduce c) (map betaReduce termLst)
+  Enum a b -> Enum a b
+  EConst a b c -> EConst a b c
 
 -- | strong Beta reduction
 strongBetaReduce :: Int -> Preterm -> Preterm

@@ -82,10 +82,10 @@ constructResultWithResultsets rule maybeTree resultsets dSide setting resultDef 
             downside = 
               let gijiGoal = (WB.Goal sig var (M.Just aTerm) [aType])
                   resultsLen = length resultset
-                  WB.Goal _ _ (M.Just aTerm') [aType'] = {-- D.trace ("gijigoal : "++(show gijiGoal)++ " resultset "++(show resultset) ++ " bound "++(show $A.varsInaTerm aType)) $--}  maybe gijiGoal id $
+                  WB.Goal _ _ (M.Just aTerm') [aType'] =  {--D.trace ("gijigoal : "++(show gijiGoal)++ " resultset "++(show resultset) ++ " bound "++(show $A.varsInaTerm aType)) $ --} maybe gijiGoal id $
                         snd $
                             foldl
-                            (\(targetId,maybeGoal') (WB.SubstSet lst target num) -> --D.trace ("maybeGoal "++(show maybeGoal') ++ " / " ++ (show $ WB.SubstSet lst target num)) $
+                            (\(targetId,maybeGoal') (WB.SubstSet lst target num) -> --D.trace ("maybeGoal "++(show maybeGoal') ++ " / " ++ " targetId:" ++ (show targetId) ++ " "++ (show $ WB.SubstSet lst target num) ++ (show maybeTree)) $
                                 maybe
                                 (targetId-1,M.Nothing)
                                 (\goal' -> (
@@ -163,9 +163,19 @@ deduceWithSubGoalset (WB.SubGoalSet rule maybeTree subgoals dSide) depth setting
             case subgoalToGoalWithAntecedents results subgoal depth setting of
                 M.Just goal -> 
                     let disjUsed = if rule /= QT.DisjE then [] else (maybe [] (\tree -> [A.typefromAJudgment $ A.downSide' tree]) maybeTree)
-                        setting' = setting{WB.sStatus = (WB.sStatus setting){WB.usedDisJoint = disjUsed++(WB.usedDisJoint$WB.sStatus setting)}}
+                        enumUsed = if rule /= QT.EnumE then [] else (maybe [] (\tree -> [A.typefromAJudgment $ A.downSide' tree]) maybeTree)
+                        setting' = setting{WB.sStatus = (WB.sStatus setting){WB.usedDisJoint = disjUsed++(WB.usedDisJoint$WB.sStatus setting)}{WB.usedEnum = enumUsed++(WB.usedEnum$WB.sStatus setting)}}
                     in 
-                    deduce' goal depth setting' >>= \newResult -> return (map (\tree -> (newResult{WB.trees = [tree]}):results) (L.nub $ WB.trees newResult))
+                    deduce' goal depth setting' >>= \newResult -> return (map (\tree -> (newResult{WB.trees = [tree]}):results)
+                                              (L.nub $ 
+                            filter
+                                (\tree -> 
+                                    case A.termfromAJudgment $ A.downSide' tree of 
+                                        A.ArrowUnpack l p (A.ArrowLam m) (A.ArrowLam n) -> (0 `elem` (A.varsInaTerm m)) && (0 `elem` (A.varsInaTerm n))
+                                        aterm' -> True
+                                ) 
+                                (WB.trees newResult)
+                          ))
                 M.Nothing -> return []
         -- deduceWithAntecedentsetAndSubGoal :: IO [[WB.Result]] -> Subgoal -> IO [[WB.Result]]
         deduceWithAntecedentsetAndSubGoal resultsetIOs subgoal = resultsetIOs >>= \resultset -> foldMap (deduceWithAntecedentsAndSubGoal subgoal) resultset
@@ -202,7 +212,8 @@ deduceWithSubGoalsetsSequential subgoalsets depth setting resultDef justTerm arr
         )
         (return resultDef)
         subgoalsets
-    ) >>= \result' -> return $ result'{WB.rStatus = (WB.rStatus result'){WB.deduceNgLst = WB.deduceNgLst$WB.sStatus setting}}{WB.trees = filter  (\tree ->  let A.AJudgment sig' var' term' type' = A.downSide' tree in (maybe True (\term -> (A.arrowNotat . A.betaReduce) term' == (A.arrowNotat . A.betaReduce) term) justTerm) && ((A.arrowNotat . A.betaReduce) type' == (A.arrowNotat . A.betaReduce) arrowType)) $ L.nub$ WB.trees result'} -- `arrowNotat` and `betaReduece` are performed uniformly here. Even if normalization is not considered when creating a rule, the following ensures that the comparison is valid.
+    ) >>= \result' ->
+       return $ result'{WB.rStatus = (WB.rStatus result'){WB.deduceNgLst = WB.deduceNgLst$WB.sStatus setting}}{WB.trees = filter  (\tree ->  let A.AJudgment sig' var' term' type' = A.downSide' tree in (maybe True (\term -> (A.arrowNotat . A.betaReduce) term' == (A.arrowNotat . A.betaReduce) term) justTerm) && ((A.arrowNotat . A.betaReduce) type' == (A.arrowNotat . A.betaReduce) arrowType)) $ L.nub$ WB.trees result'} -- `arrowNotat` and `betaReduece` are performed uniformly here. Even if normalization is not considered when creating a rule, the following ensures that the comparison is valid.
 
 deduceWithSubGoalsetsConcurrent :: [WB.SubGoalSet] -> WB.Depth -> WB.Setting -> WB.Result -> M.Maybe A.Arrowterm -> A.Arrowterm -> IO WB.Result
 deduceWithSubGoalsetsConcurrent subgoalsets depth setting resultDef justTerm arrowType = 
@@ -267,15 +278,17 @@ deduce' goal depth setting
         else
           let 
             WB.Goal sig var justTerm [arrowType] = debugLog goal depth setting "current goal : " goal
+            enumEnabled = WB.enableEnum setting
+            top = (A.ArrowEnum (A.EnumLabel "top") [(A.Const "unit")])
           in 
             case justTerm of
-              M.Just (A.Conclusion DdB.Bot) ->
+              M.Just (A.ArrowEnum (A.EnumLabel "bot") []) ->
                 if arrowType == A.aType && WB.falsum setting
-                  then return $ WB.resultDef{WB.trees = [UDT.Tree QT.BotF (A.AJudgment sig var (A.Conclusion DdB.Bot) arrowType) []],WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}} -- if `B.falsum` is true, the type for `false` is `type`.
+                  then return $ WB.resultDef{WB.trees = [UDT.Tree QT.BotF (A.AJudgment sig var (A.ArrowEnum (A.EnumLabel "bot") []) arrowType) []],WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}} -- if `B.falsum` is true, the type for `false` is `type`.
                   else return $ WB.resultDef{WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}}
-              M.Just (A.Conclusion DdB.Top) ->
+              M.Just (A.ArrowEnum (A.EnumLabel "top") [(A.Const "unit")]) ->
                 if arrowType == A.aType
-                  then return $ WB.resultDef{WB.trees = [UDT.Tree QT.TopF (A.AJudgment sig var (A.Conclusion DdB.Top) arrowType) []],WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}}
+                  then return $ WB.resultDef{WB.trees = [UDT.Tree QT.TopF (A.AJudgment sig var (A.ArrowEnum (A.EnumLabel "top") [(A.Const "unit")]) arrowType) []],WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}}
                   else return $ WB.resultDef{WB.rStatus = WB.mergeStatus (WB.sStatus setting) WB.statusDef{WB.usedMaxDepth = depth}}
               M.Just (A.Conclusion DdB.Type) ->
                 if arrowType == A.Conclusion DdB.Kind
@@ -289,9 +302,10 @@ deduce' goal depth setting
                         (\ruleLabel -> BR.rule ruleLabel goal setting)
                         ( -- Because of `sortSubGoalSets`, there is no need to care about rule order. (Before `sortSubGoalSets`, The stronger the rule, the later to be set. For example, `dne` can be used for any term, thus turning the execution later. This setting takes effect in combination with the rounding up of proof search using `B.allProof`.)
                           [BR.PiForm]
-                          ++ (if arrowType /= (A.Conclusion DdB.Kind) then [BR.SigmaForm,BR.EqForm,BR.Membership,BR.AskOracle,BR.PiIntro,BR.SigmaIntro,BR.PiElim,BR.TopIntro,BR.DisjIntro,BR.DisjElim,BR.DisjForm] else [])
-                          ++ [BR.Dne | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithDNE && (arrowType /= (A.Conclusion DdB.Kind))]
-                          ++ [BR.Efq | arrowType /= A.Conclusion DdB.Bot && WB.mode setting == WB.WithEFQ && (arrowType /= (A.Conclusion DdB.Kind))]
+                          ++ (if arrowType /= (A.Conclusion DdB.Kind) then [BR.SigmaForm,BR.EqForm,BR.Membership,BR.AskOracle,BR.PiIntro,BR.SigmaIntro,BR.PiElim,BR.TopIntro,BR.DisjIntro,BR.DisjForm,BR.EnumForm,BR.EnumIntro] else [])
+                          ++ {--D.trace ((show depth) ++ " disjEnum " ++ (show $ (length (WB.usedDisJoint $WB.sStatus setting)) + (length (WB.usedEnum $WB.sStatus setting)) >= ((depth `div` 2))) ++(show (length (WB.usedDisJoint $WB.sStatus setting))) ++ " " ++(show (length (WB.usedEnum $WB.sStatus setting)))) --} [rule | rule <- BR.DisjElim:(if enumEnabled then [BR.EnumElim] else []), (length (WB.usedDisJoint $WB.sStatus setting)) + (length (WB.usedEnum $WB.sStatus setting))  >= (depth `div` 2) - 1] -- piI + disjE ( (p + q) + r -> p + (q + r)) / piE + disjE 
+                          ++ [BR.Dne | arrowType /= (A.ArrowEnum (A.EnumLabel "bot") []) && WB.mode setting == WB.WithDNE && (arrowType /= (A.Conclusion DdB.Kind))]
+                          ++ [BR.Efq | arrowType /= (A.ArrowEnum (A.EnumLabel "bot") []) && WB.mode setting == WB.WithEFQ && (arrowType /= (A.Conclusion DdB.Kind))]
                         )
                     resultIO = 
                         let resultDef = -- update `deduceNgLst` and `failedlst` to be used in deeper search

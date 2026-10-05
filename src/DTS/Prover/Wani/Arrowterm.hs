@@ -4,6 +4,8 @@ module DTS.Prover.Wani.Arrowterm
 (
   Arrowterm(..),
   AJudgment(..),
+  Const(..),
+  EnumLabel(..),
   aVar,
   aCon,
   aType,
@@ -46,6 +48,7 @@ module DTS.Prover.Wani.Arrowterm
   addApp,
   thereIsVar,
   varsInaTerm,
+  constsInaTerm,
   boundUpLim,
   betaReduce
 ) where
@@ -63,6 +66,9 @@ import qualified Data.Maybe as M
 import Data.Store (Store(..))
 import qualified GHC.Generics as G
 
+data Const = Const T.Text deriving (Eq,Show,G.Generic,Store)
+data EnumLabel = EnumLabel T.Text deriving (Eq,Show,G.Generic,Store)
+
 data ArrowSelector = ArrowFst | ArrowSnd deriving (Eq, Show, G.Generic, Store)
 -- | Arrowterm
 data Arrowterm =
@@ -77,6 +83,9 @@ data Arrowterm =
   | ArrowDisj Arrowterm Arrowterm
   | ArrowIota ArrowSelector Arrowterm
   | ArrowUnpack Arrowterm Arrowterm Arrowterm Arrowterm
+  | ArrowConst EnumLabel Int Const
+  | ArrowEnum EnumLabel [Const]
+  | ArrowCase Arrowterm Arrowterm [Arrowterm]
   deriving (Eq, G.Generic, Store)
 -- | DTT.Preterm型に変換して得たテキストを加工している
 instance Show Arrowterm where
@@ -99,6 +108,10 @@ boundUpLim term =
     (ArrowDisj a b) -> minimum [boundUpLim a,boundUpLim b]
     (ArrowIota _ a) -> boundUpLim a
     (ArrowUnpack a b c d) -> minimum $ map boundUpLim [a,b,c,d]
+    (ArrowConst enumLabel num const) -> 0
+    (ArrowEnum enumLabel constLst) -> 0
+    (ArrowCase p m termLst) -> minimum $ map boundUpLim (p:(m:termLst))
+
 
 -- | tP input :(u1:A)→(u2:B(u1))×C(u2,u1) output : [(6,"(u1:A)"),(17,"(u2:B(u1))"),(26,"(u2,u1)")]
 treatParentheses :: String -> Char -> Char  -> [(Int,String)]
@@ -141,6 +154,10 @@ arrow2DT (ArrowEq a b t) = DdB.Eq (arrow2DT a) (arrow2DT b) (arrow2DT t)
 arrow2DT (ArrowDisj a b) = DdB.Disj (arrow2DT a) (arrow2DT b) 
 arrow2DT (ArrowIota h t) = DdB.Iota (dtNotatSelector h) (arrow2DT t)
 arrow2DT (ArrowUnpack a b c d) = DdB.Unpack (arrow2DT a) (arrow2DT b) (arrow2DT c) (arrow2DT d)
+arrow2DT (ArrowConst (EnumLabel "top") 0 (Const "unit")) = DdB.Unit
+arrow2DT (ArrowConst (EnumLabel label) num (Const con)) = DdB.EConst (DdB.EnumLabel label) num (DdB.Const con)
+arrow2DT (ArrowEnum (EnumLabel label) conLst) = DdB.Enum (DdB.EnumLabel label) (map (\con' -> case con' of Const con -> DdB.Const con) conLst)
+arrow2DT (ArrowCase p m termLst) = DdB.Case (arrow2DT p) (arrow2DT m) (map arrow2DT termLst)
 
 thereIsVar :: Int -> Arrowterm -> Bool 
 thereIsVar num aTerm= case aTerm of
@@ -159,6 +176,9 @@ thereIsVar num aTerm= case aTerm of
   ArrowDisj a b -> any (thereIsVar num) [a,b]
   ArrowIota h t -> thereIsVar num t
   ArrowUnpack a b c d -> any (thereIsVar num) [a,b,c,d]
+  (ArrowConst enumLabel num const) -> False
+  (ArrowEnum enumLabel constLst) -> False
+  (ArrowCase p m termLst) -> any (thereIsVar num) (p:(m:termLst))
 
 varsInaTerm :: Arrowterm -> [Int]
 varsInaTerm aTerm = L.nub $ varsInaTerm' 0 $arrowNotat aTerm
@@ -178,14 +198,35 @@ varsInaTerm' base aTerm =
     ArrowDisj a b -> concatMap (varsInaTerm' base) [a,b]
     ArrowIota h t -> varsInaTerm' base t
     ArrowUnpack a b c d -> concatMap (varsInaTerm' base) [a,b,c,d]  -- ^ Unpack P L M N
+    (ArrowConst enumLabel num const) -> []
+    (ArrowEnum enumLabel constLst) -> []
+    (ArrowCase p m termLst) -> concatMap (varsInaTerm' base) (p:(m:termLst))
+
+constsInaTerm :: [((Arrowterm,Arrowterm),UDT.Tree Arrowrule AJudgment)] -> [((Arrowterm,Arrowterm),UDT.Tree Arrowrule AJudgment)] -> Arrowterm -> [(((M.Maybe Arrowterm),EnumLabel),M.Maybe (UDT.Tree Arrowrule AJudgment))]
+constsInaTerm conLst fLst aTerm =
+  case aTerm of
+    Conclusion _ -> maybe [] (\(con,tree)-> case con of (ArrowEnum enumLabel conLst')  ->  [((M.Just aTerm,enumLabel),M.Just tree)]; other -> D.trace ("other in constsInaTerm" ++ (show other)) []) (lookup aTerm [ (a, (b, c)) | ((a, b), c) <- conLst ])
+    ArrowSigma' ars ar -> L.nub $ concatMap (constsInaTerm conLst fLst) (reverse $ ar:ars)
+    ArrowApp ar ar' -> L.nub $ (M.catMaybes $ map (\((f,ArrowEnum label _),tree) -> if ar == f then M.Just ((M.Just aTerm,label),M.Just tree) else M.Nothing) fLst) ++ (concatMap (constsInaTerm conLst fLst) [ar,ar'])
+    ArrowPair ar ar' -> L.nub $ concatMap (constsInaTerm conLst fLst) [ar,ar']
+    ArrowProj as ar -> constsInaTerm conLst fLst ar
+    ArrowLam ar -> constsInaTerm conLst fLst ar
+    Arrow ars ar -> L.nub $ concatMap (constsInaTerm conLst fLst) (reverse $ ar:ars)
+    ArrowEq ar ar' ar2 -> L.nub $ concatMap (constsInaTerm conLst fLst) [ar,ar',ar2]
+    ArrowDisj a b -> L.nub $ concatMap (constsInaTerm conLst fLst) [a,b]
+    ArrowIota h t -> constsInaTerm conLst fLst t
+    ArrowUnpack a b c d -> L.nub $ concatMap (constsInaTerm conLst fLst) [a,b,c,d]  -- ^ Unpack P L M N
+    (ArrowConst enumLabel num const) -> [((M.Just (ArrowConst enumLabel num const),enumLabel),M.Nothing)]
+    (ArrowEnum enumLabel constLst) -> []
+    (ArrowCase p m termLst) -> L.nub $ concatMap (constsInaTerm conLst fLst) (p:(m:termLst))
 
 -- | 入力された(DdB.Preterm)をArrowTermに変換する
 dt2Arrow :: DdB.Preterm -> Arrowterm
 dt2Arrow DdB.Type = Conclusion DdB.Type
 dt2Arrow (DdB.Var i) = Conclusion $ DdB.Var i
 dt2Arrow (DdB.Con i) = Conclusion $ DdB.Con i
-dt2Arrow (DdB.Not i) =Arrow [dt2Arrow i] $Conclusion DdB.Bot
-dt2Arrow (DdB.Entity) = Conclusion $ DdB.Con aEntityName
+dt2Arrow (DdB.Not i) =Arrow [dt2Arrow i] $ ArrowEnum (EnumLabel "bot") []
+-- dt2Arrow (DdB.Entity) = Conclusion $ DdB.Con aEntityName
 dt2Arrow (DdB.Pi h t) =
   case dt2Arrow t of
     Arrow env t' -> Arrow (env ++ [dt2Arrow h]) t'
@@ -207,6 +248,13 @@ dt2Arrow (DdB.Eq a b t) =
 dt2Arrow (DdB.Disj a b) = ArrowDisj (dt2Arrow a) (dt2Arrow b)
 dt2Arrow (DdB.Iota h t) = ArrowIota (dtToArrowSelector h) (dt2Arrow t)
 dt2Arrow (DdB.Unpack a b c d) = ArrowUnpack (dt2Arrow a) (dt2Arrow b) (dt2Arrow c) (dt2Arrow d)
+dt2Arrow (DdB.Bot) = ArrowEnum (EnumLabel "bot") []
+dt2Arrow (DdB.Unit) = ArrowConst (EnumLabel "top") 0 (Const "unit")
+dt2Arrow (DdB.Top) = ArrowEnum (EnumLabel "top") [(Const "unit")]
+dt2Arrow (DdB.Entity) = ArrowEnum (EnumLabel "entity") [(Const "dummy")]
+dt2Arrow (DdB.Case p m termLst) = ArrowCase (dt2Arrow p) (dt2Arrow m) (map dt2Arrow termLst)
+dt2Arrow (DdB.EConst (DdB.EnumLabel label) num (DdB.Const con)) = ArrowConst (EnumLabel label) 0 (Const con)
+dt2Arrow (DdB.Enum (DdB.EnumLabel label) conLst) = ArrowEnum (EnumLabel label) (map (\con' -> case con' of DdB.Const con ->Const con) conLst)
 dt2Arrow dt= Conclusion dt
 
 arrowNotat :: Arrowterm -> Arrowterm
@@ -237,6 +285,10 @@ betaReduce aterm = case aterm of
         ArrowIota ArrowFst m' -> betaReduce $ ArrowApp n1 m'
         ArrowIota ArrowSnd m' -> betaReduce $ ArrowApp n2 m'
         _ -> ArrowUnpack (betaReduce p) (betaReduce m) (betaReduce n1) (betaReduce n2)
+    ArrowCase p (ArrowConst label num const) termLst -> betaReduce (termLst !! num)
+    ArrowCase p c termLst ->ArrowCase (betaReduce p) (betaReduce c) (map betaReduce termLst)
+    ArrowEnum a b-> aterm
+    ArrowConst a b c -> aterm
 --  In `fromDT2A`, I use `DdB.toDTT` and `DdB.toUDTT` and the term convert into `(DdB.Preterm)` -> `(DdB.Preterm DdB.UDTT)` -> `(DdB.Preterm)`.
 --  This implementation let me using existed function, `DdB.betaReduce`.
 --  `A.betaReduce` is used to format a term about an list
@@ -288,8 +340,6 @@ termfromAJudgment ( AJudgment con env aterm atype) = aterm
 envfromAJudgment :: AJudgment -> Context
 envfromAJudgment ( AJudgment con env aterm atype) = (con,env)
 
-dnPr = DdB.Pi DdB.Type (DdB.Pi (DdB.Pi (DdB.Pi (DdB.Var 0) DdB.Bot) DdB.Bot) (DdB.Var 1))
-
 subst :: DdB.Preterm -> DdB.Preterm -> DdB.Preterm -> DdB.Preterm 
 subst preterm l i =
   if preterm == i then
@@ -307,6 +357,7 @@ subst preterm l i =
       DdB.Disj a b -> DdB.Disj (subst a l i) (subst b l i)
       DdB.Iota h t -> DdB.Iota h (subst t l i)
       DdB.Unpack a b c d -> DdB.Unpack (subst a l i) (subst b l i) (subst c l i) (subst d l i)
+      DdB.Case p m termLst -> DdB.Case (subst p l i) (subst m l i) (map (\t -> subst t l i) termLst)
       others -> others
 
 partialSubstSet :: DdB.Preterm -> DdB.Preterm -> DdB.Preterm -> [DdB.Preterm]
@@ -325,6 +376,7 @@ partialSubstSet preterm l i =
       DdB.Disj a b -> map DdB.Disj (partialSubstSet a l i) <*> (partialSubstSet b l i)
       DdB.Iota h t -> map (DdB.Iota h) (partialSubstSet t l i)
       DdB.Unpack a b c d -> map DdB.Unpack (partialSubstSet a l i) <*> (partialSubstSet b l i) <*> (partialSubstSet c l i) <*> (partialSubstSet d l i)
+      DdB.Case p m termLst -> map DdB.Case (partialSubstSet p l i) <*> (partialSubstSet m l i) <*> traverse (\t -> partialSubstSet t l i) termLst
       others -> [others]
 
 arrowSubst :: Arrowterm -- ^ origin
@@ -377,8 +429,6 @@ isFreeCon term con=
 
 --形だけ比較
 canBeSame :: Int ->   Arrowterm ->   Arrowterm -> Bool
-canBeSame _ (  Conclusion DdB.Top) (  Conclusion DdB.Top) = True
-canBeSame _ (  Conclusion DdB.Bot) (  Conclusion DdB.Bot) = True
 canBeSame _ (  Conclusion DdB.Type) (  Conclusion DdB.Type) = True
 canBeSame lim (  Conclusion (DdB.Var anum)) (  Conclusion (DdB.Var anum')) =
   anum == anum' || anum <= lim
@@ -414,12 +464,15 @@ canBeSame lim (  ArrowEq a b t) (  ArrowEq a' b' t') =
 canBeSame lim (ArrowDisj a b) (ArrowDisj a' b') = canBeSame lim a a' && canBeSame lim b b'
 canBeSame lim (ArrowIota h t) (ArrowIota h' t') = h == h' && canBeSame lim t t'
 canBeSame lim (ArrowUnpack a b c d) (ArrowUnpack a' b' c' d') = canBeSame lim a a' && canBeSame lim b b' && canBeSame lim c c' && canBeSame lim d d'
+canBeSame lim (ArrowConst enumLabel num const) (ArrowConst enumLabel' num' const') = and [enumLabel==enumLabel, num==num', const==const']
+canBeSame lim (ArrowEnum enumLabel constLst) (ArrowEnum enumLabel' constLst') = and [enumLabel==enumLabel',constLst==constLst']
+canBeSame lim (ArrowCase p m termLst) (ArrowCase p' m' termLst') = and $ zipWith (canBeSame lim) (p:(m:termLst)) (p':(m':termLst'))
 canBeSame lim other other' = False
 
 --形だけ比較
 canBeSame' :: Int ->   Arrowterm ->   Arrowterm -> [(Arrowterm,Arrowterm)]
-canBeSame' _ (  Conclusion DdB.Top) (  Conclusion DdB.Top) = []
-canBeSame' _ (  Conclusion DdB.Bot) (  Conclusion DdB.Bot) = []
+-- canBeSame' _ (  Conclusion DdB.Top) (  Conclusion DdB.Top) = []
+-- canBeSame' _ (  Conclusion DdB.Bot) (  Conclusion DdB.Bot) = []
 canBeSame' _ (  Conclusion DdB.Type) (  Conclusion DdB.Type) = []
 canBeSame' lim (  Conclusion (DdB.Var anum)) (  Conclusion (DdB.Var anum')) =[(aVar anum,aVar anum')]
 canBeSame' _ (Conclusion (DdB.Con t)) (Conclusion (DdB.Con t')) = [(aCon t,aCon t')]
@@ -441,6 +494,9 @@ canBeSame' lim (  ArrowEq a b t) (  ArrowEq a' b' t') =
 canBeSame' lim (ArrowDisj a b) (ArrowDisj a' b') = canBeSame' lim a a' ++ canBeSame' lim b b'
 canBeSame' lim (ArrowIota h t) (ArrowIota h' t') = if h == h' then canBeSame' lim t t' else []
 canBeSame' lim (ArrowUnpack a b c d) (ArrowUnpack a' b' c' d') = canBeSame' lim a a' ++ canBeSame' lim b b' ++ canBeSame' lim c c' ++ canBeSame' lim d d'
+canBeSame' lim (ArrowConst enumLabel num const) (ArrowConst enumLabel' num' const') = if and [enumLabel==enumLabel, num==num', const==const'] then [((ArrowConst enumLabel num const),(ArrowConst enumLabel' num' const'))] else []
+canBeSame' lim (ArrowEnum enumLabel constLst) (ArrowEnum enumLabel' constLst') = if and [enumLabel==enumLabel',constLst==constLst'] then [((ArrowEnum enumLabel constLst),(ArrowEnum enumLabel' constLst'))] else []
+canBeSame' lim (ArrowCase p m termLst) (ArrowCase p' m' termLst') = canBeSame' lim p p' ++ canBeSame' lim m m' ++ concat (zipWith (canBeSame' lim) termLst termLst')
 canBeSame' lim other other' = [(other,other')]
 
 -- | [b,a,f] for (f(a))(b)

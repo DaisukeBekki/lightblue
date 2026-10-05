@@ -76,6 +76,7 @@ data Status = Status
   {failedlst :: [(A.Context,ATerm,AType)], -- ^ Once wani failed to @typecheck@, wani add the tuple to this list
    deduceNgLst :: [(A.Context,AType)], -- ^ Once wani failed to @deduce@, wani add the pair to this list
    usedDisJoint :: [ATerm],
+   usedEnum :: [ATerm],
    usedMaxDepth ::Depth, 
    allProof :: Bool -- ^ In the bottom of the tree, one proof is enough to judge whether the hypo is true or not.
   }deriving (Show,Eq)
@@ -92,7 +93,8 @@ data Setting = Setting
    oracle :: Maybe (DdB.ConName -> DdB.ConName -> Float),
    oracleThreshold :: Float,
    enableEq :: Bool,
-   enableConcurrent :: Bool
+   enableConcurrent :: Bool,
+   enableEnum :: Bool
    } -- deriving (Show,Eq)
 
 data Result = Result
@@ -106,13 +108,13 @@ mergeResult rs1 rs2 =
 
 mergeStatus :: Status -> Status -> Status
 mergeStatus st1 st2 =
-  Status {failedlst = L.nub(concatMap failedlst [st1,st2]),usedMaxDepth = maximum (map usedMaxDepth [st1,st2]),deduceNgLst=L.nub(concatMap deduceNgLst [st1,st2]),usedDisJoint=L.nub(concatMap usedDisJoint[st1,st2]),allProof = (allProof st1) || (allProof st2)}
+  Status {failedlst = L.nub(concatMap failedlst [st1,st2]),usedMaxDepth = maximum (map usedMaxDepth [st1,st2]),deduceNgLst=L.nub(concatMap deduceNgLst [st1,st2]),usedDisJoint=L.nub(concatMap usedDisJoint[st1,st2]),usedEnum=L.nub(concatMap usedEnum[st1,st2]),allProof = (allProof st1) || (allProof st2)}
 
 statusDef :: Status
-statusDef = Status{failedlst=[],usedMaxDepth = 0,deduceNgLst=[],usedDisJoint=[],allProof = False}
+statusDef = Status{failedlst=[],usedMaxDepth = 0,deduceNgLst=[],usedDisJoint=[],usedEnum=[],allProof = False}
 
 settingDef :: Setting
-settingDef = Setting{mode = Plain,falsum = True,maxdepth = 9,maxtime = 100000,debug = 0,sStatus = statusDef,ruleConHojo = "sub",oracle=M.Nothing,oracleThreshold=0.5,enableEq=True,enableConcurrent=False}
+settingDef = Setting{mode = Plain,falsum = True,maxdepth = 9,maxtime = 100000,debug = 0,sStatus = statusDef,ruleConHojo = "sub",oracle=M.Nothing,oracleThreshold=0.5,enableEq=True,enableConcurrent=False,enableEnum = True}
 
 resultDef :: Result
 resultDef = Result{trees = [],errMsg = "",rStatus = statusDef}

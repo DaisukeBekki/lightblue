@@ -72,7 +72,8 @@ dependencies:
   - dotenv >= 0.0.4
   - deepseq
   - async >= 2.2.4
-
+  - store-core >= 0.4.4.7
+  
 library:
   source-dirs: src
   default-extensions:

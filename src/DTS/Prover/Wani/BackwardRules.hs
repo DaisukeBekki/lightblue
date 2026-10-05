@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE  TypeSynonymInstances, FlexibleInstances  #-}
+
 module DTS.Prover.Wani.BackwardRules
 (
   -- * Rules
@@ -41,7 +43,10 @@ data RuleLabel =
   AskOracle |
   DisjIntro |
   DisjElim |
-  DisjForm
+  DisjForm |
+  EnumForm |
+  EnumIntro |
+  EnumElim
   deriving (Eq, Show, Read, G.Generic, Store, Enum, Bounded, Ord)
 
 dttruleToRuleLabel :: QT.DTTrule -> Maybe RuleLabel
@@ -65,9 +70,9 @@ dttruleToRuleLabel rule = case rule of
   QT.BotF -> Nothing
   QT.TopF -> Nothing
   QT.TopI -> Just TopIntro
-  QT.EnumF -> Nothing
-  QT.EnumI -> Nothing
-  QT.EnumE -> Nothing
+  QT.EnumF -> Just EnumForm
+  QT.EnumI -> Just EnumIntro
+  QT.EnumE -> Just EnumElim
   QT.IqF -> Just EqForm
   QT.IqI -> Nothing
   QT.IqE -> Nothing
@@ -92,6 +97,9 @@ rule label =
     DisjIntro -> disjIntro
     DisjElim -> disjElim
     DisjForm -> disjForm
+    EnumForm -> enumForm
+    EnumIntro -> enumIntro
+    EnumElim -> enumElim
 
 -- | piIntro rule
 --
@@ -185,11 +193,11 @@ piIntro goal setting =
 -- | topIntro
 topIntro :: WB.Rule
 topIntro goal setting = 
-  case WB.acceptableType QT.TopI goal True [(A.Conclusion DdB.Top)] of
+  case WB.acceptableType QT.TopI goal True [(A.ArrowEnum (A.EnumLabel "top") [(A.Const "unit")])] of
   (Nothing,message) -> return ([],message)
   (Just _,_) -> 
     let (sig,var) = WB.conFromGoal goal
-        subgoalset = return ([WB.SubGoalSet QT.TopI M.Nothing [] (A.AJudgment sig var (A.Conclusion DdB.Unit) (A.Conclusion DdB.Top), [])],"")
+        subgoalset = return ([WB.SubGoalSet QT.TopI M.Nothing [] (A.AJudgment sig var (A.Conclusion DdB.Unit) (A.ArrowEnum (A.EnumLabel "top") [(A.Const "unit")]), [])],"")
     in M.maybe (subgoalset) (\term -> if term == (A.Conclusion DdB.Unit) then subgoalset else return ([],WB.exitMessage (WB.TermMisMatch (M.Just term)) QT.TopI)) (WB.termFromGoal goal)
 
 
@@ -876,7 +884,7 @@ dne goal setting =
   case WB.acceptableType QT.PiE goal False [(A.Conclusion DdB.Kind),A.aType ] of
     (M.Nothing,message) -> -- point1 : typeMisMatch
       return ([],T.append "dne- " message)
-    (M.Just (A.Arrow [A.Arrow _ (A.Conclusion DdB.Bot)] (A.Conclusion DdB.Bot)),_) -> 
+    (M.Just (A.Arrow [A.Arrow _ (A.ArrowEnum (A.EnumLabel "bot") [])] (A.ArrowEnum (A.EnumLabel "bot") [])),_) -> 
       return ([],"duplicate DNE")
     (M.Just arrowType,_) ->
       let (sig,var) = WB.conFromGoal goal
@@ -891,13 +899,13 @@ dne goal setting =
                   []
                   (M.Nothing,M.Nothing)
               subgoal2 = let
-                  goal = WB.Goal sig var M.Nothing [A.Arrow [A.Arrow [arrowType] (A.Conclusion DdB.Bot)] (A.Conclusion DdB.Bot)]
+                  goal = WB.Goal sig var M.Nothing [A.Arrow [A.Arrow [arrowType] (A.ArrowEnum (A.EnumLabel "bot") [])] (A.ArrowEnum (A.EnumLabel "bot") [])]
                 in WB.SubGoal goal [] (M.Nothing,M.Nothing)
             in [WB.SubGoalSet QT.DNE M.Nothing [subgoal1,subgoal2] (dSide,dSideSubstLst)]
         in return (subgoalsets,"")
 
 efq goal setting = 
-   case WB.acceptableType QT.PiE goal False [(A.Conclusion DdB.Bot)] of
+   case WB.acceptableType QT.PiE goal False [(A.ArrowEnum (A.EnumLabel "bot") [])] of
     (M.Nothing,message) -> -- point1 : typeMisMatch
       return([],T.append "efq- " message)
     (M.Just arrowType,_) ->
@@ -913,7 +921,7 @@ efq goal setting =
                   []
                   (M.Nothing,M.Nothing)
               subgoal2 = let
-                  goal = WB.Goal sig var M.Nothing [A.Conclusion DdB.Bot]
+                  goal = WB.Goal sig var M.Nothing [A.ArrowEnum (A.EnumLabel "bot") []]
                 in WB.SubGoal goal [] (M.Nothing,M.Nothing)
             in [WB.SubGoalSet QT.EFQ M.Nothing [subgoal1,subgoal2] (dSide,dSideSubstLst)]
         in return (subgoalsets,"")
@@ -1006,7 +1014,7 @@ disjElim goal setting =
         then return ([],WB.exitMessage (WB.TermMisMatch maybeTerm) QT.PiE)
         else
           let
-            forwardedTree = WB.trees $ F.forwardContext (WB.enableEq setting) sig var
+            forwardedTree = WB.trees $ F.forwardContext False sig var -- Set enableEq to False to avoid the eqIntro branch for the upper part of the tree.
             usedDisJointLst = WB.usedDisJoint $ WB.sStatus setting
             disjTrees = filter (\tree -> case A.typefromAJudgment $ A.downSide' tree of A.ArrowDisj a b -> (A.ArrowDisj a b) `notElem` usedDisJointLst ; _ -> False) forwardedTree
             disjArrowTrees = filter (\tree -> case A.typefromAJudgment $ A.downSide' tree of A.Arrow c (A.ArrowDisj a b) -> (A.Arrow c (A.ArrowDisj a b)) `notElem` usedDisJointLst; _ -> False) forwardedTree
@@ -1046,4 +1054,127 @@ disjElim goal setting =
                         )
                       disjArrowTrees
               in subgoalsetDisj ++ subgoalsetDisjArrow
+          in return (subgoalsets,"")
+
+enumForm :: WB.Rule
+enumForm goal setting = 
+  case WB.acceptableType QT.EnumF goal True [(A.Conclusion DdB.Type)] of
+    (Nothing,message) -> -- point1 : typeMisMatch
+      return ([],message)
+    (Just arrowType,_) -> 
+      case (WB.termFromGoal goal,WB.conFromGoal goal) of
+        (M.Just (A.ArrowEnum label constLst),(sig,var)) -> 
+          return ([WB.SubGoalSet QT.EnumF M.Nothing [] (A.AJudgment sig var (A.ArrowEnum label constLst) arrowType,[])],"")
+        (term,_) -> -- if term is M.Nothing or M.Just `not Arrow type`, return WB.TermMisMatch
+          return ([],WB.exitMessage (WB.TermMisMatch term) QT.DisjF)
+
+enumIntro :: WB.Rule
+enumIntro goal setting = 
+    case WB.acceptableType QT.EnumI goal False [] of
+    (Nothing,message) -> -- point1 : typeMisMatch
+      return ([],message)
+    (Just (A.ArrowEnum label constLst),_) -> 
+      let (sig,var) = WB.conFromGoal goal
+          subgoalsets = 
+            case WB.termFromGoal goal of
+              (Just (A.ArrowConst label' num const)) -> 
+                if label == label' then [WB.SubGoalSet QT.EnumI M.Nothing [] (A.AJudgment sig var (A.ArrowConst label' num const) (A.ArrowEnum label constLst),[])] else []
+              Nothing -> 
+                zipWith (\const id-> WB.SubGoalSet QT.EnumI M.Nothing [] (A.AJudgment sig var (A.ArrowConst label id const) (A.ArrowEnum label constLst),[])) constLst [0..]
+              _ -> []
+            in return (subgoalsets,"")
+    (Just a,message) -> -- point3 : typeMisMatch
+      return ([],WB.exitMessage (WB.TypeMisMatch a) QT.SigmaI)
+
+                      {- |
+  NOTE: Why Partial Substitution is Necessary for Predicate Extraction ({}E)
+
+  Full substitution (replacing all occurrences of the target term M in the goal)
+  is insufficient during backward proof search because it can break dependencies
+  on hypotheses in the context Gamma.
+
+  Example:
+    Context Gamma:
+      v1 : {ochako, hanako}
+      v2 : friend(v1, hanako)
+      v3 : friend(v1, ochako)
+    Goal:
+      ? : friend(v1, v1)
+
+  1. Full Substitution: P = \z -> friend(z, z)
+     - Subgoal 1 (z = ochako) : friend(ochako, ochako)
+     - Subgoal 2 (z = hanako) : friend(hanako, hanako)
+     --> FAILS: Neither subgoal matches v2 or v3 in Gamma.
+
+  2. Partial Substitution: P = \z -> friend(v1, z)  [keeping the 1st v1 intact]
+     - Subgoal 1 (z = ochako) : friend(v1, ochako)  --> Solved by v3!
+     - Subgoal 2 (z = hanako) : friend(v1, hanako)  --> Solved by v2!
+     --> SUCCEEDS!
+
+  Therefore, we must generate all 2^k partial substitutions (the powerset of
+  target occurrences) to find a valid predicate P.
+-}
+enumElim :: WB.Rule
+enumElim goal setting =
+  case (WB.acceptableType QT.EnumE goal False [(A.Conclusion DdB.Kind)]) of
+    (Nothing,message) -> -- point1 : typeMisMatch
+      return ([],message)
+    (Just arrowType,_) -> 
+      let (sig,var) = WB.conFromGoal goal
+          maybeTerm = WB.termFromGoal goal
+          termsInProofTerm = let -- [b,a,f] for (f(a))(b)
+            maybeTermsInCaseTerm appTerm =
+                case appTerm of 
+                  A.ArrowCase p m termLst -> (p:(m:termLst))
+                  f -> [f]
+            in maybe [] maybeTermsInCaseTerm maybeTerm
+          termIsNotCaseType = (length termsInProofTerm == 1) -- When termsInProofTerm is a list with one element, the term is not appType
+          isDeduce = null termsInProofTerm
+      in if (not isDeduce) && termIsNotCaseType -- point2 : termMisMatch
+        then return ([],WB.exitMessage (WB.TermMisMatch maybeTerm) QT.EnumE)
+        else 
+          let forwardedTree = WB.trees $ F.forwardContext False sig var -- Set enableEq to False to avoid the eqIntro branch for the upper part of the tree.
+              usedEnumLst =  WB.usedEnum $ WB.sStatus setting
+              enumTermTypePairs = M.catMaybes $ map (\tree -> case A.typefromAJudgment $ A.downSide' tree of A.ArrowEnum a b -> (if (A.ArrowEnum a b) `notElem` usedEnumLst then M.Just (((A.termfromAJudgment $ A.downSide' tree),A.ArrowEnum a b),tree) else M.Nothing) ; _ -> M.Nothing) forwardedTree
+              enumArrowTermTypePairs = M.catMaybes $ map (\tree -> case A.typefromAJudgment $ A.downSide' tree of A.Arrow d (A.ArrowEnum a b) -> (if (A.Arrow d (A.ArrowEnum a b)) `notElem` usedEnumLst then M.Just (((A.termfromAJudgment $ A.downSide' tree),A.ArrowEnum a b),tree) else M.Nothing); _ -> M.Nothing) forwardedTree
+              possibleEnums = L.nub $ snd $ unzip $  fst $ unzip $ (enumTermTypePairs ++ enumArrowTermTypePairs)
+              constsInArrowType' = L.nub $ A.constsInaTerm enumTermTypePairs enumArrowTermTypePairs arrowType -- [(const,enumLabel)]
+              constsInArrowType =
+                M.catMaybes
+                  (map
+                  (\((term,enum),tree) -> -- ((maybeTerm,label),maybeTree)
+                    let needed = case enum of A.ArrowEnum a _ ->  (a `notElem` (snd $ unzip $ fst $ unzip constsInArrowType'));_ -> False
+                        label = case enum of A.ArrowEnum a _ -> a; _ -> A.EnumLabel "dummy"
+                    in if needed then M.Just ((M.Nothing,label),M.Just tree) else M.Nothing
+                  )
+                  (enumTermTypePairs ++ enumArrowTermTypePairs) )
+                ++
+                map
+                  (\((maybeTerm,label),maybeTree) ->
+                    let maybeTree' = maybe (lookup label [ (l,tree) | ((_, A.ArrowEnum l _), tree) <- (enumTermTypePairs ++ enumArrowTermTypePairs)]) (M.Just) maybeTree
+                    in ((maybeTerm,label),maybeTree')
+                  )
+                  constsInArrowType'
+              subgoalsets = 
+                  concatMap
+                  (\((maybeMTerm,label),maybeTree) -> 
+                    case (filter (\enum -> case enum of (A.ArrowEnum a _) -> a==label; _-> False) possibleEnums) of 
+                      [(A.ArrowEnum _ constLst)] -> 
+                        let mType = A.ArrowEnum label constLst
+                            mSubGoal = WB.SubGoal (WB.Goal sig var (if isDeduce then M.Nothing else M.Just (termsInProofTerm !! 1)) [mType]) [] (M.Nothing,M.Nothing)
+                            dSideSubstLst = map (\num -> WB.SubstSet [] (WB.generatedTempTerm (sig,arrowType) (T.pack $ show num)) num) [0..((length constLst) + 1)]
+                            dSideSubstLstTerms = map (\(WB.SubstSet _ term _) -> term) dSideSubstLst
+                            dSide = A.AJudgment sig var (A.ArrowCase (dSideSubstLstTerms !! ((length dSideSubstLstTerms) - 1)) (dSideSubstLstTerms !! ((length dSideSubstLstTerms) - 2)) (init $ init $ dSideSubstLstTerms)) arrowType
+                            pTerms = map (\t -> A.ArrowLam t) (maybe [arrowType] (\mTerm -> A.partialSubstSetaTerm arrowType (A.aVar 0) mTerm) maybeMTerm)
+                            pType = A.Arrow [mType] A.aType
+                            mpnGoalWithPterm pTerm = 
+                              ((WB.SubGoal (WB.Goal sig var (M.Just pTerm) [pType]) [] (M.Nothing,M.Nothing)),mSubGoal, 
+                                (map 
+                                  (\((a,maybeN),num) -> WB.SubGoal (WB.Goal sig var maybeN [A.betaReduce (A.ArrowApp pTerm (A.ArrowConst label num a))]) [] (M.Nothing,M.Nothing)) 
+                                  (if isDeduce then zip (map (\const -> (const,M.Nothing)) constLst) [0..] else zip (zip constLst (map M.Just (tail $ tail termsInProofTerm))) [0..])
+                                ))
+                        in map (\pterm -> let (mSubgoal,pSubgoal,nSubgoals) = mpnGoalWithPterm pterm in WB.SubGoalSet QT.EnumE maybeTree (mSubgoal:(pSubgoal:nSubgoals)) (dSide,dSideSubstLst)) pTerms 
+                      _ -> []
+                    )
+                  (constsInArrowType)--(D.trace ((show possibleEnums) ++ " arrrowtype "++(show arrowType)++ "constsInArrowType" ++ (show constsInArrowType)) constsInArrowType)
           in return (subgoalsets,"")
