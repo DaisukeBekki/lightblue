@@ -115,7 +115,7 @@ data Preterm =
   | Refl Preterm Preterm                  -- ^ refl
   | Idpeel Preterm Preterm Preterm        -- ^ idpeel
   -- | UDTT extensions
-  | Asp Preterm                           -- ^ The underspesified term
+  | Asp VarName Preterm Preterm                        -- ^ The underspesified types
   | Lamvec VarName Preterm                -- ^ Variable-length lambda abstraction
   | Appvec VarName Preterm                -- ^ Variable-length function application
   | Ann Preterm DTTwN.Preterm             -- ^ Annotated term
@@ -174,7 +174,7 @@ toText' flag preterm = case preterm of
     Eq a m n -> T.concat [toText' flag m, "=[", toText' flag a, "]", toText' flag n]
     Refl a m -> T.concat ["refl", toText' flag a, "(", toText' flag m, ")"]
     Idpeel p e r -> T.concat ["idpeel(", toText' flag p, ",", toText' flag e, ",", toText' flag r, ")"]
-    Asp m    -> T.concat ["@", toText' flag m]
+    Asp vname a b -> T.concat ["(", toText vname, "@", toText' flag a, ")✕", toText' flag b]
     Lamvec vname m  -> T.concat ["λ", toText vname, "+.", toText' flag m]
     Appvec vname m -> T.concat ["(", toText' flag m, " ", toText vname, "+)"]
     Ann m a -> T.concat ["(", toText m, "::", toText a, ")"]
@@ -197,7 +197,7 @@ instance Typeset Preterm where
                  (Var _) -> T.concat ["\\APP{", toTeXEmbedded m, "}{(", toTeX n, ")}"]
                  (Con _) -> T.concat ["\\APP{", toTeXEmbedded m, "}{(", toTeX n, ")}"]
                  (Proj _ _) -> T.concat ["\\APP{", toTeXEmbedded m, "}{\\left(", toTeX n, "\\right)}"]
-                 (Asp _) -> T.concat ["\\APP{", toTeXEmbedded m, "}{\\left(", toTeX n,"\\right)}"]
+                 (Asp _ _ _) -> T.concat ["\\APP{", toTeXEmbedded m, "}{\\left(", toTeX n,"\\right)}"]
                  _ -> T.concat["\\APP{", toTeXEmbedded m, "}{", toTeXEmbedded n, "}"]
     Sigma vname a b -> case b of
                          Top -> toTeX a
@@ -218,7 +218,7 @@ instance Typeset Preterm where
     Eq a m n  -> T.concat [toTeX m, "=_{", toTeX a,"}", toTeX n]
     Refl a m  -> T.concat ["\\type{refl}_{", toTeX a, "}\\left(", toTeX m,"\\right)"]
     Idpeel p e r -> T.concat ["\\type{idpeel}^{", toTeX p, "}_{", toTeX e, "\\left(", toTeX r, "\\right)"]
-    Asp m     -> T.concat ["@", toTeX m]
+    Asp vname a b -> T.concat ["\\left(", toTeX vname, "@", toTeX a, "\\right)\\times", toTeX b]
     Lamvec vname m   -> T.concat ["\\lambda\\vec{", toTeX vname, "}.", toTeX m]
     Appvec vname m -> T.concat ["\\APP{", toTeXEmbedded m, "}{\\vec{", toTeX vname, "}}"]
     Ann m a -> T.concat ["(", toTeX m, "::", toTeX a, ")"]
@@ -265,7 +265,7 @@ instance MathML Preterm where
     Eq a m n -> T.concat ["<mrow>", toMathML m, "<msub><mo>=</mo>", toMathML a, "</msub>", toMathML n, "</mrow>"]
     Refl a m -> T.concat ["<mrow><mi>refl</mi>", toMathML a, "<mo>(</mo>", toMathML m, "<mo>)</mo></mrow>"]
     Idpeel p e r -> T.concat ["<mrow><msubsup><mi>idpeel</mi><mn>", toMathML p, "</mn><mn>", toMathML e, "</mn></msubsup><mo>(</mo>", toMathML r, "<mo>)</mo></mrow>"]
-    Asp m      -> T.concat["<mrow><mo>@</mo>", toMathML m, "</mrow>"]
+    Asp vname a b -> T.concat ["<mrow><mo>[</mo><mtable columnalign='left'><mtr><mtd>", toMathML vname, "<mo>@</mo>", toMathML a, "</mtd></mtr><mtr><mtd><mpadded height='-0.5em'>", toMathML b, "</mpadded></mtd></mtr></mtable><mo>]</mo></mrow>"]
     Lamvec vname m  -> T.concat ["<mrow><mi>&lambda;</mi><mover>", toMathML vname, "<mo>&rarr;</mo></mover><mo>.</mo>", toMathML m, "</mrow>"]
     Appvec vname m -> T.concat ["<mrow>", toMathML m, "<mo> </mo><mover>", toMathML vname, "<mo>&rarr;</mo></mover></mrow>"]
     Ann m a -> T.concat ["<mrow><mo>(</mo>", toMathML m, "<mo>::</mo>", toMathML a, "<mo>)</mo></mrow>"]
@@ -382,7 +382,7 @@ toDTT preterm = case preterm of
                   e' <- toDTT e
                   r' <- toDTT r
                   return $ DTTwN.Idpeel p' e' r'
-  Asp _   -> Nothing
+  Asp _ _ _  -> Nothing
   Lamvec _ _ -> Nothing
   Appvec _ _ -> Nothing
   Ann _ _ -> Nothing
@@ -480,9 +480,11 @@ fromDeBruijnLoop vnames preterm = case preterm of
     e' <- fromDeBruijnLoop vnames e
     r' <- fromDeBruijnLoop vnames r
     return $ Idpeel p' e' r'
-  UDTTdB.Asp m -> do
-    m' <- fromDeBruijnLoop vnames m
-    return $ Asp m'
+  UDTTdB.Asp a b -> do
+    vname <- variableNameFor a
+    a' <- fromDeBruijnLoop vnames a
+    b' <- fromDeBruijnLoop (vname:vnames) b
+    return $ Asp vname a' b'
   UDTTdB.Lamvec m  -> do
     i <- xIndex
     let vname = VarName 'x' i
@@ -553,7 +555,7 @@ toDeBruijn vnames preterm = case preterm of
   Eq a m n -> UDTTdB.Eq (toDeBruijn vnames a) (toDeBruijn vnames m) (toDeBruijn vnames n)
   Refl a m -> UDTTdB.Refl (toDeBruijn vnames a) (toDeBruijn vnames m)
   Idpeel p e r -> UDTTdB.Idpeel (toDeBruijn vnames p) (toDeBruijn vnames e) (toDeBruijn vnames r)
-  Asp m -> UDTTdB.Asp (toDeBruijn vnames m)
+  Asp vname a b -> UDTTdB.Asp (toDeBruijn vnames a) (toDeBruijn (vname:vnames) b)
   Lamvec vname m -> UDTTdB.Lamvec (toDeBruijn (vname:vnames) m)
   Appvec vname m -> case L.elemIndex vname vnames of
                         Just i -> UDTTdB.Appvec i (toDeBruijn vnames m)
