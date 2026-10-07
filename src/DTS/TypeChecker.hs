@@ -180,7 +180,7 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
     UDTTdB.Asp termA termB -> do  -- | Underspecified type 
       diagramA <- typeCheck' $ UDTTdB.Judgment sig ctx termA UDTTdB.Type
       let termA' = UDTTdB.trm $ node diagramA
-          psq = QT.ProofSearchQuery sig ctx termA'
+          psq = DTTdB.ProofSearchQuery sig ctx termA'
       when verbose $ lift $ do
                               T.hPutStr S.stderr "Resoving anaphora/presupposition: "
                               T.hPutStrLn S.stderr $ toText $ DTTwN.fromDeBruijnProofSearchQuery psq
