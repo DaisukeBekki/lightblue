@@ -178,17 +178,17 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
       --lift $ T.putStrLn $ T.concat ["Proof search launched: ", toText psq]
     --  return diagramQ
     UDTTdB.Asp termA termB -> do  -- | Underspecified type 
-      diagramA <- typeCheck' $ UDTTdB.Judgment sig ctx termA UDTTdB.Type
-      let termA' = UDTTdB.trm $ node diagramA
+      diagramA <- typeCheck' $ UDTTdB.Judgment sig ctx termA DTTdB.Type
+      let termA' = DTTdB.trm $ node diagramA
           psq = DTTdB.ProofSearchQuery sig ctx termA'
       when verbose $ lift $ do
                               T.hPutStr S.stderr "Resoving anaphora/presupposition: "
                               T.hPutStrLn S.stderr $ toText $ DTTwN.fromDeBruijnProofSearchQuery psq
       diagramQ <- prover psq
        --lift $ T.putStrLn $ toText psq
-      let termM = UDTTdB.toUDTT $ UDTTdB.trm $ node diagramQ
+      let termM = UDTTdB.toUDTT $ DTTdB.trm $ node diagramQ
           termB' = UDTTdB.betaReduce $ UDTTdB.subst termB termM 0
-      typeCheck' $ UDTTdB.Judgment sig ctx termB' UDTTdB.Type
+      typeCheck' $ UDTTdB.Judgment sig ctx termB' DTTdB.Type
     UDTTdB.Ann termM typeA -> 
       typeCheck' $ UDTTdB.Judgment sig ctx termM typeA 
     -- | When type inference fails
