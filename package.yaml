@@ -73,6 +73,7 @@ dependencies:
   - deepseq
   - async >= 2.2.4
   - Diff
+  - cassava
 
 library:
   source-dirs: src
