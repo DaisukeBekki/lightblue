@@ -23,5 +23,6 @@ stack.yaml.lock
 config.yaml
 .env
 .DS_Store
+dist-newstyle
 
 client_session_key.aes
