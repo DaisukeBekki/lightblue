@@ -347,9 +347,7 @@ sigmaElimination preterm = case preterm of
   Eq a m n   -> Eq (sigmaElimination a) (sigmaElimination m) (sigmaElimination n)
   Refl a m   -> Refl (sigmaElimination a) (sigmaElimination m)
   Idpeel p e r -> Idpeel (sigmaElimination p) (sigmaElimination e) (sigmaElimination r)
-  Asp a b    -> case a of
-                  Sigma a' b' -> sigmaElimination (Asp a' (Asp b' (subst (shiftIndices b 1 1) (Pair (Var 1) (Var 0)) 0)))
-                  _ -> Asp (sigmaElimination a) (sigmaElimination b)
+  Asp a b    -> Asp (sigmaElimination a) (sigmaElimination b)
   Lamvec m   -> Lamvec (sigmaElimination m)
   Appvec j m -> Appvec j (sigmaElimination m)
   Ann m a    -> Ann (sigmaElimination m) a
