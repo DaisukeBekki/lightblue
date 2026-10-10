@@ -661,9 +661,9 @@ myLexicon = concat $ [
   mylex ["ここ","そこ","あそこ","どこ"] "(586)" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) 
         ((Lam (Asp (Sigma Entity (App (Con "#場所") (Var 0))) (App (Var 1) (Proj Fst (Var 0))))), [("＃場所", DTT.Pi DTT.Entity DTT.Type)]),
   mylex ["この","その","あの","どの"] "(589)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N)
-        ((Lam (Lam (Lamvec (Appvec 0 (Asp (Sigma Entity (App (App (Var 3) (Var 0)) terminator))(App (Var 2) (Proj Fst (Var 0)))))))), []),
+        ((Lam (Lam (Lamvec (Asp (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))), []),
   mylex ["こんな","そんな","あんな","どんな"] "(589)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N)
-        ((Lam (Lam (Lamvec (Appvec 0 (Asp (Sigma Entity (App (App (Var 3) (Var 0)) terminator))(App (Var 2) (Proj Fst (Var 0)))))))), []),
+        ((Lam (Lam (Lamvec (Asp (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))), []),
   mylex ["彼","かれ","カレ"] "new" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) 
         ((Lam (Asp (Sigma Entity (App (Con "＃男") (Var 0))) (App (Var 1) (Proj Fst (Var 0))))), [("＃男", DTT.Pi DTT.Entity DTT.Type)]),
   mylex ["彼女","かのじょ","カノジョ"] "new" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) 
