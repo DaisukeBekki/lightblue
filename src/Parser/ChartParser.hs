@@ -127,11 +127,11 @@ boxAccumulator ParseSetting{..} lexicon nodeFilter (chart,word,i,j) token = unsa
                               then token
                               else T.concat [token, " ", word]
                     False -> T.append token word
-  let list0 = if (T.compareLength newword (longestWordLength langOptions)) == LT 
+      list0 = if (T.compareLength newword (longestWordLength langOptions)) == LT 
                 -- Does not execute lookup for a long word. Run "LongestWord" to check that the length of the longest word (=23).
                 then lookupLexicon newword lexicon
                 else [];
-  let nodesBeforeFiltering = checkUnaryRules list0 
+      nodesBeforeFiltering = checkUnaryRules list0 
         .-> checkBinaryRules i j chart  
       nodesAfterFiltering = nodesBeforeFiltering
         .-> nodeFilter i j
