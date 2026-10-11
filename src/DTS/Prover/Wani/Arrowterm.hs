@@ -29,6 +29,7 @@ module DTS.Prover.Wani.Arrowterm
   typefromAJudgment,
   shiftIndices,
   arrowSubst,
+  partialSubstSetaTerm,
   ArrowSelector(..),
   downSide',
   reduce,
@@ -98,65 +99,6 @@ boundUpLim term =
     (ArrowDisj a b) -> minimum [boundUpLim a,boundUpLim b]
     (ArrowIota _ a) -> boundUpLim a
     (ArrowUnpack a b c d) -> minimum $ map boundUpLim [a,b,c,d]
-
--- | DTT.Preterm型に変換して得たテキストとArrowtermを比較して加工している
-prestr2arrowstr :: String -> Arrowterm -> String
-prestr2arrowstr prestr aTerm = undefined
-    -- case aTerm of 
-    --   (Conclusion p) -> dropWhile (not . (`elem` (['0'..'z']++['(',')','\8869']))) prestr 
-    --   (Arrow env r) ->
-    --     if null env
-    --     then
-    --       prestr2arrowstr  prestr r
-    --     else
-    --       let parentheses =  take (length env) (treatParentheses prestr  '(' ')' ) 
-    --       in "[ " ++
-    --           tail
-    --             (foldr (
-    --               (\ a b -> ", "  ++ a  ++ b) .
-    --                 (\z ->
-    --                   let str = (snd $ snd z)
-    --                   in takeWhile (/= ':')  str ++":" ++  prestr2arrowstr (tail $ dropWhile (/= ':') str) (fst z)))
-    --               "" (zip (reverse env) parentheses)) ++
-    --           " ] => " ++ prestr2arrowstr  (tail $ drop ((fst . last) parentheses) prestr) r
-    --   (ArrowSigma' env r) ->
-    --     if null env
-    --     then
-    --       prestr2arrowstr  prestr r
-    --     else
-    --       let parentheses =  take (length env) (treatParentheses prestr  '(' ')' )
-    --       in "[ " ++
-    --           tail
-    --             (foldr (
-    --               (\ a b -> ", "  ++ a  ++ b) .
-    --                 (\z ->
-    --                   let str = (snd $ snd z)
-    --                   in takeWhile (/= ':')  str ++":" ++  prestr2arrowstr (tail $ dropWhile (/= ':') str) (fst z)))
-    --               "" (zip (reverse env) parentheses)) ++
-    --           " ] × " ++ prestr2arrowstr  (tail $ drop ((fst . last) parentheses) prestr) r
-    --   (ArrowApp h t) -> 
-    --     case treatParentheses prestr '(' ')' of
-    --       [(cnt,st)] -> 
-    --         let tPst = treatParentheses st '(' ')' 
-    --             args' = S.splitOn "," $T.unpack $allReplace (T.pack st) (map (\(num,str) -> (T.pack str,T.pack $ "(" ++ show num ++ ")")) tPst)
-    --             (arg:args)  = map (\str -> T.unpack $ allReplace (T.pack str) (map (\(num,inSide) -> (T.pack $ "(" ++ (show num) ++ ")" ,T.pack $inSide)) tPst)) args'
-    --             f = takeWhile (\ch -> ch /= '(') prestr
-    --             result =  "" ++ prestr2arrowstr (f ++ (if null args then "" else "(" ++ drop (1 + length arg) st ++ ")"))  h ++ ("(" ++prestr2arrowstr arg t++")")
-    --         in result
-    --       _ -> "表示エラー : " ++ prestr
-    --   (ArrowProj s t) -> 
-    --     let parentheses = head (treatParentheses prestr '(' ')' )
-    --     in take 2 prestr ++"(" ++ prestr2arrowstr (snd parentheses) t ++ ")"
-    --   (ArrowLam t) -> 
-    --     takeWhile (/= '.') prestr ++ ".(" ++ prestr2arrowstr  (tail $ dropWhile (/= '.') prestr) t ++")"
-    --   (ArrowPair h t) ->
-    --     let contents = init $ tail $prestr
-    --         trCon = treatParentheses contents  '(' ')' 
-    --         strs = S.splitOn "," $ T.unpack $ allReplace (T.pack contents) (map (\(num,str) -> (T.pack str,T.pack $ "(" ++ (show num) ++ ")")) trCon)
-    --         hstr:tstr = map (\str' -> T.unpack $ allReplace (T.pack str') (map (\(num,str) -> (T.pack $ "(" ++ (show num) ++ ")",T.pack str)) trCon)) strs 
-    --     in
-    --       "("++prestr2arrowstr hstr h++","++prestr2arrowstr (head tstr) t++")"
-    --   (ArrowEq a b t) -> prestr
 
 -- | tP input :(u1:A)→(u2:B(u1))×C(u2,u1) output : [(6,"(u1:A)"),(17,"(u2:B(u1))"),(26,"(u2,u1)")]
 treatParentheses :: String -> Char -> Char  -> [(Int,String)]
@@ -367,12 +309,37 @@ subst preterm l i =
       DdB.Unpack a b c d -> DdB.Unpack (subst a l i) (subst b l i) (subst c l i) (subst d l i)
       others -> others
 
+partialSubstSet :: DdB.Preterm -> DdB.Preterm -> DdB.Preterm -> [DdB.Preterm]
+partialSubstSet preterm l i =
+  if preterm == i then [l,i]
+  else
+    case preterm of
+      DdB.Pi a b -> map DdB.Pi (partialSubstSet a l i) <*> (partialSubstSet b (DdB.shiftIndices l 1 0)  (DdB.shiftIndices i 1 0))
+      DdB.Sigma a b  -> map DdB.Sigma (partialSubstSet a l i) <*> (partialSubstSet b (DdB.shiftIndices l 1 0) (DdB.shiftIndices i 1 0))
+      DdB.Not m -> map DdB.Not (partialSubstSet m l i)
+      DdB.Lam m -> map DdB.Lam (partialSubstSet m (DdB.shiftIndices l 1 ((boundUpLim . dt2Arrow) preterm)) (DdB.shiftIndices i 1 ((boundUpLim .dt2Arrow) preterm)))
+      DdB.App m n -> map DdB.App (partialSubstSet m l i) <*> (partialSubstSet n l i)
+      DdB.Pair m n -> map DdB.Pair (partialSubstSet m l i) <*> (partialSubstSet n l i)
+      DdB.Proj s m -> map (DdB.Proj s) (partialSubstSet m l i)
+      DdB.Eq a m n -> map DdB.Eq (partialSubstSet a l i) <*> (partialSubstSet m l i) <*> (partialSubstSet n l i)
+      DdB.Disj a b -> map DdB.Disj (partialSubstSet a l i) <*> (partialSubstSet b l i)
+      DdB.Iota h t -> map (DdB.Iota h) (partialSubstSet t l i)
+      DdB.Unpack a b c d -> map DdB.Unpack (partialSubstSet a l i) <*> (partialSubstSet b l i) <*> (partialSubstSet c l i) <*> (partialSubstSet d l i)
+      others -> [others]
+
 arrowSubst :: Arrowterm -- ^ origin
   -> Arrowterm -- ^ 代入内容
   -> Arrowterm -- ^ 代入先
   -> Arrowterm
 arrowSubst term i m= 
   dt2Arrow $ subst (arrow2DT term) (arrow2DT i) (arrow2DT m)
+
+partialSubstSetaTerm :: Arrowterm -- ^ origin
+  -> Arrowterm -- ^ 代入内容
+  -> Arrowterm -- ^ 代入先
+  -> [Arrowterm]
+partialSubstSetaTerm term i m=
+  map dt2Arrow $ partialSubstSet (arrow2DT term) (arrow2DT i) (arrow2DT m)
 
 type Arrowrule = QT.DTTrule
 

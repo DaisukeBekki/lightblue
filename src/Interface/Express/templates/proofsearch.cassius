@@ -75,6 +75,18 @@
 .ps-body
   padding: 60px
 
+.ps-sig
+  margin-top: 16px
+  padding-top: 10px
+  border-top: 1px dashed #eee
+
+.ps-sig-body
+  margin-top: 10px
+  overflow-x: auto
+
+.ps-sig-empty
+  color: #999
+
 .ps-outcome
   display: inline-block
   padding: 4px 12px

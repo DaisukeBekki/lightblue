@@ -338,7 +338,7 @@ instance SimpleText Signature where
 instance Typeset Signature where
   toTeX = (LazyT.intercalate ",") . (map (\(nm,tm) -> LazyT.concat [nm, ":", toTeX tm])) . reverse
 instance MathML Signature where
-  toMathML = (LazyT.intercalate "<mo>,<mo>") . (map (\(nm,tm) -> LazyT.concat ["<mrow><mo>", nm, "</mo><mo>:</mo>", toMathML tm, "</mrow>"])) . reverse
+  toMathML = (LazyT.intercalate "<mo>,</mo>") . (map (\(nm,tm) -> LazyT.concat ["<mrow><mo>", nm, "</mo><mo>:</mo>", toMathML tm, "</mrow>"])) . reverse
 
 -- | A context is a list of preterms
 type Context = [Preterm]
