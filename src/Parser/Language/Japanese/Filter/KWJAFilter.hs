@@ -127,7 +127,7 @@ createFilterFrom' :: OpenWordsMap -> [CCG.Node] -> [CCG.Node]
 createFilterFrom' _ [] = []
 createFilterFrom' openWordsMap (c : cs)
     -- フィルターする対象がない場合
-    | M.null openWordsMap = cs
+    | M.null openWordsMap = c:cs
     -- LEX以外はそのまま
     | CCG.rs c /= CCG.LEX =
         c : createFilterFrom' openWordsMap cs
@@ -256,7 +256,8 @@ getOpenWordsMap kwjas conjmap =
 getOpenWords :: [KW.KWJAData] -> ConjMap -> [(T.Text, (T.Text, [T.Text]))]
 getOpenWords kwjaData conjmap = case kwjaData of
     [] -> []
-    (KW.Juman (J.EOS)) : _ -> []
+    -- 2文以上の場合、1文目のEOSのあと2文目で再帰する
+    (KW.Juman (J.EOS)) : xs -> getOpenWords xs conjmap
     -- knpNodeかつ後ろが動詞のときは、語幹と格フレームを取得
     (KW.KWJA kwjanode) : (x : x2 : xs) ->
         -- 複合動詞の場合
