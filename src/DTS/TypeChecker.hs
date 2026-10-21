@@ -182,12 +182,15 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
       let termA' = DTTdB.trm $ node diagramA
           psq = DTTdB.ProofSearchQuery sig ctx termA'
       when verbose $ lift $ do
-                              T.hPutStr S.stderr "Resoving anaphora/presupposition: "
+                              T.hPutStr S.stderr "Resolving anaphora/presupposition: "
                               T.hPutStrLn S.stderr $ toText $ DTTwN.fromDeBruijnProofSearchQuery psq
       diagramQ <- prover psq
+      when verbose $ lift $ do
+                              T.hPutStr S.stderr "Antecedent found: "
+                              T.hPutStrLn S.stderr $ toText $ DTTwN.fromDeBruijnJudgment $ node diagramQ
        --lift $ T.putStrLn $ toText psq
       let termM = UDTTdB.toUDTT $ DTTdB.trm $ node diagramQ
-          termB' = UDTTdB.betaReduce $ UDTTdB.subst termB termM 0
+          termB' = UDTTdB.betaReduce $ UDTTdB.shiftIndices (UDTTdB.subst termB (UDTTdB.shiftIndices termM 1 0) 0) (-1) 0
       typeCheck' $ UDTTdB.Judgment sig ctx termB' DTTdB.Type
     UDTTdB.Ann termM typeA -> 
       typeCheck' $ UDTTdB.Judgment sig ctx termM typeA 
