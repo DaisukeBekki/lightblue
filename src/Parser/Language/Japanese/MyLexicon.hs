@@ -657,17 +657,17 @@ myLexicon = concat $ [
   mylex ["ばかり","ばっかり","ばっか"] "new" (defS [Nda] [NStem] `BS` S [F anyPos,F[Attr],F[P,M],F[M],F[M],F[M],F[M]]) (modalSR "＃バカリダ"),
   -- 照応代名詞
   mylex ["これ","それ","あれ","どれ"] "new" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) 
-        ((Lam (Asp (Sigma Entity (Not (App (Con "＃有生") (Var 0)))) (App (Var 1) (Proj Fst (Var 0))))), [("＃有生", DTT.Pi DTT.Entity DTT.Type)]),
+        ((Lam (Lamvec (Asp (Sigma Entity (Sigma Entity (Not (App (App (Con "＃有生") (Var 1)) (Var 0))))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0))))))), [("＃有生", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]),
   mylex ["ここ","そこ","あそこ","どこ"] "(586)" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) 
-        ((Lam (Asp (Sigma Entity (App (Con "#場所") (Var 0))) (App (Var 1) (Proj Fst (Var 0))))), [("＃場所", DTT.Pi DTT.Entity DTT.Type)]),
+        ((Lam (Lamvec (Asp (Sigma Entity (Sigma Entity (App (App (Con "＃場所") (Var 1)) (Var 0)))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0))))))), [("＃場所", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]),
   mylex ["この","その","あの","どの"] "(589)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N)
         ((Lam (Lam (Lamvec (Asp (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))), []),
   mylex ["こんな","そんな","あんな","どんな"] "(589)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N)
         ((Lam (Lam (Lamvec (Asp (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))), []),
   mylex ["彼","かれ","カレ"] "new" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) 
-        ((Lam (Asp (Sigma Entity (App (Con "＃男") (Var 0))) (App (Var 1) (Proj Fst (Var 0))))), [("＃男", DTT.Pi DTT.Entity DTT.Type)]),
+        ((Lam (Lamvec (Asp (Sigma Entity (Sigma Entity (App (App (Con "男") (Var 1)) (Var 0)))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0))))))), [("男", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]),
   mylex ["彼女","かのじょ","カノジョ"] "new" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) 
-        ((Lam (Asp (Sigma Entity (App (Con "＃女") (Var 0))) (App (Var 1) (Proj Fst (Var 0))))), [("＃女", DTT.Pi DTT.Entity DTT.Type)]),
+        ((Lam (Lamvec (Asp (Sigma Entity (Sigma Entity (App (App (Con "＃女") (Var 1)) (Var 0)))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0))))))), [("＃女", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]),
   -- 連体詞
   mylex ["こう"] "new" (modifiableS `SL` modifiableS) (eventModifier "＃こう"),
   mylex ["そう"] "new" (modifiableS `SL` modifiableS) (eventModifier "＃そう"),
