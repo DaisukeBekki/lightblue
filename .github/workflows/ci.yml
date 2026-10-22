@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # hexpat binds to the C library expat.
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libexpat1-dev
+
+      - uses: haskell-actions/setup@v2
+        with:
+          enable-stack: true
+          stack-no-global: true
+
+      # stack.yaml.lock is gitignored, so the cache is keyed on the inputs it is derived from.
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.stack
+            .stack-work
+          key: stack-${{ runner.os }}-${{ hashFiles('stack.yaml', 'package.yaml') }}
+          restore-keys: stack-${{ runner.os }}-
+
+      # The existing tests do not compile yet, so only the library and executables are built.
+      - name: Build
+        run: stack build
