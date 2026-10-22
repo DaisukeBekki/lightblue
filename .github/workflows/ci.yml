@@ -14,6 +14,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
 
@@ -27,11 +28,10 @@ jobs:
           stack-no-global: true
 
       # stack.yaml.lock is gitignored, so the cache is keyed on the inputs it is derived from.
+      # .stack-work is not cached: rebuilding lightblue itself takes under a minute.
       - uses: actions/cache@v6
         with:
-          path: |
-            ~/.stack
-            .stack-work
+          path: ~/.stack
           key: stack-${{ runner.os }}-${{ hashFiles('stack.yaml', 'package.yaml') }}
           restore-keys: stack-${{ runner.os }}-
 
