@@ -665,7 +665,7 @@ myLexicon = concat $ [
   mylex ["こんな","そんな","あんな","どんな"] "(589)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N)
         ((Lam (Lam (Lamvec (Asp (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))), []),
   mylex ["彼","かれ","カレ"] "new" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) 
-        ((Lam (Lamvec (Asp (Sigma Entity (Sigma Entity (App (App (Con "＃男") (Var 1)) (Var 0)))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0))))))), [("男", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]),
+        ((Lam (Lamvec (Asp (Sigma Entity (Sigma Entity (App (App (Con "＃男") (Var 1)) (Var 0)))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0))))))), [("＃男", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]),
   mylex ["彼女","かのじょ","カノジョ"] "new" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) 
         ((Lam (Lamvec (Asp (Sigma Entity (Sigma Entity (App (App (Con "＃女") (Var 1)) (Var 0)))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0))))))), [("＃女", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]),
   -- 連体詞
