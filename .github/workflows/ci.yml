@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+
+      # hexpat binds to the C library expat, which the macOS SDK already provides.
+      - name: Install system dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libexpat1-dev
+
+      # GHC links against the Command Line Tools SDK, which the default Xcode's older ld cannot read.
+      # Remove once https://github.com/actions/runner-images/issues/14940 is fixed.
+      - name: Use the Command Line Tools toolchain
+        if: runner.os == 'macOS'
+        run: sudo xcode-select -s /Library/Developer/CommandLineTools
+
+      - uses: haskell-actions/setup@v2
+        with:
+          enable-stack: true
+          stack-no-global: true
+
+      # stack.yaml.lock is gitignored, so the cache is keyed on the inputs it is derived from.
+      # .stack-work is not cached: rebuilding lightblue itself takes under a minute.
+      - uses: actions/cache@v6
+        with:
+          path: ~/.stack
+          key: stack-${{ runner.os }}-${{ hashFiles('stack.yaml', 'package.yaml') }}
+          restore-keys: stack-${{ runner.os }}-
+
+      # The existing tests do not compile yet, so only the library and executables are built.
+      - name: Build
+        run: stack build
