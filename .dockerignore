@@ -1,0 +1,17 @@
+# Build artifacts
+dist-newstyle/
+.stack-work/
+
+# Dev/editor
+.git/
+.DS_Store
+*.swp
+*.swo
+
+# HTML output files at repo root
+*.html
+*.pdf
+*.aes
+
+# Docs / demo site
+docs/
