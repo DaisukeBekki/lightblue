@@ -27,6 +27,12 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libexpat1-dev
 
+      # GHC links against the Command Line Tools SDK, which the default Xcode's older ld cannot read.
+      # Remove once https://github.com/actions/runner-images/issues/14940 is fixed.
+      - name: Use the Command Line Tools toolchain
+        if: runner.os == 'macOS'
+        run: sudo xcode-select -s /Library/Developer/CommandLineTools
+
       - uses: haskell-actions/setup@v2
         with:
           enable-stack: true
