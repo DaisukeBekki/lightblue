@@ -118,15 +118,15 @@ emptyCategories = [
   -- pro1
   ec "pro" "(597)" 99
               (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Ga,O,Ni,To,No,Niyotte]]))
-              ((Lam (Asp Entity (App (Var 1) (Var 0)))),[]),
+              ((Lam (Lamvec (Asp Entity (Appvec 1 (App (Var 2) (Var 0)))))),[]),
   -- pro2
   ec "pro" "(597)" 98
               (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Ga,O,Ni,To,No,Niyotte]]))
-              ((Lam (Asp Entity (App (Var 1) (Var 0)))),[]),
+              ((Lam (Lamvec (Asp Entity (Appvec 1 (App (Var 2) (Var 0)))))),[]),
   -- pro3
   ec "pro" "(597)" 97
               (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Ga,No]]))
-              ((Lam (Asp Entity (App (Var 1) (Var 0)))),[]),
+              ((Lam (Lamvec (Asp Entity (Appvec 1 (App (Var 2) (Var 0)))))),[]),
   -- 関係節化演算子(relativizer)
   ec "rel" "(670)" 99
               ((N `SL` N) `BS` (S [F anyPos, F[Attr], F[P,M],F[P,M],F[P,M],F[M],F[M]] `BS` NP [F[Ga,O,Ni,To]]))
