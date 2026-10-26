@@ -2,7 +2,8 @@
 module DTS.Prover.Wani.BackwardWithRules
 (
   -- * deduce
-  deduce
+  deduce,
+  deduce'
 ) where
 
 import qualified DTS.DTTdeBruijn as DdB   -- DTT
