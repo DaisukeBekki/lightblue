@@ -159,7 +159,7 @@ piIntro goal setting =
         let (sig,var) = WB.conFromGoal goal
             subgoalsets = let
                 maybeTerm = WB.termFromGoal goal
-                canBeConclusionTerm = A.rmLam (length l) maybeTerm-- maybe M.Nothing (\term -> (A.rmLam (length l) term)) (WB.termFromGoal goal)
+                canBeConclusionTerm = fmap (lamBody (length l)) maybeTerm
                 dSideSubstTerm = ((WB.generatedTempTerm (sig,A.aCon "dummyInDside") (T.pack $ show (length l))))
                 dSideterm = maybe (A.betaReduce $ A.addLam (length l) dSideSubstTerm) id maybeTerm
                 dSideSubstLst = [WB.SubstSet [] dSideSubstTerm (length l)]
@@ -181,6 +181,13 @@ piIntro goal setting =
               in [WB.SubGoalSet QT.PiI M.Nothing (subgoal1:subgoal2s) (dSide,dSideSubstLst)]
         in return (subgoalsets,"")
       _ -> return ([],WB.exitMessage (WB.TypeMisMatch arrowType) QT.PiI)
+
+-- | The body under `num` binders, eta-expanding a term with fewer lambdas: the
+-- node keeps the given term, so a body searched without one lets any term through.
+lamBody :: Int -> A.Arrowterm -> A.Arrowterm
+lamBody 0 term = term
+lamBody num (A.ArrowLam body) = lamBody (num - 1) body
+lamBody num term = lamBody (num - 1) (A.ArrowApp (A.shiftIndices term 1 0) (A.aVar 0))
 
 -- | topIntro
 topIntro :: WB.Rule
@@ -629,14 +636,11 @@ sigmaIntro goal setting =
     (Just (A.ArrowSigma' for lat),_) -> 
       let (sig,var) = WB.conFromGoal goal
           maybeTerm = WB.termFromGoal goal
-          termsInProofTerm = let -- [a,b,c] for (a,(b,c))
-            maybeTermsInPairTerm pairTerm =
-                case pairTerm of 
-                  A.ArrowPair f t ->
-                    f : (maybeTermsInPairTerm t)
-                  f -> [f]
-            in maybe [] maybeTermsInPairTerm maybeTerm
-          termIsNotPairType = (length termsInProofTerm == 1) -- When termsInProofTerm is a list with one element, the term is not appType
+          termsInProofTerm = maybe [] (pairMembers (length for + 1)) maybeTerm
+          termIsNotPairType = case maybeTerm of
+            M.Just (A.ArrowPair _ _) -> False
+            M.Just _ -> True
+            M.Nothing -> False
           isDeduce = null termsInProofTerm
       in if termIsNotPairType -- point2 : termMisMatch
         then return ([],WB.exitMessage (WB.TermMisMatch maybeTerm) QT.SigmaI)
@@ -671,6 +675,13 @@ sigmaIntro goal setting =
             in return ([subgoalset],"")
     (Just a,message) -> -- point3 : typeMisMatch
       return ([],WB.exitMessage (WB.TypeMisMatch a) QT.SigmaI)
+
+-- | Exactly `num` members, split by projections where the pair is shorter: the
+-- node keeps the given term, so an unchecked extra member would let it through.
+pairMembers :: Int -> A.Arrowterm -> [A.Arrowterm]
+pairMembers 1 term = [term]
+pairMembers num (A.ArrowPair f t) = f : pairMembers (num - 1) t
+pairMembers num term = A.ArrowProj A.ArrowFst term : pairMembers (num - 1) (A.ArrowProj A.ArrowSnd term)
 
 
 -- | sigmaForm
