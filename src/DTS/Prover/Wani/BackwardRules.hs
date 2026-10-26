@@ -953,6 +953,8 @@ askOracle goal setting =
 -- +----------+----------------+------------------------------------------------------------------------------------------------------------------+
 dne :: WB.Rule
 
+dne goal _
+  | termRulesOut " dne " goal = return ([],WB.exitMessage (WB.TermMisMatch (WB.termFromGoal goal)) QT.DNE)
 dne goal setting = 
   case WB.acceptableType QT.PiE goal False [(A.Conclusion DdB.Kind),A.aType ] of
     (M.Nothing,message) -> -- point1 : typeMisMatch
@@ -961,6 +963,7 @@ dne goal setting =
       return ([],"duplicate DNE")
     (M.Just arrowType,_) ->
       let (sig,var) = WB.conFromGoal goal
+          premiseTerm = argOfInternalConstant " dne " (WB.termFromGoal goal)
           subgoalsets = let
               targetTerm = WB.generatedTempTerm (sig,A.aCon "dummyInDNE") (T.pack $show 0)
               dSideTerm = A.ArrowApp (A.aCon $T.pack " dne ") (targetTerm)
@@ -972,17 +975,20 @@ dne goal setting =
                   []
                   (M.Nothing,M.Nothing)
               subgoal2 = let
-                  goal = WB.Goal sig var M.Nothing [A.Arrow [A.Arrow [arrowType] (A.Conclusion DdB.Bot)] (A.Conclusion DdB.Bot)]
+                  goal = WB.Goal sig var premiseTerm [A.Arrow [A.Arrow [arrowType] (A.Conclusion DdB.Bot)] (A.Conclusion DdB.Bot)]
                 in WB.SubGoal goal [] (M.Nothing,M.Nothing)
             in [WB.SubGoalSet QT.DNE M.Nothing [subgoal1,subgoal2] (dSide,dSideSubstLst)]
         in return (subgoalsets,"")
 
+efq goal _
+  | termRulesOut " efq " goal = return ([],WB.exitMessage (WB.TermMisMatch (WB.termFromGoal goal)) QT.EFQ)
 efq goal setting = 
    case WB.acceptableType QT.PiE goal False [(A.Conclusion DdB.Bot)] of
     (M.Nothing,message) -> -- point1 : typeMisMatch
       return([],T.append "efq- " message)
     (M.Just arrowType,_) ->
       let (sig,var) = WB.conFromGoal goal
+          premiseTerm = argOfInternalConstant " efq " (WB.termFromGoal goal)
           subgoalsets = let
               targetTerm = WB.generatedTempTerm (sig,A.aCon "dummyInEFQ") (T.pack $show 0)
               dSideTerm = A.ArrowApp (A.aCon $T.pack " efq ") targetTerm
@@ -994,11 +1000,25 @@ efq goal setting =
                   []
                   (M.Nothing,M.Nothing)
               subgoal2 = let
-                  goal = WB.Goal sig var M.Nothing [A.Conclusion DdB.Bot]
+                  goal = WB.Goal sig var premiseTerm [A.Conclusion DdB.Bot]
                 in WB.SubGoal goal [] (M.Nothing,M.Nothing)
             in [WB.SubGoalSet QT.EFQ M.Nothing [subgoal1,subgoal2] (dSide,dSideSubstLst)]
         in return (subgoalsets,"")
 
+
+-- | The premise of a given `( dne  t)` / `( efq  t)`, so that the subgoal for
+-- the premise follows `t` instead of searching for its own proof.
+argOfInternalConstant :: T.Text -> M.Maybe A.Arrowterm -> M.Maybe A.Arrowterm
+argOfInternalConstant name maybeTerm = case fmap (A.arrowNotat . A.betaReduce) maybeTerm of
+  M.Just (A.ArrowApp (A.Conclusion (DdB.Con c)) t) | c == name -> M.Just t
+  _ -> M.Nothing
+
+-- | The term of a `dne` / `efq` node is always `( dne  …)` / `( efq  …)`, so
+-- with a given term of another form the node would be filtered out after an
+-- unguided search for its premise.
+termRulesOut :: T.Text -> WB.Goal -> Bool
+termRulesOut name goal =
+  M.isJust (WB.termFromGoal goal) && M.isNothing (argOfInternalConstant name (WB.termFromGoal goal))
 
 disjForm :: WB.Rule
 disjForm goal setting= 
