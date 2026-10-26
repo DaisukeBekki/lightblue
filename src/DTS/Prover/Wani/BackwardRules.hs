@@ -327,11 +327,18 @@ piElim goal setting =
           termIsNotAppType = (length termsInProofTerm == 1) -- When termsInProofTerm is a list with one element, the term is not appType
           isDeduce = null termsInProofTerm
           (env',b') = case arrowType of A.Arrow env b -> (env,b) ; _ -> ([],arrowType)
-      in if termIsNotAppType -- point2 : termMisMatch
-        then return ([],WB.exitMessage (WB.TermMisMatch maybeTerm) QT.PiE)
-        else
+          -- if typecheck, the arguments of the function specified in the term. Forwarding
+          -- can make the function compound (λx.π1(f x), (eqElim t)); its application is
+          -- then beta-reduced in the term, so match it instead of reading off the spine.
+          argsInTerm d canBeFunctionTerm
+            | isDeduce = M.Just []
+            | not termIsNotAppType && (length termsInProofTerm) == (d+1) && canBeFunctionTerm == last termsInProofTerm =
+                M.Just (reverse $ init termsInProofTerm)
+            | d >= 1 = maybeTerm >>= argsOfReducedApp d canBeFunctionTerm
+            | otherwise = M.Nothing
+      in
           let
-            argNumAndFunctions = -- return [(the num of args,functionTree) pair]
+            argNumAndFunctions = -- return [(the num of args,functionTree,args in the term)]
               let forwarded = F.forwardContext (WB.enableEq setting) sig var
                   argNumAndFunction functionTree = -- return Maybe (the num of args,functionTree) pair "the num of args" is the num `function` need to gain `r`
                     let canBeFunctionJudgment = A.downSide' functionTree
@@ -340,23 +347,21 @@ piElim goal setting =
                       case A.typefromAJudgment canBeFunctionJudgment of
                         A.Arrow env b -> 
                           let d = (length env) - (length env')
+                              argTerms = argsInTerm d canBeFunctionTerm
                           in 
                             if  -- checkif deduce or Typecheck
-                              ( isDeduce
-                                || -- if typecheck, we have to use only function specified in the term
-                              (((length termsInProofTerm) == (d+1)) && canBeFunctionTerm == last termsInProofTerm)
-                              )
+                              M.isJust argTerms
                               && -- If target is Arrow type such as A->B, we can use only functions with more arguments than arrowType such as C->A->B which has 2 args.
                               d >= 0
                               && -- exclude A -> C for proofsearch about B
                               A.canBeSame d (A.betaReduce $ A.arrowNotat $ A.Arrow (take (length env') env) b) (A.betaReduce $ A.arrowNotat $ A.shiftIndices (A.Arrow env' b') d 0)
-                            then M.Just (d,functionTree) 
+                            then M.Just (d,functionTree,M.fromMaybe [] argTerms) 
                             else M.Nothing
                         _ -> M.Nothing
               in
                 M.mapMaybe argNumAndFunction (WB.trees forwarded)
             subgoalsetForFunctionsIO =
-              let subgoalsetForFunction (argNum,functionTree) = 
+              let subgoalsetForFunction (argNum,functionTree,argTerms) = 
                     let functionJudgment = A.downSide' functionTree
                         A.Arrow args result = -- format the function ; if the (function,result) is ([a,b]->c,b->c), the term will be ([a]->([b]->c))
                               let A.Arrow formerLst latter = A.typefromAJudgment functionJudgment
@@ -377,7 +382,7 @@ piElim goal setting =
                                   parentLst' = M.maybe [] (\parentIds -> filter (< idInLstFromOld) $ L.sort parentIds) (lookup idInLstFromOld parentLsts)
                                   substLst = map (\num -> (WB.SubstSet [] (WB.generatedTempTerm (sig,origin) (T.pack $ show num)) num)) $ filter (0<=) parentLst'
                                   targetArg = A.shiftIndices (foldl (\target (WB.SubstSet lst term num) -> A.arrowSubst target term (A.aVar num)) origin substLst) (-idInLstFromOld) 0
-                                  goal' = WB.Goal sig var (if isDeduce then M.Nothing else (M.Just $ (reverse $ init termsInProofTerm) !! idInLstFromOld)) [targetArg]
+                                  goal' = WB.Goal sig var (if isDeduce then M.Nothing else (M.Just $ argTerms !! idInLstFromOld)) [targetArg]
                                   tempTerm = WB.generatedTempTerm (sig,result) (T.pack $ show $ WB.generatedTempTerm (sig,arrowType) "temp")
                                   substedPerElement = 
                                     M.mapMaybe
@@ -399,7 +404,83 @@ piElim goal setting =
                           in map subgoalForArg [0..(argNum-1)] 
                     in return (WB.SubGoalSet QT.PiE (M.Just functionTree) subgoals dSideSet)
               in sequence $ map subgoalsetForFunction argNumAndFunctions
-      in subgoalsetForFunctionsIO >>= \subgoalsetForFunctions -> return (subgoalsetForFunctions,"")
+      in if termIsNotAppType && null argNumAndFunctions -- point2 : termMisMatch
+        then return ([],WB.exitMessage (WB.TermMisMatch maybeTerm) QT.PiE)
+        else subgoalsetForFunctionsIO >>= \subgoalsetForFunctions -> return (subgoalsetForFunctions,"")
+
+-- | The arguments a1..an such that `function a1 .. an`, beta-reduced, is `term`.
+-- The function's leading lambdas become holes matched against `term`; any further
+-- arguments are peeled off the outside of `term`.
+argsOfReducedApp :: Int -> A.Arrowterm -> A.Arrowterm -> M.Maybe [A.Arrowterm]
+argsOfReducedApp argNum function term = do
+  let (lamNum,body) = stripLams argNum (DdB.betaReduce $ A.arrow2DT function)
+  (core,outerArgs) <- peelApps (argNum - lamNum) (DdB.betaReduce $ A.arrow2DT term)
+  holes <- matchReduced lamNum 0 body core []
+  innerArgs <- mapM (`lookup` holes) [lamNum-1, lamNum-2 .. 0]
+  return $ map A.fromDT2A (innerArgs ++ outerArgs)
+  where
+    stripLams n (DdB.Lam m) | n > 0 = let (k,b) = stripLams (n-1) m in (k+1,b)
+    stripLams _ t = (0,t)
+    peelApps 0 t = M.Just (t,[])
+    peelApps n (DdB.App m a) = (\(c,as) -> (c,as ++ [a])) <$> peelApps (n-1) m
+    peelApps _ _ = M.Nothing
+
+-- | Matches `pattern`, under `depth` binders of its own, against `term`. Variables
+-- depth..depth+holeNum-1 of the pattern are holes, recorded by hole number.
+matchReduced :: Int -> Int -> DdB.Preterm -> DdB.Preterm -> [(Int,DdB.Preterm)] -> M.Maybe [(Int,DdB.Preterm)]
+matchReduced holeNum depth pattern term holes = case pattern of
+  DdB.Var i
+    | i < depth -> if term == DdB.Var i then M.Just holes else M.Nothing
+    | i < depth + holeNum ->
+        if hasFreeBelow depth 0 term
+          then M.Nothing  -- the hole would capture a variable bound inside the pattern
+          else
+            let filler = DdB.shiftIndices term (negate depth) 0
+            in case lookup (i - depth) holes of
+                 M.Nothing -> M.Just ((i - depth,filler) : holes)
+                 M.Just prev -> if prev == filler then M.Just holes else M.Nothing
+    | otherwise -> if term == DdB.Var (i - holeNum) then M.Just holes else M.Nothing
+  _ ->
+    let (patternTag,patternKids) = termShape pattern
+        (termTag,termKids) = termShape term
+    in if patternTag /= termTag || length patternKids /= length termKids
+         then M.Nothing
+         else CM.foldM (\hs ((bound,p),(_,t)) -> matchReduced holeNum (depth + bound) p t hs) holes (zip patternKids termKids)
+
+-- | Whether `term`, under `depth` binders of its own, mentions a free variable below `n`.
+hasFreeBelow :: Int -> Int -> DdB.Preterm -> Bool
+hasFreeBelow n depth term = case term of
+  DdB.Var i -> i >= depth && i - depth < n
+  _ -> any (\(bound,kid) -> hasFreeBelow n (depth + bound) kid) (snd $ termShape term)
+
+-- | A constructor tag and the subterms, each with the number of binders it is under.
+termShape :: DdB.Preterm -> (String,[(Int,DdB.Preterm)])
+termShape term = case term of
+  DdB.Var i -> ("Var " ++ show i,[])
+  DdB.Con c -> ("Con " ++ T.unpack c,[])
+  DdB.Type -> ("Type",[])
+  DdB.Kind -> ("Kind",[])
+  DdB.Pi a b -> ("Pi",[(0,a),(1,b)])
+  DdB.Lam m -> ("Lam",[(1,m)])
+  DdB.App m n -> ("App",[(0,m),(0,n)])
+  DdB.Not m -> ("Not",[(0,m)])
+  DdB.Sigma a b -> ("Sigma",[(0,a),(1,b)])
+  DdB.Pair m n -> ("Pair",[(0,m),(0,n)])
+  DdB.Proj s m -> ("Proj " ++ show s,[(0,m)])
+  DdB.Disj a b -> ("Disj",[(0,a),(0,b)])
+  DdB.Iota s m -> ("Iota " ++ show s,[(0,m)])
+  DdB.Unpack p l m n -> ("Unpack",[(0,p),(0,l),(0,m),(0,n)])
+  DdB.Bot -> ("Bot",[])
+  DdB.Unit -> ("Unit",[])
+  DdB.Top -> ("Top",[])
+  DdB.Entity -> ("Entity",[])
+  DdB.Nat -> ("Nat",[])
+  DdB.Zero -> ("Zero",[])
+  DdB.Succ n -> ("Succ",[(0,n)])
+  DdB.Natrec p n e f -> ("Natrec",[(0,p),(0,n),(0,e),(0,f)])
+  DdB.Eq a m n -> ("Eq",[(0,a),(0,m),(0,n)])
+  DdB.Refl a m -> ("Refl",[(0,a),(0,m)])
+  DdB.Idpeel p e r -> ("Idpeel",[(0,p),(0,e),(0,r)])
 
 -- | piForm
 -- 
