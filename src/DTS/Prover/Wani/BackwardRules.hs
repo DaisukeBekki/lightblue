@@ -330,6 +330,7 @@ piElim goal setting =
     (Just arrowType,_) -> 
       let (sig,var) = WB.conFromGoal goal
           maybeTerm = WB.termFromGoal goal
+          normalizedTerm = fmap (DdB.betaReduce . A.arrow2DT) maybeTerm
           termsInProofTerm = maybe [] A.termsInAppTerm maybeTerm
           termIsNotAppType = (length termsInProofTerm == 1) -- When termsInProofTerm is a list with one element, the term is not appType
           isDeduce = null termsInProofTerm
@@ -341,7 +342,7 @@ piElim goal setting =
             | isDeduce = M.Just []
             | not termIsNotAppType && (length termsInProofTerm) == (d+1) && canBeFunctionTerm == last termsInProofTerm =
                 M.Just (reverse $ init termsInProofTerm)
-            | d >= 1 = maybeTerm >>= argsOfReducedApp d canBeFunctionTerm
+            | d >= 1 = normalizedTerm >>= argsOfReducedApp d canBeFunctionTerm
             | otherwise = M.Nothing
       in
           let
@@ -415,13 +416,14 @@ piElim goal setting =
         then return ([],WB.exitMessage (WB.TermMisMatch maybeTerm) QT.PiE)
         else subgoalsetForFunctionsIO >>= \subgoalsetForFunctions -> return (subgoalsetForFunctions,"")
 
--- | The arguments a1..an such that `function a1 .. an`, beta-reduced, is `term`.
+-- | The arguments a1..an such that `function a1 .. an`, beta-reduced, is `term`
+-- (beta-normal).
 -- The function's leading lambdas become holes matched against `term`; any further
 -- arguments are peeled off the outside of `term`.
-argsOfReducedApp :: Int -> A.Arrowterm -> A.Arrowterm -> M.Maybe [A.Arrowterm]
+argsOfReducedApp :: Int -> A.Arrowterm -> DdB.Preterm -> M.Maybe [A.Arrowterm]
 argsOfReducedApp argNum function term = do
   let (lamNum,body) = stripLams argNum (DdB.betaReduce $ A.arrow2DT function)
-  (core,outerArgs) <- peelApps (argNum - lamNum) (DdB.betaReduce $ A.arrow2DT term)
+  (core,outerArgs) <- peelApps (argNum - lamNum) term
   holes <- matchReduced lamNum 0 body core []
   innerArgs <- mapM (`lookup` holes) [lamNum-1, lamNum-2 .. 0]
   return $ map A.fromDT2A (innerArgs ++ outerArgs)
