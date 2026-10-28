@@ -29,6 +29,8 @@ module DTS.Prover.Wani.Arrowterm
   typefromAJudgment,
   shiftIndices,
   arrowSubst,
+  subTermTypes,
+  partialSubstSetaTerm,
   ArrowSelector(..),
   downSide',
   reduce,
@@ -46,7 +48,8 @@ module DTS.Prover.Wani.Arrowterm
   thereIsVar,
   varsInaTerm,
   boundUpLim,
-  betaReduce
+  betaReduce,
+  searchType
 ) where
 
 import qualified DTS.DTTdeBruijn as DdB   -- DTT
@@ -367,6 +370,31 @@ subst preterm l i =
       DdB.Unpack a b c d -> DdB.Unpack (subst a l i) (subst b l i) (subst c l i) (subst d l i)
       others -> others
 
+partialSubstSetaTerm :: Arrowterm -- ^ origin
+  -> Arrowterm -- ^ 代入内容
+  -> Arrowterm -- ^ 代入先
+  -> [Arrowterm]
+partialSubstSetaTerm term i m=
+  map dt2Arrow $ partialSubstSet (arrow2DT term) (arrow2DT i) (arrow2DT m)
+
+partialSubstSet :: DdB.Preterm -> DdB.Preterm -> DdB.Preterm -> [DdB.Preterm]
+partialSubstSet preterm l i =
+  if preterm == i then [l,i]
+  else
+    case preterm of
+      DdB.Pi a b -> map DdB.Pi (partialSubstSet a l i) <*> (partialSubstSet b (DdB.shiftIndices l 1 0)  (DdB.shiftIndices i 1 0))
+      DdB.Sigma a b  -> map DdB.Sigma (partialSubstSet a l i) <*> (partialSubstSet b (DdB.shiftIndices l 1 0) (DdB.shiftIndices i 1 0))
+      DdB.Not m -> map DdB.Not (partialSubstSet m l i)
+      DdB.Lam m -> map DdB.Lam (partialSubstSet m (DdB.shiftIndices l 1 ((boundUpLim . dt2Arrow) preterm)) (DdB.shiftIndices i 1 ((boundUpLim .dt2Arrow) preterm)))
+      DdB.App m n -> map DdB.App (partialSubstSet m l i) <*> (partialSubstSet n l i)
+      DdB.Pair m n -> map DdB.Pair (partialSubstSet m l i) <*> (partialSubstSet n l i)
+      DdB.Proj s m -> map (DdB.Proj s) (partialSubstSet m l i)
+      DdB.Eq a m n -> map DdB.Eq (partialSubstSet a l i) <*> (partialSubstSet m l i) <*> (partialSubstSet n l i)
+      DdB.Disj a b -> map DdB.Disj (partialSubstSet a l i) <*> (partialSubstSet b l i)
+      DdB.Iota h t -> map (DdB.Iota h) (partialSubstSet t l i)
+      DdB.Unpack a b c d -> map DdB.Unpack (partialSubstSet a l i) <*> (partialSubstSet b l i) <*> (partialSubstSet c l i) <*> (partialSubstSet d l i)
+      others -> [others]
+
 arrowSubst :: Arrowterm -- ^ origin
   -> Arrowterm -- ^ 代入内容
   -> Arrowterm -- ^ 代入先
@@ -519,3 +547,68 @@ sameTerm (con1,term1) (con2,term2) =
         if len1 > len2 
           then  arrowNotat term1 == shiftIndices (arrowNotat term2) (len1- len2) 0 
           else   arrowNotat term2 == shiftIndices (arrowNotat term1) (len2- len1) 0
+
+subTermTypes :: (Context,[Arrowterm]) -> Arrowterm -> [(M.Maybe Arrowterm,([Arrowterm],Arrowterm))]
+subTermTypes ((sig,var),ex) aTerm = 
+  let self = ((searchType (sig,ex++var) aTerm),(ex,aTerm))
+  in 
+    case aTerm of
+      Conclusion _ -> [self]
+      ArrowSigma' ars ar -> self : (concatMap (\(bs,a) -> subTermTypes ((sig,var),bs++ex) a) (zip (tail $ L.tails (ar:ars)) $ ar:ars))
+      ArrowApp ar ar' -> L.nub $ self : ((case searchType (sig,ex++var) ar of M.Just (Arrow lst _) -> [((M.Just (head $reverse lst)),(ex,ar'))]; _ -> [] ) ++ concatMap (subTermTypes ((sig,var),ex)) [ar,ar'])
+      ArrowPair ar ar' -> self : concatMap (subTermTypes ((sig,var),ex)) [ar,ar'] 
+      ArrowProj as ar -> self : (subTermTypes ((sig,var),ex)) ar
+      ArrowLam ar -> (subTermTypes (((L.nub $("lambdaDummy",aType):sig),var),(aCon "lambdaDummy"):ex)) ar
+      Arrow ars ar -> self : (concatMap (\(bs,a) -> subTermTypes ((sig,var),bs++ex) a) (zip (tail $ L.tails (ar:ars)) $ ar:ars))
+      ArrowEq ar ar' ar2 -> self : concatMap (subTermTypes ((sig,var),ex)) [ar,ar',ar2]  
+      ArrowDisj a b -> self : concatMap (subTermTypes ((sig,var),ex)) [a,b]
+      ArrowIota h t -> self : (subTermTypes ((sig,var),ex)) t
+      ArrowUnpack a b c d -> self : concatMap (subTermTypes ((sig,var),ex)) [a,b,c,d]  -- ^ Unpack P L M N
+      _ -> []
+
+searchType :: Context -> Arrowterm -> M.Maybe Arrowterm
+searchType (sigCon,varCon) term =
+  case term of
+    Conclusion (DdB.Type) -> M.Just (Conclusion DdB.Kind)
+    Conclusion (DdB.Var num) -> if (num >= length varCon) then D.trace (show $ AJudgment sigCon varCon term (aCon "notFound1")) M.Nothing else M.Just $ shiftIndices (varCon !! num) (num+1) 0
+    Conclusion (DdB.Con txt) -> lookup txt sigCon
+    Conclusion (DdB.Kind) -> Nothing
+    Conclusion (DdB.Bot) -> M.Just (Conclusion DdB.Type)
+    Conclusion (DdB.Top) -> M.Just (Conclusion DdB.Type)
+    ArrowSigma' ars ar -> case searchType (sigCon,(ars ++ varCon)) ar  of--雑
+        Just t->
+          case arrowNotat t of 
+            Conclusion DdB.Type ->  M.Just (Conclusion DdB.Type)
+            Conclusion DdB.Kind -> M.Just (Conclusion DdB.Kind)
+            t -> {--D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound2"))--} M.Nothing
+        _ -> {--D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound3"))--} M.Nothing
+    Arrow ars ar -> 
+      case searchType (sigCon,(ars ++ varCon)) ar of --雑
+        Just t->
+          case arrowNotat t of 
+            Conclusion DdB.Type ->  M.Just (Conclusion DdB.Type)
+            Conclusion DdB.Kind -> M.Just (Conclusion DdB.Kind)
+            t -> {--D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound4"))--} M.Nothing
+        _ -> {--D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound5"))--} M.Nothing
+    ArrowApp ar ar' ->
+      let fType = searchType (sigCon,varCon) ar
+          xType = searchType (sigCon,varCon) ar'
+      in case (fType,xType) of (M.Just (Arrow (h:t) res),Just x) -> M.Just $ shiftIndices (arrowSubst (Arrow (init (h:t)) res) x (aVar 0)) (-1) 0; _ ->{-- D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound"))--} M.Nothing --雑
+    ArrowPair ar ar' -> 
+      let arType = searchType (sigCon,varCon) ar
+          arType' = searchType (sigCon,varCon) ar' 
+      in case (arType,arType') of
+        (M.Just t,M.Just t') -> M.Just (arrowNotat $ArrowSigma' [t] (t'))
+        _ -> {--D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound6"))--} Nothing
+    ArrowProj as ar ->  case betaReduce ar of
+      ArrowPair x y -> searchType (sigCon,varCon) (case as of ArrowFst -> x ; ArrowSnd -> y)
+      u -> 
+        case (searchType (sigCon,varCon) u) of
+          Just (ArrowSigma' h t) ->
+            case as of 
+              ArrowFst -> M.Just (last h) 
+              ArrowSnd -> M.Just $ arrowNotat $ shiftIndices (arrowSubst (ArrowSigma' (init h) t) (ArrowProj ArrowFst u) (aVar 0)) (-1) 1
+          _ -> {--D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound7"))--} M.Nothing
+    ArrowLam ar -> {--D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound8"))--} M.Nothing -- 引数部分の型がないから
+    ArrowEq ar ar' ar2 ->  M.Just aType -- 雑
+    _ -> {--D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound9"))--} M.Nothing

@@ -1003,47 +1003,48 @@ disjElim goal setting =
           termIsNotUnpackType = (length termsInProofTerm == 1) -- When termsInProofTerm is a list with one element, the term is not appType
           isDeduce = null termsInProofTerm
       in if termIsNotUnpackType -- point2 : termMisMatch
-        then return ([],WB.exitMessage (WB.TermMisMatch maybeTerm) QT.PiE)
+        then return ([],WB.exitMessage (WB.TermMisMatch maybeTerm) QT.DisjE)
         else
           let
             forwardedTree = WB.trees $ F.forwardContext False sig var -- Set enableEq to False to avoid the eqIntro branch for the upper part of the tree.
             usedDisJointLst = WB.usedDisJoint $ WB.sStatus setting
-            disjTrees = filter (\tree -> case A.typefromAJudgment $ A.downSide' tree of A.ArrowDisj a b -> (A.ArrowDisj a b) `notElem` usedDisJointLst ; _ -> False) forwardedTree
-            disjArrowTrees = filter (\tree -> case A.typefromAJudgment $ A.downSide' tree of A.Arrow c (A.ArrowDisj a b) -> (A.Arrow c (A.ArrowDisj a b)) `notElem` usedDisJointLst; _ -> False) forwardedTree
+            disjTermTypePairs = M.catMaybes $ map (\tree -> case A.typefromAJudgment $ A.downSide' tree of A.ArrowDisj a b -> (if (A.ArrowDisj a b) `notElem` usedDisJointLst then M.Just (((A.termfromAJudgment $ A.downSide' tree),A.ArrowDisj a b),tree) else M.Nothing) ; _ -> M.Nothing) forwardedTree
+            disjArrowTermTypePairs = M.catMaybes $ map (\tree -> case A.typefromAJudgment $ A.downSide' tree of A.Arrow d (A.ArrowDisj a b) -> (if (A.Arrow d (A.ArrowDisj a b)) `notElem` usedDisJointLst then M.Just (((A.termfromAJudgment $ A.downSide' tree),A.ArrowDisj a b),tree) else M.Nothing); _ -> M.Nothing) forwardedTree
+            possibleDisj = L.nub $ snd $ unzip $  fst $ unzip $ (disjTermTypePairs ++ disjArrowTermTypePairs)
+            subDisjTerms = M.catMaybes $ map (\(subDisjType,(ex,aTerm)) -> case subDisjType of (M.Just (A.ArrowDisj a b)) -> M.Just (aTerm,((A.ArrowDisj a b),ex)); _ -> M.Nothing) (A.subTermTypes ((sig,var),[]) arrowType)
+            lCandidates = 
+                M.catMaybes
+                  (map
+                  (\((term,disj),tree) -> -- ((maybeTerm,label),maybeTree)
+                    let needed = term `notElem` (map fst subDisjTerms)
+                    in if needed then M.Just ((M.Nothing,disj),M.Just tree) else M.Nothing
+                  )
+                  (disjTermTypePairs ++ disjArrowTermTypePairs) )
+                ++
+                (L.nub $ map
+                  (\(term,(disj,ex)) ->
+                    let maybeTree = lookup (term,disj) (disjTermTypePairs ++ disjArrowTermTypePairs)
+                    in ((M.Just term,disj),maybeTree)
+                  )
+                  subDisjTerms)
             dSideSubstLst = map (\num -> WB.SubstSet [] (WB.generatedTempTerm (sig,arrowType) (T.pack $ show num)) num) [0..3]
             dSideSubstLstTerms = map (\(WB.SubstSet _ term _) -> term) dSideSubstLst
             dSide = A.AJudgment sig var (A.ArrowUnpack (dSideSubstLstTerms !! 3) (dSideSubstLstTerms !! 2) (dSideSubstLstTerms !! 1) (dSideSubstLstTerms !! 0)) arrowType
-            pTerm = A.ArrowLam arrowType
-            subgoalsForDisj lType =
-              let A.ArrowDisj disjFst disjSnd = lType
-                  pTerm = A.ArrowLam arrowType
-                  pType = A.Arrow [lType] A.aType
-                  mType  = A.Arrow [disjFst] arrowType
-                  nType = A.Arrow [disjSnd] arrowType
-                  lGoal = WB.Goal sig var (if isDeduce then M.Nothing else M.Just (termsInProofTerm !! 1)) [lType]
-                  pGoal = WB.Goal sig var (M.Just pTerm) [pType]
-                  mGoal = WB.Goal sig var (if isDeduce then M.Nothing else M.Just (termsInProofTerm !! 2)) [mType]
-                  nGoal = WB.Goal sig var (if isDeduce then M.Nothing else M.Just (termsInProofTerm !! 3)) [nType]
-              in [lGoal,pGoal,mGoal,nGoal]
-            subgoalsets = 
-              let subgoalsetDisj =
-                    map
-                      (\tree -> 
-                        let
-                          mJudgment = A.downSide' tree
-                          lpmnGoal = subgoalsForDisj (A.typefromAJudgment mJudgment)
-                        in WB.SubGoalSet QT.DisjE (M.Just tree) (map (\goal -> WB.SubGoal goal [] (M.Nothing,M.Nothing)) lpmnGoal) (dSide,dSideSubstLst)
-                        )
-                      disjTrees
-                  subgoalsetDisjArrow =
-                    map
-                      (\tree -> 
-                        let
-                          mArrowJudgment = A.downSide' tree
-                          A.Arrow _ mType = A.typefromAJudgment mArrowJudgment
-                          lpmnGoal = subgoalsForDisj mType
-                        in WB.SubGoalSet QT.DisjE (M.Just tree) (map (\goal -> WB.SubGoal goal [] (M.Nothing,M.Nothing)) lpmnGoal) (dSide,dSideSubstLst)
-                        )
-                      disjArrowTrees
-              in subgoalsetDisj ++ subgoalsetDisjArrow
+            subgoalsets =
+              concatMap
+                (\((maybeLTerm,lType),maybeTree) ->
+                  let A.ArrowDisj disjFst disjSnd = lType
+                      lSubGoal = WB.SubGoal (WB.Goal sig var maybeLTerm [lType]) [] (M.Nothing,M.Nothing)
+                      tempTerm = WB.generatedTempTerm (sig,A.aCon "dummyInDisjE") "1"
+                      pTerms = map (\t -> A.ArrowLam (A.arrowSubst (A.shiftIndices t 1 0) (A.aVar 0) tempTerm)) (maybe [arrowType] (\lTerm -> A.partialSubstSetaTerm arrowType tempTerm lTerm) maybeLTerm)
+                      pType = A.Arrow [lType] A.aType
+                      plmnGoalWithPterm pTerm =
+                        let mType = A.Arrow [disjFst] (A.arrowSubst (A.shiftIndices (A.betaReduce (A.ArrowApp pTerm (A.ArrowIota A.ArrowFst tempTerm))) 1 0) (A.aVar 0) tempTerm)
+                            nType = A.Arrow [disjSnd] (A.arrowSubst (A.shiftIndices (A.betaReduce (A.ArrowApp pTerm (A.ArrowIota A.ArrowSnd tempTerm))) 1 0) (A.aVar 0) tempTerm)
+                            mSubGoal = WB.SubGoal (WB.Goal sig var (if isDeduce then M.Nothing else M.Just (termsInProofTerm !! 2)) [mType]) [] (M.Nothing,M.Nothing)
+                            nSubGoal = WB.SubGoal (WB.Goal sig var (if isDeduce then M.Nothing else M.Just (termsInProofTerm !! 3)) [nType]) [] (M.Nothing,M.Nothing)
+                        in [WB.SubGoal (WB.Goal sig var (M.Just pTerm) [pType]) [] (M.Nothing,M.Nothing),lSubGoal,mSubGoal,nSubGoal]
+                  in map (\pTerm -> WB.SubGoalSet QT.DisjE (maybeTree) (plmnGoalWithPterm pTerm) (dSide,dSideSubstLst)) pTerms
+                )
+                lCandidates
           in return (subgoalsets,"")

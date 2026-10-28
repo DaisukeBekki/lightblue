@@ -31,51 +31,7 @@ eqIntro =
     (A.ArrowEq (A.Conclusion $ DdB.Var 1) (A.Conclusion $ DdB.Var 0) (A.Conclusion $ DdB.Var 0))
 
 searchType :: A.Context -> B.ATerm -> Maybe B.AType
-searchType (sigCon,varCon) term =
-  case term of
-    A.Conclusion (DdB.Type) -> Just (A.Conclusion DdB.Kind)
-    A.Conclusion (DdB.Var num) -> if (num >= length varCon) then D.trace (show $ A.AJudgment sigCon varCon term (A.aCon "notFound1")) Nothing else Just $A.shiftIndices (varCon !! num) (num+1) 0
-    A.Conclusion (DdB.Con txt) -> lookup txt sigCon
-    A.Conclusion (DdB.Kind) -> Nothing
-    A.Conclusion (DdB.Bot) -> Just (A.Conclusion DdB.Type)
-    A.Conclusion (DdB.Top) -> Just (A.Conclusion DdB.Type)
-    A.ArrowSigma' ars ar -> case searchType (sigCon,(ars ++ varCon)) ar  of--雑
-        Just t->
-          case A.arrowNotat t of 
-            A.Conclusion DdB.Type ->  Just (A.Conclusion DdB.Type)
-            A.Conclusion DdB.Kind -> Just (A.Conclusion DdB.Kind)
-            t -> {--D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound2"))--} Nothing
-        _ -> {--D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound3"))--} Nothing
-    A.Arrow ars ar -> 
-      case searchType (sigCon,(ars ++ varCon)) ar of --雑
-        Just t->
-          case A.arrowNotat t of 
-            A.Conclusion DdB.Type ->  Just (A.Conclusion DdB.Type)
-            A.Conclusion DdB.Kind -> Just (A.Conclusion DdB.Kind)
-            t -> {--D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound4"))--} Nothing
-        _ -> {--D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound5"))--} Nothing
-    A.ArrowApp ar ar' ->
-      let fType = searchType (sigCon,varCon) ar
-          xType = searchType (sigCon,varCon) ar'
-      in case (fType,xType) of (Just (A.Arrow (h:t) res),Just x) -> Just $ A.shiftIndices (A.arrowSubst (A.Arrow (init (h:t)) res) x (A.aVar 0)) (-1) 0; _ ->{-- D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound"))--} Nothing --雑
-    A.ArrowPair ar ar' -> 
-      let arType = searchType (sigCon,varCon) ar
-          arType' = searchType (sigCon,varCon) ar' 
-      in case (arType,arType') of
-        (Just t,Just t') -> Just (A.arrowNotat $A.ArrowSigma' [t] (t'))
-        _ -> {--D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound6"))--} Nothing
-    A.ArrowProj as ar ->  case A.betaReduce ar of
-      A.ArrowPair x y -> searchType (sigCon,varCon) (case as of A.ArrowFst -> x ; A.ArrowSnd -> y)
-      u -> 
-        case (searchType (sigCon,varCon) u) of
-          Just (A.ArrowSigma' h t) ->
-            case as of 
-              A.ArrowFst -> Just (last h) 
-              A.ArrowSnd -> Just $ A.arrowNotat $ A.shiftIndices (A.arrowSubst (A.ArrowSigma' (init h) t) (A.ArrowProj A.ArrowFst u) (A.aVar 0)) (-1) 1
-          _ -> {--D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound7"))--} Nothing
-    A.ArrowLam ar -> {--D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound8"))--} Nothing -- 引数部分の型がないから
-    A.ArrowEq ar ar' ar2 ->  Just A.aType -- 雑
-    _ -> {--D.trace (show $ A.AJudgement (sigCon,varCon) term (A.aCon "notFound9"))--} Nothing
+searchType = A.searchType
 
 --forwardContext後に使う
 forEq :: A.Context -> B.AType -> ([B.AType],[B.AType])
