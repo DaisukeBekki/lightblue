@@ -820,7 +820,7 @@ askOracle goal setting =
                             case shouldBeConForSmall of
                               A.Conclusion (DdB.Con small) -> {--D.trace ("askOracle" ++" target : "++(show target)++" "++(show target')++" "++"small : "++(show small)++ " big :" ++(show big)) $--} 
                                 if targetLst' == targetLst 
-                                  then return $ (oracleFun small big) > (WB.oracleThreshold setting)
+                                  then return $ (oracleFun small (T.dropWhile (== '＃') big)) > (WB.oracleThreshold setting)
                                   else return False
                               _ -> return False
                         )
