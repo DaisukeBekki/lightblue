@@ -657,7 +657,7 @@ myLexicon = concat $ [
   mylex ["ばかり","ばっかり","ばっか"] "new" (defS [Nda] [NStem] `BS` S [F anyPos,F[Attr],F[P,M],F[M],F[M],F[M],F[M]]) (modalSR "＃バカリダ"),
   -- 照応代名詞
   mylex ["これ","それ","あれ","どれ"] "new" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) 
-        ((Lam (Lamvec (Asp (Sigma Entity (Sigma Entity (Not (App (App (Con "＃有生") (Var 1)) (Var 0))))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0))))))), [("＃有生", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]),
+        ((Lam (Lamvec (Asp (Sigma Entity (Sigma Entity (Not (App (App (Con "＃人間") (Var 1)) (Var 0))))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0))))))), [("＃人間", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]),
   mylex ["ここ","そこ","あそこ","どこ"] "(586)" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) 
         ((Lam (Lamvec (Asp (Sigma Entity (Sigma Entity (App (App (Con "＃場所") (Var 1)) (Var 0)))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0))))))), [("＃場所", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]),
   mylex ["この","その","あの","どの"] "(589)" ((T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) `SL` N)
