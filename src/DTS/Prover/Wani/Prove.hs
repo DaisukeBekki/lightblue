@@ -3,7 +3,8 @@
 module DTS.Prover.Wani.Prove
 (
   display,
-  prove'
+  prove',
+  proveWithTerm
 ) where
 
 import qualified Interface.Tree as UDT
@@ -68,8 +69,33 @@ searchProofWithIncrementalDepth a b c d setting timeLimitDiff currentDepth maybe
 
 -- | Prover for lightblue:
 prove' :: QT.ProverBuilder
-prove' QT.ProofSearchSetting{..} (DdB.ProofSearchQuery sig ctx typ) =  -- LiftT IO (Tree (U.Judgment U.DTT) UDTTrule)
-  let setting = WB.Setting {
+prove' psSetting@QT.ProofSearchSetting{..} (DdB.ProofSearchQuery sig ctx typ) =  -- LiftT IO (Tree (U.Judgment U.DTT) UDTTrule)
+  let setting = waniSetting psSetting
+      ioResult = hojo ctx ((A.aEntityName,DdB.Type):sig) typ setting (M.maybe Nothing (\t -> M.Just $ toEnum (t * (10^9))) maxTime)
+  in ListT.lift ioResult >>= \result ->
+    ListT.fromFoldable (map A.aTreeTojTree' (WB.trees result))
+
+-- | Builds Wani's derivation of a given proof term: the term goes into the
+-- goal, so the rules decompose it instead of searching. Not bounded by time:
+-- callers must bound it, since the depths below the one the term needs can
+-- still take long to fail.
+proveWithTerm :: QT.ProofSearchSetting -> DdB.ProofSearchQuery -> DdB.Preterm -> IO [UDT.Tree QT.DTTrule DdB.Judgment]
+proveWithTerm psSetting (DdB.ProofSearchQuery sig ctx typ) term =
+  let setting = (waniSetting psSetting) { WB.timeLimit = M.Nothing }
+      sigEnv = map (Data.Bifunctor.second A.fromDT2A) ((A.aEntityName,DdB.Type):sig)
+      varEnv = map A.fromDT2A ctx
+      goal = WB.Goal sigEnv varEnv (M.Just (A.fromDT2A term)) [A.fromDT2A typ]
+      -- Deepening as the search does: starting at the full depth lets failing
+      -- branches run to it before the proof is returned.
+      atDepth d = BR.deduce' goal 1 setting { WB.maxdepth = d } >>= \result ->
+        if null (WB.trees result) && d < WB.maxdepth setting
+          then atDepth (d + 1)
+          else return result
+  in map A.aTreeTojTree' . WB.trees <$> atDepth 1
+
+waniSetting :: QT.ProofSearchSetting -> WB.Setting
+waniSetting QT.ProofSearchSetting{..} =
+  WB.Setting {
         WB.mode = case logicSystem of
                     Nothing -> WB.Plain
                     Just QT.Intuitionistic -> WB.WithEFQ
@@ -87,7 +113,4 @@ prove' QT.ProofSearchSetting{..} (DdB.ProofSearchQuery sig ctx typ) =  -- LiftT 
         WB.oracleThreshold=0.5,
         WB.enableEq = True,
         WB.enableConcurrent = True
-        };
-      ioResult = hojo ctx ((A.aEntityName,DdB.Type):sig) typ setting (M.maybe Nothing (\t -> M.Just $ toEnum (t * (10^9))) maxTime)
-  in ListT.lift ioResult >>= \result ->
-    ListT.fromFoldable (map A.aTreeTojTree' (WB.trees result))
+        }
