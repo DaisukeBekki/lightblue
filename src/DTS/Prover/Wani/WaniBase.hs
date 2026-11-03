@@ -77,7 +77,7 @@ data Status = Status
    deduceNgLst :: [(A.Context,AType)], -- ^ Once wani failed to @deduce@, wani add the pair to this list
    usedDisJoint :: [ATerm],
    usedMaxDepth ::Depth, 
-   allProof :: Bool -- ^ In the bottom of the tree, one proof is enough to judge whether the hypo is true or not.
+   allProof :: Bool
   }deriving (Show,Eq)
 
 data Setting = Setting 
