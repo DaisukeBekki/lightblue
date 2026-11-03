@@ -807,7 +807,10 @@ askOracle goal setting =
           let (sig,var) = WB.conFromGoal goal
               unsnoc lst = case lst of [] -> M.Nothing; lst -> M.Just (init lst, last lst) 
               disassemble t = maybe ([],A.aType) id (unsnoc $ A.termsInAppTerm t)  -- If `term` is not an AppTerm, we fall back to a dummy `( [], aType )`. This dummy value is safe because the empty `targetLst` is immediately rejected by the `null targetLst` guard below, so `aType` is never semantically observed.
-              (targetLst,shoudBeConForBig) = disassemble appTerm
+              (negative, target) = case appTerm of
+                A.Arrow [inner] (A.Conclusion DdB.Bot) | WB.enableNegativeOracle setting -> (True, inner)
+                _ -> (False, appTerm)
+              (targetLst,shoudBeConForBig) = disassemble target
           in case (shoudBeConForBig,null targetLst) of
               (A.Conclusion (DdB.Con big),False) ->
                   let 
@@ -820,7 +823,10 @@ askOracle goal setting =
                             case shouldBeConForSmall of
                               A.Conclusion (DdB.Con small) -> {--D.trace ("askOracle" ++" target : "++(show target)++" "++(show target')++" "++"small : "++(show small)++ " big :" ++(show big)) $--} 
                                 if targetLst' == targetLst 
-                                  then return $ (oracleFun small big) > (WB.oracleThreshold setting)
+                                  then let score = oracleFun small big
+                                       -- oracleBuilder uses 0 for unknown words. Do not treat those as negative.
+                                       in return $ if negative then score > 0 && score <= WB.oracleThreshold setting
+                                                               else score > WB.oracleThreshold setting
                                   else return False
                               _ -> return False
                         )
@@ -830,7 +836,7 @@ askOracle goal setting =
                                         (\tree ->
                                           let
                                             term = A.termfromAJudgment $ A.downSide' tree
-                                          in WB.SubGoalSet QT.Con (M.Just tree) [] (A.AJudgment sig var (A.ArrowApp (A.Conclusion $ DdB.Con "oracle") term) appTerm, [])
+                                          in WB.SubGoalSet QT.Con (M.Just tree) [] (A.AJudgment sig var (A.ArrowApp (A.Conclusion $ DdB.Con (if negative then "oracleNeg" else "oracle")) term) appTerm, [])
                                         )
                                         (L.nub filteredTrees)
                   in subgoalsetsIO >>= \subgoalsets -> return (subgoalsets,"")
