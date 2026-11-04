@@ -35,6 +35,8 @@ module DTS.Prover.Wani.WaniBase (
     goalFromSubGoal,
     cluesFromSubGoal,
     substLstFromSubGoal,
+    allProofPolicyFromSubGoal,
+    AllProofPolicy(..),
     SubstSet(..),
     treeFromSubGoalSet,
     dsideFromSubGoalSet,
@@ -167,11 +169,17 @@ goal2NeuralWaniJudgement (Goal _ _ _ _) = Nothing
 
 type Rule = Goal -> Setting -> IO ([SubGoalSet],T.Text)
 
+-- | Whether a subgoal needs every proof.  Every proof is needed only where a later
+-- | subgoal's type is built from this subgoal's proof term, which is not the case for
+-- | a PiI body or a last SigmaI component.
+data AllProofPolicy = Inherit | AllProof | OneProof deriving (Eq,Show)
+
 data SubGoal = 
   SubGoal 
     Goal
     SubstLst
     Clue
+    AllProofPolicy
   deriving (Eq,Show)
 
 -- | In deduce, the proof search is performed from the left side of the upper row. 
@@ -214,13 +222,16 @@ generatedTempTerm (sig,origin) id =
 type Clue = (Maybe (ProofTerm,[(Int,ProofType)]),Maybe ProofTerm)
 
 goalFromSubGoal :: SubGoal -> Goal
-goalFromSubGoal (SubGoal goal substLst clue) = goal
+goalFromSubGoal (SubGoal goal substLst clue allProofPolicy) = goal
 
 substLstFromSubGoal :: SubGoal -> SubstLst
-substLstFromSubGoal (SubGoal goal substLst clue) = substLst
+substLstFromSubGoal (SubGoal goal substLst clue allProofPolicy) = substLst
 
 cluesFromSubGoal :: SubGoal -> Clue
-cluesFromSubGoal (SubGoal goal substLst clue) = clue
+cluesFromSubGoal (SubGoal goal substLst clue allProofPolicy) = clue
+
+allProofPolicyFromSubGoal :: SubGoal -> AllProofPolicy
+allProofPolicyFromSubGoal (SubGoal goal substLst clue allProofPolicy) = allProofPolicy
 
 data SubGoalSet = 
   SubGoalSet 

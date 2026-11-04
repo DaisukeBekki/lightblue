@@ -59,13 +59,14 @@ ruleResultToSubGoalsets depth debugEnabled ruleResultsIO = ruleResultsIO >>= \ru
           let 
             subgoalsLst = 
               sequence $ map
-                (\(WB.SubGoal(WB.Goal sig var justTerm arrowTypes) substLst clue) -> 
+                (\(WB.SubGoal(WB.Goal sig var justTerm arrowTypes) substLst clue allProofPolicy) -> 
                   map
                   (\arrowType ->
                     WB.SubGoal
                       (WB.Goal sig var (M.maybe M.Nothing (M.Just . A.betaReduce . A.arrowNotat) justTerm) [(A.betaReduce . A.arrowNotat) arrowType]) 
                       substLst
                       clue
+                      allProofPolicy
                   )
                   arrowTypes
                 )
@@ -121,9 +122,9 @@ updateGoalWithAntecedent (WB.SubstSet _ before _) result setting (targetId,(WB.G
 -- |   results : 1 dummy + antecedents (ex : [result for 2nd subgoal,result for the 1st subgoal,resultDef])
 -- |   goal : WB.Goal with var -2 replacing the proof term of the leftmost subgoal and var -3 replacing the proof term of the second left subgoal ...
 subgoalToGoalWithAntecedents :: [WB.Result] ->  WB.SubGoal-> WB.Depth -> WB.Setting -> M.Maybe WB.Goal
--- subgoalToGoalWithAntecedents [resultDef] (WB.SubGoal goal _ _) setting = M.Just goal
-subgoalToGoalWithAntecedents [] (WB.SubGoal goal _ _) _ setting = M.Nothing
-subgoalToGoalWithAntecedents results (WB.SubGoal goal substLst (pos,res)) depth setting = -- D.trace ("subgoalToGoalWithAntecedents results:" ++ (show results) ++ " / goal:" ++ (show goal) ++ "clue :" ++ (show (pos,res))) $ 
+-- subgoalToGoalWithAntecedents [resultDef] (WB.SubGoal goal _ _ _) setting = M.Just goal
+subgoalToGoalWithAntecedents [] (WB.SubGoal goal _ _ _) _ setting = M.Nothing
+subgoalToGoalWithAntecedents results (WB.SubGoal goal substLst (pos,res) _) depth setting = -- D.trace ("subgoalToGoalWithAntecedents results:" ++ (show results) ++ " / goal:" ++ (show goal) ++ "clue :" ++ (show (pos,res))) $ 
   let myId = -1 -- negate $ (1 + length results)
       goalWithClue = 
         maybe
@@ -150,16 +151,10 @@ subgoalToGoalWithAntecedents results (WB.SubGoal goal substLst (pos,res)) depth 
       (-1, goalWithClue)
       (reverse $ L.sortOn (\(WB.SubstSet _ _ num) -> num) substLst)
 
--- | Every proof is needed only where a later subgoal's type is built from this
--- subgoal's proof term, which is not the case for a PiI body or a last SigmaI component.
-subgoalAllProof :: QT.DTTrule -> Int -> Int -> Bool -> Bool
-subgoalAllProof rule subgoalIdx subgoalNum parentAllProof = case rule of
-  QT.PiI | subgoalIdx == 0 -> parentAllProof
-  QT.SigmaI | subgoalIdx == subgoalNum - 1 -> parentAllProof
-  -- a premise leaves the rule inside `dne`/`efq`, where no later subgoal can use it
-  QT.DNE | subgoalIdx == subgoalNum - 1 -> False
-  QT.EFQ | subgoalIdx == subgoalNum - 1 -> False
-  _ -> True
+applyAllProofPolicy :: WB.AllProofPolicy -> Bool -> Bool
+applyAllProofPolicy WB.Inherit parentAllProof = parentAllProof
+applyAllProofPolicy WB.AllProof _ = True
+applyAllProofPolicy WB.OneProof _ = False
 
 -- | deduceWithSubGoalset
 -- | summary : search or check proof terms for a type in input `[WB.SubGoalSet]`
@@ -169,20 +164,19 @@ subgoalAllProof rule subgoalIdx subgoalNum parentAllProof = case rule of
 
 deduceWithSubGoalset :: WB.SubGoalSet -> WB.Depth -> WB.Setting -> WB.Result -> IO WB.Result
 deduceWithSubGoalset (WB.SubGoalSet rule maybeTree subgoals dSide) depth setting resultDef = 
-    --deduceWithAntecedentsAndSubGoal :: (Int,Subgoal) -> [WB.Result] -> IO [[WB.Result]]
-    let subgoalNum = length subgoals
-        deduceWithAntecedentsAndSubGoal (subgoalIdx,subgoal) results= 
+    --deduceWithAntecedentsAndSubGoal :: Subgoal -> [WB.Result] -> IO [[WB.Result]]
+    let deduceWithAntecedentsAndSubGoal subgoal results= 
             case subgoalToGoalWithAntecedents results subgoal depth setting of
                 M.Just goal -> 
                     let disjUsed = if rule /= QT.DisjE then [] else (maybe [] (\tree -> [A.typefromAJudgment $ A.downSide' tree]) maybeTree)
-                        setting' = setting{WB.sStatus = (WB.sStatus setting){WB.usedDisJoint = disjUsed++(WB.usedDisJoint$WB.sStatus setting),WB.allProof = subgoalAllProof rule subgoalIdx subgoalNum (WB.allProof $ WB.sStatus setting)}}
+                        setting' = setting{WB.sStatus = (WB.sStatus setting){WB.usedDisJoint = disjUsed++(WB.usedDisJoint$WB.sStatus setting),WB.allProof = applyAllProofPolicy (WB.allProofPolicyFromSubGoal subgoal) (WB.allProof $ WB.sStatus setting)}}
                     in 
                     deduce' goal depth setting' >>= \newResult -> return (map (\tree -> (newResult{WB.trees = [tree]}):results) (L.nub $ WB.trees newResult))
                 M.Nothing -> return []
-        -- deduceWithAntecedentsetAndSubGoal :: IO [[WB.Result]] -> (Int,Subgoal) -> IO [[WB.Result]]
-        deduceWithAntecedentsetAndSubGoal resultsetIOs idxedSubgoal = resultsetIOs >>= \resultset -> foldMap (deduceWithAntecedentsAndSubGoal idxedSubgoal) resultset
+        -- deduceWithAntecedentsetAndSubGoal :: IO [[WB.Result]] -> Subgoal -> IO [[WB.Result]]
+        deduceWithAntecedentsetAndSubGoal resultsetIOs subgoal = resultsetIOs >>= \resultset -> foldMap (deduceWithAntecedentsAndSubGoal subgoal) resultset
         resultsetIO = (if depth < WB.debug setting then (D.trace (L.replicate (2*depth) ' ' ++ "with " ++ (show rule) ++ ", want to prove "  ++ (show subgoals)) ) else id) $
-            foldl deduceWithAntecedentsetAndSubGoal (return [[resultDef]]) (zip [0..] subgoals) >>= \resultset' -> return (map (reverse . init) resultset')
+            foldl deduceWithAntecedentsetAndSubGoal (return [[resultDef]]) subgoals >>= \resultset' -> return (map (reverse . init) resultset')
     in 
       resultsetIO >>= \resultset -> return $ constructResultWithResultsets rule maybeTree resultset dSide setting resultDef
 
