@@ -44,14 +44,15 @@ kwjaFilter text = do
     katuyoulist <- JK.parseKatuyouFromPath $ concat [lb,"src/Parser/Language/Japanese/Juman/JUMAN.katuyou"]
     let conjmap = KF.getConjMap katuyoulist
         commonNounSpans = getCommonNounSpans text kwjaDatas
+        predicateSpans = getPredicateSpans text kwjaDatas
         -- openWordsMap = getOpenWordsMap kwjaDatas conjmap
-        filterNode = createFilterFrom text kwjaDatas conjmap commonNounSpans
+        filterNode = createFilterFrom text kwjaDatas conjmap commonNounSpans predicateSpans
     return filterNode
 
--- | KWJAが普通名詞と分析した語の、文中での位置 (開始, 終了) を求める
+-- | KWJAの形態素の、文中での位置 (開始, 終了) と (表層形, 品詞, 品詞細分類) を求める
 -- | 表層形を文頭から順に探して位置を決めるので、同じ表層形が文中の別の場所にあっても区別できる
-getCommonNounSpans :: TL.Text -> [KW.KWJAData] -> [(Int, Int)]
-getCommonNounSpans text = go 0
+getWordSpans :: TL.Text -> [KW.KWJAData] -> [((Int, Int), (T.Text, T.Text, T.Text))]
+getWordSpans text = go 0
   where
     sentence = TL.toStrict text
     go _ [] = []
@@ -63,10 +64,33 @@ getCommonNounSpans text = go 0
             (skipped, _) ->
                 let start = offset + T.length skipped
                     end = start + T.length surface
-                in if hinsi == "名詞" && bunrui == "普通名詞"
-                     then (start, end) : go end rest
-                     else go end rest
+                in ((start, end), (surface, hinsi, bunrui)) : go end rest
     go offset (_ : rest) = go offset rest
+
+-- | KWJAが普通名詞と分析した語の、文中での位置 (開始, 終了) を求める
+getCommonNounSpans :: TL.Text -> [KW.KWJAData] -> [(Int, Int)]
+getCommonNounSpans text kwjaDatas =
+    [ sp | (sp, (_, hinsi, bunrui)) <- getWordSpans text kwjaDatas, hinsi == "名詞", bunrui == "普通名詞" ]
+
+-- | KWJAが動詞・形容詞と分析した語の、文中での開始位置と表層形を求める
+getPredicateSpans :: TL.Text -> [KW.KWJAData] -> [(Int, T.Text)]
+getPredicateSpans text kwjaDatas =
+    [ (start, surface) | ((start, _), (surface, hinsi, _)) <- getWordSpans text kwjaDatas, hinsi `elem` ["動詞", "形容詞"] ]
+
+-- | KWJAと活用の種類が食い違う場合 (例: 「含めた」をKWJAは母音動詞、lightblueの辞書は「含む」の五段のみ) に、
+-- | 述語のエントリーが全部フィルターアウトされるのを防ぐゲート
+-- | マス (i,j) の述語のLEXエントリーがフィルターで一つも残らなかったとき、
+-- | KWJAの述語が位置 i から始まり、エントリーの表層形がその述語の表層形の先頭部分であれば、元のエントリーを残す
+restorePredicates :: [(Int, T.Text)] -> Int -> [CCG.Node] -> [CCG.Node] -> [CCG.Node]
+restorePredicates predicateSpans i before after
+    | any isPredicateLex after = after
+    | otherwise = after ++ filter restorable before
+  where
+    kwjaSurfaces = [ surface | (start, surface) <- predicateSpans, start == i ]
+    isPredicateLex n = CCG.rs n == CCG.LEX && isPredicateCat (CCG.cat n)
+    restorable n = isPredicateLex n
+                   && any (\surface -> CCG.pf n `TL.isPrefixOf` TL.fromStrict surface) kwjaSurfaces
+    isPredicateCat c = isPredicate "verb" c || isPredicate "adj" c || isPredicate "nom" c
 
 -- | KWJAが普通名詞と分析したスパンで、同じ表層形の普通名詞(N)と固有名詞(PN)の
 -- | エントリーが両方ある場合、固有名詞のエントリーを除く
@@ -119,6 +143,8 @@ createFilterFrom ::
     ConjMap ->
     -- | spans that KWJA analyzed as common nouns
     [(Int, Int)] ->
+    -- | starting positions and surface forms of the words that KWJA analyzed as predicates
+    [(Int, T.Text)] ->
     -- | starting index of the span
     Int ->
     -- | ending index of the span
@@ -127,7 +153,7 @@ createFilterFrom ::
     [CCG.Node] ->
     -- | output nodes (filtered)
     [CCG.Node]
-createFilterFrom text kwjaDatas conjMap commonNounSpans i j ccgNodes =
+createFilterFrom text kwjaDatas conjMap commonNounSpans predicateSpans i j ccgNodes =
     -- kwjaDataから、名詞、動詞、副詞、助詞の表層形を取得
     let openWords = getOpenWordsMap kwjaDatas conjMap
         -- 普通名詞と分析されたスパンでは固有名詞のエントリーを除く
@@ -137,9 +163,10 @@ createFilterFrom text kwjaDatas conjMap commonNounSpans i j ccgNodes =
         endIndex = fromIntegral $ TL.length text
     in
         -- i j が 最後のマスのときは動詞語幹をフィルターアウト
+        -- 述語のエントリーが全部なくなる場合はゲートで元のエントリーを残す
         if (i,j) == (startIndex, endIndex)
             then createFilterFrom' openWords (filterStemEndParse pnFilteredNodes)
-        else createFilterFrom' openWords pnFilteredNodes
+        else restorePredicates predicateSpans i pnFilteredNodes (createFilterFrom' openWords pnFilteredNodes)
 
 
 filterStemEndParse :: [CCG.Node] -> [CCG.Node]
