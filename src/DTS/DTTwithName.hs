@@ -395,7 +395,7 @@ instance SimpleText Signature where
 instance Typeset Signature where
   toTeX = (T.intercalate ",") . (map (\(nm,tm) -> T.concat [nm, ":", toTeX tm])) . reverse
 instance MathML Signature where
-  toMathML = (T.intercalate "<mo>,<mo>") . (map (\(nm,tm) -> T.concat ["<mrow><mo>", nm, "</mo><mo>:</mo>", toMathML tm, "</mrow>"])) . reverse
+  toMathML = (T.intercalate "<mo>,</mo>") . (map (\(nm,tm) -> T.concat ["<mrow><mo>", nm, "</mo><mo>:</mo>", toMathML tm, "</mrow>"])) . reverse
 
 -- | A context is a list of pairs of a variable and a preterm.
 type Context = [(VarName, Preterm)]
