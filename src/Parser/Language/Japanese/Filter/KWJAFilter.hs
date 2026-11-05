@@ -44,14 +44,16 @@ kwjaFilter text = do
     katuyoulist <- JK.parseKatuyouFromPath $ concat [lb,"src/Parser/Language/Japanese/Juman/JUMAN.katuyou"]
     let conjmap = KF.getConjMap katuyoulist
         commonNounSpans = getCommonNounSpans text kwjaDatas
+        predicateSpans = getPredicateSpans text kwjaDatas
+        verbStemSpans = getVerbStemSpans text kwjaDatas conjmap
         -- openWordsMap = getOpenWordsMap kwjaDatas conjmap
-        filterNode = createFilterFrom text kwjaDatas conjmap commonNounSpans
+        filterNode = createFilterFrom text kwjaDatas conjmap commonNounSpans predicateSpans verbStemSpans
     return filterNode
 
--- | KWJAが普通名詞と分析した語の、文中での位置 (開始, 終了) を求める
+-- | KWJAの形態素の、文中での位置 (開始, 終了) と (表層形, 品詞, 品詞細分類) を求める
 -- | 表層形を文頭から順に探して位置を決めるので、同じ表層形が文中の別の場所にあっても区別できる
-getCommonNounSpans :: TL.Text -> [KW.KWJAData] -> [(Int, Int)]
-getCommonNounSpans text = go 0
+getWordSpans :: TL.Text -> [KW.KWJAData] -> [((Int, Int), (T.Text, T.Text, T.Text))]
+getWordSpans text = go 0
   where
     sentence = TL.toStrict text
     go _ [] = []
@@ -63,10 +65,99 @@ getCommonNounSpans text = go 0
             (skipped, _) ->
                 let start = offset + T.length skipped
                     end = start + T.length surface
-                in if hinsi == "名詞" && bunrui == "普通名詞"
-                     then (start, end) : go end rest
-                     else go end rest
+                in ((start, end), (surface, hinsi, bunrui)) : go end rest
     go offset (_ : rest) = go offset rest
+
+-- | KWJAが普通名詞と分析した語の、文中での位置 (開始, 終了) を求める
+getCommonNounSpans :: TL.Text -> [KW.KWJAData] -> [(Int, Int)]
+getCommonNounSpans text kwjaDatas =
+    [ sp | (sp, (_, hinsi, bunrui)) <- getWordSpans text kwjaDatas, hinsi == "名詞", bunrui == "普通名詞" ]
+
+-- | KWJAが動詞・形容詞と分析した語の、文中での開始位置と表層形と品詞を求める
+getPredicateSpans :: TL.Text -> [KW.KWJAData] -> [(Int, T.Text, T.Text)]
+getPredicateSpans text kwjaDatas =
+    [ (start, surface, hinsi) | ((start, _), (surface, hinsi, _)) <- getWordSpans text kwjaDatas, hinsi `elem` ["動詞", "形容詞"] ]
+
+-- | KWJAと活用の種類が食い違う場合 (例: 「含めた」をKWJAは母音動詞、lightblueの辞書は「含む」の五段のみ) に、
+-- | 述語のエントリーが全部フィルターアウトされるのを防ぐゲート
+-- | KWJAの述語が位置 i から始まり、マス (i,j) にその述語と同じ品詞（動詞、または形容詞・形容動詞）の
+-- | LEXエントリーがフィルターで一つも残らなかったとき、その品詞のエントリーで、表層形がKWJAの述語の表層形の
+-- | 先頭部分であるものを元に戻す
+-- | 品詞ごとに判定するので、例えば「悲しめた」で形容詞「悲し(い)」のエントリーが残っていても、
+-- | 動詞「悲し(む)」のエントリーが全部なくなれば戻す
+restorePredicates :: [(Int, T.Text, T.Text)] -> Int -> [CCG.Node] -> [CCG.Node] -> [CCG.Node]
+restorePredicates predicateSpans i before after =
+    after ++ nub (concat [ restore surface hinsi | (start, surface, hinsi) <- predicateSpans, start == i ])
+  where
+    restore surface hinsi
+        | any (isLexOf hinsi) after = []
+        | otherwise = [ n | n <- before, isLexOf hinsi n, CCG.pf n `TL.isPrefixOf` TL.fromStrict surface ]
+    isLexOf hinsi n = CCG.rs n == CCG.LEX && isCatOf hinsi (CCG.cat n)
+    isCatOf hinsi c
+        | hinsi == "動詞" = isPredicate "verb" c
+        | otherwise       = isPredicate "adj" c || isPredicate "nom" c
+
+-- | KWJAが動詞と分析した語の語幹の、文中での位置 (開始, 終了) と、語彙項目を作るための情報
+-- | （語幹, 活用型, 代表表記, 格フレーム）を求める
+-- | 格フレームは、その語の直前の基本句（KWJAのノード）の項から取る
+getVerbStemSpans :: TL.Text -> [KW.KWJAData] -> ConjMap -> [((Int, Int), (T.Text, T.Text, T.Text, [T.Text]))]
+getVerbStemSpans text kwjaDatas conjMap = go 0 [] kwjaDatas
+  where
+    sentence = TL.toStrict text
+    go _ _ [] = []
+    go offset _ (KW.KWJA node : rest) = go offset (getKWJAargs $ KW.args node) rest
+    go offset args (KW.Juman (J.JumanWord surface _ midasi hinsi _ _ _ katuyogata _ katuyokei _ imis) : rest)
+        | T.null surface = go offset args rest
+        | otherwise = case T.breakOn surface (T.drop offset sentence) of
+            (_, unmatched) | T.null unmatched -> go offset args rest
+            (skipped, _) ->
+                let start = offset + T.length skipped
+                    end = start + T.length surface
+                    stem = KF.getStem surface katuyogata katuyokei conjMap
+                    entry = [ ((start, start + T.length stem), (stem, katuyogata, daihyoOf midasi imis, args))
+                            | hinsi == "動詞", KF.isVerb katuyogata
+                            , not (T.null stem), stem `T.isPrefixOf` surface ]
+                in entry ++ go end args rest
+    go offset args (_ : rest) = go offset args rest
+    -- | 意味情報の「代表表記:」の値（なければ見出し語）
+    daihyoOf midasi imis =
+        case [ T.drop (T.length "代表表記:") w | w <- T.words (T.filter (/= '"') imis), "代表表記:" `T.isPrefixOf` w ] of
+            (d:_) -> d
+            [] -> midasi
+
+-- | KWJAの活用型に対応する、動詞の語彙項目の素性（品詞の素性, 語幹の活用形の素性）
+-- | （Lexicon.hs の jumanPos2Cat の「動詞:...」と同じ対応）
+verbFeatures :: T.Text -> Maybe ([CCG.FeatureValue], [CCG.FeatureValue])
+verbFeatures katuyogata
+    | is "子音動詞カ行促音便形"    = Just ([CCG.V5IKU, CCG.V5YUK], [CCG.Stem])
+    | is "子音動詞カ行"           = Just ([CCG.V5k], [CCG.Stem])
+    | is "子音動詞サ行"           = Just ([CCG.V5s], [CCG.Stem])
+    | is "子音動詞タ行"           = Just ([CCG.V5t], [CCG.Stem])
+    | is "子音動詞ナ行"           = Just ([CCG.V5n], [CCG.Stem])
+    | is "子音動詞マ行"           = Just ([CCG.V5m], [CCG.Stem])
+    | is "子音動詞ラ行イ形"        = Just ([CCG.V5NAS], [CCG.Stem])
+    | is "子音動詞ラ行"           = Just ([CCG.V5r], [CCG.Stem])
+    | is "子音動詞ワ行文語音便形"   = Just ([CCG.V5TOW], [CCG.Stem])
+    | is "子音動詞ワ行"           = Just ([CCG.V5w], [CCG.Stem])
+    | is "子音動詞ガ行"           = Just ([CCG.V5g], [CCG.Stem])
+    | is "子音動詞バ行"           = Just ([CCG.V5b], [CCG.Stem])
+    | is "母音動詞"              = Just ([CCG.V1], [CCG.Stem, CCG.Neg, CCG.Cont, CCG.NegL, CCG.EuphT])
+    | otherwise = Nothing
+  where is t = t `T.isPrefixOf` katuyogata
+
+-- | KWJAが動詞と分析した語の語幹がマス (i,j) に一致し、そのマスに同じ表層形の動詞のLEXエントリーがないとき、
+-- | KWJAの活用型・代表表記・格フレームから動詞の語彙項目を作る
+-- | （例:「悲しめた」をKWJAは「悲しめる」(母音動詞) と分析するが、lightblueの辞書には「悲し(む)」しかないので、
+-- |   語幹「悲しめ」の語彙項目を作る）
+newVerbEntries :: [((Int, Int), (T.Text, T.Text, T.Text, [T.Text]))] -> Int -> Int -> [CCG.Node] -> [CCG.Node]
+newVerbEntries verbStemSpans i j nodes =
+    concat [ LB.verblex [TL.fromStrict stem] "(KWJA)" posF conjF (TL.fromStrict daihyo) (TL.fromStrict caseframe) LB.event
+           | ((start, end), (stem, katuyogata, daihyo, args)) <- verbStemSpans
+           , (start, end) == (i, j)
+           , not (any (isVerbLexOf stem) nodes)
+           , Just (posF, conjF) <- [verbFeatures katuyogata]
+           , let caseframe = if null args then "ガ" else T.concat (sortJapanese args) ]
+  where isVerbLexOf stem n = CCG.rs n == CCG.LEX && isPredicate "verb" (CCG.cat n) && CCG.pf n == TL.fromStrict stem
 
 -- | KWJAが普通名詞と分析したスパンで、同じ表層形の普通名詞(N)と固有名詞(PN)の
 -- | エントリーが両方ある場合、固有名詞のエントリーを除く
@@ -119,6 +210,10 @@ createFilterFrom ::
     ConjMap ->
     -- | spans that KWJA analyzed as common nouns
     [(Int, Int)] ->
+    -- | starting positions, surface forms and parts of speech of the words that KWJA analyzed as predicates
+    [(Int, T.Text, T.Text)] ->
+    -- | spans of the stems of the words that KWJA analyzed as verbs, with (stem, conjugation type, daihyo, case frame)
+    [((Int, Int), (T.Text, T.Text, T.Text, [T.Text]))] ->
     -- | starting index of the span
     Int ->
     -- | ending index of the span
@@ -127,7 +222,7 @@ createFilterFrom ::
     [CCG.Node] ->
     -- | output nodes (filtered)
     [CCG.Node]
-createFilterFrom text kwjaDatas conjMap commonNounSpans i j ccgNodes =
+createFilterFrom text kwjaDatas conjMap commonNounSpans predicateSpans verbStemSpans i j ccgNodes =
     -- kwjaDataから、名詞、動詞、副詞、助詞の表層形を取得
     let openWords = getOpenWordsMap kwjaDatas conjMap
         -- 普通名詞と分析されたスパンでは固有名詞のエントリーを除く
@@ -137,9 +232,11 @@ createFilterFrom text kwjaDatas conjMap commonNounSpans i j ccgNodes =
         endIndex = fromIntegral $ TL.length text
     in
         -- i j が 最後のマスのときは動詞語幹をフィルターアウト
+        -- 述語のエントリーが全部なくなる場合はゲートで元のエントリーを残す
         if (i,j) == (startIndex, endIndex)
             then createFilterFrom' openWords (filterStemEndParse pnFilteredNodes)
-        else createFilterFrom' openWords pnFilteredNodes
+        else let filtered = restorePredicates predicateSpans i pnFilteredNodes (createFilterFrom' openWords pnFilteredNodes)
+             in filtered ++ newVerbEntries verbStemSpans i j filtered
 
 
 filterStemEndParse :: [CCG.Node] -> [CCG.Node]
