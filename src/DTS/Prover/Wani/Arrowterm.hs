@@ -29,6 +29,7 @@ module DTS.Prover.Wani.Arrowterm
   typefromAJudgment,
   shiftIndices,
   arrowSubst,
+  arrowSubstShifted,
   partialSubstSetaTerm,
   ArrowSelector(..),
   downSide',
@@ -309,6 +310,27 @@ subst preterm l i =
       DdB.Unpack a b c d -> DdB.Unpack (subst a l i) (subst b l i) (subst c l i) (subst d l i)
       others -> others
 
+-- | Like `subst`, but `l` is shifted by `d` plus the number of binders above each occurrence of `i`, where `i` must be closed.
+-- Shifting `l` down by a negative `d` beforehand would merge the variables bound inside `l` with the shifted ones.
+substShifted :: DdB.Preterm -> DdB.Preterm -> Int -> DdB.Preterm -> DdB.Preterm
+substShifted preterm l d i =
+  if preterm == i then
+    DdB.shiftIndices l d 0
+  else
+    case preterm of
+      DdB.Pi a b -> DdB.Pi (substShifted a l d i) (substShifted b l (d+1) i)
+      DdB.Not m -> DdB.Not (substShifted m l d i)
+      DdB.Lam m -> DdB.Lam (substShifted m l (d+1) i)
+      DdB.App m n    -> DdB.App (substShifted m l d i) (substShifted n l d i)
+      DdB.Sigma a b  -> DdB.Sigma (substShifted a l d i) (substShifted b l (d+1) i)
+      DdB.Pair m n   -> DdB.Pair (substShifted m l d i) (substShifted n l d i)
+      DdB.Proj s m   -> DdB.Proj s (substShifted m l d i)
+      DdB.Eq a m n   -> DdB.Eq (substShifted a l d i) (substShifted m l d i) (substShifted n l d i)
+      DdB.Disj a b -> DdB.Disj (substShifted a l d i) (substShifted b l d i)
+      DdB.Iota h t -> DdB.Iota h (substShifted t l d i)
+      DdB.Unpack a b c d' -> DdB.Unpack (substShifted a l d i) (substShifted b l d i) (substShifted c l d i) (substShifted d' l d i)
+      others -> others
+
 partialSubstSet :: DdB.Preterm -> DdB.Preterm -> DdB.Preterm -> [DdB.Preterm]
 partialSubstSet preterm l i =
   if preterm == i then [l,i]
@@ -333,6 +355,14 @@ arrowSubst :: Arrowterm -- ^ origin
   -> Arrowterm
 arrowSubst term i m= 
   dt2Arrow $ subst (arrow2DT term) (arrow2DT i) (arrow2DT m)
+
+arrowSubstShifted :: Arrowterm -- ^ origin
+  -> Arrowterm -- ^ the term to substitute
+  -> Int -- ^ how much longer the context of origin is than that of the term to substitute
+  -> Arrowterm -- ^ the closed term to be replaced
+  -> Arrowterm
+arrowSubstShifted term i d m =
+  dt2Arrow $ substShifted (arrow2DT term) (arrow2DT i) d (arrow2DT m)
 
 partialSubstSetaTerm :: Arrowterm -- ^ origin
   -> Arrowterm -- ^ 代入内容
