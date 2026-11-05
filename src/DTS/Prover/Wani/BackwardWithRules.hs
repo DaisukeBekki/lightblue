@@ -189,12 +189,22 @@ deduceWithSubGoalsets subgoalsets depth setting resultDef justTerm arrowType =
     then deduceWithSubGoalsetsConcurrent subgoalsets depth setting resultDef justTerm arrowType
     else deduceWithSubGoalsetsSequential subgoalsets depth setting resultDef justTerm arrowType
 
+-- `arrowNotat` and `betaReduce` are performed uniformly here, so a rule need
+-- not normalize what it builds.  A goal that needs a single proof must stop on
+-- this, not on any tree: a subgoalset may yield only trees of a wrong type
+-- (piElim with a wrong argument), and stopping on them skips the rest.
+provesGoal :: M.Maybe A.Arrowterm -> A.Arrowterm -> UDT.Tree QT.DTTrule A.AJudgment -> Bool
+provesGoal justTerm arrowType tree =
+  let A.AJudgment _ _ term' type' = A.downSide' tree
+  in maybe True (\term -> (A.arrowNotat . A.betaReduce) term' == (A.arrowNotat . A.betaReduce) term) justTerm
+     && (A.arrowNotat . A.betaReduce) type' == (A.arrowNotat . A.betaReduce) arrowType
+
 deduceWithSubGoalsetsSequential :: [WB.SubGoalSet] -> WB.Depth -> WB.Setting -> WB.Result -> M.Maybe A.Arrowterm -> A.Arrowterm -> IO WB.Result
 deduceWithSubGoalsetsSequential subgoalsets depth setting resultDef justTerm arrowType = 
     (foldl
         (\rsIO subgoalset -> 
           rsIO >>= \rs ->
-            if (WB.allProof (WB.sStatus setting)) || (null $ WB.trees rs)
+            if (WB.allProof (WB.sStatus setting)) || not (any (provesGoal justTerm arrowType) $ WB.trees rs)
                 then 
                   (deduceWithSubGoalset subgoalset depth setting{WB.sStatus = WB.mergeStatus (WB.rStatus rs) WB.statusDef{WB.allProof = True}} resultDef)
                     >>= \result -> return $ WB.mergeResult rs result
@@ -202,7 +212,7 @@ deduceWithSubGoalsetsSequential subgoalsets depth setting resultDef justTerm arr
         )
         (return resultDef)
         subgoalsets
-    ) >>= \result' -> return $ result'{WB.rStatus = (WB.rStatus result'){WB.deduceNgLst = WB.deduceNgLst$WB.sStatus setting}}{WB.trees = filter  (\tree ->  let A.AJudgment sig' var' term' type' = A.downSide' tree in (maybe True (\term -> (A.arrowNotat . A.betaReduce) term' == (A.arrowNotat . A.betaReduce) term) justTerm) && ((A.arrowNotat . A.betaReduce) type' == (A.arrowNotat . A.betaReduce) arrowType)) $ L.nub$ WB.trees result'} -- `arrowNotat` and `betaReduece` are performed uniformly here. Even if normalization is not considered when creating a rule, the following ensures that the comparison is valid.
+    ) >>= \result' -> return $ result'{WB.rStatus = (WB.rStatus result'){WB.deduceNgLst = WB.deduceNgLst$WB.sStatus setting}}{WB.trees = filter (provesGoal justTerm arrowType) $ L.nub$ WB.trees result'}
 
 deduceWithSubGoalsetsConcurrent :: [WB.SubGoalSet] -> WB.Depth -> WB.Setting -> WB.Result -> M.Maybe A.Arrowterm -> A.Arrowterm -> IO WB.Result
 deduceWithSubGoalsetsConcurrent subgoalsets depth setting resultDef justTerm arrowType = 
@@ -215,7 +225,7 @@ deduceWithSubGoalsetsConcurrent subgoalsets depth setting resultDef justTerm arr
                 >>= \result ->
                   atomicModifyIORef' resultRef (\rs ->
                     let merged = WB.mergeResult rs result
-                        stop'  = not (null (WB.trees merged))
+                        stop'  = any (provesGoal justTerm arrowType) (WB.trees result)
                     in (merged, stop')
                   )
                   >>= \stop' ->
@@ -225,14 +235,7 @@ deduceWithSubGoalsetsConcurrent subgoalsets depth setting resultDef justTerm arr
     in mapConcurrently_ worker subgoalsets >>
       readIORef resultRef >>= \result' ->
         let
-          trees =
-            filter
-              (\tree ->
-                let A.AJudgment _ _ term' type' = A.downSide' tree
-                in ( maybe True (\term -> (A.arrowNotat . A.betaReduce) term' == (A.arrowNotat . A.betaReduce) term) justTerm)
-                  && ( (A.arrowNotat . A.betaReduce) type' == (A.arrowNotat . A.betaReduce) arrowType)
-              )
-              (L.nub $ WB.trees result')
+          trees = filter (provesGoal justTerm arrowType) (L.nub $ WB.trees result')
         in pure $ result'{ WB.rStatus =(WB.rStatus result'){ WB.deduceNgLst = WB.deduceNgLst $ WB.sStatus setting }, WB.trees = trees}
 
 -- | deduce'
