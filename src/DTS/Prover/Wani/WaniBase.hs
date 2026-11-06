@@ -77,7 +77,7 @@ data Status = Status
    deduceNgLst :: [(A.Context,AType)], -- ^ Once wani failed to @deduce@, wani add the pair to this list
    usedDisJoint :: [ATerm],
    usedMaxDepth ::Depth, 
-   allProof :: Bool
+   allProof :: Bool -- | 'False': Stop searching remaining subgoalsets once a valid proof is found. / 'True': Search all subgoalsets and aggregate all proofs. Set to 'True' at the top level to support anaphora resolution (#134). Delegation to child subgoals is controlled via 'AllProofPolicy' (#293).
   }deriving (Show,Eq)
 
 data Setting = Setting 
