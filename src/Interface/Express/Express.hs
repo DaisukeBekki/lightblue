@@ -335,6 +335,28 @@ getParseTypeChecks pr tcqs = do
       atomicWriteIORef currentParseTCRef (Just ttcs)
       return ttcs
 
+-- /parsing での表示用に、記録された ProofSearchQuery に保存ボタンや Signature トグルに必要な情報を付ける
+data AnaphoraQueryView = AnaphoraQueryView
+  { aqIdx    :: Int                   -- ^ タブ内での通し番号（1 始まり）
+  , aqKey    :: TS.Text               -- ^ toggleSignature 用の要素 id のサフィックス
+  , aqQuery  :: DWN.ProofSearchQuery
+  , aqSig    :: DWN.Signature
+  , aqParams :: [(TS.Text, TS.Text)]  -- ^ 保存用 URL のクエリパラメータ
+  }
+
+anaphoraQueryViews :: Int -> [DTT.ProofSearchQuery] -> [AnaphoraQueryView]
+anaphoraQueryViews tabNum psqs =
+  [ AnaphoraQueryView
+      { aqIdx    = i
+      , aqKey    = TS.pack ("anaphora-" ++ show tabNum ++ "-" ++ show i)
+      , aqQuery  = psqWN
+      , aqSig    = sigWN
+      , aqParams = [("tab", TS.pack (show tabNum)), ("idx", TS.pack (show i))]
+      }
+  | (i, psq) <- zip [1..] psqs
+  , let psqWN@(DWN.ProofSearchQuery sigWN _ _) = DWN.fromDeBruijnProofSearchQuery psq
+  ]
+
 -- normalize signature for stable PSQ keys
 normalizeSignature :: DTT.Signature -> DTT.Signature
 normalizeSignature =
@@ -869,9 +891,10 @@ getParsingR = do
           -- parseSentenceForQuery :: NLI.ParseResult -> IO ([UDTT.TypeCheckQuery])
           tcqs <- liftIO $ L.parseSentenceForQuery pr
      
-          -- tcds 
-          -- parseSentenceForDiagram :: NLI.ParseResult -> IO ([[QT.DTTProofDiagram]])
-          tcds <- liftIO $ L.parseSentenceForDiagram pr
+          -- 照応解決用の ProofSearchQuery も合わせて取得する
+          ttcs <- liftIO $ getParseTypeChecks pr tcqs
+          let tcds = map ttcDiagrams ttcs
+              anaphoraViews = zipWith anaphoraQueryViews tabs (map ttcQueries ttcs)
 
           let tcdLengths = Prelude.map Prelude.length tcds
           liftIO $ putStrLn $ "length: " ++ show tcdLengths
@@ -907,7 +930,7 @@ getParsingR = do
 
                 <div class="container-tab">
                   <div .tab-wrap>
-                    $forall (tabNum, node, tcq, tcdList, tabClass, score, leafNodes) <- Data.List.zip7 tabs nodes tcqs tcds tabClasses scores leafNodesList
+                    $forall (tabNum, node, tcq, tcdList, tabClass, score, (leafNodes, aqs)) <- Data.List.zip7 tabs nodes tcqs tcds tabClasses scores (zip leafNodesList anaphoraViews)
                       <input id="TAB-#{tabNum}" type="radio" name="TAB" class="tab-switch" :tabNum == 1:checked>
                       <label for="TAB-#{tabNum}" class=#{tabClass}>#{tabNum} (score: #{score})
                       <div class="tab-content">
@@ -931,6 +954,24 @@ getParsingR = do
                           $else
                             <div class="tab-tcds-content">
                               <div .tab-tcds-inner>^{Prelude.mapM_ (WE.widgetizeWith dsp) $ tcdList}
+                        <div class="tab-psq">
+                          <h1>Proof Search Query (Anaphora Resolution)
+                          $if Data.List.null aqs
+                            <p .tab-psq-empty>No proof search was launched during type checking.
+                          $else
+                            $forall aq <- aqs
+                              <div .ps-section .tab-psq-item>
+                                <div .ps-title>
+                                  <span .ps-badge .ps-badge-anaphora>Query #{aqIdx aq}
+                                <div .tab-psq-body>
+                                  <div class="tab-tcq-content-inference">^{WE.widgetizeWith dsp (aqQuery aq)}
+                                  <div .ps-sig>
+                                    <button type="button" .btn id="ps-sig-btn-#{aqKey aq}" onclick="toggleSignature('#{aqKey aq}')">Show Signature
+                                    <div .ps-sig-body id="ps-sig-body-#{aqKey aq}" style="display: none">
+                                      $if Data.List.null (aqSig aq)
+                                        <span .ps-sig-empty>(empty)
+                                      $else
+                                        <div class="tab-tcq-content-inference">^{WE.widgetizeWith dsp (aqSig aq)}
                         $if WE.lexicalItemsPosition dsp == WE.LexBottom
                           <div class="tab-leaves">
                             <h2>Lexical Items
