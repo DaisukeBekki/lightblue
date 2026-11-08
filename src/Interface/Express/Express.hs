@@ -9,6 +9,7 @@ module Interface.Express.Express (
   , setDisplaySetting
   , setDisplayOptions
   , setPrewarmOptions
+  , setTypeCheckProver
   ) where
 
 import Yesod
@@ -287,6 +288,21 @@ setDisplayOptions mDepth noShowCat noShowSem leafVert = do
   setDisplaySetting dsp
 
 data App = App
+
+-- parse mode 用: TypeCheck に用いる prover と設定を登録する。
+-- 登録されている場合、/parsing は TypeCheck を実行し、その途中で prover に渡されたProofSearchQueryをタブごとに記録する。
+setTypeCheckProver :: CP.ParseSetting -> QT.Prover -> IO ()
+setTypeCheckProver ps prover = do
+  atomicWriteIORef currentProverRef (Just prover)
+  atomicWriteIORef currentNTypeCheckRef (CP.nTypeCheck ps)
+  atomicWriteIORef currentVerboseRef (CP.verbose ps)
+  atomicWriteIORef currentParseTCRef Nothing
+
+-- prover に渡された ProofSearchQuery を IORef に記録してから、 prover に渡す
+recordingProver :: IORef [DTT.ProofSearchQuery] -> QT.Prover -> QT.Prover
+recordingProver ref prover psq = do
+  lift $ atomicModifyIORef' ref (\qs -> (qs ++ [psq], ()))
+  prover psq
 
 -- normalize signature for stable PSQ keys
 normalizeSignature :: DTT.Signature -> DTT.Signature
