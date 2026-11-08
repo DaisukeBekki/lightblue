@@ -109,6 +109,16 @@ currentTCStateRef = unsafePerformIO $ newIORef M.empty
 currentTCSelectionRef :: IORef (M.Map Int TCSelection)
 currentTCSelectionRef = unsafePerformIO $ newIORef M.empty
 
+-- parse mode用: 各タブの TypeCheck 結果と、その途中で prover に渡された ProofSearchQuery
+data TabTypeCheck = TabTypeCheck
+  { ttcDiagrams :: [QT.DTTProofDiagram]
+  , ttcQueries  :: [DTT.ProofSearchQuery]
+  }
+
+{-# NOINLINE currentParseTCRef #-}
+currentParseTCRef :: IORef (Maybe [TabTypeCheck])
+currentParseTCRef = unsafePerformIO $ newIORef Nothing
+
 -- Proof search state
 {-# NOINLINE currentPSQPosRef #-}
 currentPSQPosRef :: IORef (Maybe DTT.ProofSearchQuery)
