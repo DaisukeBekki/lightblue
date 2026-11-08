@@ -48,6 +48,8 @@ import Interface.Text (SimpleText(..))
 import Data.Char (toLower)
 import qualified ListT as LT (ListT, uncons, toList, take)
 import Control.Monad (when)
+import Control.Monad.Trans.Class (lift)
+import Control.Applicative ((<|>))
 import qualified Data.ByteString as BS
 import qualified Data.Store as Store
 
