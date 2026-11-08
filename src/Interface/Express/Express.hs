@@ -379,6 +379,7 @@ mkYesod "App" [parseRoutes|
 /proofsearch/start ProofStartR GET
 /span SpanR GET
 /span/node NodeR GET
+/parsing/anaphora/query/bin AnaphoraQueryBinR GET
 /proofcache/progress ProofCacheProgressR GET
 /proofcache/marks ProofCacheMarksR GET
 /export/sem ExportSemR GET
@@ -963,6 +964,7 @@ getParsingR = do
                               <div .ps-section .tab-psq-item>
                                 <div .ps-title>
                                   <span .ps-badge .ps-badge-anaphora>Query #{aqIdx aq}
+                                  <a .btn .btn-save href=@?{(AnaphoraQueryBinR, aqParams aq)} download>保存
                                 <div .tab-psq-body>
                                   <div class="tab-tcq-content-inference">^{WE.widgetizeWith dsp (aqQuery aq)}
                                   <div .ps-sig>
@@ -1672,6 +1674,38 @@ getExportSemTextR = do
           addHeader "Content-Type" "text/plain; charset=utf-8"
           sendResponse (TypedContent "text/plain" (toContent txt))
   where
+    (!!?) :: [a] -> Int -> Maybe a
+    (!!?) xs n = if n < 0 || n >= length xs then Nothing else Just (xs !! n)
+
+-- Binary export: a proof search query launched for anaphora resolution
+getAnaphoraQueryBinR :: Handler TypedContent
+getAnaphoraQueryBinR = do
+  mpr <- liftIO $ readIORef currentParseResultRef
+  mTab <- lookupGetParam "tab"
+  mIdx <- lookupGetParam "idx"
+  let parseInt :: TS.Text -> Maybe Int
+      parseInt = readMaybe . TS.unpack
+      tab = maybe 1 id (mTab >>= parseInt)
+      idx = maybe 1 id (mIdx >>= parseInt)
+  case mpr of
+    Nothing -> plainText "ParseResult is not set"
+    Just pr -> do
+      tcqs <- liftIO $ L.parseSentenceForQuery pr
+      ttcs <- liftIO $ getParseTypeChecks pr tcqs
+      case (ttcs !!? (tab - 1)) >>= (\ttc -> ttcQueries ttc !!? (idx - 1)) of
+        Nothing -> plainText "Invalid tab/idx"
+        Just psq -> do
+          let bs :: BS.ByteString
+              bs = Store.encode psq
+              fname = TS.pack $ "anaphora-query-tab" ++ show tab ++ "-" ++ show idx ++ ".bin"
+          addHeader "Content-Type" "application/octet-stream"
+          addHeader "Content-Disposition" (TS.concat ["attachment; filename=\"", fname, "\""])
+          return $ TypedContent "application/octet-stream" (toContent bs)
+  where
+    plainText :: TS.Text -> Handler TypedContent
+    plainText msg = do
+      addHeader "Content-Type" "text/plain; charset=utf-8"
+      return $ TypedContent typePlain (toContent msg)
     (!!?) :: [a] -> Int -> Maybe a
     (!!?) xs n = if n < 0 || n >= length xs then Nothing else Just (xs !! n)
 
