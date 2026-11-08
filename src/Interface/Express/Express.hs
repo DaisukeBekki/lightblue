@@ -304,6 +304,37 @@ recordingProver ref prover psq = do
   lift $ atomicModifyIORef' ref (\qs -> (qs ++ [psq], ()))
   prover psq
 
+-- TypeCheckQuery を型検査し、証明図と ProofSearchQuery を返す。
+typeCheckRecordingQueries :: QT.Prover -> Bool -> Int -> UDTT.TypeCheckQuery -> IO TabTypeCheck
+typeCheckRecordingQueries prover verbose nmax tcq = do
+  ref <- newIORef []
+  let prover' = recordingProver ref prover
+      tcqKind = tcq { UDTT.typ = DTT.Kind }
+      lts = TY.typeCheck prover' verbose tcq <|> TY.typeCheck prover' verbose tcqKind
+      lts' = if nmax < 0 then lts else LT.take nmax lts
+  diags <- LT.toList lts'
+  queries <- readIORef ref
+  return $ TabTypeCheck diags (nubBy (\a b -> Store.encode a == Store.encode b) queries)
+
+-- /parsing 用: 各タブの TypeCheckの結果を得る。
+getParseTypeChecks :: NLI.ParseResult -> [UDTT.TypeCheckQuery] -> IO [TabTypeCheck]
+getParseTypeChecks pr tcqs = do
+  mCached <- readIORef currentParseTCRef
+  case mCached of
+    Just ttcs -> return ttcs
+    Nothing -> do
+      mProver <- readIORef currentProverRef
+      ttcs <- case mProver of
+        Just prover -> do
+          nmax <- readIORef currentNTypeCheckRef
+          verbose <- readIORef currentVerboseRef
+          mapM (typeCheckRecordingQueries prover verbose nmax) tcqs
+        Nothing -> do
+          tcds <- L.parseSentenceForDiagram pr
+          return $ map (\ds -> TabTypeCheck ds []) tcds
+      atomicWriteIORef currentParseTCRef (Just ttcs)
+      return ttcs
+
 -- normalize signature for stable PSQ keys
 normalizeSignature :: DTT.Signature -> DTT.Signature
 normalizeSignature =
