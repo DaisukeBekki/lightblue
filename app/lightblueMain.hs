@@ -358,7 +358,7 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
             Nothing             -> return ()
         _ -> return ()
       S.hPutStrLn handle $ I.headerOf style
-      PPR.printParseResult handle style 1 noTypeCheck posTagOnly "input" parseResult
+      _ <- PPR.printParseResult handle style 1 noTypeCheck posTagOnly "input" parseResult
       S.hPutStrLn handle $ I.footerOf style
     --
     -- | JSeM command
@@ -410,8 +410,7 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
             S.putStr "\n"
             let sentences = postpend (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
                 parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] sentences
-            PPR.printParseResult handle style 1 noTypeCheck False title parseResult
-            inferenceLabels <- toList $ NLI.trawlParseResult parseResult
+            inferenceLabels <- PPR.printParseResult handle style 1 noTypeCheck False title parseResult
             let groundTruth = J.jsemLabel2YesNo $ J.answer j
                 prediction = case inferenceLabels of
                   [] -> J.Other
