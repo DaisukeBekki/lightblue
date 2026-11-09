@@ -82,7 +82,7 @@ prove' QT.ProofSearchSetting{..} (DdB.ProofSearchQuery sig ctx typ) =  -- LiftT 
                         Just t -> t
                         Nothing -> 100000,
         WB.debug = 1,
-        WB.sStatus = WB.statusDef,
+        WB.sStatus = WB.statusDef{WB.allProof=True},
         WB.oracle = oracle,
         WB.oracleThreshold=0.5,
         WB.enableEq = enableEquality,

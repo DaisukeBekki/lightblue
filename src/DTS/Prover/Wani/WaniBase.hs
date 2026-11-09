@@ -79,7 +79,7 @@ data Status = Status
    deduceNgLst :: [(A.Context,AType)], -- ^ Once wani failed to @deduce@, wani add the pair to this list
    usedDisJoint :: [ATerm],
    usedMaxDepth ::Depth, 
-   allProof :: Bool -- ^ In the bottom of the tree, one proof is enough to judge whether the hypo is true or not.
+   allProof :: Bool -- | 'False': Stop searching remaining subgoalsets once a valid proof is found. / 'True': Search all subgoalsets and aggregate all proofs. Set to 'True' at the top level to support anaphora resolution (#134). Delegation to child subgoals is controlled via 'AllProofPolicy' (#293).
   }deriving (Show,Eq)
 
 data Setting = Setting 
@@ -111,7 +111,7 @@ mergeStatus st1 st2 =
   Status {failedlst = L.nub(concatMap failedlst [st1,st2]),usedMaxDepth = maximum (map usedMaxDepth [st1,st2]),deduceNgLst=L.nub(concatMap deduceNgLst [st1,st2]),usedDisJoint=L.nub(concatMap usedDisJoint[st1,st2]),allProof = (allProof st1) || (allProof st2)}
 
 statusDef :: Status
-statusDef = Status{failedlst=[],usedMaxDepth = 0,deduceNgLst=[],usedDisJoint=[],allProof = False}
+statusDef = Status{failedlst=[],usedMaxDepth = 0,deduceNgLst=[],usedDisJoint=[],allProof = True} -- #285
 
 settingDef :: Setting
 settingDef = Setting{mode = Plain,falsum = True,maxdepth = 9,maxtime = 100000,debug = 0,sStatus = statusDef,ruleConHojo = "sub",oracle=M.Nothing,oracleThreshold=0.5,enableEq=True,enableConcurrent=False}
