@@ -37,6 +37,7 @@ module DTS.Prover.Wani.WaniBase (
     substLstFromSubGoal,
     allProofPolicyFromSubGoal,
     AllProofPolicy(..),
+    oneProofIfTerm,
     SubstSet(..),
     treeFromSubGoalSet,
     dsideFromSubGoalSet,
@@ -79,7 +80,7 @@ data Status = Status
    deduceNgLst :: [(A.Context,AType)], -- ^ Once wani failed to @deduce@, wani add the pair to this list
    usedDisJoint :: [ATerm],
    usedMaxDepth ::Depth, 
-   allProof :: Bool -- | 'False': Stop searching remaining subgoalsets once a valid proof is found. / 'True': Search all subgoalsets and aggregate all proofs. Set to 'True' at the top level to support anaphora resolution (#134). Delegation to child subgoals is controlled via 'AllProofPolicy' (#293).
+   allProof :: Bool -- | 'False': Stop searching remaining subgoalsets once a valid proof is found. / 'True': Search all subgoalsets and aggregate all proofs. Set to 'True' at the top level to support anaphora resolution (#134). Delegation to child subgoals is controlled via 'AllProofPolicy' (#293). subgoals with terms use 'OneProof' (#301).
   }deriving (Show,Eq)
 
 data Setting = Setting 
@@ -173,6 +174,10 @@ type Rule = Goal -> Setting -> IO ([SubGoalSet],T.Text)
 -- | subgoal's type is built from this subgoal's proof term, which is not the case for
 -- | a PiI body or a last SigmaI component.
 data AllProofPolicy = Inherit | AllProof | OneProof deriving (Eq,Show)
+
+oneProofIfTerm :: M.Maybe a -> AllProofPolicy -> AllProofPolicy
+oneProofIfTerm canBeTerm ifDeduced =
+  M.maybe ifDeduced (\_ -> OneProof) canBeTerm
 
 data SubGoal = 
   SubGoal 

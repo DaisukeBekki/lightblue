@@ -176,7 +176,7 @@ piIntro goal setting =
                               ((drop ((length l) +1 - idInLstFromOld) (t:l)) ++ var) 
                               (M.Just ((reverse $t:l) !! idInLstFromOld))
                               [A.aType,A.Conclusion DdB.Kind]
-                        in WB.SubGoal goal [] (M.Nothing,M.Nothing) WB.OneProof 
+                        in WB.SubGoal goal [] (M.Nothing,M.Nothing) WB.OneProof
                   in map subgoalForMem [0..(length l - 1)]
               in [WB.SubGoalSet QT.PiI M.Nothing (subgoal1:subgoal2s) (dSide,dSideSubstLst)]
         in return (subgoalsets,"")
@@ -1036,7 +1036,7 @@ disjElim goal setting =
                         let
                           mJudgment = A.downSide' tree
                           lpmnGoal = subgoalsForDisj (A.typefromAJudgment mJudgment)
-                        in WB.SubGoalSet QT.DisjE (M.Just tree) (map (\goal -> WB.SubGoal goal [] (M.Nothing,M.Nothing) (M.maybe WB.AllProof (\_ -> WB.OneProof) (WB.termFromGoal goal))) lpmnGoal) (dSide,dSideSubstLst)
+                        in WB.SubGoalSet QT.DisjE (M.Just tree) (map (\goal -> WB.SubGoal goal [] (M.Nothing,M.Nothing) (WB.oneProofIfTerm (WB.termFromGoal goal) WB.AllProof)) lpmnGoal) (dSide,dSideSubstLst)
                         )
                       disjTrees
                   subgoalsetDisjArrow =
@@ -1046,7 +1046,7 @@ disjElim goal setting =
                           mArrowJudgment = A.downSide' tree
                           A.Arrow _ mType = A.typefromAJudgment mArrowJudgment
                           lpmnGoal = subgoalsForDisj mType
-                        in WB.SubGoalSet QT.DisjE (M.Just tree) (map (\goal -> WB.SubGoal goal [] (M.Nothing,M.Nothing) (M.maybe WB.AllProof (\_ -> WB.OneProof) (WB.termFromGoal goal))) lpmnGoal) (dSide,dSideSubstLst)
+                        in WB.SubGoalSet QT.DisjE (M.Just tree) (map (\goal -> WB.SubGoal goal [] (M.Nothing,M.Nothing) (WB.oneProofIfTerm (WB.termFromGoal goal) WB.AllProof)) lpmnGoal) (dSide,dSideSubstLst)
                         )
                       disjArrowTrees
               in subgoalsetDisj ++ subgoalsetDisjArrow
