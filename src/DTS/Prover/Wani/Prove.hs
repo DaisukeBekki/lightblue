@@ -108,9 +108,9 @@ waniSetting QT.ProofSearchSetting{..} =
                         Just t -> t
                         Nothing -> 100000,
         WB.debug = 1,
-        WB.sStatus = WB.statusDef,
+        WB.sStatus = WB.statusDef{WB.allProof=True},
         WB.oracle = oracle,
         WB.oracleThreshold=0.5,
-        WB.enableEq = True,
+        WB.enableEq = enableEquality,
         WB.enableConcurrent = True
         }

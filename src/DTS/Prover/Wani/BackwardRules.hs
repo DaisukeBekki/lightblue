@@ -166,7 +166,7 @@ piIntro goal setting =
                 dSide = A.AJudgment sig var dSideterm arrowType
                 subgoal1 = let
                     goal1 = WB.Goal sig (l ++ var) canBeConclusionTerm [t]
-                  in WB.SubGoal goal1 [] (M.Nothing,M.Nothing)
+                  in WB.SubGoal goal1 [] (M.Nothing,M.Nothing) (M.maybe WB.Inherit (\_ -> WB.OneProof) canBeConclusionTerm)
                 subgoal2s = 
                   let subgoalForMem idInLstFromOld = 
                         let
@@ -176,7 +176,7 @@ piIntro goal setting =
                               ((drop ((length l) +1 - idInLstFromOld) (t:l)) ++ var) 
                               (M.Just ((reverse $t:l) !! idInLstFromOld))
                               [A.aType,A.Conclusion DdB.Kind]
-                        in WB.SubGoal goal [] (M.Nothing,M.Nothing)
+                        in WB.SubGoal goal [] (M.Nothing,M.Nothing) WB.OneProof
                   in map subgoalForMem [0..(length l - 1)]
               in [WB.SubGoalSet QT.PiI M.Nothing (subgoal1:subgoal2s) (dSide,dSideSubstLst)]
         in return (subgoalsets,"")
@@ -408,7 +408,7 @@ piElim goal setting =
                                         let clueLst = L.nub $ filter ((tempTerm ==) .fst) $(map (\(fst_,snd_) -> (A.betaReduce $ A.arrowNotat fst_,A.betaReduce $ A.arrowNotat snd_) )$ A.canBeSame' 0 result' arrowType)
                                         in if length clueLst == 1 then M.Just (snd $ head clueLst) else M.Nothing) 
                                       (lookup argNum substedPerElement)
-                                in WB.SubGoal goal' (L.nub substLst) (clueWithArgs,clueWithResult)
+                                in WB.SubGoal goal' (L.nub substLst) (clueWithArgs,clueWithResult) (if isDeduce then WB.AllProof else WB.OneProof)
                           in map subgoalForArg [0..(argNum-1)] 
                     in return (WB.SubGoalSet QT.PiE (M.Just functionTree) subgoals dSideSet)
               in sequence $ map subgoalsetForFunction argNumAndFunctions
@@ -548,7 +548,7 @@ piForm goal setting =
                                   ((drop ((length con) +1 - idInLstFromOld) (res:con)) ++ var) 
                                   (M.Just ((reverse $res:con) !! idInLstFromOld))
                                   (if idInLstFromOld == 0 then [arrowType] else [A.aType,A.Conclusion DdB.Kind])
-                            in WB.SubGoal goal [] (M.Nothing,M.Nothing)
+                            in WB.SubGoal goal [] (M.Nothing,M.Nothing) WB.OneProof
                       in map subgoalForMem [0..(length con)]
                 in WB.SubGoalSet QT.PiF M.Nothing subgoals (dside,[])
           in return ([subgoalset],"")
@@ -671,7 +671,7 @@ sigmaIntro goal setting =
                                       then M.Just $ (argIdFromOld,WB.substedTempterm tempTerm ((reverse $lat:for) !! argIdFromOld,argIdFromOld) idInLstFromOld)
                                       else M.Nothing) parentLsts
                               )
-                        in WB.SubGoal goal' substLst (clues,M.Nothing)
+                        in WB.SubGoal goal' substLst (clues,M.Nothing) (if isDeduce then (if idInLstFromOld == length for then WB.Inherit else WB.AllProof) else WB.OneProof)
                   in map subgoalForMem [0..(length for)]
                 in WB.SubGoalSet QT.SigmaI M.Nothing subgoals (dSide,dSideSubstLst)
             in return ([subgoalset],"")
@@ -744,8 +744,8 @@ sigmaForm goal setting =
                                   ((drop ((length con) - idInLstFromOld) con) ++ var) 
                                   (M.Just ((reverse con) !! idInLstFromOld))
                                   [A.aType,A.Conclusion DdB.Kind]
-                            in WB.SubGoal goal [] (M.Nothing,M.Nothing)
-                      in (WB.SubGoal ( WB.Goal sig (con ++ var) (M.Just res) [A.aType]) [] (M.Nothing,M.Nothing)):map subgoalForMem [0..((length con)-1)]
+                            in WB.SubGoal goal [] (M.Nothing,M.Nothing) WB.OneProof
+                      in (WB.SubGoal ( WB.Goal sig (con ++ var) (M.Just res) [A.aType]) [] (M.Nothing,M.Nothing) WB.OneProof):map subgoalForMem [0..((length con)-1)]
                 in WB.SubGoalSet QT.SigmaF M.Nothing subgoals (dside,[])
           in return ([subgoalset],"")
         term -> -- if term is M.Nothing or M.Just `not Arrow type`, return WB.TermMisMatch
@@ -795,13 +795,13 @@ eqForm goal setting=
                 let dside = A.AJudgment sig var (A.ArrowEq t a b) arrowType
                     subgoalForT =
                       let goal = WB.Goal sig var (M.Just t) [arrowType]
-                      in WB.SubGoal goal [] (M.Nothing,M.Nothing)
+                      in WB.SubGoal goal [] (M.Nothing,M.Nothing) WB.OneProof
                     subgoalForA =
                       let goal = WB.Goal sig var (M.Just a) [t]
-                      in WB.SubGoal goal [] (M.Nothing,M.Nothing)
+                      in WB.SubGoal goal [] (M.Nothing,M.Nothing) WB.OneProof
                     subgoalForB =
                       let goal = WB.Goal sig var (M.Just b) [t]
-                      in WB.SubGoal goal [] (M.Nothing,M.Nothing)
+                      in WB.SubGoal goal [] (M.Nothing,M.Nothing) WB.OneProof
                 in WB.SubGoalSet QT.IqF M.Nothing [subgoalForT,subgoalForA,subgoalForB] (dside,[])
           in return ([subgoalset],"")
         (term,_) -> -- if term is M.Nothing or M.Just `not Arrow type`, return WB.TermMisMatch
@@ -987,9 +987,11 @@ dne goal setting =
                   ( WB.Goal sig var (M.Just arrowType) [A.aType])
                   []
                   (M.Nothing,M.Nothing)
+                  WB.OneProof
+              -- a premise leaves the rule inside `dne`, where no later subgoal can use it
               subgoal2 = let
                   goal = WB.Goal sig var premiseTerm [A.Arrow [A.Arrow [arrowType] (A.Conclusion DdB.Bot)] (A.Conclusion DdB.Bot)]
-                in WB.SubGoal goal [] (M.Nothing,M.Nothing)
+                in WB.SubGoal goal [] (M.Nothing,M.Nothing) WB.OneProof
             in [WB.SubGoalSet QT.DNE M.Nothing [subgoal1,subgoal2] (dSide,dSideSubstLst)]
         in return (subgoalsets,"")
 
@@ -1012,9 +1014,11 @@ efq goal setting =
                   ( WB.Goal sig var (M.Just arrowType) [A.aType])
                   []
                   (M.Nothing,M.Nothing)
+                  WB.OneProof
+              -- a premise leaves the rule inside `efq`, where no later subgoal can use it
               subgoal2 = let
                   goal = WB.Goal sig var premiseTerm [A.Conclusion DdB.Bot]
-                in WB.SubGoal goal [] (M.Nothing,M.Nothing)
+                in WB.SubGoal goal [] (M.Nothing,M.Nothing) WB.OneProof
             in [WB.SubGoalSet QT.EFQ M.Nothing [subgoal1,subgoal2] (dSide,dSideSubstLst)]
         in return (subgoalsets,"")
 
@@ -1046,10 +1050,10 @@ disjForm goal setting=
                 let dside = A.AJudgment sig var (A.ArrowDisj a b) arrowType
                     subgoalForA =
                       let goal = WB.Goal sig var (M.Just a) [(A.Conclusion DdB.Type)]
-                      in WB.SubGoal goal [] (M.Nothing,M.Nothing)
+                      in WB.SubGoal goal [] (M.Nothing,M.Nothing) WB.OneProof
                     subgoalForB =
                       let goal = WB.Goal sig var (M.Just b) [(A.Conclusion DdB.Type)]
-                      in WB.SubGoal goal [] (M.Nothing,M.Nothing)
+                      in WB.SubGoal goal [] (M.Nothing,M.Nothing) WB.OneProof
                 in WB.SubGoalSet QT.DisjF M.Nothing [subgoalForA,subgoalForB] (dside,[])
           in return ([subgoalset],"")
         term -> -- if term is M.Nothing or M.Just `not Arrow type`, return WB.TermMisMatch
@@ -1070,14 +1074,14 @@ disjIntro goal setting =
                 let subgoalsetForA = 
                       let dSide = A.AJudgment sig var (A.ArrowIota A.ArrowFst m) (A.ArrowDisj a b)
                           goal = WB.Goal sig var (M.Just m) [a]
-                          subgoal = WB.SubGoal goal [] (M.Nothing,M.Nothing)
+                          subgoal = WB.SubGoal goal [] (M.Nothing,M.Nothing) WB.OneProof
                       in WB.SubGoalSet QT.DisjI M.Nothing [subgoal] (dSide,[])
                 in [subgoalsetForA]
               (Just (A.ArrowIota A.ArrowSnd n)) ->
                 let subgoalsetForB = 
                       let dSide = A.AJudgment sig var (A.ArrowIota A.ArrowSnd n) (A.ArrowDisj a b)
                           goal = WB.Goal sig var (M.Just n) [b]
-                          subgoal = WB.SubGoal goal [] (M.Nothing,M.Nothing)
+                          subgoal = WB.SubGoal goal [] (M.Nothing,M.Nothing) WB.OneProof
                       in WB.SubGoalSet QT.DisjI M.Nothing [subgoal] (dSide,[])
                 in [subgoalsetForB]
               _ -> 
@@ -1086,14 +1090,14 @@ disjIntro goal setting =
                           substLst = [WB.SubstSet [] m 0]
                           dSide = A.AJudgment sig var (A.ArrowIota A.ArrowFst m) (A.ArrowDisj a b)
                           goal = WB.Goal sig var M.Nothing [a]
-                          subgoal = WB.SubGoal goal substLst (M.Nothing,M.Nothing)
+                          subgoal = WB.SubGoal goal substLst (M.Nothing,M.Nothing) WB.AllProof
                       in WB.SubGoalSet QT.DisjI M.Nothing [subgoal] (dSide,substLst)
                     subgoalsetForB =
                       let n = WB.generatedTempTerm (sig, A.ArrowDisj a b) (T.pack $ show 0)
                           substLst = [WB.SubstSet [] n 0]
                           dSide = A.AJudgment sig var (A.ArrowIota A.ArrowSnd n) (A.ArrowDisj a b)
                           goal = WB.Goal sig var M.Nothing [b]
-                          subgoal = WB.SubGoal goal substLst (M.Nothing,M.Nothing)
+                          subgoal = WB.SubGoal goal substLst (M.Nothing,M.Nothing) WB.AllProof
                       in WB.SubGoalSet QT.DisjI M.Nothing [subgoal] (dSide,substLst)
                 in [subgoalsetForA,subgoalsetForB]
             in return (subgoalsets,"")
@@ -1120,7 +1124,7 @@ disjElim goal setting =
         then return ([],WB.exitMessage (WB.TermMisMatch maybeTerm) QT.PiE)
         else
           let
-            forwardedTree = WB.trees $ F.forwardContext (WB.enableEq setting) sig var
+            forwardedTree = WB.trees $ F.forwardContext False sig var -- Set enableEq to False to avoid the eqIntro branch for the upper part of the tree.
             usedDisJointLst = WB.usedDisJoint $ WB.sStatus setting
             disjTrees = filter (\tree -> case A.typefromAJudgment $ A.downSide' tree of A.ArrowDisj a b -> (A.ArrowDisj a b) `notElem` usedDisJointLst ; _ -> False) forwardedTree
             disjArrowTrees = filter (\tree -> case A.typefromAJudgment $ A.downSide' tree of A.Arrow c (A.ArrowDisj a b) -> (A.Arrow c (A.ArrowDisj a b)) `notElem` usedDisJointLst; _ -> False) forwardedTree
@@ -1146,7 +1150,7 @@ disjElim goal setting =
                         let
                           mJudgment = A.downSide' tree
                           lpmnGoal = subgoalsForDisj (A.typefromAJudgment mJudgment)
-                        in WB.SubGoalSet QT.DisjE (M.Just tree) (map (\goal -> WB.SubGoal goal [] (M.Nothing,M.Nothing)) lpmnGoal) (dSide,dSideSubstLst)
+                        in WB.SubGoalSet QT.DisjE (M.Just tree) (map (\goal -> WB.SubGoal goal [] (M.Nothing,M.Nothing) (WB.oneProofIfTerm (WB.termFromGoal goal) WB.AllProof)) lpmnGoal) (dSide,dSideSubstLst)
                         )
                       disjTrees
                   subgoalsetDisjArrow =
@@ -1156,7 +1160,7 @@ disjElim goal setting =
                           mArrowJudgment = A.downSide' tree
                           A.Arrow _ mType = A.typefromAJudgment mArrowJudgment
                           lpmnGoal = subgoalsForDisj mType
-                        in WB.SubGoalSet QT.DisjE (M.Just tree) (map (\goal -> WB.SubGoal goal [] (M.Nothing,M.Nothing)) lpmnGoal) (dSide,dSideSubstLst)
+                        in WB.SubGoalSet QT.DisjE (M.Just tree) (map (\goal -> WB.SubGoal goal [] (M.Nothing,M.Nothing) (WB.oneProofIfTerm (WB.termFromGoal goal) WB.AllProof)) lpmnGoal) (dSide,dSideSubstLst)
                         )
                       disjArrowTrees
               in subgoalsetDisj ++ subgoalsetDisjArrow
