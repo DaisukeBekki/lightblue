@@ -49,6 +49,8 @@ Set the permission of the shell scripts `lightblue` to executable.
 $ chmod 755 lightblue
 ```
 
+If you use the lexical oracle (`--enableOracle`), run `scripts/fetch-oracle-embedding.sh` to download `Embedding.csv` into `$LIGHTBLUE/data/`.
+
 ## Running lightblue
 ### Quick Start
 
@@ -129,6 +131,8 @@ The global options are common to all commands.
 |```--noInference```                              |          |If specified, execute no inference for each discourse.|
 |```--time```                                     |          |Show the execution time in stderr.|
 |```--verbose```                                  |          |Show type infer/check logs in stderr.|
+|```--enableOracle```                             |          |Enable the lexical oracle in proof search.|
+|```--oracleEmbedding <filepath>```               |```$LIGHTBLUE/data/Embedding.csv```|Specify path to Oracle `Embedding.csv`.|
 
 |Specific Options for ```express```                      |Default   |Description                           |
 |:-------------------------------------------------|:---------|:-------------------------------------|
