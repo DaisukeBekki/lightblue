@@ -821,15 +821,23 @@ askOracle goal setting =
               -- In the Σ case, arg1 must be the bound variable (Var 0) and must not occur in the other
               -- arguments; the other arguments (at least one) must match those of the context predicate
               -- after removing the binder, while the context predicate's arg1 may be anything.
+              -- For non-Σ negative goals (such as `¬#人間(x)` or `¬#人間(e, x)` in anaphora resolution),
+              -- also allow matching a 1-arg goal `[x]` against a 2-arg context predicate `[_, x]`.
               argsMatch targetLst' =
-                if not sigmaBound
-                  then targetLst' == targetLst
-                  else case (targetLst, targetLst') of
+                if sigmaBound
+                  then case (targetLst, targetLst') of
                     (A.Conclusion (DdB.Var 0) : rest, _ : rest') ->
                       not (null rest)
                       && not (any (A.thereIsVar 0) rest)
                       && map (\t -> A.shiftIndices t 0 0) rest' == map (\t -> A.shiftIndices t (-1) 0) rest
                     _ -> False
+                  else targetLst' == targetLst
+                    || (negative && case (targetLst, targetLst') of
+                          ([arg], [_, arg']) -> arg' == arg
+                          _ -> False)
+              normalizePredName name =
+                let base = T.takeWhile (/= '/') (T.dropWhile (`elem` ("#＃" :: String)) name)
+                in if T.null base then name else base
           in case (shoudBeConForBig,null targetLst) of
               (A.Conclusion (DdB.Con big),False) ->
                   let 
@@ -842,7 +850,8 @@ askOracle goal setting =
                             case shouldBeConForSmall of
                               A.Conclusion (DdB.Con small) -> {--D.trace ("askOracle" ++" target : "++(show target)++" "++(show target')++" "++"small : "++(show small)++ " big :" ++(show big)) $--} 
                                 if argsMatch targetLst' 
-                                  then let score = oracleFun small big
+                                  then let rawScore = oracleFun small big
+                                           score = if rawScore > 0 then rawScore else oracleFun (normalizePredName small) (normalizePredName big)
                                        -- oracleBuilder uses 0 for unknown words. Do not treat those as negative.
                                        in return $ if negative then score > 0 && score <= WB.oracleThreshold setting
                                                                else score > WB.oracleThreshold setting
