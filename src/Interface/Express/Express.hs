@@ -21,9 +21,9 @@ import qualified DTS.NaturalLanguageInference as NLI
 import Text.Julius (juliusFile)
 import  Text.Cassius (cassiusFile)
 import System.Process (callCommand)
-import Control.Concurrent (forkIO, threadDelay)
+import Control.Concurrent (forkIO, threadDelay, myThreadId, ThreadId)
 import System.IO (hPutStrLn, stderr)
-import Control.Exception (catch, IOException, try, SomeException)
+import Control.Exception (catch, IOException, try, SomeException, throwTo)
 import System.Info (os)
 import Data.IORef(IORef, readIORef, atomicWriteIORef, newIORef, atomicModifyIORef')
 import System.IO.Unsafe (unsafePerformIO)
@@ -34,6 +34,7 @@ import qualified Parser.Language.Japanese.Lexicon as JP (setupLexicon)
 import qualified Parser.PartialParsing as Partial
 import qualified Data.Map as M
 import System.Environment (lookupEnv)
+import System.Exit (exitSuccess, ExitCode(..))
 import Text.Read (readMaybe)
 import qualified Data.Store as Store
 import qualified Data.ByteString as BS
@@ -256,6 +257,10 @@ currentPSDoneNegRef = unsafePerformIO $ newIORef False
 currentDisplaySettingRef :: IORef WE.DisplaySetting
 currentDisplaySettingRef = unsafePerformIO $ newIORef WE.defaultDisplaySetting
 
+{-# NOINLINE mainThreadIdRef #-}
+mainThreadIdRef :: IORef (Maybe ThreadId)
+mainThreadIdRef = unsafePerformIO $ newIORef Nothing
+
 setDisplaySetting :: WE.DisplaySetting -> IO ()
 setDisplaySetting dsp = atomicWriteIORef currentDisplaySettingRef dsp
 
@@ -299,12 +304,15 @@ mkYesod "App" [parseRoutes|
 /export/sem/text ExportSemTextR GET
 /export/node ExportNodeR GET
 /error ErrorR GET
+/shutdown ShutdownR GET
 |]
 
 instance Yesod App
 
 showExpressInference :: CP.ParseSetting -> QT.Prover -> DTT.Signature -> DTT.Context -> [T.Text] -> IO ()
 showExpressInference ps _prover _signtr _contxt sentences = do
+  tid <- myThreadId
+  atomicWriteIORef mainThreadIdRef (Just tid)
   -- 環境変数から表示設定を読み込み、反映
   applyEnvDisplayOptions
 
@@ -613,7 +621,8 @@ getInferenceR = do
                               <button .btn .btn-run data-sidx=#{sidx} onclick="startTypecheck(this)">typecheck
                             $else
                               <button .btn .btn-run .is-disabled aria-disabled=true data-disabled=1 data-sidx=#{sidx} title="前文のTypeCheckDiagramを選択してください。">typecheck
-                          ^{WE.widgetizeWith dsp node}
+                          <div class="tab-node-content">
+                            <div .tab-node-inner>^{WE.widgetizeWith dsp node}
                           <div .inf-node-tc .tc-holder>
                     $if not (snDone sp)
                       <div .span-preview-loading>loading...
@@ -669,7 +678,8 @@ getInfColR = do
                       <button .btn .btn-run data-sidx=#{sIdx} onclick="startTypecheck(this)">typecheck
                     $else
                       <button .btn .btn-run .is-disabled aria-disabled=true data-disabled=1 data-sidx=#{sIdx} title="前文のTypeCheckDiagramを選択してください。">typecheck
-                  ^{WE.widgetizeWith dsp node}
+                  <div class="tab-node-content">
+                    <div .tab-node-inner>^{WE.widgetizeWith dsp node}
                   <div .inf-node-tc .tc-holder>
             |]
         when (not $ snDone sp) $
@@ -679,6 +689,8 @@ getInfColR = do
 -- printExpressInterface を showExpress に変更し、ParseResult を引数に取る
 showExpress :: NLI.ParseResult -> IO ()
 showExpress initialParseResult = do
+  tid <- myThreadId
+  atomicWriteIORef mainThreadIdRef (Just tid)
   -- 初期ParseResultをIORefに保存
   atomicWriteIORef currentParseResultRef (Just initialParseResult)
 
@@ -757,6 +769,14 @@ getErrorR = do
         <p>Invalid request
     |]
 
+getShutdownR :: Handler Html
+getShutdownR = do
+  mTid <- liftIO $ readIORef mainThreadIdRef
+  case mTid of
+    Just tid -> liftIO $ forkIO (threadDelay 100000 >> throwTo tid ExitSuccess) >> return ()
+    Nothing  -> return ()
+  defaultLayout $ return ()
+
 getParsingR :: Handler Html
 getParsingR = do
      -- IORef から ParseResult を読み込む
@@ -818,6 +838,7 @@ getParsingR = do
                     <div class="toggle-group">
                       <label for="cat-toggle" id="catbtn" class="toggle">cat
                       <label for="sem-toggle" id="sembtn" class="toggle">sem
+                      <a href=@{ShutdownR} class="btn-shutdown">終了</a>
 
                 <input type="checkbox" id="cat-toggle" :catChecked:checked/>
                 <input type="checkbox" id="sem-toggle" :semChecked:checked/>
@@ -1237,10 +1258,18 @@ getProofQueryR = do
     Nothing -> defaultLayout [whamlet|<pre>loading...</pre>|]
     Just psq -> do
       -- Convert deBruijn to with-name for display
-      let psqWN = DWN.fromDeBruijnProofSearchQuery psq
+      let psqWN@(DWN.ProofSearchQuery sigWN _ _) = DWN.fromDeBruijnProofSearchQuery psq
+          kindT = maybe "pos" id mk
       defaultLayout $ do
         [whamlet|
           <div class="tab-tcq-content-inference">^{WE.widgetizeWith dsp psqWN}
+          <div .ps-sig>
+            <button type="button" .btn id="ps-sig-btn-#{kindT}" onclick="toggleSignature('#{kindT}')">Show Signature
+            <div .ps-sig-body id="ps-sig-body-#{kindT}" style="display: none">
+              $if null sigWN
+                <span .ps-sig-empty>(empty)
+              $else
+                <div class="tab-tcq-content-inference">^{WE.widgetizeWith dsp sigWN}
         |]
 
 -- Start proving (pos/neg) lazily after /proofsearch renders

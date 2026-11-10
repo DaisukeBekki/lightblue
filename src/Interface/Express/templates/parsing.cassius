@@ -45,6 +45,21 @@
 #parsing-view.hidden-sem .semhide
   display: none;
 
+.btn-shutdown
+  cursor: pointer
+  background: #b71c1c
+  color: #ffffff
+  border: none
+  padding: 6px 12px
+  border-radius: 9999px
+  font-weight: bold
+  font-size: 0.9rem
+  text-decoration: none
+  margin-left: 8px
+.btn-shutdown:hover
+  background: #d32f2f
+  color: #ffffff
+
 /* Header area (parsing view) */
 .header 
   background-color: #002b5c;

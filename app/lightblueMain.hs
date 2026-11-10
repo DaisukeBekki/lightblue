@@ -358,7 +358,7 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
             Nothing             -> return ()
         _ -> return ()
       S.hPutStrLn handle $ I.headerOf style
-      PPR.printParseResult handle style 1 noTypeCheck posTagOnly "input" parseResult
+      _ <- PPR.printParseResult handle style 1 noTypeCheck posTagOnly "input" parseResult
       S.hPutStrLn handle $ I.footerOf style
     --
     -- | JSeM command

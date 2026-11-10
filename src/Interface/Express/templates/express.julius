@@ -31,6 +31,16 @@ function toggle(id){
             }
 };
 
+// Toggle signature visibility on ProofSearch query cards
+function toggleSignature(kind){
+  const body = document.getElementById('ps-sig-body-' + kind);
+  const btn = document.getElementById('ps-sig-btn-' + kind);
+  if (!body || !btn) return;
+  const show = body.style.display === 'none';
+  body.style.display = show ? 'block' : 'none';
+  btn.textContent = show ? 'Hide Signature' : 'Show Signature';
+}
+
 // Toggle label active state for cat/sem controls in header
 function initToggleButtons() {
   const cat = document.getElementById('cat-toggle');
@@ -284,7 +294,11 @@ function renderSpanPreviews(nodes, ctx) {
         return r.text();
       })
       .then(html => {
+        const scoreEl = document.createElement('div');
+        scoreEl.className = 'node-score';
+        scoreEl.textContent = `score: ${n.score}`;
         item.innerHTML = html;
+        item.insertBefore(scoreEl, item.firstChild);
         // ID 衝突回避のため、プレビュー内のトグル用IDをインデックスでユニーク化
         sanitizePreviewIds(item, idx);
       })
@@ -488,7 +502,7 @@ function highlightSpanPreview(index) {
     holder = document.createElement('div');
     holder.id = 'inf-precompute-status';
     holder.className = 'inf-precompute-status';
-    holder.innerHTML = '<span id="inf-precompute-text">Precompute: starting...</span> <span id="inf-outcome" class="ps-outcome ps-outcome-pending">Searching...</span>';
+    holder.innerHTML = '<span><span id="inf-precompute-text">Precompute: starting...</span> <span id="inf-outcome" class="ps-outcome ps-outcome-pending">Searching...</span></span><a href="/shutdown" class="btn-shutdown">終了</a>';
     grid.parentElement && grid.parentElement.insertBefore(holder, grid);
   }
   async function tick() {

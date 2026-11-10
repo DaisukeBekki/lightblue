@@ -111,13 +111,16 @@
   color: #0b4ea2
   border-radius: 6px
   font-size: 0.9rem
+  display: flex
+  align-items: center
+  justify-content: space-between
 .inf-head-title
   display: inline-block
 .inf-head-actions .btn
   margin-left: 8px
 .inf-col-body
   flex: 1
-  overflow-y: auto
+  overflow: auto
   padding: 8px 10px
 .inf-node-item
   margin: 0 0 12px 0
