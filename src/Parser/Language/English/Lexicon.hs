@@ -75,7 +75,8 @@ terminator = UDTT.Ann (UDTT.Lam UDTT.Top) (DTT.Pi DTT.Entity DTT.Type)
 fromNLTKtoCCG :: NLTKword -> [Node]
 fromNLTKtoCCG (NLTKword word pos) = case (word,pos) of
   (w,"NNP") -> mylex [w] "NNP" (NP []) (properNameSR w)
-  ("she","PRP") -> mylex ["she"] "PRP" (NP []) ((Proj Fst (Asp (Sigma Entity (Sigma Entity (App (App (Con "woman") (Var 1)) (Var 0)))))), [("woman", DTT.Pi DTT.Entity DTT.Type)])
+  --("she","PRP") -> mylex ["she"] "PRP" (NP []) ((Proj Fst (Asp (Sigma Entity (Sigma Entity (App (App (Con "woman") (Var 1)) (Var 0)))))), [("woman", DTT.Pi DTT.Entity DTT.Type)]) -- underspecified term
+  ("she","PRP") -> mylex ["she"] "PRP" (T True 1 modifiableS `SL` (T True 1 modifiableS `BS` NP [F[Nc]])) ((Lam (Lamvec (Asp (Sigma Entity (Sigma Entity (App (App (Con "woman") (Var 1)) (Var 0)))) (Appvec 1 (App (Var 2) (Proj Fst (Var 0))))))), [("woman", DTT.Pi DTT.Entity (DTT.Pi DTT.Entity DTT.Type))]) -- underspecified type
   --NP [] -- john
   ("A","DT") -> mylex ["a"] "DT" ((S [] `SL` (S [] `BS` NP [])) `SL` N) ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[])
   ("a","DT") -> mylex ["a"] "DT" ((S [] `SL` (S [] `BS` NP [])) `SL` N) ((Lam (Lam (Lamvec (Sigma (Sigma Entity (App (App (Var 3) (Var 0)) terminator)) (Appvec 1 (App (Var 2) (Proj Fst (Var 0)))))))),[])
