@@ -943,5 +943,10 @@ myLexicon = concat $ [
   mylex ["☎"] "PN" (NP [F[Nc]]) (properNameSR "電話番号"),
   -- ABCbank
   mylex ["ところ"] "(ABC)" (defS [Nda,Nni,Nemp] [NStem] `BS` S [F anyPos,F[Attr],F[P,M],F[M],F[P,M],F[M],F[M]]) (modalSR "＃トコロ"),
-  mylex ["イエス"] "PN" (NP [F[Nc]]) (properNameSR "イエス")
+  mylex ["イエス"] "PN" (NP [F[Nc]]) (properNameSR "イエス"),
+  -- Sakuma
+  verblex ["思","おも"] "Sakuma" [V5w] [Stem] "思う/おもう" "ガヲ" event,
+  verblex ["描","えが"] "Sakuma" [V5k] [Stem] "描く/えがく" "ガヲ" event,
+  verblex ["振","ふ"] "Sakuma" [V5r] [Stem] "振る/ふる" "ガヲ" event,
+  verblex ["明か","あか"] "Sakuma" [V5s] [Stem] "明かす/あかす" "ガヲ" event
   ]
