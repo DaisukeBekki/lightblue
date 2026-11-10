@@ -26,3 +26,4 @@ config.yaml
 dist-newstyle
 
 client_session_key.aes
+data/
