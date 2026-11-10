@@ -805,12 +805,31 @@ askOracle goal setting =
             case WB.acceptableType QT.Con goal False [] of
         (Just appTerm,_) -> 
           let (sig,var) = WB.conFromGoal goal
-              unsnoc lst = case lst of [] -> M.Nothing; lst -> M.Just (init lst, last lst) 
+              unsnoc lst = case lst of [] -> M.Nothing; lst' -> M.Just (init lst', last lst') 
               disassemble t = maybe ([],A.aType) id (unsnoc $ A.termsInAppTerm t)  -- If `term` is not an AppTerm, we fall back to a dummy `( [], aType )`. This dummy value is safe because the empty `targetLst` is immediately rejected by the `null targetLst` guard below, so `aType` is never semantically observed.
-              (negative, target) = case appTerm of
-                A.Arrow [inner] (A.Conclusion DdB.Bot) | WB.enableNegativeOracle setting -> (True, inner)
-                _ -> (False, appTerm)
+              (negative, sigmaBound, target) = case appTerm of
+                A.Arrow [inner] (A.Conclusion DdB.Bot) | WB.enableNegativeOracle setting ->
+                  case A.arrowNotat inner of
+                    -- ¬(x:entity)✕B(x,args), as produced from sentences such as 「太郎は猫ではない」
+                    A.ArrowSigma' [boundType] body | boundType == A.dt2Arrow DdB.Entity -> (True, True, body)
+                    A.ArrowSigma' [body, boundType] (A.Conclusion DdB.Top) | boundType == A.dt2Arrow DdB.Entity -> (True, True, body)
+                    _ -> (True, False, inner)
+                _ -> (False, False, appTerm)
               (targetLst,shoudBeConForBig) = disassemble target
+              -- targetLst holds the arguments in reverse application order: [arg1, ..., argN]
+              -- where arg1 is the innermost argument (e.g. Var 0 in `((猫 太郎) 0)` -> targetLst = [0, 太郎]).
+              -- In the Σ case, arg1 must be the bound variable (Var 0) and must not occur in the other
+              -- arguments; the other arguments (at least one) must match those of the context predicate
+              -- after removing the binder, while the context predicate's arg1 may be anything.
+              argsMatch targetLst' =
+                if not sigmaBound
+                  then targetLst' == targetLst
+                  else case (targetLst, targetLst') of
+                    (A.Conclusion (DdB.Var 0) : rest, _ : rest') ->
+                      not (null rest)
+                      && not (any (A.thereIsVar 0) rest)
+                      && map (\t -> A.shiftIndices t 0 0) rest' == map (\t -> A.shiftIndices t (-1) 0) rest
+                    _ -> False
           in case (shoudBeConForBig,null targetLst) of
               (A.Conclusion (DdB.Con big),False) ->
                   let 
@@ -822,7 +841,7 @@ askOracle goal setting =
                           in
                             case shouldBeConForSmall of
                               A.Conclusion (DdB.Con small) -> {--D.trace ("askOracle" ++" target : "++(show target)++" "++(show target')++" "++"small : "++(show small)++ " big :" ++(show big)) $--} 
-                                if targetLst' == targetLst 
+                                if argsMatch targetLst' 
                                   then let score = oracleFun small big
                                        -- oracleBuilder uses 0 for unknown words. Do not treat those as negative.
                                        in return $ if negative then score > 0 && score <= WB.oracleThreshold setting
