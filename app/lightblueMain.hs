@@ -46,7 +46,7 @@ import qualified JSeM as JSeM                         --jsem
 import qualified ML.Exp.Classification.Bounded as NLP --nlp-tools
 import qualified DTS.Prover.Oracle.Oracle as Oracle
 
-data Options = Options Lang Command I.Style NLI.ProverName FilePath Int Int Int Int Int Int Bool Bool Bool Bool (Maybe Int) Bool Bool Bool (Maybe ExpressBrowser) (Maybe LexicalPos) Bool Bool
+data Options = Options Lang Command I.Style NLI.ProverName FilePath Int Int Int Int Int Int Bool Bool Bool Bool (Maybe Int) Bool Bool Bool (Maybe ExpressBrowser) (Maybe LexicalPos) Bool (Maybe FilePath) Bool
 
 data Command =
   Parse I.ParseOutput
@@ -258,6 +258,10 @@ optionParser =
     <*> switch 
       ( long "enableOracle"
       <> help "Enable Oracle if specified" )
+    <*> optional (strOption
+      ( long "oracleEmbedding"
+      <> metavar "FILEPATH"
+      <> help "Specify path to Oracle Embedding.csv (default: $LIGHTBLUE/data/Embedding.csv)" ))
     <*> switch
       ( long "enableNegativeOracle"
       <> help "Experimentally treat low oracle scores as negative evidence (requires --enableOracle)" )
@@ -302,7 +306,7 @@ main = customExecParser p opts >>= lightblueMain
         p = prefs showHelpOnEmpty
 
 lightblueMain :: Options -> IO ()
-lightblueMain (Options lang commands style proverName filepath beamW nParse nTypeCheck nProof maxDepth maxTime noTypeCheck noInference ifTime verbose mDepth noShowCat noShowSem leafVertical mExpressBrowser mLexPos enableOracle enableNegativeOracle) = do
+lightblueMain (Options lang commands style proverName filepath beamW nParse nTypeCheck nProof maxDepth maxTime noTypeCheck noInference ifTime verbose mDepth noShowCat noShowSem leafVertical mExpressBrowser mLexPos enableOracle mOracleEmbedding enableNegativeOracle) = do
   start <- Time.getCurrentTime
   langOptions <- case lang of
                    JP morphaName filterName -> do
@@ -334,7 +338,7 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
     -- |
     lightblueMainLocal (Parse output) parseSetting contents = do
       maybeOracle <- if enableOracle
-                then Just <$> Oracle.oracleBuilder
+                then Just <$> Oracle.oracleBuilder mOracleEmbedding
                 else return Nothing
       let handle = S.stdout
           prover = NLI.getProver proverName $ QT.defaultProofSearchSetting {
@@ -377,7 +381,7 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
     -- 
     lightblueMainLocal (JSeM jsemID nSample) parseSetting contents = do
       maybeOracle <- if enableOracle
-                then Just <$> Oracle.oracleBuilder
+                then Just <$> Oracle.oracleBuilder mOracleEmbedding
                 else return Nothing
       parsedJSeM <- J.xml2jsemData $ T.toStrict contents
       let parsedJSeM'

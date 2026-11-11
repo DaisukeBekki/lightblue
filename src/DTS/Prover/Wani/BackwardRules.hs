@@ -851,7 +851,9 @@ askOracle goal setting =
                               A.Conclusion (DdB.Con small) -> {--D.trace ("askOracle" ++" target : "++(show target)++" "++(show target')++" "++"small : "++(show small)++ " big :" ++(show big)) $--} 
                                 if argsMatch targetLst' 
                                   then let rawScore = oracleFun small big
-                                           score = if rawScore > 0 then rawScore else oracleFun (normalizePredName small) (normalizePredName big)
+                                           score = if not negative || rawScore > 0
+                                                     then rawScore
+                                                     else oracleFun (normalizePredName small) (normalizePredName big)
                                        -- oracleBuilder uses 0 for unknown words. Do not treat those as negative.
                                        in return $ if negative then score > 0 && score <= WB.oracleThreshold setting
                                                                else score > WB.oracleThreshold setting
