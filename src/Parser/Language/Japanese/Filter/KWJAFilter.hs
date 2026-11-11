@@ -43,9 +43,42 @@ kwjaFilter text = do
     lb <- getEnv "LIGHTBLUE"
     katuyoulist <- JK.parseKatuyouFromPath $ concat [lb,"src/Parser/Language/Japanese/Juman/JUMAN.katuyou"]
     let conjmap = KF.getConjMap katuyoulist
+        commonNounSpans = getCommonNounSpans text kwjaDatas
         -- openWordsMap = getOpenWordsMap kwjaDatas conjmap
-        filterNode = createFilterFrom text kwjaDatas conjmap
+        filterNode = createFilterFrom text kwjaDatas conjmap commonNounSpans
     return filterNode
+
+-- | KWJAが普通名詞と分析した語の、文中での位置 (開始, 終了) を求める
+-- | 表層形を文頭から順に探して位置を決めるので、同じ表層形が文中の別の場所にあっても区別できる
+getCommonNounSpans :: TL.Text -> [KW.KWJAData] -> [(Int, Int)]
+getCommonNounSpans text = go 0
+  where
+    sentence = TL.toStrict text
+    go _ [] = []
+    go offset (KW.Juman (J.JumanWord surface _ _ hinsi _ bunrui _ _ _ _ _ _) : rest)
+        | T.null surface = go offset rest
+        | otherwise = case T.breakOn surface (T.drop offset sentence) of
+            -- 表層形が見つからない場合（KWJAが文字を正規化した場合など）は位置を進めない
+            (_, unmatched) | T.null unmatched -> go offset rest
+            (skipped, _) ->
+                let start = offset + T.length skipped
+                    end = start + T.length surface
+                in if hinsi == "名詞" && bunrui == "普通名詞"
+                     then (start, end) : go end rest
+                     else go end rest
+    go offset (_ : rest) = go offset rest
+
+-- | KWJAが普通名詞と分析したスパンで、同じ表層形の普通名詞(N)と固有名詞(PN)の
+-- | エントリーが両方ある場合、固有名詞のエントリーを除く
+filterProperNames :: [(Int, Int)] -> Int -> Int -> [CCG.Node] -> [CCG.Node]
+filterProperNames commonNounSpans i j nodes
+    | (i, j) `notElem` commonNounSpans = nodes
+    | otherwise = filter (not . isShadowedPN) nodes
+  where
+    commonNounForms = [CCG.pf n | n <- nodes, CCG.rs n == CCG.LEX, CCG.cat n == CCG.N]
+    isShadowedPN n = CCG.rs n == CCG.LEX
+                     && CCG.source n == "(PN)"
+                     && CCG.pf n `elem` commonNounForms
 
 getKWJAargs :: Maybe [KW.Arg] -> [T.Text]
 getKWJAargs args = case args of
@@ -84,6 +117,8 @@ createFilterFrom ::
     TL.Text -> 
     [KW.KWJAData] ->
     ConjMap ->
+    -- | spans that KWJA analyzed as common nouns
+    [(Int, Int)] ->
     -- | starting index of the span
     Int ->
     -- | ending index of the span
@@ -92,17 +127,19 @@ createFilterFrom ::
     [CCG.Node] ->
     -- | output nodes (filtered)
     [CCG.Node]
-createFilterFrom text kwjaDatas conjMap i j ccgNodes =
+createFilterFrom text kwjaDatas conjMap commonNounSpans i j ccgNodes =
     -- kwjaDataから、名詞、動詞、副詞、助詞の表層形を取得
     let openWords = getOpenWordsMap kwjaDatas conjMap
+        -- 普通名詞と分析されたスパンでは固有名詞のエントリーを除く
+        pnFilteredNodes = filterProperNames commonNounSpans i j ccgNodes
     -- 最後のマスのインデックスを取得
         startIndex = fromIntegral (TL.length text - 1)
         endIndex = fromIntegral $ TL.length text
-    in 
+    in
         -- i j が 最後のマスのときは動詞語幹をフィルターアウト
         if (i,j) == (startIndex, endIndex)
-            then createFilterFrom' openWords (filterStemEndParse ccgNodes)
-        else createFilterFrom' openWords ccgNodes
+            then createFilterFrom' openWords (filterStemEndParse pnFilteredNodes)
+        else createFilterFrom' openWords pnFilteredNodes
 
 
 filterStemEndParse :: [CCG.Node] -> [CCG.Node]
@@ -127,7 +164,7 @@ createFilterFrom' :: OpenWordsMap -> [CCG.Node] -> [CCG.Node]
 createFilterFrom' _ [] = []
 createFilterFrom' openWordsMap (c : cs)
     -- フィルターする対象がない場合
-    | M.null openWordsMap = cs
+    | M.null openWordsMap = c:cs
     -- LEX以外はそのまま
     | CCG.rs c /= CCG.LEX =
         c : createFilterFrom' openWordsMap cs
@@ -256,7 +293,8 @@ getOpenWordsMap kwjas conjmap =
 getOpenWords :: [KW.KWJAData] -> ConjMap -> [(T.Text, (T.Text, [T.Text]))]
 getOpenWords kwjaData conjmap = case kwjaData of
     [] -> []
-    (KW.Juman (J.EOS)) : _ -> []
+    -- 2文以上の場合、1文目のEOSのあと2文目で再帰する
+    (KW.Juman (J.EOS)) : xs -> getOpenWords xs conjmap
     -- knpNodeかつ後ろが動詞のときは、語幹と格フレームを取得
     (KW.KWJA kwjanode) : (x : x2 : xs) ->
         -- 複合動詞の場合

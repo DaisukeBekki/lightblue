@@ -81,12 +81,12 @@ prove' QT.ProofSearchSetting{..} (DdB.ProofSearchQuery sig ctx typ) =  -- LiftT 
         WB.maxtime = case maxTime of
                         Just t -> t
                         Nothing -> 100000,
-        WB.debug = -1,
-        WB.sStatus = WB.statusDef,
+        WB.debug = 1,
+        WB.sStatus = WB.statusDef{WB.allProof=True},
         WB.oracle = oracle,
         WB.oracleThreshold=0.5,
         WB.enableNegativeOracle=enableNegativeOracle,
-        WB.enableEq = True,
+        WB.enableEq = enableEquality,
         WB.enableConcurrent = True
         };
       ioResult = hojo ctx ((A.aEntityName,DdB.Type):sig) typ setting (M.maybe Nothing (\t -> M.Just $ toEnum (t * (10^9))) maxTime)
