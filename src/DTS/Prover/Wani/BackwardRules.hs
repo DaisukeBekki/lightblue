@@ -805,9 +805,39 @@ askOracle goal setting =
             case WB.acceptableType QT.Con goal False [] of
         (Just appTerm,_) -> 
           let (sig,var) = WB.conFromGoal goal
-              unsnoc lst = case lst of [] -> M.Nothing; lst -> M.Just (init lst, last lst) 
+              unsnoc lst = case lst of [] -> M.Nothing; lst' -> M.Just (init lst', last lst') 
               disassemble t = maybe ([],A.aType) id (unsnoc $ A.termsInAppTerm t)  -- If `term` is not an AppTerm, we fall back to a dummy `( [], aType )`. This dummy value is safe because the empty `targetLst` is immediately rejected by the `null targetLst` guard below, so `aType` is never semantically observed.
-              (targetLst,shoudBeConForBig) = disassemble appTerm
+              (negative, sigmaBound, target) = case appTerm of
+                A.Arrow [inner] (A.Conclusion DdB.Bot) | WB.enableNegativeOracle setting ->
+                  case A.arrowNotat inner of
+                    -- ¬(x:entity)✕B(x,args), as produced from sentences such as 「太郎は猫ではない」
+                    A.ArrowSigma' [boundType] body | boundType == A.dt2Arrow DdB.Entity -> (True, True, body)
+                    A.ArrowSigma' [body, boundType] (A.Conclusion DdB.Top) | boundType == A.dt2Arrow DdB.Entity -> (True, True, body)
+                    _ -> (True, False, inner)
+                _ -> (False, False, appTerm)
+              (targetLst,shoudBeConForBig) = disassemble target
+              -- targetLst holds the arguments in reverse application order: [arg1, ..., argN]
+              -- where arg1 is the innermost argument (e.g. Var 0 in `((猫 太郎) 0)` -> targetLst = [0, 太郎]).
+              -- In the Σ case, arg1 must be the bound variable (Var 0) and must not occur in the other
+              -- arguments; the other arguments (at least one) must match those of the context predicate
+              -- after removing the binder, while the context predicate's arg1 may be anything.
+              -- For non-Σ negative goals (such as `¬#人間(x)` or `¬#人間(e, x)` in anaphora resolution),
+              -- also allow matching a 1-arg goal `[x]` against a 2-arg context predicate `[_, x]`.
+              argsMatch targetLst' =
+                if sigmaBound
+                  then case (targetLst, targetLst') of
+                    (A.Conclusion (DdB.Var 0) : rest, _ : rest') ->
+                      not (null rest)
+                      && not (any (A.thereIsVar 0) rest)
+                      && map (\t -> A.shiftIndices t 0 0) rest' == map (\t -> A.shiftIndices t (-1) 0) rest
+                    _ -> False
+                  else targetLst' == targetLst
+                    || (negative && case (targetLst, targetLst') of
+                          ([arg], [_, arg']) -> arg' == arg
+                          _ -> False)
+              normalizePredName name =
+                let base = T.takeWhile (/= '/') (T.dropWhile (`elem` ("#＃" :: String)) name)
+                in if T.null base then name else base
           in case (shoudBeConForBig,null targetLst) of
               (A.Conclusion (DdB.Con big),False) ->
                   let 
@@ -819,8 +849,14 @@ askOracle goal setting =
                           in
                             case shouldBeConForSmall of
                               A.Conclusion (DdB.Con small) -> {--D.trace ("askOracle" ++" target : "++(show target)++" "++(show target')++" "++"small : "++(show small)++ " big :" ++(show big)) $--} 
-                                if targetLst' == targetLst 
-                                  then return $ (oracleFun small big) > (WB.oracleThreshold setting)
+                                if argsMatch targetLst' 
+                                  then let rawScore = oracleFun small big
+                                           score = if not negative || rawScore > 0
+                                                     then rawScore
+                                                     else oracleFun (normalizePredName small) (normalizePredName big)
+                                       -- oracleBuilder uses 0 for unknown words. Do not treat those as negative.
+                                       in return $ if negative then score > 0 && score <= WB.oracleThreshold setting
+                                                               else score > WB.oracleThreshold setting
                                   else return False
                               _ -> return False
                         )
@@ -830,7 +866,7 @@ askOracle goal setting =
                                         (\tree ->
                                           let
                                             term = A.termfromAJudgment $ A.downSide' tree
-                                          in WB.SubGoalSet QT.Con (M.Just tree) [] (A.AJudgment sig var (A.ArrowApp (A.Conclusion $ DdB.Con "oracle") term) appTerm, [])
+                                          in WB.SubGoalSet QT.Con (M.Just tree) [] (A.AJudgment sig var (A.ArrowApp (A.Conclusion $ DdB.Con (if negative then "oracleNeg" else "oracle")) term) appTerm, [])
                                         )
                                         (L.nub filteredTrees)
                   in subgoalsetsIO >>= \subgoalsets -> return (subgoalsets,"")

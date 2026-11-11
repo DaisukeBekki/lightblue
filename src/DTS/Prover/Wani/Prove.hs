@@ -85,6 +85,7 @@ prove' QT.ProofSearchSetting{..} (DdB.ProofSearchQuery sig ctx typ) =  -- LiftT 
         WB.sStatus = WB.statusDef{WB.allProof=True},
         WB.oracle = oracle,
         WB.oracleThreshold=0.5,
+        WB.enableNegativeOracle=enableNegativeOracle,
         WB.enableEq = enableEquality,
         WB.enableConcurrent = True
         };
