@@ -413,8 +413,7 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
                   ("ap",DTT.Pi DTT.Entity (DTT.Pi DTT.Entity (DTT.Pi (DTT.App (DTT.App (DTT.Con "AP") (DTT.Var 0)) (DTT.Var 1)) (DTT.App (DTT.App (DTT.Con "woman") (DTT.Var 1)) (DTT.Var 2))))), 
                   ("p",DTT.Pi DTT.Entity (DTT.Pi DTT.Entity (DTT.Pi (DTT.App (DTT.App (DTT.Con "professor") (DTT.Var 0)) (DTT.Var 1)) (DTT.App (DTT.App (DTT.Con "woman") (DTT.Var 1)) (DTT.Var 2)))))
                   ] [] sentences
-            PPR.printParseResult handle style 1 noTypeCheck False title parseResult
-            inferenceLabels <- toList $ NLI.trawlParseResult parseResult
+            inferenceLabels <- PPR.printParseResult handle style 1 noTypeCheck False title parseResult
             let groundTruth = J.jsemLabel2YesNo $ J.answer j
                 prediction = case inferenceLabels of
                   [] -> J.Other
