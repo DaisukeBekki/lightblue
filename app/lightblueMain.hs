@@ -46,7 +46,7 @@ import qualified JSeM as JSeM                         --jsem
 import qualified ML.Exp.Classification.Bounded as NLP --nlp-tools
 import qualified DTS.Prover.Oracle.Oracle as Oracle
 
-data Options = Options Lang Command I.Style NLI.ProverName FilePath Int Int Int Int Int Int Bool Bool Bool Bool (Maybe Int) Bool Bool Bool (Maybe ExpressBrowser) (Maybe LexicalPos) Bool (Maybe FilePath)
+data Options = Options Lang Command I.Style NLI.ProverName FilePath Int Int Int Int Int Int Bool Bool Bool Bool (Maybe Int) Bool Bool Bool (Maybe ExpressBrowser) (Maybe LexicalPos) Bool (Maybe FilePath) Bool
 
 data Command =
   Parse I.ParseOutput
@@ -262,6 +262,9 @@ optionParser =
       ( long "oracleEmbedding"
       <> metavar "FILEPATH"
       <> help "Specify path to Oracle Embedding.csv (default: $LIGHTBLUE/data/Embedding.csv)" ))
+    <*> switch
+      ( long "enableNegativeOracle"
+      <> help "Experimentally treat low oracle scores as negative evidence (requires --enableOracle)" )
 
 parseOptionParser :: Parser Command
 parseOptionParser = Parse
@@ -303,7 +306,7 @@ main = customExecParser p opts >>= lightblueMain
         p = prefs showHelpOnEmpty
 
 lightblueMain :: Options -> IO ()
-lightblueMain (Options lang commands style proverName filepath beamW nParse nTypeCheck nProof maxDepth maxTime noTypeCheck noInference ifTime verbose mDepth noShowCat noShowSem leafVertical mExpressBrowser mLexPos enableOracle mOracleEmbedding) = do
+lightblueMain (Options lang commands style proverName filepath beamW nParse nTypeCheck nProof maxDepth maxTime noTypeCheck noInference ifTime verbose mDepth noShowCat noShowSem leafVertical mExpressBrowser mLexPos enableOracle mOracleEmbedding enableNegativeOracle) = do
   start <- Time.getCurrentTime
   langOptions <- case lang of
                    JP morphaName filterName -> do
@@ -341,7 +344,8 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
           prover = NLI.getProver proverName $ QT.defaultProofSearchSetting {
             QT.maxDepth = (Just maxDepth),
             QT.maxTime = (Just maxTime),
-            QT.oracle = maybeOracle
+            QT.oracle = maybeOracle,
+            QT.enableNegativeOracle = enableNegativeOracle
             }
           parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] $ T.lines contents
           posTagOnly = case output of 
@@ -390,7 +394,8 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
           prover = NLI.getProver proverName $ QT.defaultProofSearchSetting {
             QT.maxDepth = Just maxDepth, 
             QT.maxTime = Just maxTime,
-            QT.oracle = maybeOracle
+            QT.oracle = maybeOracle,
+            QT.enableNegativeOracle = enableNegativeOracle
             }
       case style of
         I.EXPRESS -> do

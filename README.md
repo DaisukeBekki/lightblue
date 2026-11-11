@@ -133,6 +133,11 @@ The global options are common to all commands.
 |```--verbose```                                  |          |Show type infer/check logs in stderr.|
 |```--enableOracle```                             |          |Enable the lexical oracle in proof search.|
 |```--oracleEmbedding <filepath>```               |```$LIGHTBLUE/data/Embedding.csv```|Specify path to Oracle `Embedding.csv`.|
+|```--enableNegativeOracle```                     |          |Experimental. Treat low oracle scores as negative evidence (requires ```--enableOracle```). See the note below.|
+
+**Experimental negative oracle.** `--enableOracle --enableNegativeOracle` enables a provisional rule for negative goals. When an existing context predicate has matching arguments, the rule queries the existing oracle and accepts a positive score at or below its threshold as negative evidence. Zero is excluded because the bundled oracle uses zero for unknown words. With no flag, negative oracle reasoning is disabled; positive oracle behavior is unchanged.
+
+This is an experiment, not a logically reliable disjointness classifier: a low inclusion score does not imply disjointness. `oracleNeg` marks the generated proof term in the same manner as the existing `oracle` term; independent type checking and end-to-end anaphora evaluation remain to be checked.
 
 |Specific Options for ```express```                      |Default   |Description                           |
 |:-------------------------------------------------|:---------|:-------------------------------------|
