@@ -46,6 +46,12 @@ jobs:
           key: stack-${{ runner.os }}-${{ hashFiles('stack.yaml', 'package.yaml') }}
           restore-keys: stack-${{ runner.os }}-
 
-      # The existing tests do not compile yet, so only the library and executables are built.
-      - name: Build
-        run: stack build
+      # Build the library, the executables and the test suites (without running them),
+      # so that every test suite at least compiles on both platforms.
+      - name: Build (incl. test suites)
+        run: stack build --test --no-run-tests
+
+      # testJumanDicSettings is an environment check (it needs config.yaml and the local
+      # JUMAN / Kyoto case frame files, which are not in the repository), so only typeCheck runs here.
+      - name: Test (typeCheck only)
+        run: stack test lightblue:test:typeCheck

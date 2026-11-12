@@ -2,7 +2,8 @@
 module DTS.Prover.Wani.BackwardWithRules
 (
   -- * deduce
-  deduce
+  deduce,
+  deduce'
 ) where
 
 import qualified DTS.DTTdeBruijn as DdB   -- DTT
@@ -59,13 +60,14 @@ ruleResultToSubGoalsets depth debugEnabled ruleResultsIO = ruleResultsIO >>= \ru
           let 
             subgoalsLst = 
               sequence $ map
-                (\(WB.SubGoal(WB.Goal sig var justTerm arrowTypes) substLst clue) -> 
+                (\(WB.SubGoal(WB.Goal sig var justTerm arrowTypes) substLst clue allProofPolicy) -> 
                   map
                   (\arrowType ->
                     WB.SubGoal
                       (WB.Goal sig var (M.maybe M.Nothing (M.Just . A.betaReduce . A.arrowNotat) justTerm) [(A.betaReduce . A.arrowNotat) arrowType]) 
                       substLst
                       clue
+                      allProofPolicy
                   )
                   arrowTypes
                 )
@@ -121,9 +123,9 @@ updateGoalWithAntecedent (WB.SubstSet _ before _) result setting (targetId,(WB.G
 -- |   results : 1 dummy + antecedents (ex : [result for 2nd subgoal,result for the 1st subgoal,resultDef])
 -- |   goal : WB.Goal with var -2 replacing the proof term of the leftmost subgoal and var -3 replacing the proof term of the second left subgoal ...
 subgoalToGoalWithAntecedents :: [WB.Result] ->  WB.SubGoal-> WB.Depth -> WB.Setting -> M.Maybe WB.Goal
--- subgoalToGoalWithAntecedents [resultDef] (WB.SubGoal goal _ _) setting = M.Just goal
-subgoalToGoalWithAntecedents [] (WB.SubGoal goal _ _) _ setting = M.Nothing
-subgoalToGoalWithAntecedents results (WB.SubGoal goal substLst (pos,res)) depth setting = -- D.trace ("subgoalToGoalWithAntecedents results:" ++ (show results) ++ " / goal:" ++ (show goal) ++ "clue :" ++ (show (pos,res))) $ 
+-- subgoalToGoalWithAntecedents [resultDef] (WB.SubGoal goal _ _ _) setting = M.Just goal
+subgoalToGoalWithAntecedents [] (WB.SubGoal goal _ _ _) _ setting = M.Nothing
+subgoalToGoalWithAntecedents results (WB.SubGoal goal substLst (pos,res) _) depth setting = -- D.trace ("subgoalToGoalWithAntecedents results:" ++ (show results) ++ " / goal:" ++ (show goal) ++ "clue :" ++ (show (pos,res))) $ 
   let myId = -1 -- negate $ (1 + length results)
       goalWithClue = 
         maybe
@@ -150,6 +152,11 @@ subgoalToGoalWithAntecedents results (WB.SubGoal goal substLst (pos,res)) depth 
       (-1, goalWithClue)
       (reverse $ L.sortOn (\(WB.SubstSet _ _ num) -> num) substLst)
 
+applyAllProofPolicy :: WB.AllProofPolicy -> Bool -> Bool
+applyAllProofPolicy WB.Inherit parentAllProof = parentAllProof
+applyAllProofPolicy WB.AllProof _ = True
+applyAllProofPolicy WB.OneProof _ = False
+
 -- | deduceWithSubGoalset
 -- | summary : search or check proof terms for a type in input `[WB.SubGoalSet]`
 -- |
@@ -163,7 +170,7 @@ deduceWithSubGoalset (WB.SubGoalSet rule maybeTree subgoals dSide) depth setting
             case subgoalToGoalWithAntecedents results subgoal depth setting of
                 M.Just goal -> 
                     let disjUsed = if rule /= QT.DisjE then [] else (maybe [] (\tree -> [A.typefromAJudgment $ A.downSide' tree]) maybeTree)
-                        setting' = setting{WB.sStatus = (WB.sStatus setting){WB.usedDisJoint = disjUsed++(WB.usedDisJoint$WB.sStatus setting)}}
+                        setting' = setting{WB.sStatus = (WB.sStatus setting){WB.usedDisJoint = disjUsed++(WB.usedDisJoint$WB.sStatus setting),WB.allProof = applyAllProofPolicy (WB.allProofPolicyFromSubGoal subgoal) (WB.allProof $ WB.sStatus setting)}}
                     in 
                     deduce' goal depth setting' >>= \newResult -> return (map (\tree -> (newResult{WB.trees = [tree]}):results) (L.nub $ WB.trees newResult))
                 M.Nothing -> return []
@@ -189,20 +196,30 @@ deduceWithSubGoalsets subgoalsets depth setting resultDef justTerm arrowType =
     then deduceWithSubGoalsetsConcurrent subgoalsets depth setting resultDef justTerm arrowType
     else deduceWithSubGoalsetsSequential subgoalsets depth setting resultDef justTerm arrowType
 
+-- `arrowNotat` and `betaReduce` are performed uniformly here, so a rule need
+-- not normalize what it builds.  A goal that needs a single proof must stop on
+-- this, not on any tree: a subgoalset may yield only trees of a wrong type
+-- (piElim with a wrong argument), and stopping on them skips the rest.
+provesGoal :: M.Maybe A.Arrowterm -> A.Arrowterm -> UDT.Tree QT.DTTrule A.AJudgment -> Bool
+provesGoal justTerm arrowType tree =
+  let A.AJudgment _ _ term' type' = A.downSide' tree
+  in maybe True (\term -> (A.arrowNotat . A.betaReduce) term' == (A.arrowNotat . A.betaReduce) term) justTerm
+     && (A.arrowNotat . A.betaReduce) type' == (A.arrowNotat . A.betaReduce) arrowType
+
 deduceWithSubGoalsetsSequential :: [WB.SubGoalSet] -> WB.Depth -> WB.Setting -> WB.Result -> M.Maybe A.Arrowterm -> A.Arrowterm -> IO WB.Result
 deduceWithSubGoalsetsSequential subgoalsets depth setting resultDef justTerm arrowType = 
     (foldl
         (\rsIO subgoalset -> 
           rsIO >>= \rs ->
-            if (WB.allProof (WB.sStatus setting)) || (null $ WB.trees rs)
+            if (WB.allProof (WB.sStatus setting)) || not (any (provesGoal justTerm arrowType) $ WB.trees rs)
                 then 
-                  (deduceWithSubGoalset subgoalset depth setting{WB.sStatus = WB.mergeStatus (WB.rStatus rs) WB.statusDef{WB.allProof = True}} resultDef)
+                  (deduceWithSubGoalset subgoalset depth setting{WB.sStatus = (WB.mergeStatus (WB.rStatus rs) WB.statusDef){WB.allProof = WB.allProof $ WB.sStatus setting}} resultDef)
                     >>= \result -> return $ WB.mergeResult rs result
                 else return rs
         )
         (return resultDef)
         subgoalsets
-    ) >>= \result' -> return $ result'{WB.rStatus = (WB.rStatus result'){WB.deduceNgLst = WB.deduceNgLst$WB.sStatus setting}}{WB.trees = filter  (\tree ->  let A.AJudgment sig' var' term' type' = A.downSide' tree in (maybe True (\term -> (A.arrowNotat . A.betaReduce) term' == (A.arrowNotat . A.betaReduce) term) justTerm) && ((A.arrowNotat . A.betaReduce) type' == (A.arrowNotat . A.betaReduce) arrowType)) $ L.nub$ WB.trees result'} -- `arrowNotat` and `betaReduece` are performed uniformly here. Even if normalization is not considered when creating a rule, the following ensures that the comparison is valid.
+    ) >>= \result' -> return $ result'{WB.rStatus = (WB.rStatus result'){WB.deduceNgLst = WB.deduceNgLst$WB.sStatus setting}}{WB.trees = filter (provesGoal justTerm arrowType) $ L.nub$ WB.trees result'}
 
 deduceWithSubGoalsetsConcurrent :: [WB.SubGoalSet] -> WB.Depth -> WB.Setting -> WB.Result -> M.Maybe A.Arrowterm -> A.Arrowterm -> IO WB.Result
 deduceWithSubGoalsetsConcurrent subgoalsets depth setting resultDef justTerm arrowType = 
@@ -211,11 +228,11 @@ deduceWithSubGoalsetsConcurrent subgoalsets depth setting resultDef justTerm arr
 
     let worker subgoalset = readIORef stopRef >>= \stop ->
           if (stop && (not $ WB.allProof (WB.sStatus setting))) then pure () else
-              readIORef resultRef >>= \current ->  (deduceWithSubGoalset subgoalset depth setting{WB.sStatus = WB.mergeStatus (WB.rStatus current) WB.statusDef{WB.allProof = True}} resultDef)
+              readIORef resultRef >>= \current ->  (deduceWithSubGoalset subgoalset depth setting{WB.sStatus = (WB.mergeStatus (WB.rStatus current) WB.statusDef){WB.allProof = WB.allProof $ WB.sStatus setting}} resultDef)
                 >>= \result ->
                   atomicModifyIORef' resultRef (\rs ->
                     let merged = WB.mergeResult rs result
-                        stop'  = not (null (WB.trees merged))
+                        stop'  = any (provesGoal justTerm arrowType) (WB.trees result)
                     in (merged, stop')
                   )
                   >>= \stop' ->
@@ -225,14 +242,7 @@ deduceWithSubGoalsetsConcurrent subgoalsets depth setting resultDef justTerm arr
     in mapConcurrently_ worker subgoalsets >>
       readIORef resultRef >>= \result' ->
         let
-          trees =
-            filter
-              (\tree ->
-                let A.AJudgment _ _ term' type' = A.downSide' tree
-                in ( maybe True (\term -> (A.arrowNotat . A.betaReduce) term' == (A.arrowNotat . A.betaReduce) term) justTerm)
-                  && ( (A.arrowNotat . A.betaReduce) type' == (A.arrowNotat . A.betaReduce) arrowType)
-              )
-              (L.nub $ WB.trees result')
+          trees = filter (provesGoal justTerm arrowType) (L.nub $ WB.trees result')
         in pure $ result'{ WB.rStatus =(WB.rStatus result'){ WB.deduceNgLst = WB.deduceNgLst $ WB.sStatus setting }, WB.trees = trees}
 
 -- | deduce'

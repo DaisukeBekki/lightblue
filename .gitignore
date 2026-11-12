@@ -23,5 +23,13 @@ stack.yaml.lock
 config.yaml
 .env
 .DS_Store
+dist-newstyle
+
+# Python (virtual environments for KWJA etc.)
+.venv/
+venv/
+.python-version
+__pycache__/
 
 client_session_key.aes
+data/

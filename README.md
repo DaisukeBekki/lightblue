@@ -49,6 +49,19 @@ Set the permission of the shell scripts `lightblue` to executable.
 $ chmod 755 lightblue
 ```
 
+### Oracle embedding (optional)
+The lexical oracle (`--enableOracle`) reads a word embedding file `Embedding.csv` (about 20MB; Kobayashi, Daido and Bekki 2026).
+This file is not included in the repository. It is distributed as a GitHub Release:
+
+https://github.com/DaisukeBekki/lightblue/releases/tag/oracle-embedding-v1
+
+To download it into `$LIGHTBLUE/data/` (and verify its SHA-256 checksum), run the following script once.
+```
+$ scripts/fetch-oracle-embedding.sh
+```
+If you keep the file elsewhere, give its path by `--oracleEmbedding <filepath>`.
+You do not need the file unless you specify `--enableOracle`.
+
 ## Running lightblue
 ### Quick Start
 
@@ -129,6 +142,13 @@ The global options are common to all commands.
 |```--noInference```                              |          |If specified, execute no inference for each discourse.|
 |```--time```                                     |          |Show the execution time in stderr.|
 |```--verbose```                                  |          |Show type infer/check logs in stderr.|
+|```--enableOracle```                             |          |Enable the lexical oracle in proof search.|
+|```--oracleEmbedding <filepath>```               |```$LIGHTBLUE/data/Embedding.csv```|Specify path to Oracle `Embedding.csv`.|
+|```--enableNegativeOracle```                     |          |Experimental. Treat low oracle scores as negative evidence (requires ```--enableOracle```). See the note below.|
+
+**Experimental negative oracle.** `--enableOracle --enableNegativeOracle` enables a provisional rule for negative goals. When an existing context predicate has matching arguments, the rule queries the existing oracle and accepts a positive score at or below its threshold as negative evidence. Zero is excluded because the oracle returns zero for unknown words. With no flag, negative oracle reasoning is disabled; positive oracle behavior is unchanged.
+
+This is an experiment, not a logically reliable disjointness classifier: a low inclusion score does not imply disjointness. `oracleNeg` marks the generated proof term in the same manner as the existing `oracle` term; independent type checking and end-to-end anaphora evaluation remain to be checked.
 
 |Specific Options for ```express```                      |Default   |Description                           |
 |:-------------------------------------------------|:---------|:-------------------------------------|

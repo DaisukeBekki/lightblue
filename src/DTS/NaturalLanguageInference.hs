@@ -22,6 +22,7 @@ module DTS.NaturalLanguageInference (
   , sequentialParsing
   , parseWithTypeCheck
   , trawlParseResult
+  , InferenceLabel
   , ParseResultExpress(..)
   , ParseTreeAndFelicityCheckExpress(..)
   , NodeSelector
@@ -39,7 +40,7 @@ import qualified Data.Char as C           --base
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.List as L           --base
-import ListT (ListT(..),fromFoldable,toReverseList,take,null,uncons,cons) --list-t
+import ListT (ListT(..),fromFoldable,toReverseList,null,uncons,cons) --list-t
 import qualified Parser.ChartParser as CP      --lightblue
 import qualified Parser.PartialParsing as Partial --lightblue
 import qualified Parser.CCG as CCG             --lightblue
@@ -156,10 +157,20 @@ sequentialTypeCheck ps prover signtr contxt ((text,nodes):rests) =
 
 -- | Take n element from the top of the list.
 -- | If n < 0, it returns all the elements.
+-- |
+-- | This is not `ListT.take`: in list-t 1.0.5.7, `take n t` returns `t` itself when
+-- | `t` turns out to be empty, so the consumer runs the IO inside `t` once more.
+-- | Here that IO is a parse, a type check or a whole proof search, and an empty
+-- | result (no proof found) is exactly the expensive case, so the search ran twice.
 takeNbest :: Int -> ListT IO a -> ListT IO a
 takeNbest n l
-  | n >= 0 = ListT.take n l
+  | n >= 0 = takeL n l
   | otherwise = l
+  where
+    takeL :: Int -> ListT IO a -> ListT IO a
+    takeL k t
+      | k <= 0 = ListT (return Nothing)
+      | otherwise = ListT $ fmap (fmap (\(h, t') -> (h, takeL (k-1) t'))) (uncons t)
  
 {-- Trawling functions --}
 
