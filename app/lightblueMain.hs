@@ -433,9 +433,13 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
                 parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] sentences
             inferenceLabels <- PPR.printParseResult handle style 1 noTypeCheck False title parseResult
             let groundTruth = J.jsemLabel2YesNo $ J.answer j
+                -- The labels are listed per reading (a choice of parse trees and type check diagrams).
+                -- The prediction is the first Yes or No in this order; Unk only if every reading yields Unk.
                 prediction = case inferenceLabels of
                   [] -> J.Other
-                  (bestLabel:_) -> bestLabel
+                  _  -> case dropWhile (== J.Unk) inferenceLabels of
+                          [] -> J.Unk
+                          (decisiveLabel:_) -> decisiveLabel
             S.putStrLn $ "\nPrediction: " ++ (show prediction) ++ "\nGround truth: " ++ (show groundTruth) ++ "\n"
             return (prediction, groundTruth)
           T.putStrLn $ T.fromStrict $ NLP.showClassificationReport pairs
