@@ -103,6 +103,7 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
       guard $ case (typA',typB') of
                 (DTTdB.Type,DTTdB.Type) -> True
                 (DTTdB.Type,DTTdB.Kind) -> True
+                (DTTdB.Kind,DTTdB.Type) -> True -- wrap ruleのための救済。DTSでは本来不可。
                 (DTTdB.Kind,DTTdB.Kind) -> True
                 _ -> False
       return' verbose $ Tree QT.SigmaF (DTTdB.Judgment sig ctx (DTTdB.Sigma termA' termB') typB') [diagramA,diagramB]
