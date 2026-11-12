@@ -60,3 +60,24 @@ jobs:
       - name: Check that CLAUDE.md and AGENTS.md are identical
         if: runner.os == 'Linux'
         run: cmp CLAUDE.md AGENTS.md
+
+      # The AI-policy tags are self-declared (see AI-policy.md); this checks what can be checked mechanically.
+      - name: Check AI-policy tags
+        if: runner.os == 'Linux'
+        run: |
+          set -u
+          fail=0
+          # The tag value must be one of the three.
+          if grep -rHn '^[[:space:]]*AI-policy' --include='*.hs' src app test Setup.hs \
+               | grep -vE 'AI-policy[[:space:]]*:[[:space:]]*(human-code|mixed|AI-generated)[[:space:]]*$'; then
+            echo "invalid AI-policy tag"; fail=1
+          fi
+          # A human-code or AI-generated module must not contain @AI-generated marks.
+          for f in $(grep -rlE '^[[:space:]]*AI-policy[[:space:]]*:[[:space:]]*(human-code|AI-generated)' --include='*.hs' src app test); do
+            if grep -q '@AI-generated' "$f"; then echo "$f: the tag forbids per-declaration marks"; fail=1; fi
+          done
+          # A mixed module must contain at least one mark.
+          for f in $(grep -rlE '^[[:space:]]*AI-policy[[:space:]]*:[[:space:]]*mixed' --include='*.hs' src app test); do
+            if ! grep -q '@AI-generated' "$f"; then echo "$f: mixed but no @AI-generated mark"; fail=1; fi
+          done
+          exit $fail
