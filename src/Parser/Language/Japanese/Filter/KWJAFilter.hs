@@ -335,8 +335,8 @@ getOpenWords kwjaData conjmap = case kwjaData of
                                     (hinsi, (stem, kwjaCaseFrame)) : getOpenWords (x2 : xs) conjmap
                                 else --　名詞のとき
 
-                                    if hinsi == "名詞"
-                                        then (hinsi, (nyuryoku, [])) : getOpenWords (x2 : xs) conjmap
+                                    if hinsi == "名詞" || hinsi == "指示詞"
+                                        then ("名詞", (nyuryoku, [])) : getOpenWords (x2 : xs) conjmap
                                         else getOpenWords (x2 : xs) conjmap
                 _ -> getOpenWords (x2 : xs) conjmap
     KW.Juman (J.AltWord _ _ _ _ _ _ _ _ _ _ _ _) : xs ->
