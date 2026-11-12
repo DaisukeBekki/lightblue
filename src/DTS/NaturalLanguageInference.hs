@@ -30,7 +30,7 @@ module DTS.NaturalLanguageInference (
   , sequentialTypeCheckExpress
   ) where
 
-import Control.Monad (join)    --base
+import Control.Monad (join,guard)        --base
 import Control.Monad.State (lift)         --mtl
 import Control.Monad.IO.Class (liftIO)    --base
 import Control.Applicative ((<|>))        --base
@@ -40,7 +40,7 @@ import qualified Data.Char as C           --base
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.List as L           --base
-import ListT (ListT(..),fromFoldable,toReverseList,null,uncons,cons) --list-t
+import ListT (ListT(..),fromFoldable,toList,toReverseList,null,uncons,cons) --list-t
 import qualified Parser.ChartParser as CP      --lightblue
 import qualified Parser.PartialParsing as Partial --lightblue
 import qualified Parser.CCG as CCG             --lightblue
@@ -146,11 +146,17 @@ sequentialTypeCheck ps prover signtr contxt ((text,nodes):rests) =
   SentenceAndParseTrees text $ 
     parallelM nodes $ \node -> 
          let signtr' = L.nub $ (CCG.sig node) ++ signtr
-             tcQueryType = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
-             tcQueryKind = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Kind
-         in ParseTreeAndFelicityChecks node signtr' tcQueryType $ 
-              let tcDiagrams = takeNbest (CP.nTypeCheck ps) $ (TY.typeCheck prover (CP.verbose ps) tcQueryType)
-                                                              <|> (TY.typeCheck prover (CP.verbose ps) tcQueryKind)
+             tcQuery = UDTT.TypeInferQuery signtr' contxt (CCG.sem node)
+             tcQuery' = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
+         in ParseTreeAndFelicityChecks node signtr' tcQuery' $ 
+              let tiDiagrams = TY.typeInfer prover (CP.verbose ps) tcQuery
+                  tcDiagrams = takeNbest (CP.nTypeCheck ps) $ do
+                    tiDiagram <- tiDiagrams
+                    guard $ case DTT.typ (Tree.node tiDiagram) of 
+                              DTT.Type -> True
+                              DTT.Kind -> True
+                              _ -> False
+                    return tiDiagram
               in parallelM tcDiagrams $ \tcDiagram -> 
                    let contxt' = (DTT.trm $ Tree.node tcDiagram):contxt
                    in (tcDiagram, sequentialTypeCheck ps prover signtr' contxt' rests)
@@ -171,7 +177,7 @@ takeNbest n l
     takeL k t
       | k <= 0 = ListT (return Nothing)
       | otherwise = ListT $ fmap (fmap (\(h, t') -> (h, takeL (k-1) t'))) (uncons t)
- 
+
 {-- Trawling functions --}
 
 trawlParseResult :: ParseResult -> ListT IO InferenceLabel
