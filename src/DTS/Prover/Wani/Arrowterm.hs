@@ -312,6 +312,8 @@ subst preterm l i =
 
 -- | Like `subst`, but `l` is shifted by `d` plus the number of binders above each occurrence of `i`, where `i` must be closed.
 -- Shifting `l` down by a negative `d` beforehand would merge the variables bound inside `l` with the shifted ones.
+-- The shift at each occurrence must not be negative either, or a variable bound inside `l` and a free one could get the same index.
+-- Wani keeps it non-negative: only piIntro substitutes a child proof from a longer context (by n), and there `i` sits under n lambdas.
 substShifted :: DdB.Preterm -> DdB.Preterm -> Int -> DdB.Preterm -> DdB.Preterm
 substShifted preterm l d i =
   if preterm == i then
