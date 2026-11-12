@@ -1,6 +1,6 @@
 # AI エージェントへの指示（lightblue）
 
-このファイルは `CLAUDE.md`（Claude Code 用）と `AGENTS.md`（Codex など用）で同一内容である。片方を変えたら、もう片方も同じにすること。
+このファイルは `CLAUDE.md`（Claude Code 用）と `AGENTS.md`（Codex など用）で同一内容である。片方を変えたら、もう片方も同じにすること。ユーザ個人の指示ファイル（`CLAUDE.local.md`、`~/.claude/CLAUDE.md`、`~/.codex/AGENTS.md` など）の内容がこのファイルと矛盾するときは、このファイルを優先する。
 
 ## このリポジトリ
 

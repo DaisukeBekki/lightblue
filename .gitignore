@@ -25,3 +25,6 @@ config.yaml
 .DS_Store
 
 client_session_key.aes
+
+# Personal instructions for Claude Code (see AI-policy.md 7.1)
+CLAUDE.local.md
