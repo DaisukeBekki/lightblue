@@ -1170,10 +1170,12 @@ disjElim goal setting =
             pTerm = A.ArrowLam arrowType
             subgoalsForDisj lType =
               let A.ArrowDisj disjFst disjSnd = lType
-                  pTerm = A.ArrowLam arrowType
+                  -- p, m and n each put the result type under one binder (λ or Π).
+                  arrowType' = A.shiftIndices arrowType 1 0
+                  pTerm = A.ArrowLam arrowType'
                   pType = A.Arrow [lType] A.aType
-                  mType  = A.Arrow [disjFst] arrowType
-                  nType = A.Arrow [disjSnd] arrowType
+                  mType  = A.Arrow [disjFst] arrowType'
+                  nType = A.Arrow [disjSnd] arrowType'
                   lGoal = WB.Goal sig var (if isDeduce then M.Nothing else M.Just (termsInProofTerm !! 1)) [lType]
                   pGoal = WB.Goal sig var (M.Just pTerm) [pType]
                   mGoal = WB.Goal sig var (if isDeduce then M.Nothing else M.Just (termsInProofTerm !! 2)) [mType]
