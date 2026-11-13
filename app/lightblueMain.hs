@@ -372,6 +372,7 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
             Just BrowserFirefox -> Env.setEnv "LB_EXPRESS_BROWSER" "firefox"
             Just BrowserDefault -> Env.setEnv "LB_EXPRESS_BROWSER" "default"
             Nothing             -> return ()
+          Express.setTypeCheckProver parseSetting prover
         _ -> return ()
       S.hPutStrLn handle $ I.headerOf style
       _ <- PPR.printParseResult handle style 1 noTypeCheck posTagOnly "input" parseResult

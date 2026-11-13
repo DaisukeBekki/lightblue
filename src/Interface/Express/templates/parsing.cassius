@@ -245,6 +245,22 @@
 .tab-tcd
   padding-bottom: 50px;
 
+/* Proof search queries for anaphora/presupposition resolution (parsing view) */
+.tab-psq
+  padding-bottom: 50px;
+.tab-psq-item
+  text-align: left;
+  margin: 0 auto 12px auto;
+  max-width: 1200px;
+.tab-psq-body
+  padding: 12px 16px;
+  overflow-x: auto;
+.tab-psq-empty
+  color: #666;
+  font-size: 1rem;
+.ps-badge-anaphora
+  background: #6a1b9a
+
 /* TC holders / selection badges */
 .tc-holder
   display: block

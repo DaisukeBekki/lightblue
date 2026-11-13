@@ -9,6 +9,7 @@ module Interface.Express.Express (
   , setDisplaySetting
   , setDisplayOptions
   , setPrewarmOptions
+  , setTypeCheckProver
   ) where
 
 import Yesod
@@ -48,6 +49,8 @@ import Interface.Text (SimpleText(..))
 import Data.Char (toLower)
 import qualified ListT as LT (ListT, uncons, toList, take)
 import Control.Monad (when)
+import Control.Monad.Trans.Class (lift)
+import Control.Applicative ((<|>))
 import qualified Data.ByteString as BS
 import qualified Data.Store as Store
 
@@ -106,6 +109,16 @@ currentTCStateRef = unsafePerformIO $ newIORef M.empty
 {-# NOINLINE currentTCSelectionRef #-}
 currentTCSelectionRef :: IORef (M.Map Int TCSelection)
 currentTCSelectionRef = unsafePerformIO $ newIORef M.empty
+
+-- parse mode用: 各タブの TypeCheck 結果と、その途中で prover に渡された ProofSearchQuery
+data TabTypeCheck = TabTypeCheck
+  { ttcDiagrams :: [QT.DTTProofDiagram]
+  , ttcQueries  :: [DTT.ProofSearchQuery]
+  }
+
+{-# NOINLINE currentParseTCRef #-}
+currentParseTCRef :: IORef (Maybe [TabTypeCheck])
+currentParseTCRef = unsafePerformIO $ newIORef Nothing
 
 -- Proof search state
 {-# NOINLINE currentPSQPosRef #-}
@@ -276,6 +289,74 @@ setDisplayOptions mDepth noShowCat noShowSem leafVert = do
 
 data App = App
 
+-- parse mode 用: TypeCheck に用いる prover と設定を登録する。
+-- 登録されている場合、/parsing は TypeCheck を実行し、その途中で prover に渡されたProofSearchQueryをタブごとに記録する。
+setTypeCheckProver :: CP.ParseSetting -> QT.Prover -> IO ()
+setTypeCheckProver ps prover = do
+  atomicWriteIORef currentProverRef (Just prover)
+  atomicWriteIORef currentNTypeCheckRef (CP.nTypeCheck ps)
+  atomicWriteIORef currentVerboseRef (CP.verbose ps)
+  atomicWriteIORef currentParseTCRef Nothing
+
+-- prover に渡された ProofSearchQuery を IORef に記録してから、 prover に渡す
+recordingProver :: IORef [DTT.ProofSearchQuery] -> QT.Prover -> QT.Prover
+recordingProver ref prover psq = do
+  lift $ atomicModifyIORef' ref (\qs -> (qs ++ [psq], ()))
+  prover psq
+
+-- TypeCheckQuery を型検査し、証明図と ProofSearchQuery を返す。
+typeCheckRecordingQueries :: QT.Prover -> Bool -> Int -> UDTT.TypeCheckQuery -> IO TabTypeCheck
+typeCheckRecordingQueries prover verbose nmax tcq = do
+  ref <- newIORef []
+  let prover' = recordingProver ref prover
+      tcqKind = tcq { UDTT.typ = DTT.Kind }
+      lts = TY.typeCheck prover' verbose tcq <|> TY.typeCheck prover' verbose tcqKind
+      lts' = if nmax < 0 then lts else LT.take nmax lts
+  diags <- LT.toList lts'
+  queries <- readIORef ref
+  return $ TabTypeCheck diags (nubBy (\a b -> Store.encode a == Store.encode b) queries)
+
+-- /parsing 用: 各タブの TypeCheckの結果を得る。
+getParseTypeChecks :: NLI.ParseResult -> [UDTT.TypeCheckQuery] -> IO [TabTypeCheck]
+getParseTypeChecks pr tcqs = do
+  mCached <- readIORef currentParseTCRef
+  case mCached of
+    Just ttcs -> return ttcs
+    Nothing -> do
+      mProver <- readIORef currentProverRef
+      ttcs <- case mProver of
+        Just prover -> do
+          nmax <- readIORef currentNTypeCheckRef
+          verbose <- readIORef currentVerboseRef
+          mapM (typeCheckRecordingQueries prover verbose nmax) tcqs
+        Nothing -> do
+          tcds <- L.parseSentenceForDiagram pr
+          return $ map (\ds -> TabTypeCheck ds []) tcds
+      atomicWriteIORef currentParseTCRef (Just ttcs)
+      return ttcs
+
+-- /parsing での表示用に、記録された ProofSearchQuery に保存ボタンや Signature トグルに必要な情報を付ける
+data AnaphoraQueryView = AnaphoraQueryView
+  { aqIdx    :: Int                   -- ^ タブ内での通し番号（1 始まり）
+  , aqKey    :: TS.Text               -- ^ toggleSignature 用の要素 id のサフィックス
+  , aqQuery  :: DWN.ProofSearchQuery
+  , aqSig    :: DWN.Signature
+  , aqParams :: [(TS.Text, TS.Text)]  -- ^ 保存用 URL のクエリパラメータ
+  }
+
+anaphoraQueryViews :: Int -> [DTT.ProofSearchQuery] -> [AnaphoraQueryView]
+anaphoraQueryViews tabNum psqs =
+  [ AnaphoraQueryView
+      { aqIdx    = i
+      , aqKey    = TS.pack ("anaphora-" ++ show tabNum ++ "-" ++ show i)
+      , aqQuery  = psqWN
+      , aqSig    = sigWN
+      , aqParams = [("tab", TS.pack (show tabNum)), ("idx", TS.pack (show i))]
+      }
+  | (i, psq) <- zip [1..] psqs
+  , let psqWN@(DWN.ProofSearchQuery sigWN _ _) = DWN.fromDeBruijnProofSearchQuery psq
+  ]
+
 -- normalize signature for stable PSQ keys
 normalizeSignature :: DTT.Signature -> DTT.Signature
 normalizeSignature =
@@ -298,6 +379,7 @@ mkYesod "App" [parseRoutes|
 /proofsearch/start ProofStartR GET
 /span SpanR GET
 /span/node NodeR GET
+/parsing/anaphora/query/bin AnaphoraQueryBinR GET
 /proofcache/progress ProofCacheProgressR GET
 /proofcache/marks ProofCacheMarksR GET
 /export/sem ExportSemR GET
@@ -810,9 +892,10 @@ getParsingR = do
           -- parseSentenceForQuery :: NLI.ParseResult -> IO ([UDTT.TypeCheckQuery])
           tcqs <- liftIO $ L.parseSentenceForQuery pr
      
-          -- tcds 
-          -- parseSentenceForDiagram :: NLI.ParseResult -> IO ([[QT.DTTProofDiagram]])
-          tcds <- liftIO $ L.parseSentenceForDiagram pr
+          -- 照応解決用の ProofSearchQuery も合わせて取得する
+          ttcs <- liftIO $ getParseTypeChecks pr tcqs
+          let tcds = map ttcDiagrams ttcs
+              anaphoraViews = zipWith anaphoraQueryViews tabs (map ttcQueries ttcs)
 
           let tcdLengths = Prelude.map Prelude.length tcds
           liftIO $ putStrLn $ "length: " ++ show tcdLengths
@@ -848,7 +931,7 @@ getParsingR = do
 
                 <div class="container-tab">
                   <div .tab-wrap>
-                    $forall (tabNum, node, tcq, tcdList, tabClass, score, leafNodes) <- Data.List.zip7 tabs nodes tcqs tcds tabClasses scores leafNodesList
+                    $forall (tabNum, node, tcq, tcdList, tabClass, score, (leafNodes, aqs)) <- Data.List.zip7 tabs nodes tcqs tcds tabClasses scores (zip leafNodesList anaphoraViews)
                       <input id="TAB-#{tabNum}" type="radio" name="TAB" class="tab-switch" :tabNum == 1:checked>
                       <label for="TAB-#{tabNum}" class=#{tabClass}>#{tabNum} (score: #{score})
                       <div class="tab-content">
@@ -872,6 +955,25 @@ getParsingR = do
                           $else
                             <div class="tab-tcds-content">
                               <div .tab-tcds-inner>^{Prelude.mapM_ (WE.widgetizeWith dsp) $ tcdList}
+                        <div class="tab-psq">
+                          <h1>Proof Search Query (Anaphora Resolution)
+                          $if Data.List.null aqs
+                            <p .tab-psq-empty>No proof search was launched during type checking.
+                          $else
+                            $forall aq <- aqs
+                              <div .ps-section .tab-psq-item>
+                                <div .ps-title>
+                                  <span .ps-badge .ps-badge-anaphora>Query #{aqIdx aq}
+                                  <a .btn .btn-save href=@?{(AnaphoraQueryBinR, aqParams aq)} download>保存
+                                <div .tab-psq-body>
+                                  <div class="tab-tcq-content-inference">^{WE.widgetizeWith dsp (aqQuery aq)}
+                                  <div .ps-sig>
+                                    <button type="button" .btn id="ps-sig-btn-#{aqKey aq}" onclick="toggleSignature('#{aqKey aq}')">Show Signature
+                                    <div .ps-sig-body id="ps-sig-body-#{aqKey aq}" style="display: none">
+                                      $if Data.List.null (aqSig aq)
+                                        <span .ps-sig-empty>(empty)
+                                      $else
+                                        <div class="tab-tcq-content-inference">^{WE.widgetizeWith dsp (aqSig aq)}
                         $if WE.lexicalItemsPosition dsp == WE.LexBottom
                           <div class="tab-leaves">
                             <h2>Lexical Items
@@ -1572,6 +1674,38 @@ getExportSemTextR = do
           addHeader "Content-Type" "text/plain; charset=utf-8"
           sendResponse (TypedContent "text/plain" (toContent txt))
   where
+    (!!?) :: [a] -> Int -> Maybe a
+    (!!?) xs n = if n < 0 || n >= length xs then Nothing else Just (xs !! n)
+
+-- Binary export: a proof search query launched for anaphora resolution
+getAnaphoraQueryBinR :: Handler TypedContent
+getAnaphoraQueryBinR = do
+  mpr <- liftIO $ readIORef currentParseResultRef
+  mTab <- lookupGetParam "tab"
+  mIdx <- lookupGetParam "idx"
+  let parseInt :: TS.Text -> Maybe Int
+      parseInt = readMaybe . TS.unpack
+      tab = maybe 1 id (mTab >>= parseInt)
+      idx = maybe 1 id (mIdx >>= parseInt)
+  case mpr of
+    Nothing -> plainText "ParseResult is not set"
+    Just pr -> do
+      tcqs <- liftIO $ L.parseSentenceForQuery pr
+      ttcs <- liftIO $ getParseTypeChecks pr tcqs
+      case (ttcs !!? (tab - 1)) >>= (\ttc -> ttcQueries ttc !!? (idx - 1)) of
+        Nothing -> plainText "Invalid tab/idx"
+        Just psq -> do
+          let bs :: BS.ByteString
+              bs = Store.encode psq
+              fname = TS.pack $ "anaphora-query-tab" ++ show tab ++ "-" ++ show idx ++ ".bin"
+          addHeader "Content-Type" "application/octet-stream"
+          addHeader "Content-Disposition" (TS.concat ["attachment; filename=\"", fname, "\""])
+          return $ TypedContent "application/octet-stream" (toContent bs)
+  where
+    plainText :: TS.Text -> Handler TypedContent
+    plainText msg = do
+      addHeader "Content-Type" "text/plain; charset=utf-8"
+      return $ TypedContent typePlain (toContent msg)
     (!!?) :: [a] -> Int -> Maybe a
     (!!?) xs n = if n < 0 || n >= length xs then Nothing else Just (xs !! n)
 
