@@ -48,7 +48,12 @@ hojo varEnv sigEnv pre_type setting timeLimitDiff =
   let sigEnv' = map (Data.Bifunctor.second A.fromDT2A) sigEnv
       varEnv' = map A.fromDT2A varEnv
       arrowType = A.fromDT2A  pre_type
-      result = searchProofWithIncrementalDepth sigEnv' varEnv' arrowType 1 setting timeLimitDiff 1 (let num = WB.maxdepth setting in if num < 0 then M.Nothing else M.Just num)
+      -- One deadline for the whole proof search: every depth of the iterative deepening
+      -- shares it, so once the time is up the remaining depths return at once instead of
+      -- each spending the full limit again.
+      result = Time.getCurrentTime >>= \startTime ->
+        let deadline = fmap (\diff -> Time.addUTCTime diff startTime) timeLimitDiff
+        in searchProofWithIncrementalDepth sigEnv' varEnv' arrowType 1 setting deadline 1 (let num = WB.maxdepth setting in if num < 0 then M.Nothing else M.Just num)
   in WB.debugLog (sigEnv',varEnv') arrowType 0 setting "goal" result
 
 searchProof :: WB.DeduceRule
@@ -56,15 +61,19 @@ searchProof a b c d setting=
   BR.deduce a b c d setting
     >>= \result -> return result{WB.trees = L.nub (WB.trees result)}
 
-searchProofWithIncrementalDepth :: A.SAEnv -> A.AEnv -> WB.AType -> WB.Depth -> WB.Setting -> M.Maybe Time.NominalDiffTime ->  Int -> M.Maybe Int-> IO WB.Result
-searchProofWithIncrementalDepth a b c d setting timeLimitDiff currentDepth maybeLim =
-  Time.getCurrentTime >>= \currentTime ->
-    let timeLimit = M.maybe M.Nothing (\t -> let timeLimit = Time.addUTCTime t currentTime in (M.Just timeLimit) ) timeLimitDiff in
-      searchProof a b c d setting{WB.maxdepth = currentDepth}{WB.timeLimit = timeLimit }
-        >>= \result ->
-          D.trace ("d=" ++ (show currentDepth) ++ {--("timeLimitDiff : "++(show timeLimitDiff)++" currentTime : "++(show currentTime)) ++--} (" / timeLimit : "++(show timeLimit))) $ 
-          if (null (WB.trees result) && maybe True (currentDepth <) maybeLim)
-            then searchProofWithIncrementalDepth a b c d setting timeLimitDiff (currentDepth+1) maybeLim 
+-- | Iterative deepening: search with maxdepth = 1, 2, ... until a proof is found,
+-- | the depth limit is reached, or the deadline (shared by all depths) has passed.
+-- | A search cut off by the deadline returns no trees, exactly like a failed one, so
+-- | without the last condition the next depth would start over and time out again.
+searchProofWithIncrementalDepth :: A.SAEnv -> A.AEnv -> WB.AType -> WB.Depth -> WB.Setting -> M.Maybe Time.UTCTime ->  Int -> M.Maybe Int-> IO WB.Result
+searchProofWithIncrementalDepth a b c d setting deadline currentDepth maybeLim =
+  searchProof a b c d setting{WB.maxdepth = currentDepth}{WB.timeLimit = deadline}
+    >>= \result ->
+      Time.getCurrentTime >>= \currentTime ->
+        let expired = maybe False (< currentTime) deadline in
+          D.trace ("d=" ++ (show currentDepth) ++ (" / timeLimit : "++(show deadline)) ++ (if expired then " (expired)" else "")) $
+          if (null (WB.trees result) && not expired && maybe True (currentDepth <) maybeLim)
+            then searchProofWithIncrementalDepth a b c d setting deadline (currentDepth+1) maybeLim
             else return result
 
 -- | Prover for lightblue:

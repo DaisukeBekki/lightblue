@@ -218,7 +218,7 @@ optionParser =
       <> metavar "INT" )
     <*> option auto 
       ( long "maxtime"
-      <> help "Set the maximum search time in proof search"
+      <> help "Time budget of one proof search in milliseconds, shared by all depths of the iterative deepening"
       <> showDefault
       <> value 100000
       <> metavar "INT" )
