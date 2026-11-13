@@ -430,7 +430,10 @@ lightblueMain (Options lang commands style proverName filepath beamW nParse nTyp
             StrictT.putStrLn $ J.hypothesis j
             S.putStr "\n"
             let sentences = postpend (map T.fromStrict $ J.premises j) (T.fromStrict $ J.hypothesis j)
-                parseResult = NLI.parseWithTypeCheck parseSetting prover [("dummy",DTT.Entity)] [] sentences
+                parseResult = NLI.parseWithTypeCheck parseSetting prover [
+                  ("ap",DTT.Pi DTT.Entity (DTT.Pi DTT.Entity (DTT.Pi (DTT.App (DTT.App (DTT.Con "AP") (DTT.Var 0)) (DTT.Var 1)) (DTT.App (DTT.App (DTT.Con "woman") (DTT.Var 1)) (DTT.Var 2))))), 
+                  ("p",DTT.Pi DTT.Entity (DTT.Pi DTT.Entity (DTT.Pi (DTT.App (DTT.App (DTT.Con "professor") (DTT.Var 0)) (DTT.Var 1)) (DTT.App (DTT.App (DTT.Con "woman") (DTT.Var 1)) (DTT.Var 2)))))
+                  ] [] sentences
             inferenceLabels <- PPR.printParseResult handle style 1 noTypeCheck False title parseResult
             let groundTruth = J.jsemLabel2YesNo $ J.answer j
                 -- The labels are listed per reading (a choice of parse trees and type check diagrams).

@@ -27,9 +27,12 @@ module Parser.CCG (
   binaryRules,
   coordinationRule,
   parenthesisRule,
-  -- * for debugging
+  -- * for debug purpose only
+  forwardFunctionApplicationRule,
   unifyCategory,
   unifyWithHead,
+  -- unifyFeature,
+  -- transvec,
   -- * Partial Parsing
   wrapNode,
   conjoinNodes
@@ -139,6 +142,7 @@ instance Eq Cat where
   SL x1 x2 == SL y1 y2 = (x1 == y1) && (x2 == y2)
   BS x1 x2 == BS y1 y2 = (x1 == y1) && (x2 == y2)
   T f1 _ x == T f2 _ y = (f1 == f2) && (x == y)
+  S [] == S [] = True
   S (_:(f1:_))  == S (_:(f2:_))  = case unifyFeature [] f1 f2 of
                                      Just _ -> True
                                      Nothing -> False
