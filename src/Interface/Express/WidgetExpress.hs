@@ -405,10 +405,20 @@ instance Widgetizable UDWN.Preterm where
     UDWN.Top        -> [whamlet|<mi>&top;|]
     UDWN.Entity     -> [whamlet|<mi>entity|]
     UDWN.Bot        -> [whamlet|<mi>&bot;|]
-    UDWN.Asp m    -> [whamlet|
+    UDWN.Asp vname a b -> [whamlet|
       <mrow>
-        <mo>@
-        ^{widgetize m}
+        <mo>[
+        <mtable style="text-align: left;">
+          <mtr style="text-align: left;">
+            <mtd columnalign="left">
+              <mrow>
+                ^{widgetize vname}
+                <mo>@
+                ^{widgetize a}
+          <mtr style="text-align: left;">
+            <mtd columnalign="left">
+              <mpadded height='-0.5em'>^{widgetize b}
+        <mo>]
       |]
     UDWN.Ann m a   -> [whamlet|
       <mrow>
