@@ -1,0 +1,108 @@
+# ══════════════════════════════════════════════════════════════════════
+# Express — Dockerfile
+#
+# Multi-stage build:
+#   Stage 1 (builder) : Ubuntu 22.04 + Stack → compile lightblue binary
+#   Stage 2 (runtime) : Ubuntu 22.04 + KWJA  → minimal runtime image
+#
+# Build:
+#   docker build -t express .
+#
+# Run (default: JSeM problem 720):
+#   docker run -p 3000:3000 express
+#
+# Run with a different problem ID (valid range: 693–728):
+#   docker run -p 3000:3000 express --jsemid 702
+#
+# Open in browser → http://localhost:3000
+# ══════════════════════════════════════════════════════════════════════
+
+# ── Stage 1: Build ─────────────────────────────────────────────────────
+FROM --platform=linux/amd64 ubuntu:22.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl ca-certificates git build-essential \
+    libgmp-dev zlib1g-dev libnuma-dev \
+    xz-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Stack
+RUN curl -sSL \
+    https://github.com/commercialhaskell/stack/releases/download/v2.15.7/stack-2.15.7-linux-x86_64.tar.gz \
+    | tar xz --wildcards --strip-components=1 -C /usr/local/bin '*/stack' \
+    && stack --version
+
+WORKDIR /lightblue
+
+# Cache Haskell dependencies (re-runs only when package.yaml/stack.yaml change)
+COPY package.yaml stack.yaml stack.yaml.lock ./
+RUN stack build --only-dependencies --no-terminal 2>&1
+
+# Build the full project
+COPY . .
+RUN stack build --no-terminal --copy-bins --local-bin-path /out/bin 2>&1
+
+# ── Stage 2: Runtime ───────────────────────────────────────────────────
+FROM --platform=linux/amd64 ubuntu:22.04
+
+LABEL org.opencontainers.image.title="Express"
+LABEL org.opencontainers.image.description="Interactive development environment for lightblue formal Japanese NLI"
+LABEL org.opencontainers.image.source="https://github.com/DaisukeBekki/lightblue"
+LABEL org.opencontainers.image.licenses="BSD-3-Clause"
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
+
+# System runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 python3-pip python3-dev gcc git ca-certificates \
+    libgmp10 libnuma1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install KWJA (CPU-only PyTorch — significantly smaller than GPU build)
+RUN pip3 install --no-cache-dir \
+    torch --index-url https://download.pytorch.org/whl/cpu \
+    && pip3 install --no-cache-dir kwja
+
+# Pre-download KWJA models at build time so the container starts instantly
+# (models are cached to /root/.cache/kwja/)
+# NOTE: no "|| true" — build must fail if download fails, to prevent corrupted model files
+RUN echo "太郎が花子を愛している。" | kwja --device cpu 2>&1
+
+# Copy compiled binary from builder stage
+COPY --from=builder /out/bin/lightblue /usr/local/bin/lightblue
+
+# Copy config and static files needed at runtime
+COPY config/  /lightblue/config/
+COPY static/  /lightblue/static/
+
+# Copy the Juman config directory (LIGHTBLUE points here)
+# fetchConfig reads: ${LIGHTBLUE}src/Parser/Language/Japanese/Juman/config.yaml
+#   (note: no "/" between LIGHTBLUE and "src/", so LIGHTBLUE must end with "/")
+COPY src/Parser/Language/Japanese/Juman/config_template.yaml \
+     /lightblue/src/Parser/Language/Japanese/Juman/config.yaml
+COPY src/Parser/Language/Japanese/Juman/Juman.dic \
+     /lightblue/src/Parser/Language/Japanese/Juman/Juman.dic
+
+# Clone JSeM dataset (needed for --jsemid lookups)
+RUN git clone --depth 1 https://github.com/DaisukeBekki/JSeM /data/JSeM
+
+WORKDIR /lightblue
+
+# LIGHTBLUE must end with "/" — fetchConfig concatenates without a separator
+ENV LIGHTBLUE=/lightblue/
+ENV YESOD_STATIC_DIR=/lightblue/static
+ENV JSEM_DATA=/data/JSeM/data/v1.0/Verbs.xml
+ENV LB_EXPRESS_START=inference
+
+EXPOSE 3000
+
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+# Default problem — override with: docker run ... --jsemid 207
+CMD ["--jsemid", "720"]
