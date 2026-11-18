@@ -22,6 +22,7 @@ module DTS.NaturalLanguageInference (
   , sequentialParsing
   , parseWithTypeCheck
   , trawlParseResult
+  , InferenceLabel
   , ParseResultExpress(..)
   , ParseTreeAndFelicityCheckExpress(..)
   , NodeSelector
@@ -29,17 +30,16 @@ module DTS.NaturalLanguageInference (
   , sequentialTypeCheckExpress
   ) where
 
-import Control.Monad (join)    --base
+import Control.Monad (join,guard)        --base
 import Control.Monad.State (lift)         --mtl
 import Control.Monad.IO.Class (liftIO)    --base
-import Control.Applicative ((<|>))        --base
 import Control.Parallel (par,pseq)        --base
 import qualified System.IO as S           --base
 import qualified Data.Char as C           --base
 import qualified Data.Text.Lazy as T      --text
 import qualified Data.Text.Lazy.IO as T   --text
 import qualified Data.List as L           --base
-import ListT (ListT(..),fromFoldable,toReverseList,take,null,uncons,cons) --list-t
+import ListT (ListT(..),fromFoldable,toReverseList,null,uncons,cons) --list-t
 import qualified Parser.ChartParser as CP      --lightblue
 import qualified Parser.PartialParsing as Partial --lightblue
 import qualified Parser.CCG as CCG             --lightblue
@@ -145,22 +145,35 @@ sequentialTypeCheck ps prover signtr contxt ((text,nodes):rests) =
   SentenceAndParseTrees text $ 
     parallelM nodes $ \node -> 
          let signtr' = L.nub $ (CCG.sig node) ++ signtr
-             tcQueryType = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
-             tcQueryKind = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Kind
-         in ParseTreeAndFelicityChecks node signtr' tcQueryType $ 
-              let tcDiagrams = takeNbest (CP.nTypeCheck ps) $ (TY.typeCheck prover (CP.verbose ps) tcQueryType)
-                                                              <|> (TY.typeCheck prover (CP.verbose ps) tcQueryKind)
+             tcQuery = UDTT.TypeInferQuery signtr' contxt (CCG.sem node)
+             tcQuery' = UDTT.Judgment signtr' contxt (CCG.sem node) DTT.Type
+         in ParseTreeAndFelicityChecks node signtr' tcQuery' $ 
+              let tiDiagrams = TY.typeInfer prover (CP.verbose ps) tcQuery
+                  tcDiagrams = takeNbest (CP.nTypeCheck ps) $ do
+                    tiDiagram <- tiDiagrams
+                    guard $ case DTT.typ (Tree.node tiDiagram) of
+                              DTT.Type -> True
+                              DTT.Kind -> True
+                              _ -> False
+                    return tiDiagram
               in parallelM tcDiagrams $ \tcDiagram -> 
                    let contxt' = (DTT.trm $ Tree.node tcDiagram):contxt
                    in (tcDiagram, sequentialTypeCheck ps prover signtr' contxt' rests)
 
 -- | Take n element from the top of the list.
 -- | If n < 0, it returns all the elements.
+-- |
+-- | This is not `ListT.take`: in list-t 1.0.5.7, `take n t` returns `t` itself when
+-- | `t` turns out to be empty, so the consumer runs the IO inside `t` once more.
+-- | Here that IO is a parse, a type check or a whole proof search, and an empty
+-- | result (no proof found) is exactly the expensive case, so the search ran twice.
 takeNbest :: Int -> ListT IO a -> ListT IO a
 takeNbest n l
-  | n >= 0 = ListT.take n l
+  | n == 0 = ListT (return Nothing)
+  | n > 0  = ListT $ fmap (fmap (\(h, t') -> (h, takeNbest (n-1) t'))) (uncons l)
   | otherwise = l
- 
+
+
 {-- Trawling functions --}
 
 trawlParseResult :: ParseResult -> ListT IO InferenceLabel

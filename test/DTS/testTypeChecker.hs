@@ -3,26 +3,30 @@
 module Main where
 
 import Control.Monad (forM_,when)
+import System.Exit (exitFailure)
+import System.IO (hPutStrLn, stderr)
 import Interface (Style(..),headerOf,footerOf)
 import Interface.HTML (MathML(..),startMathML,endMathML)
 --import Interface.Text (SimpleText(..))
 --import Interface.Tree (Tree(..))
 import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.IO as T
+import ListT (toList)
+import qualified DTS.DTTdeBruijn as D
 import qualified DTS.UDTTdeBruijn as U
-import qualified DTS.UDTTvarName as V
-import DTS.QueryTypes (TypeCheckQuery(..),ListEx(..))
+import qualified DTS.UDTTwithName as V
+import DTS.QueryTypes (defaultProofSearchSetting)
 import DTS.TypeChecker (typeCheck, nullProver)
 
 main :: IO()
 main = do
-  let tcq = TypeCheckQuery {
+  let tcq = U.Judgment {
         -- | [(T.Text, Preterm DTT)]
-        sig = [("boy", U.Pi U.Entity U.Type), ("run", U.Pi U.Entity U.Type), ("john", U.Entity)]
+        U.signtr = [("boy", D.Pi D.Entity D.Type), ("run", D.Pi D.Entity D.Type), ("john", D.Entity)]
         -- | [Preterm DTT]
-        , ctx = []
+        , U.contxt = []
         -- | Preterm UDTT
-        , trm = U.toDeBruijn [] $
+        , U.trm = V.toDeBruijn [] $
                 V.Pi
                   (V.VarName 'u' 0)
                   (V.Sigma
@@ -39,14 +43,16 @@ main = do
                         (V.Proj V.Fst (V.Var (V.VarName 'u' 0)))
                        (V.Con "john")))
         -- | Preterm DTT
-        , typ = U.Type 
+        , U.typ = D.Type
         }
-      ListEx (tcResults, err) = typeCheck nullProver tcq
+  tcResults <- toList $ typeCheck (nullProver defaultProofSearchSetting) False tcq
   putStrLn $ headerOf HTML
-  T.putStrLn $ T.concat ["Type check: ", startMathML, toMathML (U.Judgment (sig tcq) (ctx tcq) (trm tcq) (typ tcq)), endMathML]
+  T.putStrLn $ T.concat ["Type check: ", startMathML, toMathML tcq, endMathML]
   forM_ tcResults $ \tcResult -> do
     T.putStrLn $ T.concat [startMathML, toMathML tcResult, endMathML]
-  when (err /= T.empty) $ T.putStrLn err -- $ T.concat ["Error: ", err]
   putStrLn $ footerOf HTML
+  when (null tcResults) $ do
+    hPutStrLn stderr "typeCheck: no derivation found"
+    exitFailure
 
 
