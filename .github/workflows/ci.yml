@@ -56,28 +56,45 @@ jobs:
       - name: Test
         run: stack test lightblue:test:typeCheck
 
+  # Checks for AI-policy.md. A separate light job, so that it runs even when the build fails.
+  ai-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
       # CLAUDE.md (Claude Code) and AGENTS.md (Codex etc.) must stay identical (see AI-policy.md).
       - name: Check that CLAUDE.md and AGENTS.md are identical
-        if: runner.os == 'Linux'
         run: cmp CLAUDE.md AGENTS.md
 
       # The AI-policy tags are self-declared (see AI-policy.md); this checks what can be checked mechanically.
+      # A mixed module without marks is allowed (it leaves room for AI code to come).
       - name: Check AI-policy tags
-        if: runner.os == 'Linux'
         run: |
           set -u
           fail=0
-          # The tag value must be one of the three.
-          if grep -rHn '^[[:space:]]*AI-policy' --include='*.hs' src app test Setup.hs \
-               | grep -vE 'AI-policy[[:space:]]*:[[:space:]]*(human-code|mixed|AI-generated)[[:space:]]*$'; then
-            echo "invalid AI-policy tag"; fail=1
-          fi
-          # A human-code or AI-generated module must not contain @AI-generated marks.
-          for f in $(grep -rlE '^[[:space:]]*AI-policy[[:space:]]*:[[:space:]]*(human-code|AI-generated)' --include='*.hs' src app test); do
-            if grep -q '@AI-generated' "$f"; then echo "$f: the tag forbids per-declaration marks"; fail=1; fi
-          done
-          # A mixed module must contain at least one mark.
-          for f in $(grep -rlE '^[[:space:]]*AI-policy[[:space:]]*:[[:space:]]*mixed' --include='*.hs' src app test); do
-            if ! grep -q '@AI-generated' "$f"; then echo "$f: mixed but no @AI-generated mark"; fail=1; fi
-          done
+          # Anything that looks like a tag line, in any case and even behind "--" (to catch malformed ones).
+          loose='^[[:space:]]*(--+[[:space:]]*)?ai[-_ ]?policy[[:space:]]*:'
+          strict='^[[:space:]]*AI-policy[[:space:]]*:[[:space:]]*(human-code|mixed|AI-generated)[[:space:]]*$'
+          mark='^[[:space:]]*-- \| @AI-generated'
+          while IFS= read -r -d '' f; do
+            n_all=$(grep -ciE "$loose" "$f" || true)
+            [ "$n_all" -eq 0 ] && continue   # unmarked
+            # The header is the first {-| ... -} block.
+            header=$(awk '!h && /^[[:space:]]*\{-\|/ {h=1} h {print} h && /-\}/ {exit}' "$f")
+            n_hdr=$(printf '%s\n' "$header" | grep -cE "$strict" || true)
+            if [ "$n_all" -ne 1 ] || [ "$n_hdr" -ne 1 ]; then
+              echo "$f: the header must contain exactly one AI-policy line of the form 'AI-policy   : human-code|mixed|AI-generated'"
+              grep -inE "$loose" "$f"
+              fail=1
+              continue
+            fi
+            # A human-code or AI-generated module must not contain @AI-generated marks.
+            if printf '%s\n' "$header" | grep -qE 'AI-policy[[:space:]]*:[[:space:]]*(human-code|AI-generated)' \
+               && grep -qE "$mark" "$f"; then
+              echo "$f: the tag forbids per-declaration marks"
+              grep -nE "$mark" "$f"
+              fail=1
+            fi
+          done < <(git ls-files -z -- '*.hs')
           exit $fail
