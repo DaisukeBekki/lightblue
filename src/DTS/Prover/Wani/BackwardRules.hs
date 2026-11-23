@@ -635,9 +635,10 @@ sigmaIntro goal setting =
   case WB.acceptableType QT.SigmaI goal False [] of
     (Nothing,message) -> -- point1 : typeMisMatch
       return ([],message)
-    (Just (A.ArrowSigma' for lat),_) -> 
+    (Just (A.ArrowSigma' for0 lat0),_) ->
       let (sig,var) = WB.conFromGoal goal
           maybeTerm = WB.termFromGoal goal
+          (for,lat) = maybe (for0,lat0) (regroupSigma for0 lat0) maybeTerm
           termsInProofTerm = maybe [] (pairMembers (length for + 1)) maybeTerm
           -- A projection of nested Σ type may be forwarded only in parts,
           -- so membership cannot always take it whole.
@@ -687,6 +688,27 @@ pairMembers :: Int -> A.Arrowterm -> [A.Arrowterm]
 pairMembers 1 term = [term]
 pairMembers num (A.ArrowPair f t) = f : pairMembers (num - 1) t
 pairMembers num term = A.ArrowProj A.ArrowFst term : pairMembers (num - 1) (A.ArrowProj A.ArrowSnd term)
+
+-- | When the pair ends early in a term that is not forwarded (e.g. a case),
+-- keep the rest of the Σ whole: its projections would have no rule.
+regroupSigma :: [A.Arrowterm] -> A.Arrowterm -> A.Arrowterm -> ([A.Arrowterm],A.Arrowterm)
+regroupSigma for lat term =
+  let given = pairCount term + 1
+      folded = length for + 1 - given
+  in if given > 1 && folded > 0 && not (splitsIntoForwarded (pairTail term))
+       then (drop folded for, A.ArrowSigma' (take folded for) lat)
+       else (for,lat)
+  where
+    pairCount (A.ArrowPair _ t) = 1 + pairCount t
+    pairCount _ = 0
+    pairTail (A.ArrowPair _ t) = pairTail t
+    pairTail t = t
+    splitsIntoForwarded t = case t of
+      A.Conclusion (DdB.Var _) -> True
+      A.Conclusion (DdB.Con _) -> True
+      A.ArrowProj _ t' -> splitsIntoForwarded t'
+      A.ArrowApp f _ -> splitsIntoForwarded f
+      _ -> False
 
 
 -- | sigmaForm
