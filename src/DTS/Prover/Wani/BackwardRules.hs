@@ -639,8 +639,11 @@ sigmaIntro goal setting =
       let (sig,var) = WB.conFromGoal goal
           maybeTerm = WB.termFromGoal goal
           termsInProofTerm = maybe [] (pairMembers (length for + 1)) maybeTerm
+          -- A projection of nested Σ type may be forwarded only in parts,
+          -- so membership cannot always take it whole.
           termIsNotPairType = case maybeTerm of
             M.Just (A.ArrowPair _ _) -> False
+            M.Just (A.ArrowProj _ _) -> False
             M.Just _ -> True
             M.Nothing -> False
           isDeduce = null termsInProofTerm
