@@ -707,6 +707,7 @@ regroupSigma for lat term =
       A.Conclusion (DdB.Var _) -> True
       A.Conclusion (DdB.Con _) -> True
       A.ArrowProj _ t' -> splitsIntoForwarded t'
+      -- f : (Π x:A) Σ... is forwarded as λx.π1(f x) and λx.π2(f x), which piElim matches
       A.ArrowApp f _ -> splitsIntoForwarded f
       _ -> False
 
