@@ -1,0 +1,10 @@
+#!/bin/bash
+cd ${LIGHTBLUE}
+# stack run lightblue -- +RTS -N -RTS en jsem --jsemid D01 --nsample 5 -s express -f ../jsem/data/anaphora/Disjunction.xml --noInference --nparse 5 --ntypecheck 1 --nproof 1 --maxdepth 4 --time --depth 3
+# echo "A professor or an assistant professor will attend the meeting." | stack run lightblue -- +RTS -N -RTS en parse  -s express --noInference --nparse 3 --ntypecheck 2 --nproof 1 --maxdepth 5 --time --depth 1 
+# echo "顧客は週ごとの集計があると続けやすい" | stack run lightblue -- +RTS -N -RTS jp -m kwja --filter kwja parse -s express --noInference --nparse 3 --ntypecheck 3 --nproof 1 --maxdepth 4 --time --depth 1 
+# stack run lightblue -- +RTS -N -RTS en jsem --nsample 4 -s express -f mg.xml --nparse 3 --ntypecheck 1 --nproof 1 --maxdepth 5 --time --depth 1 
+# stack run lightblue -- +RTS -N -RTS en jsem --nsample 4 -s text -f mg.xml --nparse 3 --ntypecheck 1 --nproof 1 --maxdepth 5 --time --depth 1 
+# echo "A professor or an assistant professor will attend the meeting." | stack run lightblue -- +RTS -N -RTS en parse  -s express --nparse 3 --ntypecheck 1 --nproof 1 --maxdepth 3 --time --depth 3 
+# stack run lightblue -- +RTS -N -RTS en jsem --jsemid D01c --nsample 1 -s express -f ../jsem/data/anaphora/Disjunction.xml --nparse 3 --ntypecheck 1 --nproof 1 --maxdepth 4 --time --depth 3
+echo "If it is not a holiday, the customer will want to be served." | stack run lightblue -- +RTS -N -RTS en parse  -s express --nparse 3 --ntypecheck 1 --nproof 1 --maxdepth 3 --time --depth 5
