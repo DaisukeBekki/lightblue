@@ -32,7 +32,7 @@ import qualified DTS.QueryTypes as QT
 
 type DTTProofDiagram = Tree QT.DTTrule (DTTdB.Judgment)
 
--- | A skeltal prover 
+-- | A skeltal prover
 nullProver :: QT.ProverBuilder
 nullProver _ _ = fromFoldable []
 
@@ -63,13 +63,22 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
           return' verbose $ Tree QT.Con (DTTdB.Judgment sig ctx (DTTdB.Con t) termA) []
     UDTTdB.Type -> return' verbose $ Tree QT.TypeF (DTTdB.Judgment sig ctx DTTdB.Type DTTdB.Kind) []
     UDTTdB.Pi termA termB -> do
-      diagramA <- (typeCheck' (UDTTdB.Judgment sig ctx termA DTTdB.Type))  
-                  <|> (typeCheck' (UDTTdB.Judgment sig ctx termA DTTdB.Kind)) 
+      diagramA <- typeInfer' $ UDTTdB.TypeInferQuery sig ctx termA
       let termA' = DTTdB.trm $ node diagramA
-      diagramB <- (typeCheck' (UDTTdB.Judgment sig (termA':ctx) termB DTTdB.Type))
-                  <|> (typeCheck' (UDTTdB.Judgment sig (termA':ctx) termB DTTdB.Kind))
+          typA'  = DTTdB.typ $ node diagramA
+      guard $ case typA' of
+                DTTdB.Type -> True
+                DTTdB.Kind -> True
+                _ -> False
+      diagramB <- typeInfer' $ UDTTdB.TypeInferQuery sig (termA':ctx) termB
       let termB' = DTTdB.trm $ node diagramB
-      return' verbose $ Tree QT.PiF (DTTdB.Judgment sig ctx (DTTdB.Pi termA' termB') (DTTdB.typ $ node diagramB)) [diagramA,diagramB]
+          typB'  = DTTdB.typ $ node diagramB
+      guard $ case (typA',typB') of
+                (DTTdB.Type,DTTdB.Type) -> True
+                (DTTdB.Type,DTTdB.Kind) -> True
+                (DTTdB.Kind,DTTdB.Kind) -> True
+                _ -> False
+      return' verbose $ Tree QT.PiF (DTTdB.Judgment sig ctx (DTTdB.Pi termA' termB') typB') [diagramA,diagramB]
     UDTTdB.App termM termN -> do
       diagramM <- typeInfer' $ UDTTdB.TypeInferQuery sig ctx termM
       let termM' = DTTdB.trm $ node diagramM
@@ -81,12 +90,23 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
           termB' = DTTdB.betaReduce $ DTTdB.subst termB termN' 0
       return' verbose $ Tree QT.PiE (DTTdB.Judgment sig ctx (DTTdB.App termM' termN') termB') [diagramM, diagramN]
     UDTTdB.Sigma termA termB -> do
-      diagramA <- (typeCheck' $ UDTTdB.Judgment sig ctx termA DTTdB.Type)
-                  <|> (typeCheck' $ UDTTdB.Judgment sig ctx termA DTTdB.Kind)
+      diagramA <- typeInfer' $ UDTTdB.TypeInferQuery sig ctx termA
       let termA' = DTTdB.trm $ node diagramA
-      diagramB <- typeCheck' $ UDTTdB.Judgment sig (termA':ctx) termB DTTdB.Type
+          typA'  = DTTdB.typ $ node diagramA
+      guard $ case typA' of
+                DTTdB.Type -> True
+                DTTdB.Kind -> True
+                _ -> False
+      diagramB <- typeInfer' $ UDTTdB.TypeInferQuery sig (termA':ctx) termB
       let termB' = DTTdB.trm $ node diagramB
-      return' verbose $ Tree QT.SigmaF (DTTdB.Judgment sig ctx (DTTdB.Sigma termA' termB') (DTTdB.typ $ node diagramB)) [diagramA,diagramB]
+          typB'  = DTTdB.typ $ node diagramB
+      guard $ case (typA',typB') of
+                (DTTdB.Type,DTTdB.Type) -> True
+                (DTTdB.Type,DTTdB.Kind) -> True
+                (DTTdB.Kind,DTTdB.Type) -> True -- wrap ruleのための救済。DTSでは本来不可。
+                (DTTdB.Kind,DTTdB.Kind) -> True
+                _ -> False
+      return' verbose $ Tree QT.SigmaF (DTTdB.Judgment sig ctx (DTTdB.Sigma termA' termB') typB') [diagramA,diagramB]
     UDTTdB.Proj UDTTdB.Fst termM -> do
       diagramM <- typeInfer' $ UDTTdB.TypeInferQuery sig ctx termM
       let termM' = DTTdB.trm $ node diagramM
@@ -144,7 +164,7 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
       let termM' = DTTdB.trm $ node diagramM
       return' verbose $ Tree QT.IqI (DTTdB.Judgment sig ctx (DTTdB.Refl termA' termM') (DTTdB.Eq termA' termM' termM')) [diagramA, diagramM]
     UDTTdB.Idpeel termP termE termR -> do
-      diagramE <- typeInfer' $ UDTTdB.TypeInferQuery sig ctx termE 
+      diagramE <- typeInfer' $ UDTTdB.TypeInferQuery sig ctx termE
       let termE' = DTTdB.trm $ node diagramE
           typeE' = DTTdB.typ $ node diagramE
       guard $ case typeE' of (DTTdB.Eq _ _ _) -> True; _ -> False
@@ -177,7 +197,7 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
       diagramQ <- prover psq
       --lift $ T.putStrLn $ T.concat ["Proof search launched: ", toText psq]
       return diagramQ
-    -- UDTTdB.Asp termA termB -> do  -- | Underspecified type 
+    -- UDTTdB.Asp termA termB -> do  -- | Underspecified type
     --   diagramA <- typeCheck' $ UDTTdB.Judgment sig ctx termA UDTTdB.Type
     --   let termA' = UDTTdB.trm $ node diagramA
     --       psq = QT.ProofSearchQuery sig ctx termA'
@@ -186,8 +206,8 @@ typeInfer prover verbose tiq@(UDTTdB.TypeInferQuery sig ctx trm) = do
     --   let termM = UDTTdB.toUDTT $ UDTTdB.trm $ node diagramQ
     --       termB' = UDTTdB.betaReduce $ UDTTdB.subst termB termM 0
     --   typeCheck' $ UDTTdB.Judgment sig ctx termB' UDTTdB.Type
-    UDTTdB.Ann termM typeA -> 
-      typeCheck' $ UDTTdB.Judgment sig ctx termM typeA 
+    UDTTdB.Ann termM typeA ->
+      typeCheck' $ UDTTdB.Judgment sig ctx termM typeA
     -- | When type inference fails
     termM -> do
              let msg = T.concat [toText termM, " is not an inferable term."]
@@ -235,7 +255,7 @@ typeCheck prover verbose tcq@(UDTTdB.Judgment sig ctx trm typ) = do
       return diagramM
 
 return' :: Bool -> QT.DTTProofDiagram -> ListT IO QT.DTTProofDiagram
-return' verbose tir = do 
+return' verbose tir = do
   when verbose $ lift $ do
     T.hPutStr S.stderr "return: "
     T.hPutStrLn S.stderr $ toText $ DTTwN.fromDeBruijnJudgment $ node tir
